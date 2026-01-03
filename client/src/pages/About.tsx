@@ -57,6 +57,52 @@ export default function About() {
           <Separator className="bg-primary/10" />
 
           <div className="text-center space-y-4">
+            <h3 className="font-bold text-foreground">YouTube Channel</h3>
+            <p>
+              Watch inspiring devotionals, Bible stories, and worship content. Subscribe to stay encouraged in your faith journey.
+            </p>
+            <div className="flex flex-col items-center gap-3 pt-2">
+              <a
+                href="https://www.youtube.com/@365DailyDevotional"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="link-youtube-channel"
+              >
+                <Button size="lg">365 Daily Devotional YouTube Channel</Button>
+              </a>
+              <a
+                href="https://www.youtube.com/playlist?list=PLHL1Z_pQ6EgOUMxzdVEfurQCsQqjY3SQJ"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+                data-testid="link-bible-story-playlist"
+              >
+                Bible Story Playlist
+              </a>
+              <a
+                href="https://www.youtube.com/playlist?list=PLHL1Z_pQ6EgObNHc5DAdI_xU3mgQRTdil"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+                data-testid="link-prayer-playlist"
+              >
+                Prayer Playlist
+              </a>
+              <a
+                href="https://www.youtube.com/playlist?list=PLHL1Z_pQ6EgP8xwd3fd3JDjIzIjLxBUU6"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+                data-testid="link-christmas-songs-playlist"
+              >
+                Christmas Songs Playlist
+              </a>
+            </div>
+          </div>
+
+          <Separator className="bg-primary/10" />
+
+          <div className="text-center space-y-4">
             <h3 className="font-bold text-foreground">Connect With Us</h3>
             <p>Email: 365ddevotional@gmail.com</p>
           </div>
