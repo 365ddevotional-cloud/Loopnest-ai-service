@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { useState } from "react";
-import { Loader2, Send, CheckCircle, AlertTriangle } from "lucide-react";
+import { useState, useRef } from "react";
+import { Loader2, Send, CheckCircle, AlertTriangle, Paperclip, X, FileText, Image } from "lucide-react";
 import type { AutoReplyTemplate, PrayerRequest } from "@shared/schema";
 
 const PRIORITY_OPTIONS = [
@@ -19,10 +19,23 @@ const PRIORITY_OPTIONS = [
   { value: "counseling_urgent", label: "Urgent Counseling" },
 ];
 
+const MAX_FILES = 3;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "application/pdf"];
+
+interface UploadedFile {
+  file: File;
+  objectPath?: string;
+  uploading: boolean;
+  error?: string;
+}
+
 export default function PrayerCounseling() {
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
   const [submittedRequest, setSubmittedRequest] = useState<PrayerRequest | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -35,6 +48,42 @@ export default function PrayerCounseling() {
   const { data: autoReplyTemplate } = useQuery<AutoReplyTemplate>({
     queryKey: ["/api/auto-reply-templates", formData.priority],
     enabled: submitted,
+  });
+
+  const uploadFileMutation = useMutation({
+    mutationFn: async ({ file, index }: { file: File; index: number }) => {
+      const response = await fetch("/api/uploads/request-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: file.name,
+          size: file.size,
+          contentType: file.type,
+        }),
+      });
+      
+      if (!response.ok) throw new Error("Failed to get upload URL");
+      
+      const { uploadURL, objectPath } = await response.json();
+      
+      await fetch(uploadURL, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+      
+      return { index, objectPath };
+    },
+    onSuccess: ({ index, objectPath }) => {
+      setUploadedFiles(prev => prev.map((f, i) => 
+        i === index ? { ...f, objectPath, uploading: false } : f
+      ));
+    },
+    onError: (error, { index }) => {
+      setUploadedFiles(prev => prev.map((f, i) => 
+        i === index ? { ...f, uploading: false, error: "Upload failed" } : f
+      ));
+    },
   });
 
   const mutation = useMutation({
@@ -50,7 +99,21 @@ export default function PrayerCounseling() {
       const response = await apiRequest("POST", "/api/prayer-requests", payload);
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      const successfulUploads = uploadedFiles.filter(f => f.objectPath);
+      for (const upload of successfulUploads) {
+        try {
+          await apiRequest("POST", `/api/prayer-requests/${data.id}/attachments`, {
+            fileName: upload.file.name,
+            fileSize: upload.file.size,
+            contentType: upload.file.type,
+            objectPath: upload.objectPath,
+          });
+        } catch (err) {
+          console.error("Failed to save attachment metadata:", err);
+        }
+      }
+      
       setSubmittedRequest(data);
       setSubmitted(true);
     },
@@ -63,6 +126,39 @@ export default function PrayerCounseling() {
     },
   });
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    
+    for (const file of files) {
+      if (uploadedFiles.length >= MAX_FILES) {
+        toast({ title: `Maximum ${MAX_FILES} files allowed`, variant: "destructive" });
+        break;
+      }
+      
+      if (file.size > MAX_FILE_SIZE) {
+        toast({ title: `${file.name} exceeds 5MB limit`, variant: "destructive" });
+        continue;
+      }
+      
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        toast({ title: `${file.name} is not a valid file type (jpg, png, pdf only)`, variant: "destructive" });
+        continue;
+      }
+      
+      const newIndex = uploadedFiles.length;
+      setUploadedFiles(prev => [...prev, { file, uploading: true }]);
+      uploadFileMutation.mutate({ file, index: newIndex });
+    }
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -72,6 +168,12 @@ export default function PrayerCounseling() {
     }
     if (!formData.message.trim()) {
       toast({ title: "Please enter your message or prayer request", variant: "destructive" });
+      return;
+    }
+    
+    const stillUploading = uploadedFiles.some(f => f.uploading);
+    if (stillUploading) {
+      toast({ title: "Please wait for files to finish uploading", variant: "destructive" });
       return;
     }
 
@@ -85,6 +187,7 @@ export default function PrayerCounseling() {
   const resetForm = () => {
     setSubmitted(false);
     setSubmittedRequest(null);
+    setUploadedFiles([]);
     setFormData({
       fullName: "",
       email: "",
@@ -93,6 +196,13 @@ export default function PrayerCounseling() {
       isAnonymous: false,
       priority: "prayer_normal",
     });
+  };
+
+  const getFileIcon = (contentType: string) => {
+    if (contentType.startsWith("image/")) {
+      return <Image className="w-4 h-4" />;
+    }
+    return <FileText className="w-4 h-4" />;
   };
 
   if (submitted && submittedRequest) {
@@ -167,46 +277,40 @@ export default function PrayerCounseling() {
       <Card className="bg-white border-primary/10 shadow-xl shadow-primary/5 overflow-hidden">
         <div className="bg-primary/5 p-8 md:p-12 text-center">
           <p className="text-lg text-muted-foreground font-serif leading-relaxed">
-            You are not alone. If you need prayer, guidance, or spiritual support, we are here for you. Share your request below, and our team will respond prayerfully.
+            Share your prayer requests or counseling needs with us. Our team will respond with prayer and encouragement.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 md:p-12 space-y-6">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-3 mb-6">
             <Checkbox
               id="isAnonymous"
               checked={formData.isAnonymous}
-              onCheckedChange={(checked) => 
-                setFormData({ ...formData, isAnonymous: checked === true })
-              }
+              onCheckedChange={(checked) => setFormData({ ...formData, isAnonymous: checked === true })}
               data-testid="checkbox-anonymous"
             />
-            <Label htmlFor="isAnonymous" className="text-foreground font-medium cursor-pointer">
-              Send anonymously
+            <Label htmlFor="isAnonymous" className="text-sm text-muted-foreground cursor-pointer">
+              Send anonymously (your name will not be shared)
             </Label>
           </div>
 
           {!formData.isAnonymous && (
             <div className="space-y-2">
-              <Label htmlFor="fullName" className="text-foreground font-medium">
-                Full Name <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="fullName">Full Name *</Label>
               <Input
                 id="fullName"
                 name="fullName"
-                type="text"
                 value={formData.fullName}
                 onChange={handleChange}
-                placeholder="Enter your full name"
-                required={!formData.isAnonymous}
+                placeholder="Your full name"
                 data-testid="input-fullname"
               />
             </div>
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-foreground font-medium">
-              Email Address <span className="text-muted-foreground text-sm">(for receiving replies)</span>
+            <Label htmlFor="email">
+              Email {formData.isAnonymous ? "(optional - for receiving replies)" : "(optional)"}
             </Label>
             <Input
               id="email"
@@ -214,20 +318,13 @@ export default function PrayerCounseling() {
               type="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Enter your email address"
+              placeholder="your@email.com"
               data-testid="input-email"
             />
-            {formData.isAnonymous && !formData.email && (
-              <p className="text-sm text-muted-foreground">
-                Add an email if you want to receive replies in the app.
-              </p>
-            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="priority" className="text-foreground font-medium">
-              Request Type / Priority <span className="text-red-500">*</span>
-            </Label>
+            <Label htmlFor="priority">Request Type *</Label>
             <Select
               value={formData.priority}
               onValueChange={(value) => setFormData({ ...formData, priority: value })}
@@ -246,63 +343,124 @@ export default function PrayerCounseling() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="subject" className="text-foreground font-medium">
-              Subject <span className="text-muted-foreground text-sm">(optional)</span>
-            </Label>
+            <Label htmlFor="subject">Subject (optional)</Label>
             <Input
               id="subject"
               name="subject"
-              type="text"
               value={formData.subject}
               onChange={handleChange}
-              placeholder="e.g., Prayer for healing, Spiritual guidance"
+              placeholder="Brief subject for your request"
               data-testid="input-subject"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="message" className="text-foreground font-medium">
-              Message / Prayer Request <span className="text-red-500">*</span>
-            </Label>
+            <Label htmlFor="message">Your Prayer Request or Message *</Label>
             <Textarea
               id="message"
               name="message"
               value={formData.message}
               onChange={handleChange}
-              placeholder="Share your prayer request or what you need guidance with..."
+              placeholder="Share your prayer request, concerns, or need for counseling..."
               rows={6}
-              required
               className="resize-none"
-              data-testid="input-message"
+              data-testid="textarea-message"
             />
           </div>
 
-          <div className="pt-4">
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full"
-              disabled={mutation.isPending}
-              data-testid="button-submit-prayer"
-            >
-              {mutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4 mr-2" />
-                  Send Prayer Request
-                </>
-              )}
-            </Button>
+          <div className="space-y-3">
+            <Label>Attachments (optional)</Label>
+            <p className="text-xs text-muted-foreground">
+              You can attach up to {MAX_FILES} files (jpg, png, pdf). Max 5MB each.
+            </p>
+            
+            {uploadedFiles.length > 0 && (
+              <div className="space-y-2">
+                {uploadedFiles.map((upload, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between gap-2 p-2 bg-muted/30 rounded-md"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {getFileIcon(upload.file.type)}
+                      <span className="text-sm truncate">{upload.file.name}</span>
+                      {upload.uploading && (
+                        <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                      )}
+                      {upload.error && (
+                        <span className="text-xs text-destructive">{upload.error}</span>
+                      )}
+                      {upload.objectPath && (
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeFile(index)}
+                      disabled={upload.uploading}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {uploadedFiles.length < MAX_FILES && (
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.pdf"
+                  multiple
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="file-upload"
+                  data-testid="input-file"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  data-testid="button-attach"
+                >
+                  <Paperclip className="w-4 h-4 mr-2" />
+                  Attach Files
+                </Button>
+              </div>
+            )}
           </div>
 
-          <div className="pt-4 text-xs text-muted-foreground space-y-2 border-t border-primary/10 mt-6">
-            <p>Please do not share passwords or financial details.</p>
-            <p>If this is an emergency or you feel unsafe, contact local emergency services.</p>
+          <div className="bg-muted/30 rounded-lg p-4 text-sm text-muted-foreground space-y-2">
+            <p>Your privacy matters to us:</p>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li>All requests are treated with strict confidentiality</li>
+              <li>Anonymous requests will not display your name</li>
+              <li>Email is only used to send you replies if provided</li>
+              <li>Attachments are stored securely and only accessible to our team</li>
+            </ul>
           </div>
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={mutation.isPending || uploadedFiles.some(f => f.uploading)}
+            data-testid="button-submit"
+          >
+            {mutation.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4 mr-2" />
+                Send Request
+              </>
+            )}
+          </Button>
         </form>
       </Card>
     </div>

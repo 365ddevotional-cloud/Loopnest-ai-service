@@ -5,6 +5,7 @@ import {
   prayerReplies,
   threadMessages,
   autoReplyTemplates,
+  prayerAttachments,
   type Devotional,
   type InsertDevotional,
   type UpdateDevotionalRequest,
@@ -16,6 +17,8 @@ import {
   type InsertThreadMessage,
   type AutoReplyTemplate,
   type InsertAutoReplyTemplate,
+  type PrayerAttachment,
+  type InsertPrayerAttachment,
 } from "@shared/schema";
 import { eq, desc, and } from "drizzle-orm";
 
@@ -49,6 +52,10 @@ export interface IStorage {
   getAutoReplyTemplate(templateType: string): Promise<AutoReplyTemplate | undefined>;
   getAutoReplyTemplates(): Promise<AutoReplyTemplate[]>;
   upsertAutoReplyTemplate(template: InsertAutoReplyTemplate): Promise<AutoReplyTemplate>;
+  
+  // Prayer Attachments
+  getAttachmentsForRequest(requestId: number): Promise<PrayerAttachment[]>;
+  createPrayerAttachment(attachment: InsertPrayerAttachment): Promise<PrayerAttachment>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -205,6 +212,23 @@ export class DatabaseStorage implements IStorage {
     const [created] = await db
       .insert(autoReplyTemplates)
       .values(template)
+      .returning();
+    return created;
+  }
+
+  // Prayer Attachments
+  async getAttachmentsForRequest(requestId: number): Promise<PrayerAttachment[]> {
+    return await db
+      .select()
+      .from(prayerAttachments)
+      .where(eq(prayerAttachments.requestId, requestId))
+      .orderBy(prayerAttachments.createdAt);
+  }
+
+  async createPrayerAttachment(attachment: InsertPrayerAttachment): Promise<PrayerAttachment> {
+    const [created] = await db
+      .insert(prayerAttachments)
+      .values(attachment)
       .returning();
     return created;
   }

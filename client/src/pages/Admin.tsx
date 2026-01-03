@@ -5,12 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, XCircle, RefreshCw, AlertTriangle, User } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
 import { format } from "date-fns";
-import type { PrayerRequest, ThreadMessage } from "@shared/schema";
+import type { PrayerRequest, ThreadMessage, PrayerAttachment } from "@shared/schema";
 
 const PRIORITY_LABELS: Record<string, string> = {
   prayer_normal: "Prayer Request",
@@ -38,6 +38,18 @@ function PrayerInbox() {
     queryKey: ["/api/prayer-requests", selectedRequest?.id, "thread"],
     enabled: !!selectedRequest,
   });
+
+  const { data: attachments = [] } = useQuery<PrayerAttachment[]>({
+    queryKey: ["/api/prayer-requests", selectedRequest?.id, "attachments"],
+    enabled: !!selectedRequest,
+  });
+
+  const getFileIcon = (contentType: string) => {
+    if (contentType.startsWith("image/")) {
+      return <Image className="w-4 h-4" />;
+    }
+    return <FileText className="w-4 h-4" />;
+  };
 
   const sendReplyMutation = useMutation({
     mutationFn: async ({ requestId, message }: { requestId: number; message: string }) => {
@@ -187,6 +199,31 @@ function PrayerInbox() {
               <div className="bg-muted/30 p-4 rounded-lg">
                 <p className="text-foreground whitespace-pre-wrap">{selectedRequest.message}</p>
               </div>
+
+              {attachments.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-medium text-foreground flex items-center gap-2">
+                    <Paperclip className="w-4 h-4" />
+                    Attachments ({attachments.length})
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {attachments.map((attachment) => (
+                      <a
+                        key={attachment.id}
+                        href={attachment.objectPath}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 p-2 bg-muted/30 rounded-md text-sm hover:bg-muted/50 transition-colors"
+                        data-testid={`attachment-${attachment.id}`}
+                      >
+                        {getFileIcon(attachment.contentType)}
+                        <span className="truncate max-w-[150px]">{attachment.fileName}</span>
+                        <Download className="w-3 h-3 text-muted-foreground" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {threadMessages.length > 0 && (
                 <div className="space-y-3">

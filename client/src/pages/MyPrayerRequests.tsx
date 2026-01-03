@@ -9,8 +9,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
 import { format } from "date-fns";
-import { Loader2, Send, MessageSquare, Search, AlertTriangle } from "lucide-react";
-import type { PrayerRequest, ThreadMessage } from "@shared/schema";
+import { Loader2, Send, MessageSquare, Search, AlertTriangle, Paperclip, FileText, Image, Download } from "lucide-react";
+import type { PrayerRequest, ThreadMessage, PrayerAttachment } from "@shared/schema";
 
 const PRIORITY_LABELS: Record<string, string> = {
   prayer_normal: "Prayer Request",
@@ -45,6 +45,18 @@ export default function MyPrayerRequests() {
     queryKey: ["/api/prayer-requests", selectedRequest?.id, "thread"],
     enabled: !!selectedRequest,
   });
+
+  const { data: attachments = [] } = useQuery<PrayerAttachment[]>({
+    queryKey: ["/api/prayer-requests", selectedRequest?.id, "attachments"],
+    enabled: !!selectedRequest,
+  });
+
+  const getFileIcon = (contentType: string) => {
+    if (contentType.startsWith("image/")) {
+      return <Image className="w-4 h-4" />;
+    }
+    return <FileText className="w-4 h-4" />;
+  };
 
   const sendMessageMutation = useMutation({
     mutationFn: async ({ requestId, message }: { requestId: number; message: string }) => {
@@ -189,6 +201,31 @@ export default function MyPrayerRequests() {
                     <p className="text-sm font-medium text-muted-foreground mb-1">Your original message:</p>
                     <p className="text-foreground whitespace-pre-wrap">{selectedRequest.message}</p>
                   </div>
+
+                  {attachments.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-foreground flex items-center gap-2">
+                        <Paperclip className="w-4 h-4" />
+                        Your Attachments ({attachments.length})
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {attachments.map((attachment) => (
+                          <a
+                            key={attachment.id}
+                            href={attachment.objectPath}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 p-2 bg-muted/30 rounded-md text-sm hover:bg-muted/50 transition-colors"
+                            data-testid={`my-attachment-${attachment.id}`}
+                          >
+                            {getFileIcon(attachment.contentType)}
+                            <span className="truncate max-w-[150px]">{attachment.fileName}</span>
+                            <Download className="w-3 h-3 text-muted-foreground" />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {threadMessages.length > 0 && (
                     <div className="space-y-3">

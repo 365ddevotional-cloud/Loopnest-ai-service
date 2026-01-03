@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { sendPrayerReplyNotification } from "./sendgrid";
+import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -215,6 +216,58 @@ export async function registerRoutes(
         });
       }
       throw err;
+    }
+  });
+
+  // Object Storage Routes
+  registerObjectStorageRoutes(app);
+
+  // Prayer Attachment Routes
+  app.get("/api/prayer-requests/:id/attachments", async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    const attachments = await storage.getAttachmentsForRequest(id);
+    res.json(attachments);
+  });
+
+  app.post("/api/prayer-requests/:id/attachments", async (req, res) => {
+    try {
+      const requestId = Number(req.params.id);
+      if (isNaN(requestId)) {
+        return res.status(400).json({ message: "Invalid ID" });
+      }
+      const { fileName, fileSize, contentType, objectPath } = req.body;
+      
+      if (!fileName || !fileSize || !contentType || !objectPath) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Validate file size (5MB limit)
+      const MAX_FILE_SIZE = 5 * 1024 * 1024;
+      if (fileSize > MAX_FILE_SIZE) {
+        return res.status(400).json({ message: "File size exceeds 5MB limit" });
+      }
+      
+      // Validate file type
+      const ALLOWED_TYPES = ["image/jpeg", "image/png", "application/pdf"];
+      if (!ALLOWED_TYPES.includes(contentType)) {
+        return res.status(400).json({ message: "Invalid file type. Allowed: jpg, png, pdf" });
+      }
+      
+      const attachment = await storage.createPrayerAttachment({
+        requestId,
+        fileName,
+        fileSize,
+        contentType,
+        objectPath,
+      });
+      
+      res.status(201).json(attachment);
+    } catch (err) {
+      console.error("Error creating attachment:", err);
+      res.status(500).json({ message: "Failed to save attachment" });
     }
   });
 

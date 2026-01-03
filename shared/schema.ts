@@ -115,3 +115,22 @@ export const insertAutoReplyTemplateSchema = createInsertSchema(autoReplyTemplat
 
 export type AutoReplyTemplate = typeof autoReplyTemplates.$inferSelect;
 export type InsertAutoReplyTemplate = z.infer<typeof insertAutoReplyTemplateSchema>;
+
+// File Attachments Table (for prayer request attachments)
+export const prayerAttachments = pgTable("prayer_attachments", {
+  id: serial("id").primaryKey(),
+  requestId: integer("request_id").notNull(),
+  fileName: text("file_name").notNull(),
+  fileSize: integer("file_size").notNull(),
+  contentType: text("content_type").notNull(),
+  objectPath: text("object_path").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPrayerAttachmentSchema = createInsertSchema(prayerAttachments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type PrayerAttachment = typeof prayerAttachments.$inferSelect;
+export type InsertPrayerAttachment = z.infer<typeof insertPrayerAttachmentSchema>;
