@@ -1,5 +1,5 @@
 import { useDevotionalsList } from "@/hooks/use-devotionals";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { Link } from "wouter";
 import { Loader2, Calendar, ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -56,7 +56,7 @@ export default function Archive() {
                 <div className="p-6 flex flex-col h-full">
                   <div className="flex items-center gap-2 text-xs font-bold text-primary tracking-wider uppercase mb-3">
                     <Calendar className="w-4 h-4" />
-                    {format(new Date(devotional.date), "MMM d, yyyy")}
+                    {format(parseISO(devotional.date), "MMM d, yyyy")}
                   </div>
                   
                   <h3 className="font-serif text-2xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors">

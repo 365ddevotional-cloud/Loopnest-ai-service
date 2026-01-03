@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { type DevotionalResponse } from "@shared/schema";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -13,7 +13,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
       {/* Header Section */}
       <div className="bg-primary/5 p-8 md:p-12 text-center border-b border-primary/10">
         <div className="inline-block px-4 py-1 mb-6 border border-primary/30 rounded-full text-xs font-bold text-primary tracking-widest uppercase bg-white/50 backdrop-blur-sm">
-          {format(new Date(devotional.date), "MMMM d, yyyy")}
+          {format(parseISO(devotional.date), "MMMM d, yyyy")}
         </div>
         
         <h1 className="font-serif text-3xl md:text-5xl font-bold text-foreground mb-6 leading-tight">
