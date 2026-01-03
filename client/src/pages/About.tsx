@@ -50,12 +50,7 @@ export default function About() {
 
           <div className="text-center space-y-4">
             <h3 className="font-bold text-foreground">Connect With Us</h3>
-            <p>
-              New Covenant Church<br />
-              123 Faith Avenue, Grace City<br />
-              Email: contact@newcovenant.org<br />
-              Phone: +1 (555) 123-4567
-            </p>
+            <p>Email: 365ddevotional@gmail.com</p>
           </div>
         </div>
       </Card>
