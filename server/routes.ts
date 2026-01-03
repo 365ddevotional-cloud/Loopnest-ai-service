@@ -77,6 +77,37 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // Prayer Request Routes
+  app.post(api.prayerRequests.create.path, async (req, res) => {
+    try {
+      const input = api.prayerRequests.create.input.parse(req.body);
+      const prayerRequest = await storage.createPrayerRequest(input);
+      res.status(201).json(prayerRequest);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join("."),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.get(api.prayerRequests.list.path, async (req, res) => {
+    const requests = await storage.getPrayerRequests();
+    res.json(requests);
+  });
+
+  app.get(api.prayerRequests.getReplies.path, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    const replies = await storage.getRepliesForRequest(id);
+    res.json(replies);
+  });
+
   // Seed Data if empty
   await seedDatabase();
 

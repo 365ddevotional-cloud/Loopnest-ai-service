@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { insertDevotionalSchema, devotionals } from "./schema";
+import { insertDevotionalSchema, devotionals, insertPrayerRequestSchema, prayerRequests, prayerReplies } from "./schema";
 
 export const errorSchemas = {
   validation: z.object({
@@ -54,6 +54,31 @@ export const api = {
       responses: {
         204: z.void(),
         404: errorSchemas.notFound,
+      },
+    },
+  },
+  prayerRequests: {
+    create: {
+      method: "POST" as const,
+      path: "/api/prayer-requests",
+      input: insertPrayerRequestSchema,
+      responses: {
+        201: z.custom<typeof prayerRequests.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    list: {
+      method: "GET" as const,
+      path: "/api/prayer-requests",
+      responses: {
+        200: z.array(z.custom<typeof prayerRequests.$inferSelect>()),
+      },
+    },
+    getReplies: {
+      method: "GET" as const,
+      path: "/api/prayer-requests/:id/replies",
+      responses: {
+        200: z.array(z.custom<typeof prayerReplies.$inferSelect>()),
       },
     },
   },
