@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>365 Daily Devotional</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background: #f8f6f3;
+      color: #2c2c2c;
+    }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    nav a {
+      margin-left: 16px;
+      text-decoration: none;
+      color: #555;
+      font-size: 14px;
+    }
+
+    main {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    .date {
+      text-align: center;
+      color: #9c6b30;
+      font-size: 14px;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      text-align: center;
+      font-size: 36px;
+      margin: 10px 0;
+    }
+
+    .scripture {
+      text-align: center;
+      font-style: italic;
+      color: #666;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: #fff;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      margin-bottom: 24px;
+    }
+
+    .columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    ul {
+      padding-left: 18px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 30px;
+      font-size: 14px;
+      color: #777;
+    }
+
+    @media (max-width: 700px) {
+      .columns {
+        grid-template-columns: 1fr;
+      }
+
+      h2 {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>365 Daily Devotional</h1>
+  <nav>
+    <a href="#">Today</a>
+    <a href="#">Archive</a>
+    <a href="#">About</a>
+  </nav>
+</header>
+
+<main>
+  <div class="date" id="date"></div>
+
+  <h2>Walking in Wisdom</h2>
+
+  <div class="scripture">
+    “Proverbs 4:7 — Wisdom is the principal thing; therefore get wisdom.”
+  </div>
+
+  <div class="card">
+    <p>
+      Wisdom is not just knowledge; it is the application of knowledge.
+      As we navigate through life, we must seek God’s wisdom in every decision we make.
+      It guides our path and protects us from stumbling.
+      Today, ask the Lord to open your eyes to His wisdom in every situation.
+    </p>
+  </div>
+
+  <div class="columns">
+    <div class="card">
+      <h3>Prayer Points</h3>
+      <ul>
+        <li>Lord, grant me wisdom in every decision I make</li>
+        <li>Help me to hear Your voice clearly</li>
+        <li>Guide my steps in righteousness</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Faith Declarations</h3>
+      <ul>
+        <li>I walk in divine wisdom daily</li>
+        <li>I have the mind of Christ</li>
+        <li>My steps are ordered by the Lord</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<footer>
+  By Rev. Moses Afolabi<br />
+  365 Daily Devotional Ministry
+</footer>
+
+<script>
+  const today = new Date();
+  const options = { year: 'numeric', month: 'long', day: 'numeric' };
+  document.getElementById("date").innerText =
+    today.toLocaleDateString('en-US', options).toUpperCase();
+</script>
+
+</body>
+</html>
