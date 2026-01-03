@@ -1,6 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 
 export default function About() {
   return (
@@ -45,6 +47,11 @@ export default function About() {
             <p>
               If 365 Daily Devotional has been a blessing to you, consider supporting this Kingdom work. Your support helps us continue providing daily devotionals, prayers, and faith-building resources to people around the world.
             </p>
+            <div className="pt-4">
+              <Link href="/donate">
+                <Button size="lg" data-testid="button-donate">Donate</Button>
+              </Link>
+            </div>
           </div>
 
           <Separator className="bg-primary/10" />
