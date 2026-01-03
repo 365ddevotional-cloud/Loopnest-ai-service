@@ -137,6 +137,25 @@ export async function registerRoutes(
     res.json(updated);
   });
 
+  // Update prayer request category
+  app.patch("/api/prayer-requests/:id/category", async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    try {
+      const { prayerCategorySchema } = await import("@shared/schema");
+      const category = prayerCategorySchema.parse(req.body.category);
+      const updated = await storage.updatePrayerRequestCategory(id, category);
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid category" });
+      }
+      throw err;
+    }
+  });
+
   // Get thread messages
   app.get(api.prayerRequests.getThread.path, async (req, res) => {
     const id = Number(req.params.id);

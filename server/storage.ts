@@ -47,6 +47,7 @@ export interface IStorage {
   
   // Prayer Request Status
   updatePrayerRequestStatus(id: number, status: string): Promise<PrayerRequest>;
+  updatePrayerRequestCategory(id: number, category: string): Promise<PrayerRequest>;
   
   // Auto-Reply Templates
   getAutoReplyTemplate(templateType: string): Promise<AutoReplyTemplate | undefined>;
@@ -181,6 +182,15 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(prayerRequests)
       .set({ status })
+      .where(eq(prayerRequests.id, id))
+      .returning();
+    return updated;
+  }
+
+  async updatePrayerRequestCategory(id: number, category: string): Promise<PrayerRequest> {
+    const [updated] = await db
+      .update(prayerRequests)
+      .set({ category })
       .where(eq(prayerRequests.id, id))
       .returning();
     return updated;

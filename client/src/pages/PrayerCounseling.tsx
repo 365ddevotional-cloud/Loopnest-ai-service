@@ -19,6 +19,17 @@ const PRIORITY_OPTIONS = [
   { value: "counseling_urgent", label: "Urgent Counseling" },
 ];
 
+const CATEGORY_OPTIONS = [
+  { value: "healing", label: "Healing" },
+  { value: "marriage", label: "Marriage" },
+  { value: "finance", label: "Finance" },
+  { value: "deliverance", label: "Deliverance" },
+  { value: "guidance", label: "Guidance" },
+  { value: "family", label: "Family" },
+  { value: "salvation", label: "Salvation" },
+  { value: "other", label: "Other" },
+];
+
 const MAX_FILES = 3;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "application/pdf"];
@@ -43,6 +54,7 @@ export default function PrayerCounseling() {
     message: "",
     isAnonymous: false,
     priority: "prayer_normal",
+    category: "other",
   });
 
   const { data: autoReplyTemplate } = useQuery<AutoReplyTemplate>({
@@ -95,6 +107,7 @@ export default function PrayerCounseling() {
         message: data.message,
         isAnonymous: data.isAnonymous,
         priority: data.priority,
+        category: data.category,
       };
       const response = await apiRequest("POST", "/api/prayer-requests", payload);
       return response.json();
@@ -195,6 +208,7 @@ export default function PrayerCounseling() {
       message: "",
       isAnonymous: false,
       priority: "prayer_normal",
+      category: "other",
     });
   };
 
@@ -334,6 +348,25 @@ export default function PrayerCounseling() {
               </SelectTrigger>
               <SelectContent>
                 {PRIORITY_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category">Category *</Label>
+            <Select
+              value={formData.category}
+              onValueChange={(value) => setFormData({ ...formData, category: value })}
+            >
+              <SelectTrigger data-testid="select-category">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORY_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>

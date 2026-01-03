@@ -25,6 +25,28 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   closed: { label: "Closed", color: "bg-gray-100 text-gray-800" },
 };
 
+const CATEGORY_LABELS: Record<string, string> = {
+  healing: "Healing",
+  marriage: "Marriage",
+  finance: "Finance",
+  deliverance: "Deliverance",
+  guidance: "Guidance",
+  family: "Family",
+  salvation: "Salvation",
+  other: "Other",
+};
+
+const CATEGORY_OPTIONS = [
+  { value: "healing", label: "Healing" },
+  { value: "marriage", label: "Marriage" },
+  { value: "finance", label: "Finance" },
+  { value: "deliverance", label: "Deliverance" },
+  { value: "guidance", label: "Guidance" },
+  { value: "family", label: "Family" },
+  { value: "salvation", label: "Salvation" },
+  { value: "other", label: "Other" },
+];
+
 function PrayerInbox() {
   const [selectedRequest, setSelectedRequest] = useState<PrayerRequest | null>(null);
   const [replyMessage, setReplyMessage] = useState("");
@@ -77,12 +99,25 @@ function PrayerInbox() {
     },
   });
 
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({ requestId, category }: { requestId: number; category: string }) => {
+      return apiRequest("PATCH", `/api/prayer-requests/${requestId}/category`, { category });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests"] });
+      if (selectedRequest && updateCategoryMutation.variables) {
+        setSelectedRequest({ ...selectedRequest, category: updateCategoryMutation.variables.category });
+      }
+    },
+  });
+
   const filteredRequests = requests.filter((r) => {
     if (filter === "all") return true;
     if (filter === "unreplied") return r.status === "new";
     if (filter === "urgent") return r.priority?.includes("urgent");
     if (filter === "counseling") return r.priority?.includes("counseling");
     if (filter === "anonymous") return r.isAnonymous;
+    if (CATEGORY_LABELS[filter]) return r.category === filter;
     return true;
   });
 
@@ -105,7 +140,7 @@ function PrayerInbox() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <h3 className="font-serif text-lg font-semibold text-foreground">Prayer Requests</h3>
           <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-40" data-testid="select-filter">
+            <SelectTrigger className="w-44" data-testid="select-filter">
               <SelectValue placeholder="Filter" />
             </SelectTrigger>
             <SelectContent>
@@ -114,6 +149,14 @@ function PrayerInbox() {
               <SelectItem value="urgent">Urgent Only</SelectItem>
               <SelectItem value="counseling">Counseling Only</SelectItem>
               <SelectItem value="anonymous">Anonymous</SelectItem>
+              <SelectItem value="healing">Category: Healing</SelectItem>
+              <SelectItem value="marriage">Category: Marriage</SelectItem>
+              <SelectItem value="finance">Category: Finance</SelectItem>
+              <SelectItem value="deliverance">Category: Deliverance</SelectItem>
+              <SelectItem value="guidance">Category: Guidance</SelectItem>
+              <SelectItem value="family">Category: Family</SelectItem>
+              <SelectItem value="salvation">Category: Salvation</SelectItem>
+              <SelectItem value="other">Category: Other</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -152,6 +195,10 @@ function PrayerInbox() {
                 <p className="text-sm text-muted-foreground line-clamp-2">{request.message}</p>
                 <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground flex-wrap">
                   <span>{PRIORITY_LABELS[request.priority || "prayer_normal"]}</span>
+                  <span>|</span>
+                  <Badge variant="secondary" className="text-xs">
+                    {CATEGORY_LABELS[request.category || "other"]}
+                  </Badge>
                   <span>|</span>
                   <span>{request.createdAt ? format(new Date(request.createdAt), "MMM d, h:mm a") : "Unknown"}</span>
                 </div>
@@ -193,6 +240,25 @@ function PrayerInbox() {
                 <span className="text-xs text-muted-foreground">
                   {selectedRequest.createdAt ? format(new Date(selectedRequest.createdAt), "MMMM d, yyyy 'at' h:mm a") : ""}
                 </span>
+              </div>
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                <span className="text-sm text-muted-foreground">Category:</span>
+                <Select
+                  value={selectedRequest.category || "other"}
+                  onValueChange={(value) => updateCategoryMutation.mutate({ requestId: selectedRequest.id, category: value })}
+                >
+                  <SelectTrigger className="w-36" data-testid="select-edit-category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORY_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {updateCategoryMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
               </div>
             </CardHeader>
             <CardContent className="p-6 space-y-4">

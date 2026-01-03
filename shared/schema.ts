@@ -40,6 +40,19 @@ export const PRAYER_PRIORITIES = [
 
 export const PRAYER_STATUSES = ["new", "replied", "closed"] as const;
 
+export const PRAYER_CATEGORIES = [
+  "healing",
+  "marriage",
+  "finance",
+  "deliverance",
+  "guidance",
+  "family",
+  "salvation",
+  "other"
+] as const;
+
+export const prayerCategorySchema = z.enum(PRAYER_CATEGORIES);
+
 // Prayer Requests Table
 export const prayerRequests = pgTable("prayer_requests", {
   id: serial("id").primaryKey(),
@@ -49,6 +62,7 @@ export const prayerRequests = pgTable("prayer_requests", {
   message: text("message").notNull(),
   isAnonymous: boolean("is_anonymous").default(false),
   priority: text("priority").default("prayer_normal").notNull(),
+  category: text("category").default("other").notNull(),
   status: text("status").default("new").notNull(),
   isRead: boolean("is_read").default(false),
   createdAt: timestamp("created_at").defaultNow(),
@@ -59,6 +73,8 @@ export const insertPrayerRequestSchema = createInsertSchema(prayerRequests).omit
   isRead: true,
   status: true,
   createdAt: true,
+}).extend({
+  category: prayerCategorySchema.optional().default("other"),
 });
 
 export type PrayerRequest = typeof prayerRequests.$inferSelect;
