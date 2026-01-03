@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Calendar, Settings, Info, BookOpen, Heart } from "lucide-react";
+import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import { cn } from "@/lib/utils";
 import logoImage from "@assets/IMG_202512182225101_-_Copy_1767468127874.PNG";
@@ -11,6 +11,7 @@ export function Header() {
     { href: "/", label: "Today", icon: BookOpen, external: false },
     { href: "/archive", label: "Archive", icon: Calendar, external: false },
     { href: "https://www.youtube.com/@365DailyDevotional", label: "YouTube", icon: SiYoutube, external: true },
+    { href: "https://payhip.com/SpiritToneRecords", label: "Shop", icon: ShoppingBag, external: true },
     { href: "/about", label: "About", icon: Info, external: false },
     { href: "/donate", label: "Donate", icon: Heart, external: false },
     { href: "/admin", label: "Admin", icon: Settings, external: false },
