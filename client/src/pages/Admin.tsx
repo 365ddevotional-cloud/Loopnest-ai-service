@@ -123,11 +123,12 @@ function PrayerInbox() {
   });
 
   const filteredRequests = requests.filter((r) => {
-    const matchesSearch = !searchQuery.trim() || 
-      r.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (r.fullName && r.fullName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (r.subject && r.subject.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (r.email && r.email.toLowerCase().includes(searchQuery.toLowerCase()));
+    const query = searchQuery.toLowerCase().trim();
+    const matchesSearch = !query || 
+      (r.message && r.message.toLowerCase().includes(query)) ||
+      (r.fullName && r.fullName.toLowerCase().includes(query)) ||
+      (r.subject && r.subject.toLowerCase().includes(query)) ||
+      (r.email && r.email.toLowerCase().includes(query));
     
     if (!matchesSearch) return false;
     
@@ -140,8 +141,16 @@ function PrayerInbox() {
     return true;
   });
   
+  const [quickReplyKey, setQuickReplyKey] = useState(0);
+  
   const handleQuickReply = (snippet: typeof QUICK_REPLY_SNIPPETS[0]) => {
-    setReplyMessage(prev => prev ? `${prev}\n\n${snippet.text}` : snippet.text);
+    setReplyMessage(prev => {
+      if (prev && prev.trim()) {
+        return `${prev.trim()}\n\n${snippet.text}`;
+      }
+      return snippet.text;
+    });
+    setQuickReplyKey(k => k + 1);
   };
 
   const handleSendReply = () => {
@@ -361,10 +370,13 @@ function PrayerInbox() {
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-primary" />
                   <span className="text-sm font-medium text-foreground">Quick Replies:</span>
-                  <Select onValueChange={(value) => {
-                    const snippet = QUICK_REPLY_SNIPPETS.find(s => s.label === value);
-                    if (snippet) handleQuickReply(snippet);
-                  }}>
+                  <Select 
+                    key={quickReplyKey}
+                    onValueChange={(value) => {
+                      const snippet = QUICK_REPLY_SNIPPETS.find(s => s.label === value);
+                      if (snippet) handleQuickReply(snippet);
+                    }}
+                  >
                     <SelectTrigger className="w-48" data-testid="select-quick-reply">
                       <SelectValue placeholder="Insert snippet..." />
                     </SelectTrigger>
