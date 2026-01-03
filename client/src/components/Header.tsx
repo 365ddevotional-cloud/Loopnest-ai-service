@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
-import { BookOpen, Calendar, Settings, Info } from "lucide-react";
+import { Calendar, Settings, Info, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import logoImage from "@assets/IMG_202512182225101_-_Copy_1767468127874.PNG";
 
 export function Header() {
   const [location] = useLocation();
@@ -16,9 +17,11 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-primary/10">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="bg-primary/10 p-2 rounded-lg group-hover:bg-primary/20 transition-colors">
-            <BookOpen className="w-6 h-6 text-primary" />
-          </div>
+          <img 
+            src={logoImage} 
+            alt="365 Daily Devotional" 
+            className="w-10 h-10 object-contain"
+          />
           <span className="font-serif text-xl font-bold text-primary tracking-tight">
             Daily Devotional
           </span>
