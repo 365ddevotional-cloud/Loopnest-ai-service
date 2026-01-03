@@ -74,13 +74,6 @@ export default function PrayerCounseling() {
       toast({ title: "Please enter your message or prayer request", variant: "destructive" });
       return;
     }
-    if (formData.isAnonymous && !formData.email.trim()) {
-      toast({ 
-        title: "Email needed for replies", 
-        description: "Add an email if you want to receive replies in the app.",
-        variant: "default" 
-      });
-    }
 
     mutation.mutate(formData);
   };

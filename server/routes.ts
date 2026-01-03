@@ -3,6 +3,7 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
+import { sendPrayerReplyNotification } from "./sendgrid";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -162,6 +163,16 @@ export async function registerRoutes(
       // Update request status if admin replied
       if (senderType === "admin") {
         await storage.updatePrayerRequestStatus(id, "replied");
+        
+        // Send email notification if user has email
+        const prayerRequest = await storage.getPrayerRequest(id);
+        if (prayerRequest?.email && !prayerRequest.isAnonymous) {
+          sendPrayerReplyNotification(
+            prayerRequest.email,
+            prayerRequest.fullName || "Friend",
+            message
+          ).catch(err => console.error("Email send error:", err));
+        }
       }
       
       res.status(201).json(threadMessage);
