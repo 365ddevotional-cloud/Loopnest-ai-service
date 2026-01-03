@@ -50,6 +50,8 @@ export default function PrayerCounseling() {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
+    phoneNumber: "",
+    smsEnabled: false,
     subject: "",
     message: "",
     isAnonymous: false,
@@ -103,6 +105,8 @@ export default function PrayerCounseling() {
       const payload = {
         fullName: data.isAnonymous ? null : data.fullName,
         email: data.email || null,
+        phoneNumber: data.phoneNumber || null,
+        smsEnabled: data.smsEnabled && !!data.phoneNumber,
         subject: data.subject || null,
         message: data.message,
         isAnonymous: data.isAnonymous,
@@ -184,6 +188,11 @@ export default function PrayerCounseling() {
       return;
     }
     
+    if (formData.phoneNumber && !isValidE164(formData.phoneNumber)) {
+      toast({ title: "Phone number must be in E.164 format (e.g., +1234567890)", variant: "destructive" });
+      return;
+    }
+    
     const stillUploading = uploadedFiles.some(f => f.uploading);
     if (stillUploading) {
       toast({ title: "Please wait for files to finish uploading", variant: "destructive" });
@@ -204,12 +213,19 @@ export default function PrayerCounseling() {
     setFormData({
       fullName: "",
       email: "",
+      phoneNumber: "",
+      smsEnabled: false,
       subject: "",
       message: "",
       isAnonymous: false,
       priority: "prayer_normal",
       category: "other",
     });
+  };
+
+  const isValidE164 = (phone: string): boolean => {
+    const e164Regex = /^\+[1-9]\d{1,14}$/;
+    return e164Regex.test(phone);
   };
 
   const getFileIcon = (contentType: string) => {
@@ -336,6 +352,38 @@ export default function PrayerCounseling() {
               data-testid="input-email"
             />
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phoneNumber">
+              Phone Number (optional)
+            </Label>
+            <Input
+              id="phoneNumber"
+              name="phoneNumber"
+              type="tel"
+              value={formData.phoneNumber}
+              onChange={handleChange}
+              placeholder="+1234567890"
+              data-testid="input-phone"
+            />
+            <p className="text-xs text-muted-foreground">
+              Optional: Add your phone number to receive an SMS when we reply. Use international format (e.g., +1234567890).
+            </p>
+          </div>
+
+          {formData.phoneNumber && (
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id="smsEnabled"
+                checked={formData.smsEnabled}
+                onCheckedChange={(checked) => setFormData({ ...formData, smsEnabled: checked === true })}
+                data-testid="checkbox-sms"
+              />
+              <Label htmlFor="smsEnabled" className="text-sm text-muted-foreground cursor-pointer">
+                Send SMS reply notifications
+              </Label>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="priority">Request Type *</Label>

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
@@ -226,6 +226,12 @@ function PrayerInbox() {
                   </CardTitle>
                   {selectedRequest.email && (
                     <p className="text-sm text-muted-foreground">{selectedRequest.email}</p>
+                  )}
+                  {selectedRequest.smsEnabled && (
+                    <Badge variant="outline" className="text-xs mt-1">
+                      <Smartphone className="w-3 h-3 mr-1" />
+                      SMS Enabled
+                    </Badge>
                   )}
                 </div>
                 <Badge className={STATUS_LABELS[selectedRequest.status || "new"]?.color}>

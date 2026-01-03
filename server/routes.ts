@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { sendPrayerReplyNotification } from "./sendgrid";
+import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 
 export async function registerRoutes(
@@ -83,7 +84,22 @@ export async function registerRoutes(
   app.post(api.prayerRequests.create.path, async (req, res) => {
     try {
       const input = api.prayerRequests.create.input.parse(req.body);
-      const prayerRequest = await storage.createPrayerRequest(input);
+      
+      // Validate phone number format if provided
+      if (input.phoneNumber && !isValidE164PhoneNumber(input.phoneNumber)) {
+        return res.status(400).json({
+          message: "Phone number must be in E.164 format (e.g., +1234567890)",
+          field: "phoneNumber",
+        });
+      }
+      
+      // Ensure smsEnabled is false if no valid phone number
+      const sanitizedInput = {
+        ...input,
+        smsEnabled: input.smsEnabled && !!input.phoneNumber && isValidE164PhoneNumber(input.phoneNumber),
+      };
+      
+      const prayerRequest = await storage.createPrayerRequest(sanitizedInput);
       res.status(201).json(prayerRequest);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -184,14 +200,25 @@ export async function registerRoutes(
       if (senderType === "admin") {
         await storage.updatePrayerRequestStatus(id, "replied");
         
-        // Send email notification if user has email
         const prayerRequest = await storage.getPrayerRequest(id);
+        const requesterName = prayerRequest?.fullName || "Friend";
+        
+        // Send email notification if user has email
         if (prayerRequest?.email && !prayerRequest.isAnonymous) {
           sendPrayerReplyNotification(
             prayerRequest.email,
-            prayerRequest.fullName || "Friend",
+            requesterName,
             message
           ).catch(err => console.error("Email send error:", err));
+        }
+        
+        // Send SMS notification if user has phone and enabled SMS
+        if (prayerRequest?.phoneNumber && prayerRequest?.smsEnabled) {
+          sendSmsNotification(
+            prayerRequest.phoneNumber,
+            requesterName,
+            message
+          ).catch(err => console.error("SMS send error:", err));
         }
       }
       

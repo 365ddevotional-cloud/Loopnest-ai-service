@@ -58,6 +58,8 @@ export const prayerRequests = pgTable("prayer_requests", {
   id: serial("id").primaryKey(),
   fullName: text("full_name"),
   email: text("email"),
+  phoneNumber: text("phone_number"),
+  smsEnabled: boolean("sms_enabled").default(false),
   subject: text("subject"),
   message: text("message").notNull(),
   isAnonymous: boolean("is_anonymous").default(false),
