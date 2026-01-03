@@ -30,13 +30,26 @@ export type UpdateDevotionalRequest = Partial<InsertDevotional>;
 // Response Types
 export type DevotionalResponse = Devotional;
 
+// Prayer Request Priority Types
+export const PRAYER_PRIORITIES = [
+  "prayer_normal",
+  "prayer_urgent", 
+  "counseling_normal",
+  "counseling_urgent"
+] as const;
+
+export const PRAYER_STATUSES = ["new", "replied", "closed"] as const;
+
 // Prayer Requests Table
 export const prayerRequests = pgTable("prayer_requests", {
   id: serial("id").primaryKey(),
-  fullName: text("full_name").notNull(),
-  email: text("email").notNull(),
+  fullName: text("full_name"),
+  email: text("email"),
   subject: text("subject"),
   message: text("message").notNull(),
+  isAnonymous: boolean("is_anonymous").default(false),
+  priority: text("priority").default("prayer_normal").notNull(),
+  status: text("status").default("new").notNull(),
   isRead: boolean("is_read").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -44,13 +57,31 @@ export const prayerRequests = pgTable("prayer_requests", {
 export const insertPrayerRequestSchema = createInsertSchema(prayerRequests).omit({
   id: true,
   isRead: true,
+  status: true,
   createdAt: true,
 });
 
 export type PrayerRequest = typeof prayerRequests.$inferSelect;
 export type InsertPrayerRequest = z.infer<typeof insertPrayerRequestSchema>;
 
-// Prayer Request Replies Table
+// Thread Messages Table (for conversations)
+export const threadMessages = pgTable("thread_messages", {
+  id: serial("id").primaryKey(),
+  requestId: integer("request_id").notNull(),
+  message: text("message").notNull(),
+  senderType: text("sender_type").notNull(), // 'user' or 'admin'
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertThreadMessageSchema = createInsertSchema(threadMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type ThreadMessage = typeof threadMessages.$inferSelect;
+export type InsertThreadMessage = z.infer<typeof insertThreadMessageSchema>;
+
+// Prayer Request Replies Table (keeping for backward compatibility)
 export const prayerReplies = pgTable("prayer_replies", {
   id: serial("id").primaryKey(),
   requestId: integer("request_id").notNull(),
@@ -65,3 +96,22 @@ export const insertPrayerReplySchema = createInsertSchema(prayerReplies).omit({
 
 export type PrayerReply = typeof prayerReplies.$inferSelect;
 export type InsertPrayerReply = z.infer<typeof insertPrayerReplySchema>;
+
+// Auto-Reply Templates Table
+export const autoReplyTemplates = pgTable("auto_reply_templates", {
+  id: serial("id").primaryKey(),
+  templateType: text("template_type").notNull().unique(), // prayer_normal, prayer_urgent, counseling_normal, counseling_urgent
+  encouragement: text("encouragement").notNull(),
+  scriptureReference: text("scripture_reference").notNull(),
+  scriptureText: text("scripture_text").notNull(),
+  prayer: text("prayer").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertAutoReplyTemplateSchema = createInsertSchema(autoReplyTemplates).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type AutoReplyTemplate = typeof autoReplyTemplates.$inferSelect;
+export type InsertAutoReplyTemplate = z.infer<typeof insertAutoReplyTemplateSchema>;

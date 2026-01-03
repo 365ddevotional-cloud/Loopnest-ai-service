@@ -1,28 +1,338 @@
 import { CreateDevotionalForm } from "@/components/CreateDevotionalForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, XCircle, RefreshCw, AlertTriangle, User } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useState } from "react";
+import { format } from "date-fns";
+import type { PrayerRequest, ThreadMessage } from "@shared/schema";
+
+const PRIORITY_LABELS: Record<string, string> = {
+  prayer_normal: "Prayer Request",
+  prayer_urgent: "Urgent Prayer",
+  counseling_normal: "Counseling",
+  counseling_urgent: "Urgent Counseling",
+};
+
+const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  new: { label: "New", color: "bg-blue-100 text-blue-800" },
+  replied: { label: "Replied", color: "bg-green-100 text-green-800" },
+  closed: { label: "Closed", color: "bg-gray-100 text-gray-800" },
+};
+
+function PrayerInbox() {
+  const [selectedRequest, setSelectedRequest] = useState<PrayerRequest | null>(null);
+  const [replyMessage, setReplyMessage] = useState("");
+  const [filter, setFilter] = useState("all");
+
+  const { data: requests = [], isLoading } = useQuery<PrayerRequest[]>({
+    queryKey: ["/api/prayer-requests"],
+  });
+
+  const { data: threadMessages = [] } = useQuery<ThreadMessage[]>({
+    queryKey: ["/api/prayer-requests", selectedRequest?.id, "thread"],
+    enabled: !!selectedRequest,
+  });
+
+  const sendReplyMutation = useMutation({
+    mutationFn: async ({ requestId, message }: { requestId: number; message: string }) => {
+      return apiRequest("POST", `/api/prayer-requests/${requestId}/thread`, {
+        message,
+        senderType: "admin",
+      });
+    },
+    onSuccess: () => {
+      setReplyMessage("");
+      queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests", selectedRequest?.id, "thread"] });
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ requestId, status }: { requestId: number; status: string }) => {
+      return apiRequest("PATCH", `/api/prayer-requests/${requestId}/status`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests"] });
+      if (selectedRequest) {
+        setSelectedRequest({ ...selectedRequest, status: updateStatusMutation.variables?.status || selectedRequest.status });
+      }
+    },
+  });
+
+  const filteredRequests = requests.filter((r) => {
+    if (filter === "all") return true;
+    if (filter === "unreplied") return r.status === "new";
+    if (filter === "urgent") return r.priority?.includes("urgent");
+    if (filter === "counseling") return r.priority?.includes("counseling");
+    if (filter === "anonymous") return r.isAnonymous;
+    return true;
+  });
+
+  const handleSendReply = () => {
+    if (!selectedRequest || !replyMessage.trim()) return;
+    sendReplyMutation.mutate({ requestId: selectedRequest.id, message: replyMessage });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <h3 className="font-serif text-lg font-semibold text-foreground">Prayer Requests</h3>
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-40" data-testid="select-filter">
+              <SelectValue placeholder="Filter" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="unreplied">Unreplied</SelectItem>
+              <SelectItem value="urgent">Urgent Only</SelectItem>
+              <SelectItem value="counseling">Counseling Only</SelectItem>
+              <SelectItem value="anonymous">Anonymous</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2 max-h-[500px] overflow-y-auto">
+          {filteredRequests.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">No requests found.</p>
+          ) : (
+            filteredRequests.map((request) => (
+              <div
+                key={request.id}
+                onClick={() => setSelectedRequest(request)}
+                className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                  selectedRequest?.id === request.id
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:bg-muted/50"
+                }`}
+                data-testid={`request-item-${request.id}`}
+              >
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-foreground">
+                      {request.isAnonymous ? "Anonymous" : request.fullName || "Unknown"}
+                    </span>
+                    {request.priority?.includes("urgent") && (
+                      <Badge variant="destructive" className="text-xs">
+                        <AlertTriangle className="w-3 h-3 mr-1" />
+                        URGENT
+                      </Badge>
+                    )}
+                  </div>
+                  <Badge className={`text-xs ${STATUS_LABELS[request.status || "new"]?.color}`}>
+                    {STATUS_LABELS[request.status || "new"]?.label}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground line-clamp-2">{request.message}</p>
+                <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground flex-wrap">
+                  <span>{PRIORITY_LABELS[request.priority || "prayer_normal"]}</span>
+                  <span>|</span>
+                  <span>{request.createdAt ? format(new Date(request.createdAt), "MMM d, h:mm a") : "Unknown"}</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div>
+        {selectedRequest ? (
+          <Card className="border-primary/10">
+            <CardHeader className="bg-muted/30 border-b">
+              <div className="flex items-start justify-between gap-2 flex-wrap">
+                <div>
+                  <CardTitle className="font-serif text-xl text-foreground flex items-center gap-2">
+                    {selectedRequest.isAnonymous ? (
+                      <>
+                        <User className="w-5 h-5" />
+                        Anonymous
+                      </>
+                    ) : (
+                      selectedRequest.fullName || "Unknown"
+                    )}
+                  </CardTitle>
+                  {selectedRequest.email && (
+                    <p className="text-sm text-muted-foreground">{selectedRequest.email}</p>
+                  )}
+                </div>
+                <Badge className={STATUS_LABELS[selectedRequest.status || "new"]?.color}>
+                  {STATUS_LABELS[selectedRequest.status || "new"]?.label}
+                </Badge>
+              </div>
+              {selectedRequest.subject && (
+                <p className="text-sm text-foreground mt-2 font-medium">Subject: {selectedRequest.subject}</p>
+              )}
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                <Badge variant="outline">{PRIORITY_LABELS[selectedRequest.priority || "prayer_normal"]}</Badge>
+                <span className="text-xs text-muted-foreground">
+                  {selectedRequest.createdAt ? format(new Date(selectedRequest.createdAt), "MMMM d, yyyy 'at' h:mm a") : ""}
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="bg-muted/30 p-4 rounded-lg">
+                <p className="text-foreground whitespace-pre-wrap">{selectedRequest.message}</p>
+              </div>
+
+              {threadMessages.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-foreground">Conversation</h4>
+                  {threadMessages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`p-3 rounded-lg ${
+                        msg.senderType === "admin"
+                          ? "bg-primary/10 ml-4"
+                          : "bg-muted/30 mr-4"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {msg.senderType === "admin" ? "Admin" : "User"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {msg.createdAt ? format(new Date(msg.createdAt), "MMM d, h:mm a") : ""}
+                        </span>
+                      </div>
+                      <p className="text-foreground text-sm">{msg.message}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Textarea
+                  placeholder="Write your reply..."
+                  value={replyMessage}
+                  onChange={(e) => setReplyMessage(e.target.value)}
+                  rows={4}
+                  className="resize-none"
+                  data-testid="textarea-reply"
+                />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    onClick={handleSendReply}
+                    disabled={sendReplyMutation.isPending || !replyMessage.trim()}
+                    data-testid="button-send-reply"
+                  >
+                    {sendReplyMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4 mr-2" />
+                    )}
+                    Send Reply
+                  </Button>
+                  {selectedRequest.status !== "replied" && (
+                    <Button
+                      variant="outline"
+                      onClick={() => updateStatusMutation.mutate({ requestId: selectedRequest.id, status: "replied" })}
+                      disabled={updateStatusMutation.isPending}
+                      data-testid="button-mark-replied"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Mark as Replied
+                    </Button>
+                  )}
+                  {selectedRequest.status !== "closed" ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => updateStatusMutation.mutate({ requestId: selectedRequest.id, status: "closed" })}
+                      disabled={updateStatusMutation.isPending}
+                      data-testid="button-close"
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Close
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={() => updateStatusMutation.mutate({ requestId: selectedRequest.id, status: "new" })}
+                      disabled={updateStatusMutation.isPending}
+                      data-testid="button-reopen"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Reopen
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full py-12 text-muted-foreground">
+            <MessageSquare className="w-12 h-12 mb-4 opacity-50" />
+            <p>Select a request to view details</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function Admin() {
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <div className="mb-8 flex items-center gap-4">
         <div className="p-3 bg-primary/10 rounded-xl">
           <ShieldCheck className="w-8 h-8 text-primary" />
         </div>
         <div>
           <h1 className="font-serif text-3xl font-bold text-foreground">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage and publish daily devotionals.</p>
+          <p className="text-muted-foreground">Manage devotionals and prayer requests.</p>
         </div>
       </div>
 
-      <Card className="border-primary/10 shadow-lg shadow-primary/5">
-        <CardHeader className="bg-muted/30 border-b border-border">
-          <CardTitle className="font-serif text-2xl text-primary">Create New Devotional</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6 md:p-8">
-          <CreateDevotionalForm />
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="devotionals" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="devotionals" data-testid="tab-devotionals">
+            <ShieldCheck className="w-4 h-4 mr-2" />
+            Devotionals
+          </TabsTrigger>
+          <TabsTrigger value="inbox" data-testid="tab-inbox">
+            <Inbox className="w-4 h-4 mr-2" />
+            Prayer Inbox
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="devotionals">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="font-serif text-2xl text-primary">Create New Devotional</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 md:p-8">
+              <CreateDevotionalForm />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="inbox">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+                <Inbox className="w-6 h-6" />
+                Prayer & Counseling Inbox
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <PrayerInbox />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

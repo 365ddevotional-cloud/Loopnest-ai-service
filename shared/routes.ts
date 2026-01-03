@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { insertDevotionalSchema, devotionals, insertPrayerRequestSchema, prayerRequests, prayerReplies } from "./schema";
+import { insertDevotionalSchema, devotionals, insertPrayerRequestSchema, prayerRequests, prayerReplies, threadMessages, autoReplyTemplates, insertThreadMessageSchema, insertAutoReplyTemplateSchema } from "./schema";
 
 export const errorSchemas = {
   validation: z.object({
@@ -79,6 +79,64 @@ export const api = {
       path: "/api/prayer-requests/:id/replies",
       responses: {
         200: z.array(z.custom<typeof prayerReplies.$inferSelect>()),
+      },
+    },
+    get: {
+      method: "GET" as const,
+      path: "/api/prayer-requests/:id",
+      responses: {
+        200: z.custom<typeof prayerRequests.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    updateStatus: {
+      method: "PATCH" as const,
+      path: "/api/prayer-requests/:id/status",
+      responses: {
+        200: z.custom<typeof prayerRequests.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    getThread: {
+      method: "GET" as const,
+      path: "/api/prayer-requests/:id/thread",
+      responses: {
+        200: z.array(z.custom<typeof threadMessages.$inferSelect>()),
+      },
+    },
+    addThreadMessage: {
+      method: "POST" as const,
+      path: "/api/prayer-requests/:id/thread",
+      input: insertThreadMessageSchema.omit({ requestId: true }),
+      responses: {
+        201: z.custom<typeof threadMessages.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+  },
+  autoReplyTemplates: {
+    list: {
+      method: "GET" as const,
+      path: "/api/auto-reply-templates",
+      responses: {
+        200: z.array(z.custom<typeof autoReplyTemplates.$inferSelect>()),
+      },
+    },
+    get: {
+      method: "GET" as const,
+      path: "/api/auto-reply-templates/:type",
+      responses: {
+        200: z.custom<typeof autoReplyTemplates.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    upsert: {
+      method: "POST" as const,
+      path: "/api/auto-reply-templates",
+      input: insertAutoReplyTemplateSchema,
+      responses: {
+        200: z.custom<typeof autoReplyTemplates.$inferSelect>(),
+        400: errorSchemas.validation,
       },
     },
   },

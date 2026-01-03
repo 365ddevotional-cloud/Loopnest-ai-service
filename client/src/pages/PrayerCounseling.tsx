@@ -3,29 +3,56 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
-import { Loader2, Send, CheckCircle } from "lucide-react";
+import { Loader2, Send, CheckCircle, AlertTriangle } from "lucide-react";
+import type { AutoReplyTemplate, PrayerRequest } from "@shared/schema";
+
+const PRIORITY_OPTIONS = [
+  { value: "prayer_normal", label: "Prayer Request (Normal)" },
+  { value: "prayer_urgent", label: "Urgent Prayer" },
+  { value: "counseling_normal", label: "Counseling Request" },
+  { value: "counseling_urgent", label: "Urgent Counseling" },
+];
 
 export default function PrayerCounseling() {
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
+  const [submittedRequest, setSubmittedRequest] = useState<PrayerRequest | null>(null);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     subject: "",
     message: "",
+    isAnonymous: false,
+    priority: "prayer_normal",
+  });
+
+  const { data: autoReplyTemplate } = useQuery<AutoReplyTemplate>({
+    queryKey: ["/api/auto-reply-templates", formData.priority],
+    enabled: submitted,
   });
 
   const mutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return apiRequest("POST", "/api/prayer-requests", data);
+      const payload = {
+        fullName: data.isAnonymous ? null : data.fullName,
+        email: data.email || null,
+        subject: data.subject || null,
+        message: data.message,
+        isAnonymous: data.isAnonymous,
+        priority: data.priority,
+      };
+      const response = await apiRequest("POST", "/api/prayer-requests", payload);
+      return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setSubmittedRequest(data);
       setSubmitted(true);
-      setFormData({ fullName: "", email: "", subject: "", message: "" });
     },
     onError: () => {
       toast({
@@ -39,17 +66,20 @@ export default function PrayerCounseling() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.fullName.trim()) {
+    if (!formData.isAnonymous && !formData.fullName.trim()) {
       toast({ title: "Please enter your full name", variant: "destructive" });
-      return;
-    }
-    if (!formData.email.trim() || !formData.email.includes("@")) {
-      toast({ title: "Please enter a valid email address", variant: "destructive" });
       return;
     }
     if (!formData.message.trim()) {
       toast({ title: "Please enter your message or prayer request", variant: "destructive" });
       return;
+    }
+    if (formData.isAnonymous && !formData.email.trim()) {
+      toast({ 
+        title: "Email needed for replies", 
+        description: "Add an email if you want to receive replies in the app.",
+        variant: "default" 
+      });
     }
 
     mutation.mutate(formData);
@@ -59,7 +89,23 @@ export default function PrayerCounseling() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  if (submitted) {
+  const resetForm = () => {
+    setSubmitted(false);
+    setSubmittedRequest(null);
+    setFormData({
+      fullName: "",
+      email: "",
+      subject: "",
+      message: "",
+      isAnonymous: false,
+      priority: "prayer_normal",
+    });
+  };
+
+  if (submitted && submittedRequest) {
+    const priorityLabel = PRIORITY_OPTIONS.find(p => p.value === submittedRequest.priority)?.label || "Prayer Request";
+    const isUrgent = submittedRequest.priority?.includes("urgent");
+    
     return (
       <div className="max-w-2xl mx-auto py-8">
         <div className="text-center mb-12 space-y-4">
@@ -67,19 +113,52 @@ export default function PrayerCounseling() {
           <div className="w-24 h-1 bg-primary mx-auto rounded-full opacity-30" />
         </div>
 
-        <Card className="bg-white border-primary/10 shadow-xl shadow-primary/5 p-8 md:p-12 text-center">
-          <div className="flex justify-center mb-6">
-            <CheckCircle className="w-16 h-16 text-green-600" />
+        <Card className="bg-white border-primary/10 shadow-xl shadow-primary/5 p-8 md:p-12">
+          <div className="text-center mb-8">
+            <div className="flex justify-center mb-6">
+              <CheckCircle className="w-16 h-16 text-green-600" />
+            </div>
+            <h2 className="font-serif text-2xl font-bold text-foreground mb-2">
+              Thank You
+            </h2>
+            <p className="text-lg text-muted-foreground font-serif leading-relaxed">
+              Your message has been received. We will respond prayerfully.
+            </p>
+            {isUrgent && (
+              <div className="mt-4 inline-flex items-center gap-2 bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm font-medium">
+                <AlertTriangle className="w-4 h-4" />
+                URGENT - {priorityLabel}
+              </div>
+            )}
           </div>
-          <h2 className="font-serif text-2xl font-bold text-foreground mb-4">
-            Thank You
-          </h2>
-          <p className="text-lg text-muted-foreground font-serif leading-relaxed mb-8">
-            Your message has been received. We will respond prayerfully.
-          </p>
-          <Button onClick={() => setSubmitted(false)} data-testid="button-send-another">
-            Send Another Request
-          </Button>
+
+          {autoReplyTemplate && (
+            <div className="bg-primary/5 rounded-lg p-6 mb-8 space-y-4">
+              <p className="font-serif text-foreground leading-relaxed">
+                {autoReplyTemplate.encouragement}
+              </p>
+              <div className="border-l-4 border-primary/30 pl-4 italic text-muted-foreground">
+                <p className="font-serif">"{autoReplyTemplate.scriptureText}"</p>
+                <p className="text-sm mt-2 not-italic font-medium">— {autoReplyTemplate.scriptureReference}</p>
+              </div>
+              <p className="font-serif text-muted-foreground">
+                {autoReplyTemplate.prayer}
+              </p>
+            </div>
+          )}
+
+          <div className="text-center space-y-4">
+            <Button onClick={resetForm} data-testid="button-send-another">
+              Send Another Request
+            </Button>
+            {!submittedRequest?.isAnonymous && submittedRequest?.email && (
+              <p className="text-sm text-muted-foreground">
+                <a href="/my-requests" className="text-primary underline" data-testid="link-my-requests">
+                  View your requests and replies
+                </a>
+              </p>
+            )}
+          </div>
         </Card>
       </div>
     );
@@ -100,25 +179,41 @@ export default function PrayerCounseling() {
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 md:p-12 space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="fullName" className="text-foreground font-medium">
-              Full Name <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="fullName"
-              name="fullName"
-              type="text"
-              value={formData.fullName}
-              onChange={handleChange}
-              placeholder="Enter your full name"
-              required
-              data-testid="input-fullname"
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="isAnonymous"
+              checked={formData.isAnonymous}
+              onCheckedChange={(checked) => 
+                setFormData({ ...formData, isAnonymous: checked === true })
+              }
+              data-testid="checkbox-anonymous"
             />
+            <Label htmlFor="isAnonymous" className="text-foreground font-medium cursor-pointer">
+              Send anonymously
+            </Label>
           </div>
+
+          {!formData.isAnonymous && (
+            <div className="space-y-2">
+              <Label htmlFor="fullName" className="text-foreground font-medium">
+                Full Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="fullName"
+                name="fullName"
+                type="text"
+                value={formData.fullName}
+                onChange={handleChange}
+                placeholder="Enter your full name"
+                required={!formData.isAnonymous}
+                data-testid="input-fullname"
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="email" className="text-foreground font-medium">
-              Email Address <span className="text-red-500">*</span>
+              Email Address <span className="text-muted-foreground text-sm">(for receiving replies)</span>
             </Label>
             <Input
               id="email"
@@ -127,9 +222,34 @@ export default function PrayerCounseling() {
               value={formData.email}
               onChange={handleChange}
               placeholder="Enter your email address"
-              required
               data-testid="input-email"
             />
+            {formData.isAnonymous && !formData.email && (
+              <p className="text-sm text-muted-foreground">
+                Add an email if you want to receive replies in the app.
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="priority" className="text-foreground font-medium">
+              Request Type / Priority <span className="text-red-500">*</span>
+            </Label>
+            <Select
+              value={formData.priority}
+              onValueChange={(value) => setFormData({ ...formData, priority: value })}
+            >
+              <SelectTrigger data-testid="select-priority">
+                <SelectValue placeholder="Select request type" />
+              </SelectTrigger>
+              <SelectContent>
+                {PRIORITY_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -184,6 +304,11 @@ export default function PrayerCounseling() {
                 </>
               )}
             </Button>
+          </div>
+
+          <div className="pt-4 text-xs text-muted-foreground space-y-2 border-t border-primary/10 mt-6">
+            <p>Please do not share passwords or financial details.</p>
+            <p>If this is an emergency or you feel unsafe, contact local emergency services.</p>
           </div>
         </form>
       </Card>

@@ -1,0 +1,199 @@
+Enhance the existing Prayer / Counseling feature with the following upgrades, without breaking current pages or styles.
+
+1) Anonymous Prayer Requests
+
+On the Prayer & Counseling Request page, add an option:
+
+Checkbox: Send anonymously
+
+If checked:
+
+Hide the “Full Name” field (or mark it optional)
+
+Store the request as Anonymous
+
+Still require Email Address if the user wants replies in the app
+
+If anonymous is checked AND email is blank, show a friendly message:
+“Add an email if you want to receive replies in the app.”
+
+2) Urgent / Counseling Priority
+
+Add a required dropdown field:
+
+Request Type / Priority
+Options:
+
+Prayer Request (Normal)
+
+Urgent Prayer
+
+Counseling Request
+
+Urgent Counseling
+
+Add a visual label/badge on the request after submission (e.g., “URGENT”).
+
+3) Auto-Reply Scripture Encouragement
+
+After submission, immediately show an on-screen encouragement message AND send an email auto-reply (if email was provided).
+
+Auto-reply content rules:
+
+Keep it short, warm, and pastoral
+
+Include:
+
+1 encouraging sentence
+
+1 Bible verse (NLT)
+
+1 short prayer (2–3 lines)
+
+A reminder that “we’ll respond as soon as possible”
+
+Choose verses based on request type:
+
+Urgent Prayer: Psalm 46:1 (NLT)
+
+Counseling: Matthew 11:28 (NLT)
+
+Fear/Anxiety: Philippians 4:6–7 (NLT)
+
+Healing: Jeremiah 30:17 (NLT)
+If the user selected “Urgent Counseling” use Matthew 11:28 by default.
+
+Also create a simple “Auto Reply Templates” section in Admin to edit these templates later.
+
+4) In-App Messaging Thread + Reply in App
+
+Create a message thread system:
+
+User side:
+
+After submitting, user can see a Conversation thread inside the app
+
+Thread view shows:
+
+Their sent messages
+
+Admin replies
+
+Timestamp for each message
+
+Add “Send a follow-up message” box so they can continue the conversation
+
+Admin side:
+
+Admin can reply from the dashboard
+
+Admin reply appears inside the user’s thread in the app
+
+If user provided email, also send the reply to email as a notification
+
+5) Admin Dashboard for Requests + Replies
+
+Create a new Admin Inbox page (only accessible by Admin), linked from existing Admin area.
+
+Admin Inbox features:
+
+Table/list of requests with filters:
+
+All
+
+Unreplied
+
+Urgent only
+
+Counseling only
+
+Anonymous
+
+Each request shows:
+
+Name (or Anonymous)
+
+Email (if provided)
+
+Priority
+
+Subject (if any)
+
+Date/time
+
+Status: New / Replied / Closed
+
+Clicking a request opens a detailed view with:
+
+Full message
+
+Conversation thread
+
+Admin reply textbox
+
+Buttons:
+
+Send Reply
+
+Mark as Replied
+
+Close Request
+
+Reopen Request
+
+6) Email Sending Requirements
+
+When a request is submitted:
+
+Send request details to: 365ddevotional@gmail.com
+
+Subject line format:
+“[Prayer/Counseling] (PRIORITY) – (Name or Anonymous)”
+
+Include the full message + timestamp + request type
+
+When Admin replies:
+
+Send notification to the user’s email (if provided)
+
+The reply must still appear in the app thread even if email fails
+
+7) Privacy + Safety Notes (UI)
+
+Add small text under the form:
+
+“Please do not share passwords or financial details.”
+
+“If this is an emergency or you feel unsafe, contact local emergency services.”
+
+8) Design + Non-Breaking Rules
+
+Keep typography, spacing, and colors consistent with the site
+
+Do NOT change existing header buttons or other pages
+
+Make sure everything works immediately after generation
+
+No external redirects or popups
+
+9) Data Model / Storage
+
+Store requests and replies in the app database with at least:
+
+requestId
+
+name (or “Anonymous”)
+
+email (optional)
+
+priority/type
+
+subject (optional)
+
+message
+
+createdAt
+
+status (New/Replied/Closed)
+
+threadMessages[] (user/admin messages with timestamps)

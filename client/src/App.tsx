@@ -10,6 +10,7 @@ import Admin from "@/pages/Admin";
 import About from "@/pages/About";
 import Donate from "@/pages/Donate";
 import PrayerCounseling from "@/pages/PrayerCounseling";
+import MyPrayerRequests from "@/pages/MyPrayerRequests";
 import SingleDevotional from "@/pages/SingleDevotional";
 import NotFound from "@/pages/not-found";
 
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/donate" component={Donate} />
       <Route path="/prayer-counseling" component={PrayerCounseling} />
+      <Route path="/my-requests" component={MyPrayerRequests} />
       <Route path="/devotional/:date" component={SingleDevotional} />
       <Route component={NotFound} />
     </Switch>

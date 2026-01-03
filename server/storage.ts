@@ -3,6 +3,8 @@ import {
   devotionals,
   prayerRequests,
   prayerReplies,
+  threadMessages,
+  autoReplyTemplates,
   type Devotional,
   type InsertDevotional,
   type UpdateDevotionalRequest,
@@ -10,8 +12,12 @@ import {
   type InsertPrayerRequest,
   type PrayerReply,
   type InsertPrayerReply,
+  type ThreadMessage,
+  type InsertThreadMessage,
+  type AutoReplyTemplate,
+  type InsertAutoReplyTemplate,
 } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
   getDevotionals(): Promise<Devotional[]>;
@@ -31,6 +37,18 @@ export interface IStorage {
   // Prayer Replies
   getRepliesForRequest(requestId: number): Promise<PrayerReply[]>;
   createPrayerReply(reply: InsertPrayerReply): Promise<PrayerReply>;
+  
+  // Thread Messages
+  getThreadMessages(requestId: number): Promise<ThreadMessage[]>;
+  createThreadMessage(message: InsertThreadMessage): Promise<ThreadMessage>;
+  
+  // Prayer Request Status
+  updatePrayerRequestStatus(id: number, status: string): Promise<PrayerRequest>;
+  
+  // Auto-Reply Templates
+  getAutoReplyTemplate(templateType: string): Promise<AutoReplyTemplate | undefined>;
+  getAutoReplyTemplates(): Promise<AutoReplyTemplate[]>;
+  upsertAutoReplyTemplate(template: InsertAutoReplyTemplate): Promise<AutoReplyTemplate>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -130,6 +148,63 @@ export class DatabaseStorage implements IStorage {
     const [created] = await db
       .insert(prayerReplies)
       .values(reply)
+      .returning();
+    return created;
+  }
+
+  // Thread Messages
+  async getThreadMessages(requestId: number): Promise<ThreadMessage[]> {
+    return await db
+      .select()
+      .from(threadMessages)
+      .where(eq(threadMessages.requestId, requestId))
+      .orderBy(threadMessages.createdAt);
+  }
+
+  async createThreadMessage(message: InsertThreadMessage): Promise<ThreadMessage> {
+    const [created] = await db
+      .insert(threadMessages)
+      .values(message)
+      .returning();
+    return created;
+  }
+
+  // Prayer Request Status
+  async updatePrayerRequestStatus(id: number, status: string): Promise<PrayerRequest> {
+    const [updated] = await db
+      .update(prayerRequests)
+      .set({ status })
+      .where(eq(prayerRequests.id, id))
+      .returning();
+    return updated;
+  }
+
+  // Auto-Reply Templates
+  async getAutoReplyTemplate(templateType: string): Promise<AutoReplyTemplate | undefined> {
+    const [template] = await db
+      .select()
+      .from(autoReplyTemplates)
+      .where(eq(autoReplyTemplates.templateType, templateType));
+    return template;
+  }
+
+  async getAutoReplyTemplates(): Promise<AutoReplyTemplate[]> {
+    return await db.select().from(autoReplyTemplates);
+  }
+
+  async upsertAutoReplyTemplate(template: InsertAutoReplyTemplate): Promise<AutoReplyTemplate> {
+    const existing = await this.getAutoReplyTemplate(template.templateType);
+    if (existing) {
+      const [updated] = await db
+        .update(autoReplyTemplates)
+        .set({ ...template, updatedAt: new Date() })
+        .where(eq(autoReplyTemplates.templateType, template.templateType))
+        .returning();
+      return updated;
+    }
+    const [created] = await db
+      .insert(autoReplyTemplates)
+      .values(template)
       .returning();
     return created;
   }

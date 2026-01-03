@@ -108,8 +108,108 @@ export async function registerRoutes(
     res.json(replies);
   });
 
+  // GET single prayer request
+  app.get(api.prayerRequests.get.path, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    const request = await storage.getPrayerRequest(id);
+    if (!request) {
+      return res.status(404).json({ message: "Prayer request not found" });
+    }
+    res.json(request);
+  });
+
+  // Update prayer request status
+  app.patch(api.prayerRequests.updateStatus.path, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    const { status } = req.body;
+    if (!["new", "replied", "closed"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+    const updated = await storage.updatePrayerRequestStatus(id, status);
+    res.json(updated);
+  });
+
+  // Get thread messages
+  app.get(api.prayerRequests.getThread.path, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    const messages = await storage.getThreadMessages(id);
+    res.json(messages);
+  });
+
+  // Add thread message
+  app.post(api.prayerRequests.addThreadMessage.path, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID" });
+      }
+      const { message, senderType } = req.body;
+      const threadMessage = await storage.createThreadMessage({
+        requestId: id,
+        message,
+        senderType,
+      });
+      
+      // Update request status if admin replied
+      if (senderType === "admin") {
+        await storage.updatePrayerRequestStatus(id, "replied");
+      }
+      
+      res.status(201).json(threadMessage);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join("."),
+        });
+      }
+      throw err;
+    }
+  });
+
+  // Auto-Reply Templates Routes
+  app.get(api.autoReplyTemplates.list.path, async (req, res) => {
+    const templates = await storage.getAutoReplyTemplates();
+    res.json(templates);
+  });
+
+  app.get(api.autoReplyTemplates.get.path, async (req, res) => {
+    const type = req.params.type;
+    const template = await storage.getAutoReplyTemplate(type);
+    if (!template) {
+      return res.status(404).json({ message: "Template not found" });
+    }
+    res.json(template);
+  });
+
+  app.post(api.autoReplyTemplates.upsert.path, async (req, res) => {
+    try {
+      const input = api.autoReplyTemplates.upsert.input.parse(req.body);
+      const template = await storage.upsertAutoReplyTemplate(input);
+      res.json(template);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join("."),
+        });
+      }
+      throw err;
+    }
+  });
+
   // Seed Data if empty
   await seedDatabase();
+  await seedAutoReplyTemplates();
 
   return httpServer;
 }
@@ -139,5 +239,47 @@ async function seedDatabase() {
     });
 
     console.log("Database seeded with initial devotional.");
+  }
+}
+
+async function seedAutoReplyTemplates() {
+  const templates = await storage.getAutoReplyTemplates();
+  if (templates.length === 0) {
+    const defaultTemplates = [
+      {
+        templateType: "prayer_normal",
+        encouragement: "Thank you for trusting us with your prayer request. God hears every prayer and cares deeply for you.",
+        scriptureReference: "Philippians 4:6-7 (NLT)",
+        scriptureText: "Don't worry about anything; instead, pray about everything. Tell God what you need, and thank him for all he has done. Then you will experience God's peace, which exceeds anything we can understand.",
+        prayer: "Lord, we lift this request to You. You know every need and every heart. Bring Your peace and answer according to Your perfect will. In Jesus' name, Amen.",
+      },
+      {
+        templateType: "prayer_urgent",
+        encouragement: "We understand the urgency of your situation. God is your refuge and strength, and He is with you right now.",
+        scriptureReference: "Psalm 46:1 (NLT)",
+        scriptureText: "God is our refuge and strength, always ready to help in times of trouble.",
+        prayer: "Father, we bring this urgent need before You. You are the God who answers in the day of trouble. Move swiftly on behalf of Your child. We trust You completely. Amen.",
+      },
+      {
+        templateType: "counseling_normal",
+        encouragement: "Thank you for reaching out for guidance. God promises rest for the weary and wisdom for those who seek Him.",
+        scriptureReference: "Matthew 11:28 (NLT)",
+        scriptureText: "Then Jesus said, 'Come to me, all of you who are weary and carry heavy burdens, and I will give you rest.'",
+        prayer: "Lord Jesus, give wisdom and clarity in this situation. Guide this dear one in the way they should go, and grant them Your peace as they wait. Amen.",
+      },
+      {
+        templateType: "counseling_urgent",
+        encouragement: "We hear you, and we are here for you. Jesus invites the burdened to come to Him for rest.",
+        scriptureReference: "Matthew 11:28 (NLT)",
+        scriptureText: "Then Jesus said, 'Come to me, all of you who are weary and carry heavy burdens, and I will give you rest.'",
+        prayer: "Heavenly Father, we ask for Your immediate presence and comfort. Surround this person with Your love and give them hope. We trust You to carry them through. In Jesus' name, Amen.",
+      },
+    ];
+
+    for (const template of defaultTemplates) {
+      await storage.upsertAutoReplyTemplate(template);
+    }
+
+    console.log("Auto-reply templates seeded.");
   }
 }
