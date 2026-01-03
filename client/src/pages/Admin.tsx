@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
@@ -47,10 +48,20 @@ const CATEGORY_OPTIONS = [
   { value: "other", label: "Other" },
 ];
 
+const QUICK_REPLY_SNIPPETS = [
+  { label: "General Encouragement", text: "Thank you for reaching out. We are lifting your request in prayer and trust that God is working in your situation. Remember, 'The Lord is near to the brokenhearted and saves the crushed in spirit.' (Psalm 34:18)" },
+  { label: "Healing Prayer", text: "We are praying for your complete healing. 'By His stripes we are healed.' (Isaiah 53:5) May the Lord restore your health and grant you peace during this time." },
+  { label: "Financial Blessing", text: "God knows your needs before you ask. We're standing with you in prayer for provision. 'And my God will supply every need of yours according to his riches in glory in Christ Jesus.' (Philippians 4:19)" },
+  { label: "Marriage/Family", text: "We're praying for restoration and peace in your family. May God's love bind your hearts together. 'Above all, clothe yourselves with love, which binds us all together in perfect harmony.' (Colossians 3:14)" },
+  { label: "Guidance & Direction", text: "We're asking God to guide your steps and make your path clear. 'Trust in the Lord with all your heart, and do not lean on your own understanding. In all your ways acknowledge him, and he will make straight your paths.' (Proverbs 3:5-6)" },
+  { label: "Deliverance", text: "We declare freedom over your life in Jesus' name. 'So if the Son sets you free, you will be free indeed.' (John 8:36) God is breaking every chain and setting you free." },
+];
+
 function PrayerInbox() {
   const [selectedRequest, setSelectedRequest] = useState<PrayerRequest | null>(null);
   const [replyMessage, setReplyMessage] = useState("");
   const [filter, setFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: requests = [], isLoading } = useQuery<PrayerRequest[]>({
     queryKey: ["/api/prayer-requests"],
@@ -112,6 +123,14 @@ function PrayerInbox() {
   });
 
   const filteredRequests = requests.filter((r) => {
+    const matchesSearch = !searchQuery.trim() || 
+      r.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (r.fullName && r.fullName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (r.subject && r.subject.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (r.email && r.email.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    if (!matchesSearch) return false;
+    
     if (filter === "all") return true;
     if (filter === "unreplied") return r.status === "new";
     if (filter === "urgent") return r.priority?.includes("urgent");
@@ -120,6 +139,10 @@ function PrayerInbox() {
     if (CATEGORY_LABELS[filter]) return r.category === filter;
     return true;
   });
+  
+  const handleQuickReply = (snippet: typeof QUICK_REPLY_SNIPPETS[0]) => {
+    setReplyMessage(prev => prev ? `${prev}\n\n${snippet.text}` : snippet.text);
+  };
 
   const handleSendReply = () => {
     if (!selectedRequest || !replyMessage.trim()) return;
@@ -159,6 +182,17 @@ function PrayerInbox() {
               <SelectItem value="other">Category: Other</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name, email, subject, or message..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+            data-testid="input-search"
+          />
         </div>
 
         <div className="space-y-2 max-h-[500px] overflow-y-auto">
@@ -323,7 +357,26 @@ function PrayerInbox() {
                 </div>
               )}
 
-              <div className="space-y-2">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium text-foreground">Quick Replies:</span>
+                  <Select onValueChange={(value) => {
+                    const snippet = QUICK_REPLY_SNIPPETS.find(s => s.label === value);
+                    if (snippet) handleQuickReply(snippet);
+                  }}>
+                    <SelectTrigger className="w-48" data-testid="select-quick-reply">
+                      <SelectValue placeholder="Insert snippet..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {QUICK_REPLY_SNIPPETS.map((snippet) => (
+                        <SelectItem key={snippet.label} value={snippet.label}>
+                          {snippet.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Textarea
                   placeholder="Write your reply..."
                   value={replyMessage}

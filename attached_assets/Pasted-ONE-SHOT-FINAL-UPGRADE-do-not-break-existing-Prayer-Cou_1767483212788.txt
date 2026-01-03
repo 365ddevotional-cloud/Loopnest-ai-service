@@ -1,0 +1,68 @@
+ONE-SHOT FINAL UPGRADE (do not break existing Prayer/Counseling flow)
+
+Goal: Enhance the existing Prayer/Counseling Requests system + UI polish to look more professional, mature, attractive, and colorful (still calm faith-based). Keep current routes, DB records, admin reply flow, and SendGrid email notifications intact.
+
+A) UI / THEME POLISH (site-wide)
+- Improve typography, spacing, and visual hierarchy across all pages (Today, Archive, About, Donate, Prayer/Counseling, Admin).
+- Add a refined color system: warm accent (gold/amber), deep neutral text, soft background gradients; ensure accessibility/contrast.
+- Add consistent button styles (primary, secondary, ghost), hover/focus states, and subtle shadows.
+- Add clean section cards with rounded corners; improve forms with labels, helper text, validation messages.
+- Add small icons (lucide/react-icons) for header buttons (Today, Archive, YouTube, Shop, Prayer/Counseling, About, Donate, Admin).
+- Keep layout responsive for mobile; no heavy animations.
+
+B) PRAYER REQUEST FORM UPGRADES (user-facing page)
+Add to the existing form (do not remove current fields):
+1) File upload (screenshots / docs)
+   - Allow optional attachments: png, jpg, jpeg, pdf (max 5MB each, max 3 files).
+   - Store files securely (use Replit Object Storage if available; otherwise store locally under /uploads with unique random filenames and serve via protected endpoints).
+   - Save attachment metadata to DB linked to the request: id, request_id, original_name, stored_path/url, mime_type, size, created_at.
+   - In the form, show selected files + remove option before submit.
+2) Category tags
+   - Add multi-select categories: Healing, Marriage, Finance, Deliverance, Salvation, Family, Guidance, Career, Anxiety/Peace, Other.
+   - Store as array/string in DB; include in admin filters + request detail display.
+3) SMS notification (optional) with graceful fallback
+   - Add optional phone number field + a toggle “Text me when you reply”.
+   - Only attempt SMS if: user entered phone + toggle enabled + Twilio creds exist.
+   - If SMS not configured, app still works; show small note “SMS not available yet” only if user toggles it.
+4) Keep “Send anonymously” behavior: if checked, hide name publicly and in any outward notifications; admin can still see “Anonymous”.
+
+C) ADMIN DASHBOARD IMPROVEMENTS (do not break existing)
+- Add filters/search: by priority (Normal/Urgent/Counseling), by category, by status (Open/Replied), by date, keyword search.
+- Add request detail view: show message, categories, priority, anonymized display name, email (if provided), phone + SMS toggle status (never public), attachments list with secure download link for admin only.
+- Reply UI: rich textarea, canned quick-reply snippets dropdown (encouragement templates), and “Mark as Replied” status.
+- When admin posts a reply:
+  1) Send email to requester via SendGrid (existing) including the reply + original topic + a secure link back to view reply in-app (if your app supports conversation view).
+  2) If SMS toggle enabled + Twilio configured, send a short SMS: “Your 365 Daily Devotional reply is ready. Check your email or open the app.” (no sensitive details).
+- Add an admin-only “Settings” section to input/store integrations status (SendGrid configured? Twilio configured?) without exposing secrets; secrets must live in env vars only.
+
+D) AUTO-REPLY SCRIPTURE ENCOURAGEMENT (user immediate confirmation)
+- After user submits a request, show a confirmation card with:
+  - “We received your request”
+  - 1 short Scripture encouragement chosen by category/priority (simple mapping) + 1–2 sentence encouragement.
+- Also send an immediate auto-reply email (SendGrid) to the user IF they provided email:
+  - Subject: “We received your prayer request”
+  - Include: selected categories, priority, and the Scripture encouragement.
+  - Do NOT include attachments in email.
+
+E) TWILIO SMS INTEGRATION (optional, do not require it)
+- Implement Twilio SMS using env vars: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER.
+- Validate E.164 phone formatting; lightly normalize US numbers if obvious.
+- If Twilio not configured, skip silently (except note in UI when toggled).
+
+F) DATABASE / MIGRATIONS
+- Add/extend DB schema safely:
+  - requests: add categories (text/json), phone (text, optional), sms_opt_in (bool), status (open/replied), created_at/updated_at
+  - attachments table as described
+- Write a simple migration that won’t wipe existing data.
+
+G) SECURITY / PRIVACY
+- Never show phone/email publicly.
+- Attachment downloads: admin-only route; require admin auth.
+- Sanitize inputs; max length limits.
+
+H) FINAL CHECKS
+- Ensure app runs with no manual edits after generation.
+- Add small “Professional” refinements: consistent headings, improved whitespace, clearer CTA buttons, mature visuals.
+- Keep the header order: Today, Archive, YouTube, Shop, Prayer/Counseling, About, Donate, Admin.
+
+Deliver: implement all changes, verify build passes, and ensure existing prayer inbox flow continues working.
