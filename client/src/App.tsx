@@ -8,6 +8,7 @@ import Home from "@/pages/Home";
 import Archive from "@/pages/Archive";
 import Admin from "@/pages/Admin";
 import About from "@/pages/About";
+import Donate from "@/pages/Donate";
 import SingleDevotional from "@/pages/SingleDevotional";
 import NotFound from "@/pages/not-found";
 
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/archive" component={Archive} />
       <Route path="/admin" component={Admin} />
       <Route path="/about" component={About} />
+      <Route path="/donate" component={Donate} />
       <Route path="/devotional/:date" component={SingleDevotional} />
       <Route component={NotFound} />
     </Switch>

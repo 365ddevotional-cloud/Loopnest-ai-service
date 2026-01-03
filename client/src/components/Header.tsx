@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Calendar, Settings, Info, BookOpen } from "lucide-react";
+import { Calendar, Settings, Info, BookOpen, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logoImage from "@assets/IMG_202512182225101_-_Copy_1767468127874.PNG";
 
@@ -10,6 +10,7 @@ export function Header() {
     { href: "/", label: "Today", icon: BookOpen },
     { href: "/archive", label: "Archive", icon: Calendar },
     { href: "/about", label: "About", icon: Info },
+    { href: "/donate", label: "Donate", icon: Heart },
     { href: "/admin", label: "Admin", icon: Settings },
   ];
 
