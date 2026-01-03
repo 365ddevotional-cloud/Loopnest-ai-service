@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Calendar, Settings, Info, BookOpen, Heart } from "lucide-react";
+import { SiYoutube } from "react-icons/si";
 import { cn } from "@/lib/utils";
 import logoImage from "@assets/IMG_202512182225101_-_Copy_1767468127874.PNG";
 
@@ -47,6 +48,16 @@ export function Header() {
               </Link>
             );
           })}
+          <a
+            href="https://www.youtube.com/@365DailyDevotional"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-muted-foreground hover:bg-primary/5 hover:text-primary"
+            data-testid="link-youtube-nav"
+          >
+            <SiYoutube className="w-4 h-4" />
+            YouTube
+          </a>
         </nav>
 
         {/* Mobile Navigation Placeholder - keeping it simple for now */}
@@ -71,6 +82,16 @@ export function Header() {
             </Link>
           );
         })}
+        <a
+          href="https://www.youtube.com/@365DailyDevotional"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-col items-center gap-1 p-2 rounded-lg text-muted-foreground"
+          data-testid="link-youtube-nav-mobile"
+        >
+          <SiYoutube className="w-6 h-6" />
+          <span className="text-[10px] font-medium uppercase tracking-wider">YouTube</span>
+        </a>
       </nav>
     </header>
   );
