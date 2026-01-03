@@ -8,11 +8,12 @@ export function Header() {
   const [location] = useLocation();
 
   const navItems = [
-    { href: "/", label: "Today", icon: BookOpen },
-    { href: "/archive", label: "Archive", icon: Calendar },
-    { href: "/about", label: "About", icon: Info },
-    { href: "/donate", label: "Donate", icon: Heart },
-    { href: "/admin", label: "Admin", icon: Settings },
+    { href: "/", label: "Today", icon: BookOpen, external: false },
+    { href: "/archive", label: "Archive", icon: Calendar, external: false },
+    { href: "https://www.youtube.com/@365DailyDevotional", label: "YouTube", icon: SiYoutube, external: true },
+    { href: "/about", label: "About", icon: Info, external: false },
+    { href: "/donate", label: "Donate", icon: Heart, external: false },
+    { href: "/admin", label: "Admin", icon: Settings, external: false },
   ];
 
   return (
@@ -31,7 +32,22 @@ export function Header() {
 
         <nav className="hidden md:flex items-center gap-1">
           {navItems.map((item) => {
-            const isActive = location === item.href;
+            const isActive = !item.external && location === item.href;
+            if (item.external) {
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                  data-testid="link-youtube-nav"
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </a>
+              );
+            }
             return (
               <Link key={item.href} href={item.href}>
                 <div
@@ -48,16 +64,6 @@ export function Header() {
               </Link>
             );
           })}
-          <a
-            href="https://www.youtube.com/@365DailyDevotional"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-muted-foreground hover:bg-primary/5 hover:text-primary"
-            data-testid="link-youtube-nav"
-          >
-            <SiYoutube className="w-4 h-4" />
-            YouTube
-          </a>
         </nav>
 
         {/* Mobile Navigation Placeholder - keeping it simple for now */}
@@ -69,7 +75,22 @@ export function Header() {
       {/* Mobile Nav Bar - Fixed Bottom */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-primary/10 flex justify-around p-3 z-50 pb-safe">
         {navItems.map((item) => {
-          const isActive = location === item.href;
+          const isActive = !item.external && location === item.href;
+          if (item.external) {
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-1 p-2 rounded-lg text-muted-foreground"
+                data-testid="link-youtube-nav-mobile"
+              >
+                <item.icon className="w-6 h-6" />
+                <span className="text-[10px] font-medium uppercase tracking-wider">{item.label}</span>
+              </a>
+            );
+          }
           return (
             <Link key={item.href} href={item.href}>
               <div className={cn(
@@ -82,16 +103,6 @@ export function Header() {
             </Link>
           );
         })}
-        <a
-          href="https://www.youtube.com/@365DailyDevotional"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex flex-col items-center gap-1 p-2 rounded-lg text-muted-foreground"
-          data-testid="link-youtube-nav-mobile"
-        >
-          <SiYoutube className="w-6 h-6" />
-          <span className="text-[10px] font-medium uppercase tracking-wider">YouTube</span>
-        </a>
       </nav>
     </header>
   );
