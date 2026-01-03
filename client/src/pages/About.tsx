@@ -17,33 +17,34 @@ export default function About() {
             365 Daily Devotional
           </h2>
           <p className="text-lg text-primary font-medium italic">
-            "Transforming lives through the power of the Word"
+            "Daily encouragement to grow your faith, renew your mind, and walk closely with God."
           </p>
         </div>
 
         <div className="p-8 md:p-12 space-y-8 font-serif leading-relaxed text-lg text-muted-foreground">
           <p>
-            Welcome to the 365 Daily Devotional, a ministry dedicated to strengthening your daily walk with God. 
-            Our mission is to provide consistent, biblically-grounded encouragement that empowers you to live 
-            a life of victory, faith, and purpose.
+            365 Daily Devotional is a faith-based ministry created to help believers stay rooted in God's Word every day.
           </p>
           
-          <div className="grid md:grid-cols-2 gap-8 my-12">
-            <div className="bg-muted/30 p-6 rounded-xl border border-primary/10">
-              <h3 className="font-sans font-bold text-primary mb-3 uppercase tracking-wide text-sm">Our Vision</h3>
-              <p className="text-base">
-                To see believers established in the truth of God's Word, walking in their divine identity, 
-                and impacting their world with the love of Christ.
-              </p>
-            </div>
-            
-            <div className="bg-muted/30 p-6 rounded-xl border border-primary/10">
-              <h3 className="font-sans font-bold text-primary mb-3 uppercase tracking-wide text-sm">Our Mission</h3>
-              <p className="text-base">
-                Raising a people of substance, character, and power who will extend the frontiers 
-                of God's kingdom on earth.
-              </p>
-            </div>
+          <p>
+            Our focus is simple—consistent spiritual nourishment through daily devotionals, prayer points, Scripture reflections, and encouragement that speaks to real life.
+          </p>
+          
+          <p>
+            Each devotional is designed to strengthen your faith, renew your mind, and help you walk confidently with God, one day at a time.
+          </p>
+          
+          <p>
+            Whether you are new to the faith or have walked with God for years, 365 Daily Devotional exists to support your daily journey with clarity, truth, and hope.
+          </p>
+
+          <Separator className="bg-primary/10" />
+
+          <div className="text-center space-y-4">
+            <h3 className="font-bold text-foreground">Support This Kingdom Work</h3>
+            <p>
+              If 365 Daily Devotional has been a blessing to you, consider supporting this Kingdom work. Your support helps us continue providing daily devotionals, prayers, and faith-building resources to people around the world.
+            </p>
           </div>
 
           <Separator className="bg-primary/10" />
