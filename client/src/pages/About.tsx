@@ -14,7 +14,7 @@ export default function About() {
         {/* Hero Section of About Page */}
         <div className="bg-primary/5 p-8 md:p-12 text-center">
           <h2 className="font-serif text-2xl md:text-3xl font-bold text-foreground mb-4">
-            New Covenant Church
+            365 Daily Devotional
           </h2>
           <p className="text-lg text-primary font-medium italic">
             "Transforming lives through the power of the Word"
