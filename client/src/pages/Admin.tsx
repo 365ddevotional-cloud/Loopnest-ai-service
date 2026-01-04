@@ -489,28 +489,17 @@ export default function Admin() {
         </div>
       </div>
 
-      <Tabs defaultValue="devotionals" className="space-y-6">
+      <Tabs defaultValue="inbox" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2 max-w-md">
-          <TabsTrigger value="devotionals" data-testid="tab-devotionals">
-            <ShieldCheck className="w-4 h-4 mr-2" />
-            Devotionals
-          </TabsTrigger>
           <TabsTrigger value="inbox" data-testid="tab-inbox">
             <Inbox className="w-4 h-4 mr-2" />
             Prayer Inbox
           </TabsTrigger>
+          <TabsTrigger value="devotionals" data-testid="tab-devotionals">
+            <ShieldCheck className="w-4 h-4 mr-2" />
+            Devotionals
+          </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="devotionals">
-          <Card className="border-primary/10 shadow-lg shadow-primary/5">
-            <CardHeader className="bg-muted/30 border-b border-border">
-              <CardTitle className="font-serif text-2xl text-primary">Create New Devotional</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 md:p-8">
-              <CreateDevotionalForm />
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="inbox">
           <Card className="border-primary/10 shadow-lg shadow-primary/5">
@@ -522,6 +511,17 @@ export default function Admin() {
             </CardHeader>
             <CardContent className="p-6">
               <PrayerInbox />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="devotionals">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="font-serif text-2xl text-primary">Create New Devotional</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 md:p-8">
+              <CreateDevotionalForm />
             </CardContent>
           </Card>
         </TabsContent>
