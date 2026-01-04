@@ -1,7 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { registerRoutes } from "./routes";
-import { setupVite } from "./vite";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import path from "path";
@@ -101,6 +100,7 @@ app.use((req, res, next) => {
 
   // Setup Vite in development, serve static files in production
   if (process.env.NODE_ENV === "development") {
+    const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
   } else {
     serveStatic(app);
