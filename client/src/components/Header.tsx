@@ -124,8 +124,8 @@ export function Header() {
         {/* Mobile Menu Button - Positioned absolutely on the right */}
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild className="lg:hidden absolute right-4">
-            <Button variant="ghost" size="icon" className="h-11 w-11" data-testid="button-mobile-menu">
-              <Menu className="w-7 h-7" strokeWidth={2.5} />
+            <Button variant="ghost" size="icon" className="h-12 w-12" data-testid="button-mobile-menu">
+              <Menu className="w-8 h-8" strokeWidth={3} />
               <span className="sr-only">Open menu</span>
             </Button>
           </SheetTrigger>
