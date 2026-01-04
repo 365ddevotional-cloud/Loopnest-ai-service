@@ -6,14 +6,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
-import { format } from "date-fns";
+import { format, parseISO, isAfter, isBefore, isToday, startOfDay } from "date-fns";
 import { useLocation } from "wouter";
-import type { PrayerRequest, ThreadMessage, PrayerAttachment } from "@shared/schema";
+import type { PrayerRequest, ThreadMessage, PrayerAttachment, Devotional } from "@shared/schema";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const PRIORITY_LABELS: Record<string, string> = {
   prayer_normal: "Prayer Request",
@@ -58,6 +61,405 @@ const QUICK_REPLY_SNIPPETS = [
   { label: "Guidance & Direction", text: "We're asking God to guide your steps and make your path clear. 'Trust in the Lord with all your heart, and do not lean on your own understanding. In all your ways acknowledge him, and he will make straight your paths.' (Proverbs 3:5-6)" },
   { label: "Deliverance", text: "We declare freedom over your life in Jesus' name. 'So if the Son sets you free, you will be free indeed.' (John 8:36) God is breaking every chain and setting you free." },
 ];
+
+function getDevotionalStatus(date: string): "past" | "today" | "future" {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const devotionalDate = parseISO(date);
+  devotionalDate.setHours(0, 0, 0, 0);
+  
+  if (devotionalDate.getTime() === today.getTime()) return "today";
+  if (devotionalDate < today) return "past";
+  return "future";
+}
+
+function AdminArchive() {
+  const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [selectedDevotional, setSelectedDevotional] = useState<Devotional | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    scriptureReference: "",
+    scriptureText: "",
+    content: "",
+    prayerPoints: "",
+    faithDeclarations: "",
+    author: "",
+  });
+
+  const { data: devotionals = [], isLoading } = useQuery<Devotional[]>({
+    queryKey: ["/api/devotionals"],
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<Devotional> }) => {
+      return apiRequest("PATCH", `/api/devotionals/${id}`, data);
+    },
+    onSuccess: () => {
+      toast({ title: "Devotional updated successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/devotionals"] });
+      setIsEditDialogOpen(false);
+      setSelectedDevotional(null);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to update", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest("DELETE", `/api/devotionals/${id}`);
+    },
+    onSuccess: () => {
+      toast({ title: "Devotional deleted successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/devotionals"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to delete", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const filteredDevotionals = devotionals.filter((d) => {
+    const query = searchQuery.toLowerCase().trim();
+    const matchesSearch = !query ||
+      d.title.toLowerCase().includes(query) ||
+      d.date.includes(query) ||
+      d.scriptureReference.toLowerCase().includes(query);
+    
+    const matchesDate = !dateFilter || d.date === dateFilter;
+    
+    return matchesSearch && matchesDate;
+  });
+
+  const openEditDialog = (devotional: Devotional) => {
+    setSelectedDevotional(devotional);
+    setEditForm({
+      title: devotional.title,
+      scriptureReference: devotional.scriptureReference,
+      scriptureText: devotional.scriptureText,
+      content: devotional.content,
+      prayerPoints: devotional.prayerPoints.join("\n"),
+      faithDeclarations: devotional.faithDeclarations.join("\n"),
+      author: devotional.author || "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const openViewDialog = (devotional: Devotional) => {
+    setSelectedDevotional(devotional);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!selectedDevotional) return;
+    
+    const prayerPointsArray = editForm.prayerPoints
+      .split("\n")
+      .map(p => p.trim())
+      .filter(p => p.length > 0);
+    
+    const faithDeclarationsArray = editForm.faithDeclarations
+      .split("\n")
+      .map(d => d.trim())
+      .filter(d => d.length > 0);
+    
+    updateMutation.mutate({
+      id: selectedDevotional.id,
+      data: {
+        title: editForm.title.trim(),
+        scriptureReference: editForm.scriptureReference.trim(),
+        scriptureText: editForm.scriptureText.trim(),
+        content: editForm.content.trim(),
+        prayerPoints: prayerPointsArray.length > 0 ? prayerPointsArray : selectedDevotional.prayerPoints,
+        faithDeclarations: faithDeclarationsArray.length > 0 ? faithDeclarationsArray : selectedDevotional.faithDeclarations,
+        author: editForm.author.trim() || selectedDevotional.author || undefined,
+      },
+    });
+  };
+
+  const handleDelete = (id: number) => {
+    if (confirm("Are you sure you want to delete this devotional?")) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const pastCount = devotionals.filter(d => getDevotionalStatus(d.date) === "past").length;
+  const todayCount = devotionals.filter(d => getDevotionalStatus(d.date) === "today").length;
+  const futureCount = devotionals.filter(d => getDevotionalStatus(d.date) === "future").length;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div className="flex items-center gap-4 flex-wrap">
+          <Badge variant="secondary" className="text-xs">
+            <Clock className="w-3 h-3 mr-1" />
+            Past: {pastCount}
+          </Badge>
+          <Badge variant="outline" className="text-xs border-primary text-primary">
+            <Calendar className="w-3 h-3 mr-1" />
+            Today: {todayCount}
+          </Badge>
+          <Badge className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+            <Clock className="w-3 h-3 mr-1" />
+            Future: {futureCount}
+          </Badge>
+        </div>
+        <div className="text-sm text-muted-foreground">
+          Total: {devotionals.length} devotionals
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by title, date, or scripture..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+            data-testid="input-archive-search"
+          />
+        </div>
+        <Input
+          type="date"
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value)}
+          className="w-full sm:w-48"
+          data-testid="input-archive-date"
+        />
+        {dateFilter && (
+          <Button variant="ghost" size="icon" onClick={() => setDateFilter("")} data-testid="button-clear-date">
+            <X className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
+
+      <div className="space-y-2 max-h-[500px] overflow-y-auto">
+        {filteredDevotionals.length === 0 ? (
+          <p className="text-muted-foreground text-center py-8">No devotionals found.</p>
+        ) : (
+          filteredDevotionals.map((devotional) => {
+            const status = getDevotionalStatus(devotional.date);
+            const isPast = status === "past";
+            const isToday = status === "today";
+            const isFuture = status === "future";
+
+            return (
+              <div
+                key={devotional.id}
+                className={`p-4 border rounded-lg transition-colors ${
+                  isPast ? "border-border bg-muted/30 opacity-80" : 
+                  isToday ? "border-primary bg-primary/5" : 
+                  "border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/30"
+                }`}
+                data-testid={`archive-item-${devotional.id}`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="font-medium text-foreground truncate">{devotional.title}</span>
+                      {isPast && (
+                        <Badge variant="secondary" className="text-xs">Past</Badge>
+                      )}
+                      {isToday && (
+                        <Badge className="text-xs bg-primary/20 text-primary border-primary">Today</Badge>
+                      )}
+                      {isFuture && (
+                        <Badge className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">Scheduled</Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">{devotional.scriptureReference}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {format(parseISO(devotional.date), "MMMM d, yyyy")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => openViewDialog(devotional)}
+                      data-testid={`button-view-${devotional.id}`}
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    {!isPast && (
+                      <>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => openEditDialog(devotional)}
+                          data-testid={`button-edit-${devotional.id}`}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleDelete(devotional.id)}
+                          disabled={deleteMutation.isPending}
+                          data-testid={`button-delete-${devotional.id}`}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </>
+                    )}
+                    {isPast && (
+                      <Badge variant="outline" className="text-xs text-muted-foreground ml-2">Read-only</Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-xl">{selectedDevotional?.title}</DialogTitle>
+          </DialogHeader>
+          {selectedDevotional && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-muted-foreground">Date</Label>
+                <p>{format(parseISO(selectedDevotional.date), "MMMM d, yyyy")}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Scripture Reference</Label>
+                <p className="font-medium">{selectedDevotional.scriptureReference}</p>
+                <p className="italic text-muted-foreground mt-1">{selectedDevotional.scriptureText}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Content</Label>
+                <p className="whitespace-pre-wrap">{selectedDevotional.content}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Prayer Points</Label>
+                <ul className="list-disc list-inside">
+                  {selectedDevotional.prayerPoints.map((point, i) => (
+                    <li key={i}>{point}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Faith Declarations</Label>
+                <ul className="list-disc list-inside">
+                  {selectedDevotional.faithDeclarations.map((dec, i) => (
+                    <li key={i}>{dec}</li>
+                  ))}
+                </ul>
+              </div>
+              {selectedDevotional.author && (
+                <div>
+                  <Label className="text-muted-foreground">Author</Label>
+                  <p>{selectedDevotional.author}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-xl">Edit Devotional</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-title">Title</Label>
+              <Input
+                id="edit-title"
+                value={editForm.title}
+                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                data-testid="input-edit-title"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-scripture-ref">Scripture Reference</Label>
+              <Input
+                id="edit-scripture-ref"
+                value={editForm.scriptureReference}
+                onChange={(e) => setEditForm({ ...editForm, scriptureReference: e.target.value })}
+                data-testid="input-edit-scripture-ref"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-scripture-text">Scripture Text</Label>
+              <Textarea
+                id="edit-scripture-text"
+                value={editForm.scriptureText}
+                onChange={(e) => setEditForm({ ...editForm, scriptureText: e.target.value })}
+                rows={3}
+                data-testid="textarea-edit-scripture-text"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-content">Content</Label>
+              <Textarea
+                id="edit-content"
+                value={editForm.content}
+                onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
+                rows={6}
+                data-testid="textarea-edit-content"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-prayer-points">Prayer Points (one per line)</Label>
+              <Textarea
+                id="edit-prayer-points"
+                value={editForm.prayerPoints}
+                onChange={(e) => setEditForm({ ...editForm, prayerPoints: e.target.value })}
+                rows={4}
+                data-testid="textarea-edit-prayer-points"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-declarations">Faith Declarations (one per line)</Label>
+              <Textarea
+                id="edit-declarations"
+                value={editForm.faithDeclarations}
+                onChange={(e) => setEditForm({ ...editForm, faithDeclarations: e.target.value })}
+                rows={4}
+                data-testid="textarea-edit-declarations"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-author">Author</Label>
+              <Input
+                id="edit-author"
+                value={editForm.author}
+                onChange={(e) => setEditForm({ ...editForm, author: e.target.value })}
+                data-testid="input-edit-author"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={updateMutation.isPending} data-testid="button-save-edit">
+              {updateMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
 
 function PrayerInbox() {
   const [selectedRequest, setSelectedRequest] = useState<PrayerRequest | null>(null);
@@ -490,14 +892,18 @@ export default function Admin() {
       </div>
 
       <Tabs defaultValue="inbox" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <TabsList className="grid w-full grid-cols-3 max-w-xl">
           <TabsTrigger value="inbox" data-testid="tab-inbox">
             <Inbox className="w-4 h-4 mr-2" />
             Prayer Inbox
           </TabsTrigger>
+          <TabsTrigger value="archive" data-testid="tab-archive">
+            <Archive className="w-4 h-4 mr-2" />
+            Archive
+          </TabsTrigger>
           <TabsTrigger value="devotionals" data-testid="tab-devotionals">
             <ShieldCheck className="w-4 h-4 mr-2" />
-            Devotionals
+            Create New
           </TabsTrigger>
         </TabsList>
 
@@ -511,6 +917,23 @@ export default function Admin() {
             </CardHeader>
             <CardContent className="p-6">
               <PrayerInbox />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="archive">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+                <Archive className="w-6 h-6" />
+                Devotional Archive
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                View all devotionals. Edit present and future entries only.
+              </p>
+            </CardHeader>
+            <CardContent className="p-6">
+              <AdminArchive />
             </CardContent>
           </Card>
         </TabsContent>

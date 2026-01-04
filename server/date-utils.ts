@@ -15,3 +15,13 @@ export function isFutureDate(dateString: string): boolean {
   const today = getTodayDateString();
   return dateString > today;
 }
+
+export function isPastDate(dateString: string): boolean {
+  const today = getTodayDateString();
+  return dateString < today;
+}
+
+export function isTodayOrFuture(dateString: string): boolean {
+  const today = getTodayDateString();
+  return dateString >= today;
+}

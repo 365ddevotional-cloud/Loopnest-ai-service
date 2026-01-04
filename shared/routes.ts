@@ -56,6 +56,17 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    update: {
+      method: "PATCH" as const,
+      path: "/api/devotionals/:id",
+      input: insertDevotionalSchema.partial(),
+      responses: {
+        200: z.custom<typeof devotionals.$inferSelect>(),
+        400: errorSchemas.validation,
+        403: z.object({ message: z.string() }),
+        404: errorSchemas.notFound,
+      },
+    },
   },
   prayerRequests: {
     create: {

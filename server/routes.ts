@@ -6,7 +6,7 @@ import { z } from "zod";
 import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification } from "./sendgrid";
 import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { getTodayDateString, isFutureDate } from "./date-utils";
+import { getTodayDateString, isFutureDate, isPastDate } from "./date-utils";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
@@ -160,15 +160,71 @@ export async function registerRoutes(
     }
   });
 
-  // DELETE Devotional (Admin only)
+  // DELETE Devotional (Admin only - only present and future devotionals can be deleted)
   app.delete(api.devotionals.delete.path, requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID" });
     }
     
+    // Check if devotional exists and is not in the past
+    const devotional = await storage.getDevotional(id);
+    if (!devotional) {
+      return res.status(404).json({ message: "Devotional not found" });
+    }
+    
+    // Use timezone-aware comparison: past means before today (in APP_TIMEZONE)
+    if (isPastDate(devotional.date)) {
+      return res.status(403).json({ message: "Cannot delete past devotionals" });
+    }
+    
     await storage.deleteDevotional(id);
     res.status(204).send();
+  });
+
+  // PATCH Update Devotional (Admin only - only present and future devotionals can be edited)
+  app.patch(api.devotionals.update.path, requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    
+    const devotional = await storage.getDevotional(id);
+    if (!devotional) {
+      return res.status(404).json({ message: "Devotional not found" });
+    }
+    
+    // Check if devotional is in the past (read-only) using timezone-aware comparison
+    if (isPastDate(devotional.date)) {
+      return res.status(403).json({ message: "Cannot edit past devotionals. They are read-only." });
+    }
+    
+    try {
+      const input = api.devotionals.update.input.parse(req.body);
+      
+      // Merge partial updates with existing values to prevent overwriting with undefined
+      const updateData = {
+        title: input.title ?? devotional.title,
+        scriptureReference: input.scriptureReference ?? devotional.scriptureReference,
+        scriptureText: input.scriptureText ?? devotional.scriptureText,
+        content: input.content ?? devotional.content,
+        prayerPoints: input.prayerPoints ?? devotional.prayerPoints,
+        faithDeclarations: input.faithDeclarations ?? devotional.faithDeclarations,
+        author: input.author ?? devotional.author,
+        date: input.date ?? devotional.date,
+      };
+      
+      const updated = await storage.updateDevotional(id, updateData);
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join("."),
+        });
+      }
+      throw err;
+    }
   });
 
   // Prayer Request Routes
