@@ -24,6 +24,7 @@ import GeneralInquiries from "@/pages/GeneralInquiries";
 import Feedback from "@/pages/Feedback";
 import Partnership from "@/pages/Partnership";
 import Support from "@/pages/Support";
+import HowToUse from "@/pages/HowToUse";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -47,6 +48,7 @@ function Router() {
       <Route path="/contact/partnership" component={Partnership} />
       <Route path="/prayer" component={PrayerCounseling} />
       <Route path="/support" component={Support} />
+      <Route path="/how-to-use" component={HowToUse} />
       <Route path="/admin-login" component={AdminLogin} />
       <Route component={NotFound} />
     </Switch>

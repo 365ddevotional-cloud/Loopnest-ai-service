@@ -1,173 +1,12 @@
 import { useTodayDevotional } from "@/hooks/use-devotionals";
 import { DevotionalCard } from "@/components/DevotionalCard";
-import { Loader2, BookX, BookOpen, Heart, MessageCircle, Play, Gift, ChevronDown } from "lucide-react";
+import { Loader2, BookX } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { useRef } from "react";
-
-type OnboardingAction = 
-  | { type: "scroll"; target: string }
-  | { type: "route"; path: string; hash?: string }
-  | { type: "external"; url: string };
-
-interface OnboardingItem {
-  icon: typeof BookOpen;
-  title: string;
-  description: string;
-  action: OnboardingAction;
-}
-
-const ONBOARDING_ITEMS: OnboardingItem[] = [
-  {
-    icon: BookOpen,
-    title: "Read the Daily Devotional",
-    description: "Each day, start with a fresh, Scripture-based devotional designed to strengthen your faith and guide your walk with God.",
-    action: { type: "scroll", target: "today-devotional" },
-  },
-  {
-    icon: Heart,
-    title: "Pray and Reflect",
-    description: "Use the Prayer Points and Faith Declarations to pray intentionally and apply God's Word to your life.",
-    action: { type: "scroll", target: "prayer-points" },
-  },
-  {
-    icon: MessageCircle,
-    title: "Submit Prayer or Counseling Requests",
-    description: "Click Prayer / Counseling to share a request. You may submit anonymously, choose urgency, and receive encouragement and follow-up.",
-    action: { type: "route", path: "/prayer-counseling", hash: "request-form" },
-  },
-  {
-    icon: Play,
-    title: "Watch & Listen",
-    description: "Visit the YouTube section for Bible stories, prayers, worship, and seasonal songs to support your spiritual growth.",
-    action: { type: "route", path: "/about", hash: "youtube" },
-  },
-  {
-    icon: Gift,
-    title: "Support This Kingdom Work",
-    description: "If this ministry blesses you, you may choose to support through donations or resources in the Shop. Giving is optional and never required.",
-    action: { type: "route", path: "/donate", hash: "donate" },
-  },
-];
-
-function OnboardingSection({ onContinue }: { onContinue: () => void }) {
-  const [, setLocation] = useLocation();
-
-  const handleItemClick = (item: OnboardingItem) => {
-    const { action } = item;
-    
-    if (action.type === "scroll") {
-      const element = document.getElementById(action.target);
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    } else if (action.type === "route") {
-      if (action.hash) {
-        setLocation(action.path);
-        setTimeout(() => {
-          const element = document.getElementById(action.hash!);
-          if (element) {
-            element.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        }, 100);
-      } else {
-        setLocation(action.path);
-      }
-    } else if (action.type === "external") {
-      window.open(action.url, "_blank", "noopener,noreferrer");
-    }
-  };
-
-  return (
-    <motion.section
-      id="how-to-use"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="mb-12"
-    >
-      <div className="text-center mb-10">
-        <h2 className="font-serif text-2xl md:text-3xl font-bold text-primary mb-3" data-testid="text-onboarding-title">
-          How to Use 365 Daily Devotional
-        </h2>
-        <div className="decorative-divider" />
-      </div>
-
-      <div className="grid gap-4 md:gap-5">
-        {ONBOARDING_ITEMS.map((item, index) => {
-          const colorVariants = [
-            "from-primary/15 to-primary/5 border-primary/20 hover:border-primary/40",
-            "from-secondary/15 to-secondary/5 border-secondary/20 hover:border-secondary/40",
-            "from-accent/15 to-accent/5 border-accent/20 hover:border-accent/40",
-            "from-primary/10 via-accent/10 to-secondary/10 border-accent/20 hover:border-accent/40",
-            "from-secondary/10 via-primary/5 to-accent/10 border-primary/20 hover:border-primary/40",
-          ];
-          const iconColors = [
-            "bg-primary text-primary-foreground",
-            "bg-secondary text-secondary-foreground",
-            "bg-accent text-accent-foreground",
-            "bg-gradient-to-br from-primary to-accent text-white",
-            "bg-gradient-to-br from-secondary to-primary text-white",
-          ];
-          return (
-            <motion.div
-              key={item.title}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.08 }}
-              onClick={() => handleItemClick(item)}
-              className={`flex gap-4 p-5 md:p-6 bg-gradient-to-br ${colorVariants[index % colorVariants.length]} rounded-xl border cursor-pointer transition-all duration-300 hover:shadow-md hover:-translate-y-0.5`}
-              data-testid={`card-onboarding-${index}`}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  handleItemClick(item);
-                }
-              }}
-            >
-              <div className="flex-shrink-0">
-                <div className={`w-11 h-11 rounded-xl ${iconColors[index % iconColors.length]} flex items-center justify-center shadow-sm`}>
-                  <item.icon className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-serif font-bold text-foreground mb-1.5 text-lg">
-                  {item.title}
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {item.description}
-                </p>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      <div className="text-center mt-8">
-        <Button
-          variant="outline"
-          onClick={onContinue}
-          className="gap-2"
-          data-testid="button-continue-devotional"
-        >
-          Continue to Today's Devotional
-          <ChevronDown className="w-4 h-4" />
-        </Button>
-      </div>
-    </motion.section>
-  );
-}
 
 export default function Home() {
   const { data: devotional, isLoading, error } = useTodayDevotional();
-  const devotionalRef = useRef<HTMLDivElement>(null);
-
-  const scrollToDevotional = () => {
-    devotionalRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
 
   if (isLoading) {
     return (
@@ -211,17 +50,13 @@ export default function Home() {
 
   return (
     <div className="pb-12">
-      <OnboardingSection onContinue={scrollToDevotional} />
-      
-      <div ref={devotionalRef} id="today-devotional">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
-        >
-          <DevotionalCard devotional={devotional} />
-        </motion.div>
-      </div>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
+        <DevotionalCard devotional={devotional} />
+      </motion.div>
     </div>
   );
 }

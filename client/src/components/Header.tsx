@@ -21,20 +21,7 @@ export function Header() {
 
   const handleHowToUseClick = () => {
     setMobileMenuOpen(false);
-    if (location !== "/") {
-      setLocation("/");
-      setTimeout(() => {
-        const element = document.getElementById("how-to-use");
-        if (element) {
-          element.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      }, 100);
-    } else {
-      const element = document.getElementById("how-to-use");
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }
+    setLocation("/how-to-use");
   };
 
   const handleLogout = async () => {
