@@ -53,6 +53,25 @@ export async function registerRoutes(
     res.json({ isAdmin: !!req.session?.isAdmin });
   });
 
+  // Digital Asset Links for Google Play TWA verification
+  // Configure ANDROID_PACKAGE_NAME and ANDROID_SHA256_FINGERPRINT env vars before publishing
+  app.get("/.well-known/assetlinks.json", (req, res) => {
+    const packageName = process.env.ANDROID_PACKAGE_NAME || "com.devotional365.app";
+    const sha256Fingerprint = process.env.ANDROID_SHA256_FINGERPRINT || "";
+    
+    const assetLinks = [{
+      relation: ["delegate_permission/common.handle_all_urls"],
+      target: {
+        namespace: "android_app",
+        package_name: packageName,
+        sha256_cert_fingerprints: sha256Fingerprint ? [sha256Fingerprint] : []
+      }
+    }];
+    
+    res.setHeader("Content-Type", "application/json");
+    res.json(assetLinks);
+  });
+
   // GET Today's Devotional
   app.get(api.devotionals.getToday.path, async (req, res) => {
     // Ideally, we get today's date in 'YYYY-MM-DD' format
