@@ -3,8 +3,9 @@ import session from "express-session";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
-
+import path from "path";
 const app = express();
+
 const httpServer = createServer(app);
 
 declare module "http" {
@@ -31,7 +32,9 @@ app.use(express.urlencoded({ extended: false }));
 
 const sessionSecret = process.env.SESSION_SECRET;
 if (!sessionSecret) {
-  console.warn("WARNING: SESSION_SECRET not set. Using default for development only.");
+  console.warn(
+    "WARNING: SESSION_SECRET not set. Using default for development only.",
+  );
 }
 
 app.use(
@@ -44,7 +47,7 @@ app.use(
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
     },
-  })
+  }),
 );
 
 export function log(message: string, source = "express") {
@@ -94,30 +97,17 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
     throw err;
   });
-
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (process.env.NODE_ENV === "production") {
-    serveStatic(app);
-  } else {
-    const { setupVite } = await import("./vite");
-    await setupVite(httpServer, app);
-  }
-
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || "5000", 10);
-  httpServer.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      log(`serving on port ${port}`);
-    },
-  );
 })();
+
+const port = parseInt(process.env.PORT || "5000", 10);
+
+httpServer.listen(
+  {
+    port,
+    host: "0.0.0.0",
+    reusePort: true,
+  },
+  () => {
+    log(`serving on port ${port}`);
+  },
+);
