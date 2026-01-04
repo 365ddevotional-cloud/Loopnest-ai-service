@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X } from "lucide-react";
+import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import { cn } from "@/lib/utils";
 import logoImage from "@assets/IMG_202512182225101_-_Copy_1767468127874.PNG";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/hooks/use-notifications";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -13,11 +14,27 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Switch } from "@/components/ui/switch";
 
 export function Header() {
   const [location, setLocation] = useLocation();
   const { isAdmin, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { 
+    isSupported: notificationsSupported, 
+    permission: notificationPermission,
+    isEnabled: notificationsEnabled, 
+    setEnabled: setNotificationsEnabled,
+    requestPermission 
+  } = useNotifications();
+
+  const handleNotificationToggle = async (enabled: boolean) => {
+    if (enabled && notificationPermission === "default") {
+      await requestPermission();
+    } else {
+      setNotificationsEnabled(enabled);
+    }
+  };
 
   const handleHowToUseClick = () => {
     setMobileMenuOpen(false);
@@ -119,6 +136,28 @@ export function Header() {
               Logout
             </button>
           )}
+          {notificationsSupported && (
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => handleNotificationToggle(!notificationsEnabled)}
+              disabled={notificationPermission === "denied"}
+              className={cn(
+                "ml-1",
+                notificationsEnabled && notificationPermission === "granted" 
+                  ? "text-primary" 
+                  : "text-muted-foreground"
+              )}
+              title={notificationsEnabled ? "Disable daily reminders" : "Enable daily reminders"}
+              data-testid="button-notifications-desktop"
+            >
+              {notificationsEnabled && notificationPermission === "granted" ? (
+                <Bell className="w-4 h-4" />
+              ) : (
+                <BellOff className="w-4 h-4" />
+              )}
+            </Button>
+          )}
         </nav>
 
         {/* Mobile Menu Button - Positioned absolutely on the right */}
@@ -189,10 +228,34 @@ export function Header() {
                 );
               })}
               
+              {notificationsSupported && (
+                <div className="flex items-center justify-between px-4 py-3 mt-4 border-t border-primary/10 pt-6">
+                  <div className="flex items-center gap-3">
+                    {notificationsEnabled && notificationPermission === "granted" ? (
+                      <Bell className="w-5 h-5 text-primary" />
+                    ) : (
+                      <BellOff className="w-5 h-5 text-muted-foreground" />
+                    )}
+                    <span className="text-base font-medium text-muted-foreground">
+                      Daily Reminders
+                    </span>
+                  </div>
+                  <Switch
+                    checked={notificationsEnabled && notificationPermission === "granted"}
+                    onCheckedChange={handleNotificationToggle}
+                    disabled={notificationPermission === "denied"}
+                    data-testid="switch-notifications-mobile"
+                  />
+                </div>
+              )}
+              
               {isAdmin && (
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 cursor-pointer text-muted-foreground hover:bg-destructive/10 hover:text-destructive mt-4 border-t border-primary/10 pt-6"
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 cursor-pointer text-muted-foreground hover:bg-destructive/10 hover:text-destructive",
+                    notificationsSupported ? "" : "mt-4 border-t border-primary/10 pt-6"
+                  )}
                   data-testid="button-logout-mobile"
                 >
                   <LogOut className="w-5 h-5" />

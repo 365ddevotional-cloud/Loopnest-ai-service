@@ -6,6 +6,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Header } from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
+import { NotificationPrompt } from "@/components/NotificationPrompt";
+import { NotificationTrigger } from "@/components/NotificationTrigger";
 import Home from "@/pages/Home";
 import Archive from "@/pages/Archive";
 import Admin from "@/pages/Admin";
@@ -59,7 +62,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
+        <NotificationProvider>
+          <TooltipProvider>
           <div className="min-h-screen flex flex-col bg-background font-sans text-foreground">
             <Header />
             <main className="flex-grow container mx-auto px-4 pt-6 pb-12 sm:pt-8 sm:pb-16">
@@ -67,8 +71,11 @@ function App() {
             </main>
             <Footer />
             <Toaster />
+            <NotificationPrompt />
+            <NotificationTrigger />
           </div>
-        </TooltipProvider>
+          </TooltipProvider>
+        </NotificationProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
