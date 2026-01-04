@@ -37,15 +37,6 @@
       "purpose": "maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/screenshot-1.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Daily Devotional Home"
-    }
-  ],
   "shortcuts": [
     {
       "name": "Today's Devotional",

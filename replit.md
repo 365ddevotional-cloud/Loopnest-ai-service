@@ -13,6 +13,37 @@ The app includes all required legal pages for app store compliance:
 - **Contact Us** (`/contact`): Ministry email and contact purposes
 - **Footer**: Links to all legal pages on every page
 
+## PWA & Google Play Store Publishing
+
+### PWA Features Implemented
+- **Web App Manifest** (`client/public/manifest.json`): Full PWA manifest with app name, icons, shortcuts, orientation
+- **Service Worker** (`client/public/sw.js`): Network-first caching with offline fallback
+- **App Icons**: 192x192 and 512x512 icons for both regular and maskable purposes
+- **Meta Tags**: Apple mobile web app support, theme color, manifest link
+
+### Publishing to Google Play Store via TWA
+
+1. **Set Environment Variables** (before building TWA):
+   - `ANDROID_PACKAGE_NAME`: Your app's package name (e.g., `com.devotional365.app`)
+   - `ANDROID_SHA256_FINGERPRINT`: Your signing key's SHA256 fingerprint
+
+2. **Generate TWA with Bubblewrap**:
+   ```bash
+   npm install -g @bubblewrap/cli
+   bubblewrap init --manifest https://your-app-url.replit.app/manifest.json
+   bubblewrap build
+   ```
+
+3. **Upload to Google Play Console**:
+   - Create a new app in Play Console ($25 one-time fee)
+   - Upload the generated `.aab` file
+   - Add store listing: description, screenshots, feature graphic
+   - Link to Privacy Policy URL
+   - Submit for review
+
+### Digital Asset Links
+The app serves `/.well-known/assetlinks.json` for TWA verification. Configure the env vars before publishing to ensure proper verification.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
