@@ -1,4 +1,5 @@
 {
+  "id": "com.spirittone.devotional",
   "name": "365 Daily Devotional",
   "short_name": "365 Devotional",
   "description": "Daily scripture readings, prayer points, and faith declarations to strengthen your walk with God throughout the year.",
@@ -54,5 +55,22 @@
     }
   ],
   "prefer_related_applications": false,
-  "related_applications": []
+  "related_applications": [],
+  "iarc_rating_id": "0",
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Daily devotional reading experience"
+    },
+    {
+      "src": "/screenshot-narrow.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mobile devotional view"
+    }
+  ]
 }
