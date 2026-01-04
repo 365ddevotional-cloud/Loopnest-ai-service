@@ -3,7 +3,7 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import { sendPrayerReplyNotification } from "./sendgrid";
+import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply } from "./sendgrid";
 import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 
@@ -391,6 +391,61 @@ export async function registerRoutes(
   app.get("/api/support-tickets", requireAdmin, async (req, res) => {
     const tickets = await storage.getSupportTickets();
     res.json(tickets);
+  });
+
+  // Contact Message Routes
+  app.post("/api/contact-messages", async (req, res) => {
+    try {
+      const { insertContactMessageSchema } = await import("@shared/schema");
+      const input = insertContactMessageSchema.parse(req.body);
+      const message = await storage.createContactMessage(input);
+      
+      // Send notification email to ministry
+      sendContactMessageNotification(
+        input.fullName,
+        input.email,
+        input.subject,
+        input.message,
+        input.isUrgent || false,
+        input.isPrayerRelated || false
+      ).catch(err => console.error("Failed to send contact notification:", err));
+      
+      // Send auto-reply to sender
+      sendContactAutoReply(
+        input.email,
+        input.fullName
+      ).catch(err => console.error("Failed to send auto-reply:", err));
+      
+      // If prayer-related, also create a prayer request
+      if (input.isPrayerRelated) {
+        await storage.createPrayerRequest({
+          fullName: input.fullName,
+          email: input.email,
+          subject: input.subject,
+          message: input.message,
+          isAnonymous: false,
+          priority: input.isUrgent ? "prayer_urgent" : "prayer_normal",
+          category: "other",
+        });
+      }
+      
+      res.status(201).json(message);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join("."),
+        });
+      }
+      console.error("Error creating contact message:", err);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  // Get contact messages (Admin only)
+  app.get("/api/contact-messages", requireAdmin, async (req, res) => {
+    const messages = await storage.getContactMessages();
+    res.json(messages);
   });
 
   // Seed Data if empty

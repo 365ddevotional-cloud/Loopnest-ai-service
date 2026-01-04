@@ -7,6 +7,7 @@ import {
   autoReplyTemplates,
   prayerAttachments,
   supportTickets,
+  contactMessages,
   type Devotional,
   type InsertDevotional,
   type UpdateDevotionalRequest,
@@ -22,6 +23,8 @@ import {
   type InsertPrayerAttachment,
   type SupportTicket,
   type InsertSupportTicket,
+  type ContactMessage,
+  type InsertContactMessage,
 } from "@shared/schema";
 import { eq, desc, and } from "drizzle-orm";
 
@@ -64,6 +67,10 @@ export interface IStorage {
   // Support Tickets
   getSupportTickets(): Promise<SupportTicket[]>;
   createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket>;
+  
+  // Contact Messages
+  getContactMessages(): Promise<ContactMessage[]>;
+  createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -259,6 +266,19 @@ export class DatabaseStorage implements IStorage {
     const [created] = await db
       .insert(supportTickets)
       .values(ticket)
+      .returning();
+    return created;
+  }
+
+  // Contact Messages
+  async getContactMessages(): Promise<ContactMessage[]> {
+    return await db.select().from(contactMessages).orderBy(desc(contactMessages.createdAt));
+  }
+
+  async createContactMessage(message: InsertContactMessage): Promise<ContactMessage> {
+    const [created] = await db
+      .insert(contactMessages)
+      .values(message)
       .returning();
     return created;
   }

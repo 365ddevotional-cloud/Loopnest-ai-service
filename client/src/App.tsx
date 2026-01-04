@@ -19,6 +19,7 @@ import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfUse from "@/pages/TermsOfUse";
 import Disclaimer from "@/pages/Disclaimer";
 import Contact from "@/pages/Contact";
+import ContactCompose from "@/pages/ContactCompose";
 import Support from "@/pages/Support";
 import NotFound from "@/pages/not-found";
 
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/terms-of-use" component={TermsOfUse} />
       <Route path="/disclaimer" component={Disclaimer} />
       <Route path="/contact" component={Contact} />
+      <Route path="/contact/compose" component={ContactCompose} />
       <Route path="/support" component={Support} />
       <Route path="/admin-login" component={AdminLogin} />
       <Route component={NotFound} />

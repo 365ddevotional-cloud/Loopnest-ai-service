@@ -43,10 +43,7 @@ export default function Contact() {
   };
 
   const handleMinistryEmailClick = () => {
-    openEmail(
-      "Contact – 365 Daily Devotional",
-      "Hello 365 Daily Devotional Team,\n\n"
-    );
+    navigate("/contact/compose");
   };
 
   const handleGeneralInquiries = () => {

@@ -88,3 +88,104 @@ export async function sendPrayerReplyNotification(
     return false;
   }
 }
+
+export async function sendContactMessageNotification(
+  senderName: string,
+  senderEmail: string,
+  subject: string,
+  message: string,
+  isUrgent: boolean,
+  isPrayerRelated: boolean
+): Promise<boolean> {
+  try {
+    const { client, fromEmail } = await getUncachableSendGridClient();
+    
+    const urgentLabel = isUrgent ? '[URGENT] ' : '';
+    const prayerLabel = isPrayerRelated ? '[Prayer Related] ' : '';
+    
+    const msg = {
+      to: '365ddevotional@gmail.com',
+      from: fromEmail,
+      replyTo: senderEmail,
+      subject: `${urgentLabel}${prayerLabel}${subject}`,
+      text: `New Contact Message from ${senderName} (${senderEmail})\n\nSubject: ${subject}\n\nMessage:\n${message}\n\n---\nThis message was sent via 365 Daily Devotional contact form.`,
+      html: `
+        <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #9c6b30; margin: 0;">365 Daily Devotional</h1>
+            <p style="color: #666; margin: 5px 0;">New Contact Message</p>
+          </div>
+          
+          <div style="background-color: #f8f6f3; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <p style="margin: 5px 0;"><strong>From:</strong> ${senderName}</p>
+            <p style="margin: 5px 0;"><strong>Email:</strong> ${senderEmail}</p>
+            <p style="margin: 5px 0;"><strong>Subject:</strong> ${subject}</p>
+            ${isUrgent ? '<p style="margin: 5px 0; color: #dc2626;"><strong>Marked as Urgent</strong></p>' : ''}
+            ${isPrayerRelated ? '<p style="margin: 5px 0; color: #9c6b30;"><strong>Prayer Related</strong></p>' : ''}
+          </div>
+          
+          <div style="border-left: 4px solid #9c6b30; padding: 20px; margin: 20px 0;">
+            <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${message}</p>
+          </div>
+          
+          <p style="color: #666; font-size: 12px; margin-top: 30px; text-align: center;">
+            This message was sent via 365 Daily Devotional contact form.
+          </p>
+        </div>
+      `
+    };
+
+    await client.send(msg);
+    console.log(`Contact message notification sent for ${senderEmail}`);
+    return true;
+  } catch (error) {
+    console.error('Failed to send contact message notification:', error);
+    return false;
+  }
+}
+
+export async function sendContactAutoReply(
+  toEmail: string,
+  recipientName: string
+): Promise<boolean> {
+  try {
+    const { client, fromEmail } = await getUncachableSendGridClient();
+    
+    const msg = {
+      to: toEmail,
+      from: fromEmail,
+      subject: '365 Daily Devotional - We Received Your Message',
+      text: `Dear ${recipientName},\n\nWe've received your message and will respond as soon as possible.\n\n"The Lord bless you and keep you." – Numbers 6:24\n\nWith love and prayers,\n365 Daily Devotional Team`,
+      html: `
+        <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #9c6b30; margin: 0;">365 Daily Devotional</h1>
+          </div>
+          
+          <p style="color: #333; font-size: 16px;">Dear ${recipientName},</p>
+          
+          <p style="color: #333; font-size: 16px;">We've received your message and will respond as soon as possible.</p>
+          
+          <div style="background-color: #f8f6f3; border-left: 4px solid #9c6b30; padding: 20px; margin: 30px 0; text-align: center;">
+            <p style="color: #9c6b30; font-size: 18px; font-style: italic; margin: 0;">
+              "The Lord bless you and keep you."
+            </p>
+            <p style="color: #666; font-size: 14px; margin: 10px 0 0 0;">– Numbers 6:24</p>
+          </div>
+          
+          <p style="color: #666; font-size: 14px; margin-top: 30px;">
+            With love and prayers,<br>
+            <strong>365 Daily Devotional Team</strong>
+          </p>
+        </div>
+      `
+    };
+
+    await client.send(msg);
+    console.log(`Auto-reply sent to ${toEmail}`);
+    return true;
+  } catch (error) {
+    console.error('Failed to send auto-reply:', error);
+    return false;
+  }
+}

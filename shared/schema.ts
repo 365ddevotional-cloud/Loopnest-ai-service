@@ -171,3 +171,25 @@ export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit
 
 export type SupportTicket = typeof supportTickets.$inferSelect;
 export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
+
+// Contact Messages Table (for in-app compose)
+export const contactMessages = pgTable("contact_messages", {
+  id: serial("id").primaryKey(),
+  fullName: text("full_name").notNull(),
+  email: text("email").notNull(),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  isUrgent: boolean("is_urgent").default(false),
+  isPrayerRelated: boolean("is_prayer_related").default(false),
+  status: text("status").default("new").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertContactMessageSchema = createInsertSchema(contactMessages).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+});
+
+export type ContactMessage = typeof contactMessages.$inferSelect;
+export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
