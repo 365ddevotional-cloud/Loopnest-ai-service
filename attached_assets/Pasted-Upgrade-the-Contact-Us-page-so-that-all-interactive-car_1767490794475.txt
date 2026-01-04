@@ -1,0 +1,152 @@
+Upgrade the Contact Us page so that all interactive cards and sections behave like intelligent action buttons.
+Implement the following behavior cleanly, professionally, and accessibly:
+1. Ministry Email Card
+
+
+Make the entire “Ministry Email” card clickable.
+
+
+On click:
+
+
+Open the user’s default email client using a mailto: action.
+
+
+Pre-fill:
+
+
+To: 365ddevotional@gmail.com
+
+
+Subject: Contact – 365 Daily Devotional
+
+
+Body: Hello 365 Daily Devotional Team,
+
+
+
+
+
+
+2. Purpose of Contact Cards
+Make each card clickable and route the user intelligently:
+General Inquiries
+
+
+Action: Open email composer
+
+
+Subject: General Inquiry – 365 Daily Devotional
+
+
+Body prompt: I have a question regarding the app / devotional content.
+
+
+Feedback & Suggestions
+
+
+Action: Open email composer
+
+
+Subject: Feedback & Suggestions
+
+
+Body prompt: I would like to share feedback or ideas to improve the app.
+
+
+Partnership Opportunities
+
+
+Action: Open email composer
+
+
+Subject: Partnership Opportunity
+
+
+Body prompt: I am interested in collaborating or partnering with your ministry.
+
+
+Technical Support
+
+
+Action: Navigate to a dedicated internal route /support
+
+
+Include a simple form:
+
+
+Issue description
+
+
+Device / browser
+
+
+Optional email
+
+
+
+
+On submit: send to admin inbox + auto-reply confirmation
+
+
+3. UX & Visual Requirements
+
+
+Entire card surface should be clickable (not just text).
+
+
+Use hover state, cursor pointer, and subtle elevation.
+
+
+Maintain existing color palette and typography.
+
+
+Ensure keyboard accessibility and mobile friendliness.
+
+
+4. Do NOT
+
+
+Expose admin routes
+
+
+Break existing Prayer & Counseling flow
+
+
+Require login for contact actions
+
+
+Keep the implementation clean, professional, ministry-appropriate, and Play-Store-safe.
+
+
+✅ Why this is the right approach
+
+
+✔ Feels modern & professional
+
+
+✔ Matches Play Store UX expectations
+
+
+✔ No confusion for users
+
+
+✔ No security risk
+
+
+✔ Scales later into in-app messaging
+
+
+If you want next:
+
+
+🔒 Lock admin completely (recommended)
+
+
+📱 Convert these actions into native Android intents
+
+
+📨 Route all contact messages into your Prayer/Admin dashboard
+
+
+Just say “Next step” and I’ll guide you cleanly.

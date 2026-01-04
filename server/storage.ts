@@ -6,6 +6,7 @@ import {
   threadMessages,
   autoReplyTemplates,
   prayerAttachments,
+  supportTickets,
   type Devotional,
   type InsertDevotional,
   type UpdateDevotionalRequest,
@@ -19,6 +20,8 @@ import {
   type InsertAutoReplyTemplate,
   type PrayerAttachment,
   type InsertPrayerAttachment,
+  type SupportTicket,
+  type InsertSupportTicket,
 } from "@shared/schema";
 import { eq, desc, and } from "drizzle-orm";
 
@@ -57,6 +60,10 @@ export interface IStorage {
   // Prayer Attachments
   getAttachmentsForRequest(requestId: number): Promise<PrayerAttachment[]>;
   createPrayerAttachment(attachment: InsertPrayerAttachment): Promise<PrayerAttachment>;
+  
+  // Support Tickets
+  getSupportTickets(): Promise<SupportTicket[]>;
+  createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -239,6 +246,19 @@ export class DatabaseStorage implements IStorage {
     const [created] = await db
       .insert(prayerAttachments)
       .values(attachment)
+      .returning();
+    return created;
+  }
+
+  // Support Tickets
+  async getSupportTickets(): Promise<SupportTicket[]> {
+    return await db.select().from(supportTickets).orderBy(desc(supportTickets.createdAt));
+  }
+
+  async createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket> {
+    const [created] = await db
+      .insert(supportTickets)
+      .values(ticket)
       .returning();
     return created;
   }

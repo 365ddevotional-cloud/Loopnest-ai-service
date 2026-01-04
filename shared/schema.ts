@@ -152,3 +152,22 @@ export const insertPrayerAttachmentSchema = createInsertSchema(prayerAttachments
 
 export type PrayerAttachment = typeof prayerAttachments.$inferSelect;
 export type InsertPrayerAttachment = z.infer<typeof insertPrayerAttachmentSchema>;
+
+// Support Tickets Table (for Technical Support)
+export const supportTickets = pgTable("support_tickets", {
+  id: serial("id").primaryKey(),
+  issueDescription: text("issue_description").notNull(),
+  deviceBrowser: text("device_browser"),
+  email: text("email"),
+  status: text("status").default("new").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+});
+
+export type SupportTicket = typeof supportTickets.$inferSelect;
+export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;

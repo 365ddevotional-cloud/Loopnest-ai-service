@@ -1,8 +1,79 @@
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Mail, MessageCircle, Heart } from "lucide-react";
+import { Mail, MessageCircle, Heart, Lightbulb, Wrench, ExternalLink } from "lucide-react";
+import { useLocation } from "wouter";
+
+interface ContactCardProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  onClick: () => void;
+  colorClass: string;
+  borderClass: string;
+  testId: string;
+}
+
+function ContactCard({ icon, title, description, onClick, colorClass, borderClass, testId }: ContactCardProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={`${colorClass} ${borderClass} rounded-xl p-5 text-left w-full cursor-pointer hover-elevate active-elevate-2 transition-all focus:outline-none focus:ring-2 focus:ring-primary/50`}
+      data-testid={testId}
+    >
+      <div className="flex items-start gap-3">
+        {icon}
+        <div className="flex-1">
+          <h3 className="font-semibold text-foreground mb-1 flex items-center gap-2">
+            {title}
+            <ExternalLink className="w-3 h-3 text-muted-foreground" />
+          </h3>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </div>
+      </div>
+    </button>
+  );
+}
 
 export default function Contact() {
+  const [, navigate] = useLocation();
+
+  const openEmail = (subject: string, body: string) => {
+    const mailto = `mailto:365ddevotional@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+  };
+
+  const handleMinistryEmailClick = () => {
+    openEmail(
+      "Contact – 365 Daily Devotional",
+      "Hello 365 Daily Devotional Team,\n\n"
+    );
+  };
+
+  const handleGeneralInquiries = () => {
+    openEmail(
+      "General Inquiry – 365 Daily Devotional",
+      "I have a question regarding the app / devotional content.\n\n"
+    );
+  };
+
+  const handleFeedbackSuggestions = () => {
+    openEmail(
+      "Feedback & Suggestions",
+      "I would like to share feedback or ideas to improve the app.\n\n"
+    );
+  };
+
+  const handlePartnership = () => {
+    openEmail(
+      "Partnership Opportunity",
+      "I am interested in collaborating or partnering with your ministry.\n\n"
+    );
+  };
+
+  const handleTechnicalSupport = () => {
+    navigate("/support");
+  };
+
   return (
     <div className="max-w-4xl mx-auto py-8">
       <div className="text-center mb-12 space-y-4">
@@ -23,70 +94,73 @@ export default function Contact() {
         <div className="p-8 md:p-12 space-y-8 text-foreground/80 leading-relaxed">
           <section className="space-y-4">
             <h2 className="font-serif text-xl font-bold text-primary">Ministry Email</h2>
-            <div className="bg-primary/5 rounded-xl p-6 border border-primary/10">
+            <button
+              onClick={handleMinistryEmailClick}
+              className="w-full bg-primary/5 rounded-xl p-6 border border-primary/10 cursor-pointer hover-elevate active-elevate-2 transition-all text-left focus:outline-none focus:ring-2 focus:ring-primary/50"
+              data-testid="card-ministry-email"
+            >
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                   <Mail className="w-6 h-6 text-primary" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Email Address</p>
-                  <a 
-                    href="mailto:365ddevotional@gmail.com" 
-                    className="text-xl font-bold text-primary hover:underline"
-                    data-testid="link-contact-email"
-                  >
-                    365ddevotional@gmail.com
-                  </a>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Click to send an email</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-bold text-primary">
+                      365ddevotional@gmail.com
+                    </span>
+                    <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                  </div>
                 </div>
               </div>
-            </div>
+            </button>
           </section>
 
           <Separator className="bg-primary/10" />
 
           <section className="space-y-4">
             <h2 className="font-serif text-xl font-bold text-primary">Purpose of Contact</h2>
-            <p>You may contact us for:</p>
+            <p>Click a card below to contact us:</p>
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="bg-secondary/5 rounded-xl p-5 border border-secondary/10">
-                <div className="flex items-start gap-3">
-                  <MessageCircle className="w-5 h-5 text-secondary mt-1" />
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">General Inquiries</h3>
-                    <p className="text-sm text-muted-foreground">Questions about the app, our ministry, or devotional content.</p>
-                  </div>
-                </div>
-              </div>
+              <ContactCard
+                icon={<MessageCircle className="w-5 h-5 text-secondary mt-1 flex-shrink-0" />}
+                title="General Inquiries"
+                description="Questions about the app, our ministry, or devotional content."
+                onClick={handleGeneralInquiries}
+                colorClass="bg-secondary/5"
+                borderClass="border border-secondary/10"
+                testId="card-general-inquiries"
+              />
               
-              <div className="bg-accent/5 rounded-xl p-5 border border-accent/10">
-                <div className="flex items-start gap-3">
-                  <MessageCircle className="w-5 h-5 text-accent mt-1" />
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">Feedback & Suggestions</h3>
-                    <p className="text-sm text-muted-foreground">Share ideas for improving the app or devotional content.</p>
-                  </div>
-                </div>
-              </div>
+              <ContactCard
+                icon={<Lightbulb className="w-5 h-5 text-accent mt-1 flex-shrink-0" />}
+                title="Feedback & Suggestions"
+                description="Share ideas for improving the app or devotional content."
+                onClick={handleFeedbackSuggestions}
+                colorClass="bg-accent/5"
+                borderClass="border border-accent/10"
+                testId="card-feedback-suggestions"
+              />
               
-              <div className="bg-primary/5 rounded-xl p-5 border border-primary/10">
-                <div className="flex items-start gap-3">
-                  <Heart className="w-5 h-5 text-primary mt-1" />
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">Partnership Opportunities</h3>
-                    <p className="text-sm text-muted-foreground">Collaborate with us on ministry projects or outreach.</p>
-                  </div>
-                </div>
-              </div>
+              <ContactCard
+                icon={<Heart className="w-5 h-5 text-primary mt-1 flex-shrink-0" />}
+                title="Partnership Opportunities"
+                description="Collaborate with us on ministry projects or outreach."
+                onClick={handlePartnership}
+                colorClass="bg-primary/5"
+                borderClass="border border-primary/10"
+                testId="card-partnership"
+              />
               
-              <div className="bg-muted/30 rounded-xl p-5 border border-muted">
-                <div className="flex items-start gap-3">
-                  <MessageCircle className="w-5 h-5 text-muted-foreground mt-1" />
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">Technical Support</h3>
-                    <p className="text-sm text-muted-foreground">Report issues or get help with using the app.</p>
-                  </div>
-                </div>
-              </div>
+              <ContactCard
+                icon={<Wrench className="w-5 h-5 text-muted-foreground mt-1 flex-shrink-0" />}
+                title="Technical Support"
+                description="Report issues or get help with using the app."
+                onClick={handleTechnicalSupport}
+                colorClass="bg-muted/30"
+                borderClass="border border-muted"
+                testId="card-technical-support"
+              />
             </div>
           </section>
 

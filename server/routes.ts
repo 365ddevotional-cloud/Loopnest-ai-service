@@ -368,6 +368,31 @@ export async function registerRoutes(
     }
   });
 
+  // Support Ticket Routes
+  app.post("/api/support-tickets", async (req, res) => {
+    try {
+      const { insertSupportTicketSchema } = await import("@shared/schema");
+      const input = insertSupportTicketSchema.parse(req.body);
+      const ticket = await storage.createSupportTicket(input);
+      res.status(201).json(ticket);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join("."),
+        });
+      }
+      console.error("Error creating support ticket:", err);
+      res.status(500).json({ message: "Failed to create support ticket" });
+    }
+  });
+
+  // Get support tickets (Admin only)
+  app.get("/api/support-tickets", requireAdmin, async (req, res) => {
+    const tickets = await storage.getSupportTickets();
+    res.json(tickets);
+  });
+
   // Seed Data if empty
   await seedDatabase();
   await seedAutoReplyTemplates();
