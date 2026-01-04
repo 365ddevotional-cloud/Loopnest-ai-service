@@ -89,6 +89,19 @@ The devotional archive implements role-based visibility:
 - **Restricted Access Message**: When a non-admin attempts to access a future devotional via URL, they see a "Coming Soon" message with the scheduled date.
 - **Timezone Support**: Date comparisons use configurable timezone via `APP_TIMEZONE` environment variable (defaults to America/New_York). The timezone-aware utility is in `server/date-utils.ts`.
 
+### Daily Notification System
+Browser-based notifications to remind users when today's devotional is available:
+- **Technology**: Web Notifications API (browser-based, no external push services)
+- **Opt-in**: Users see a permission prompt on first visit; can toggle on/off in the header menu
+- **Frequency**: One notification per day maximum, tracked via localStorage
+- **Trigger**: Notification fires when today's devotional exists and user has notifications enabled
+- **State Management**: Centralized in `NotificationContext` (`client/src/contexts/NotificationContext.tsx`)
+- **Components**:
+  - `NotificationPrompt`: First-visit permission prompt with gentle messaging
+  - `NotificationTrigger`: Checks for today's devotional and sends notification
+  - Header toggle: Bell icon (desktop) / Switch (mobile) to enable/disable reminders
+- **Storage**: User preferences stored in localStorage (`devotional-notifications-enabled`, `devotional-notification-prompt-shown`, `devotional-last-notification-date`)
+
 ## External Dependencies
 
 ### Database
