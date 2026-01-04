@@ -213,3 +213,44 @@ export const insertGeneralInquirySchema = createInsertSchema(generalInquiries).o
 
 export type GeneralInquiry = typeof generalInquiries.$inferSelect;
 export type InsertGeneralInquiry = z.infer<typeof insertGeneralInquirySchema>;
+
+// Feedback Table
+export const feedbackMessages = pgTable("feedback_messages", {
+  id: serial("id").primaryKey(),
+  name: text("name"),
+  email: text("email"),
+  feedbackType: text("feedback_type").notNull(),
+  message: text("message").notNull(),
+  status: text("status").default("new").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertFeedbackSchema = createInsertSchema(feedbackMessages).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+});
+
+export type FeedbackMessage = typeof feedbackMessages.$inferSelect;
+export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
+
+// Partnership Inquiries Table
+export const partnershipInquiries = pgTable("partnership_inquiries", {
+  id: serial("id").primaryKey(),
+  fullName: text("full_name").notNull(),
+  organization: text("organization"),
+  email: text("email").notNull(),
+  partnershipType: text("partnership_type").notNull(),
+  message: text("message").notNull(),
+  status: text("status").default("new").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPartnershipSchema = createInsertSchema(partnershipInquiries).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+});
+
+export type PartnershipInquiry = typeof partnershipInquiries.$inferSelect;
+export type InsertPartnership = z.infer<typeof insertPartnershipSchema>;

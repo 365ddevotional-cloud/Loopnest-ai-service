@@ -1,0 +1,196 @@
+Extend the Contact Us system so each card/section below is fully interactive, routes correctly, and creates missing pages or forms if they do not exist.
+Keep styling mature, calm, professional, mobile-friendly, and consistent with the app.
+
+1) Feedback & Suggestions
+Click behavior
+
+Clicking Feedback & Suggestions card routes to:
+/contact/feedback
+
+If page does not exist, create it with:
+
+Title: Feedback & Suggestions
+Intro:
+“Your feedback helps us improve. Share ideas, suggestions, or concerns to help us serve you better.”
+
+Feedback Form
+
+Fields:
+
+Name (optional)
+
+Email (optional)
+
+Feedback Type (dropdown):
+
+App Design
+
+Content Quality
+
+Feature Request
+
+Bug / Issue
+
+Other
+
+Message (required)
+
+Submit behavior:
+
+Send to 365ddevotional@gmail.com
+
+Save in admin inbox as category Feedback
+
+Auto subject:
+Feedback & Suggestions – 365 Daily Devotional
+
+Success message:
+“Thank you for helping us improve.”
+
+2) Partnership Opportunities
+Click behavior
+
+Clicking Partnership Opportunities routes to:
+/contact/partnership
+
+If page does not exist, create it with:
+
+Title: Partnership Opportunities
+Intro:
+“We welcome partnerships aligned with our mission of sharing God’s Word and encouraging believers worldwide.”
+
+Partnership Info Section
+
+Types of partnership:
+
+Ministry collaboration
+
+Media & content creation
+
+Outreach & missions
+
+Events & speaking invitations
+
+Resource distribution
+
+Partnership Form
+
+Fields:
+
+Full Name (required)
+
+Organization / Ministry (optional)
+
+Email (required)
+
+Partnership Type (dropdown)
+
+Message / Proposal (required)
+
+Submit behavior:
+
+Send to 365ddevotional@gmail.com
+
+Save in admin inbox as category Partnership
+
+Auto subject:
+Partnership Inquiry – 365 Daily Devotional
+
+Success message:
+“Thank you. We will prayerfully review your message.”
+
+3) Prayer Requests
+Click behavior
+
+Clicking Prayer Requests routes to:
+/prayer
+
+If /prayer page does not exist, create it with:
+
+Title: Prayer & Counseling Requests
+Intro:
+“You are not alone. Share your prayer request and our ministry team will stand with you in prayer.”
+
+Prayer Request Form
+
+Fields:
+
+Send anonymously (toggle)
+
+Name (optional)
+
+Email (optional, for replies)
+
+Category (dropdown):
+
+Healing
+
+Family / Marriage
+
+Financial
+
+Spiritual Growth
+
+Deliverance
+
+Other
+
+Urgency:
+
+Normal
+
+Urgent
+
+Prayer Request (required)
+
+Submit behavior:
+
+Save securely in admin prayer inbox
+
+Optional email confirmation to user
+
+Auto encouragement Scripture after submit
+
+Success message:
+“Your request has been received. We are praying for you.”
+
+Privacy rules:
+
+Anonymous requests hide all personal info
+
+Requests never displayed publicly
+
+4) Response Time
+Behavior
+
+Make Response Time section informational (no form)
+
+Anchor-linkable: /contact#response-time
+
+Content
+
+Title: Response Time
+Text:
+“We aim to respond to messages within 2–3 business days.
+Prayer requests marked Urgent are reviewed as quickly as possible.
+During high-volume periods, replies may take slightly longer.”
+
+Footer Scripture:
+“Encourage one another and build each other up.”
+— 1 Thessalonians 5:11
+
+UX + Safety Rules
+
+Entire cards clickable
+
+Clear hover states + pointer cursor
+
+Mobile responsive
+
+No admin routes visible publicly
+
+Graceful fallback:
+If routing fails, open:
+mailto:365ddevotional@gmail.com with correct subject
+
+Ensure all pages feel pastoral, respectful, and trustworthy.

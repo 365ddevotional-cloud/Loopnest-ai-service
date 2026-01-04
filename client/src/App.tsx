@@ -21,6 +21,8 @@ import Disclaimer from "@/pages/Disclaimer";
 import Contact from "@/pages/Contact";
 import ContactCompose from "@/pages/ContactCompose";
 import GeneralInquiries from "@/pages/GeneralInquiries";
+import Feedback from "@/pages/Feedback";
+import Partnership from "@/pages/Partnership";
 import Support from "@/pages/Support";
 import NotFound from "@/pages/not-found";
 
@@ -41,6 +43,9 @@ function Router() {
       <Route path="/contact" component={Contact} />
       <Route path="/contact/compose" component={ContactCompose} />
       <Route path="/contact/general" component={GeneralInquiries} />
+      <Route path="/contact/feedback" component={Feedback} />
+      <Route path="/contact/partnership" component={Partnership} />
+      <Route path="/prayer" component={PrayerCounseling} />
       <Route path="/support" component={Support} />
       <Route path="/admin-login" component={AdminLogin} />
       <Route component={NotFound} />

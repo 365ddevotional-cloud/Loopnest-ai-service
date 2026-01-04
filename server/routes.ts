@@ -3,7 +3,7 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification } from "./sendgrid";
+import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification } from "./sendgrid";
 import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 
@@ -485,6 +485,76 @@ export async function registerRoutes(
   // Get general inquiries (Admin only)
   app.get("/api/general-inquiries", requireAdmin, async (req, res) => {
     const inquiries = await storage.getGeneralInquiries();
+    res.json(inquiries);
+  });
+
+  // Feedback Routes
+  app.post("/api/feedback", async (req, res) => {
+    try {
+      const { insertFeedbackSchema } = await import("@shared/schema");
+      const input = insertFeedbackSchema.parse(req.body);
+      const feedback = await storage.createFeedback(input);
+      
+      sendFeedbackNotification(
+        input.name || null,
+        input.email || null,
+        input.feedbackType,
+        input.message
+      ).catch(err => console.error("Failed to send feedback notification:", err));
+      
+      res.status(201).json(feedback);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join("."),
+        });
+      }
+      console.error("Error creating feedback:", err);
+      res.status(500).json({ message: "Failed to submit feedback" });
+    }
+  });
+
+  app.get("/api/feedback", requireAdmin, async (req, res) => {
+    const feedback = await storage.getFeedback();
+    res.json(feedback);
+  });
+
+  // Partnership Routes
+  app.post("/api/partnership", async (req, res) => {
+    try {
+      const { insertPartnershipSchema } = await import("@shared/schema");
+      const input = insertPartnershipSchema.parse(req.body);
+      const inquiry = await storage.createPartnershipInquiry(input);
+      
+      sendPartnershipNotification(
+        input.fullName,
+        input.email,
+        input.organization || null,
+        input.partnershipType,
+        input.message
+      ).catch(err => console.error("Failed to send partnership notification:", err));
+      
+      sendContactAutoReply(
+        input.email,
+        input.fullName
+      ).catch(err => console.error("Failed to send auto-reply:", err));
+      
+      res.status(201).json(inquiry);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join("."),
+        });
+      }
+      console.error("Error creating partnership inquiry:", err);
+      res.status(500).json({ message: "Failed to submit inquiry" });
+    }
+  });
+
+  app.get("/api/partnership", requireAdmin, async (req, res) => {
+    const inquiries = await storage.getPartnershipInquiries();
     res.json(inquiries);
   });
 

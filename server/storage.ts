@@ -9,6 +9,8 @@ import {
   supportTickets,
   contactMessages,
   generalInquiries,
+  feedbackMessages,
+  partnershipInquiries,
   type Devotional,
   type InsertDevotional,
   type UpdateDevotionalRequest,
@@ -28,6 +30,10 @@ import {
   type InsertContactMessage,
   type GeneralInquiry,
   type InsertGeneralInquiry,
+  type FeedbackMessage,
+  type InsertFeedback,
+  type PartnershipInquiry,
+  type InsertPartnership,
 } from "@shared/schema";
 import { eq, desc, and } from "drizzle-orm";
 
@@ -78,6 +84,14 @@ export interface IStorage {
   // General Inquiries
   getGeneralInquiries(): Promise<GeneralInquiry[]>;
   createGeneralInquiry(inquiry: InsertGeneralInquiry): Promise<GeneralInquiry>;
+  
+  // Feedback
+  getFeedback(): Promise<FeedbackMessage[]>;
+  createFeedback(feedback: InsertFeedback): Promise<FeedbackMessage>;
+  
+  // Partnership
+  getPartnershipInquiries(): Promise<PartnershipInquiry[]>;
+  createPartnershipInquiry(inquiry: InsertPartnership): Promise<PartnershipInquiry>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -298,6 +312,32 @@ export class DatabaseStorage implements IStorage {
   async createGeneralInquiry(inquiry: InsertGeneralInquiry): Promise<GeneralInquiry> {
     const [created] = await db
       .insert(generalInquiries)
+      .values(inquiry)
+      .returning();
+    return created;
+  }
+
+  // Feedback
+  async getFeedback(): Promise<FeedbackMessage[]> {
+    return await db.select().from(feedbackMessages).orderBy(desc(feedbackMessages.createdAt));
+  }
+
+  async createFeedback(feedback: InsertFeedback): Promise<FeedbackMessage> {
+    const [created] = await db
+      .insert(feedbackMessages)
+      .values(feedback)
+      .returning();
+    return created;
+  }
+
+  // Partnership
+  async getPartnershipInquiries(): Promise<PartnershipInquiry[]> {
+    return await db.select().from(partnershipInquiries).orderBy(desc(partnershipInquiries.createdAt));
+  }
+
+  async createPartnershipInquiry(inquiry: InsertPartnership): Promise<PartnershipInquiry> {
+    const [created] = await db
+      .insert(partnershipInquiries)
       .values(inquiry)
       .returning();
     return created;

@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Mail, MessageCircle, Heart, Lightbulb, Wrench, ExternalLink } from "lucide-react";
+import { Mail, MessageCircle, Heart, Lightbulb, Wrench, ExternalLink, HandHeart, Clock } from "lucide-react";
 import { useLocation } from "wouter";
 
 interface ContactCardProps {
@@ -51,17 +51,15 @@ export default function Contact() {
   };
 
   const handleFeedbackSuggestions = () => {
-    openEmail(
-      "Feedback & Suggestions",
-      "I would like to share feedback or ideas to improve the app.\n\n"
-    );
+    navigate("/contact/feedback");
   };
 
   const handlePartnership = () => {
-    openEmail(
-      "Partnership Opportunity",
-      "I am interested in collaborating or partnering with your ministry.\n\n"
-    );
+    navigate("/contact/partnership");
+  };
+
+  const handlePrayerRequests = () => {
+    navigate("/prayer");
   };
 
   const handleTechnicalSupport = () => {
@@ -83,6 +81,14 @@ export default function Contact() {
           <p className="text-lg text-foreground/80 font-serif leading-relaxed">
             We would love to hear from you. Reach out with questions, feedback, or partnership inquiries.
           </p>
+          <a 
+            href="#response-time" 
+            className="text-sm text-foreground/60 hover:text-primary transition-colors inline-flex items-center gap-1 mt-3"
+            data-testid="link-response-time"
+          >
+            <Clock className="w-3 h-3" />
+            See response times
+          </a>
         </div>
 
         <div className="p-8 md:p-12 space-y-8 text-foreground/80 leading-relaxed">
@@ -155,36 +161,56 @@ export default function Contact() {
                 borderClass="border border-muted"
                 testId="card-technical-support"
               />
+              
+              <ContactCard
+                icon={<HandHeart className="w-5 h-5 text-secondary mt-1 flex-shrink-0" />}
+                title="Prayer Requests"
+                description="Submit a prayer request and our team will pray for you."
+                onClick={handlePrayerRequests}
+                colorClass="bg-secondary/5"
+                borderClass="border border-secondary/10"
+                testId="card-prayer-requests"
+              />
             </div>
           </section>
 
           <Separator className="bg-primary/10" />
 
           <section className="space-y-4">
-            <h2 className="font-serif text-xl font-bold text-primary">Prayer Requests</h2>
+            <h2 className="font-serif text-xl font-bold text-primary">About Prayer Requests</h2>
             <p>
-              For prayer requests or counseling needs, please use our dedicated{" "}
-              <a href="/prayer-counseling" className="text-primary font-medium hover:underline" data-testid="link-prayer-page">
+              You are not alone. Our dedicated{" "}
+              <a href="/prayer" className="text-primary font-medium hover:underline" data-testid="link-prayer-page">
                 Prayer & Counseling
               </a>{" "}
-              page, which allows you to submit requests (including anonymously) and receive personalized 
-              spiritual encouragement.
+              page allows you to submit requests (including anonymously) and receive personalized 
+              spiritual encouragement. Your requests are kept private and reviewed with care.
             </p>
           </section>
 
           <Separator className="bg-primary/10" />
 
-          <section className="space-y-4">
-            <h2 className="font-serif text-xl font-bold text-primary">Response Time</h2>
-            <p>
-              We strive to respond to all inquiries within 2-3 business days. During high-volume periods, 
-              responses may take slightly longer. Thank you for your patience and understanding.
-            </p>
+          <section id="response-time" className="space-y-4 scroll-mt-24">
+            <h2 className="font-serif text-xl font-bold text-primary flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              Response Time
+            </h2>
+            <div className="space-y-3 text-foreground/80">
+              <p>
+                We aim to respond to messages within 2–3 business days.
+              </p>
+              <p>
+                Prayer requests marked Urgent are reviewed as quickly as possible.
+              </p>
+              <p>
+                During high-volume periods, replies may take slightly longer.
+              </p>
+            </div>
           </section>
 
           <div className="text-center pt-6">
             <p className="font-serif text-primary italic">
-              "Therefore encourage one another and build each other up." — 1 Thessalonians 5:11
+              "Encourage one another and build each other up." — 1 Thessalonians 5:11
             </p>
           </div>
         </div>

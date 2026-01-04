@@ -144,6 +144,118 @@ export async function sendContactMessageNotification(
   }
 }
 
+export async function sendFeedbackNotification(
+  senderName: string | null,
+  senderEmail: string | null,
+  feedbackType: string,
+  message: string
+): Promise<boolean> {
+  try {
+    const { client, fromEmail } = await getUncachableSendGridClient();
+    
+    const typeLabels: Record<string, string> = {
+      app_design: "App Design",
+      content_quality: "Content Quality",
+      feature_request: "Feature Request",
+      bug_issue: "Bug / Issue",
+      other: "Other",
+    };
+    
+    const typeLabel = typeLabels[feedbackType] || feedbackType;
+    const displayName = senderName || "Anonymous";
+    const displayEmail = senderEmail || "Not provided";
+    
+    const msg = {
+      to: '365ddevotional@gmail.com',
+      from: fromEmail,
+      replyTo: senderEmail || undefined,
+      subject: `Feedback & Suggestions – 365 Daily Devotional [${typeLabel}]`,
+      text: `New Feedback from ${displayName}\n\nEmail: ${displayEmail}\nType: ${typeLabel}\n\nMessage:\n${message}\n\n---\nThis was sent via 365 Daily Devotional Feedback form.`,
+      html: `
+        <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #9c6b30; margin: 0;">365 Daily Devotional</h1>
+            <p style="color: #666; margin: 5px 0;">Feedback & Suggestions</p>
+          </div>
+          
+          <div style="background-color: #f8f6f3; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <p style="margin: 5px 0;"><strong>From:</strong> ${displayName}</p>
+            <p style="margin: 5px 0;"><strong>Email:</strong> ${displayEmail}</p>
+            <p style="margin: 5px 0;"><strong>Type:</strong> ${typeLabel}</p>
+          </div>
+          
+          <div style="border-left: 4px solid #9c6b30; padding: 20px; margin: 20px 0;">
+            <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${message}</p>
+          </div>
+        </div>
+      `
+    };
+
+    await client.send(msg);
+    console.log(`Feedback notification sent`);
+    return true;
+  } catch (error) {
+    console.error('Failed to send feedback notification:', error);
+    return false;
+  }
+}
+
+export async function sendPartnershipNotification(
+  fullName: string,
+  email: string,
+  organization: string | null,
+  partnershipType: string,
+  message: string
+): Promise<boolean> {
+  try {
+    const { client, fromEmail } = await getUncachableSendGridClient();
+    
+    const typeLabels: Record<string, string> = {
+      ministry_collaboration: "Ministry Collaboration",
+      media_content: "Media & Content Creation",
+      outreach_missions: "Outreach & Missions",
+      events_speaking: "Events & Speaking Invitations",
+      resource_distribution: "Resource Distribution",
+    };
+    
+    const typeLabel = typeLabels[partnershipType] || partnershipType;
+    
+    const msg = {
+      to: '365ddevotional@gmail.com',
+      from: fromEmail,
+      replyTo: email,
+      subject: `Partnership Inquiry – 365 Daily Devotional [${typeLabel}]`,
+      text: `New Partnership Inquiry from ${fullName}\n\nOrganization: ${organization || "Not specified"}\nEmail: ${email}\nType: ${typeLabel}\n\nMessage:\n${message}\n\n---\nThis was sent via 365 Daily Devotional Partnership form.`,
+      html: `
+        <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #9c6b30; margin: 0;">365 Daily Devotional</h1>
+            <p style="color: #666; margin: 5px 0;">Partnership Inquiry</p>
+          </div>
+          
+          <div style="background-color: #f8f6f3; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <p style="margin: 5px 0;"><strong>From:</strong> ${fullName}</p>
+            <p style="margin: 5px 0;"><strong>Organization:</strong> ${organization || "Not specified"}</p>
+            <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+            <p style="margin: 5px 0;"><strong>Type:</strong> ${typeLabel}</p>
+          </div>
+          
+          <div style="border-left: 4px solid #9c6b30; padding: 20px; margin: 20px 0;">
+            <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${message}</p>
+          </div>
+        </div>
+      `
+    };
+
+    await client.send(msg);
+    console.log(`Partnership notification sent for ${email}`);
+    return true;
+  } catch (error) {
+    console.error('Failed to send partnership notification:', error);
+    return false;
+  }
+}
+
 export async function sendGeneralInquiryNotification(
   senderName: string,
   senderEmail: string,
