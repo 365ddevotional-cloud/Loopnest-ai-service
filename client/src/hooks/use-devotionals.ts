@@ -14,15 +14,28 @@ export function useTodayDevotional() {
   });
 }
 
+export interface RestrictedDevotionalResponse {
+  restricted: true;
+  message: string;
+  scheduledDate: string;
+}
+
 export function useDevotionalByDate(date: string) {
   return useQuery({
     queryKey: [api.devotionals.getByDate.path, date],
-    queryFn: async () => {
+    queryFn: async (): Promise<{ devotional: Awaited<ReturnType<typeof api.devotionals.getByDate.responses[200]['parse']>> | null; restricted?: RestrictedDevotionalResponse }> => {
       const url = buildUrl(api.devotionals.getByDate.path, { date });
       const res = await fetch(url, { credentials: "include" });
-      if (res.status === 404) return null;
+      if (res.status === 404) return { devotional: null };
+      if (res.status === 403) {
+        const data = await res.json();
+        if (data.restricted) {
+          return { devotional: null, restricted: data as RestrictedDevotionalResponse };
+        }
+      }
       if (!res.ok) throw new Error("Failed to fetch devotional");
-      return api.devotionals.getByDate.responses[200].parse(await res.json());
+      const devotional = api.devotionals.getByDate.responses[200].parse(await res.json());
+      return { devotional };
     },
     enabled: !!date,
   });

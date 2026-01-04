@@ -6,6 +6,7 @@ import { z } from "zod";
 import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification } from "./sendgrid";
 import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import { getTodayDateString, isFutureDate } from "./date-utils";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
@@ -74,13 +75,21 @@ export async function registerRoutes(
 
   // GET Today's Devotional
   app.get(api.devotionals.getToday.path, async (req, res) => {
-    // Ideally, we get today's date in 'YYYY-MM-DD' format
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayDateString();
+    const isAdmin = !!req.session?.isAdmin;
     let devotional = await storage.getDevotionalByDate(today);
     
-    // If no devotional for today, fallback to the latest one
+    // If no devotional for today, fallback to the latest available one
+    // Note: getDevotionals() returns items sorted by date descending (newest first)
     if (!devotional) {
-      devotional = await storage.getLatestDevotional();
+      const all = await storage.getDevotionals();
+      if (isAdmin) {
+        // Admin sees the latest devotional regardless of date
+        devotional = all.length > 0 ? all[0] : undefined;
+      } else {
+        // Non-admin only sees past/present devotionals - find the first non-future one
+        devotional = all.find(d => !isFutureDate(d.date));
+      }
     }
 
     if (!devotional) {
@@ -91,8 +100,20 @@ export async function registerRoutes(
   });
 
   // GET Devotional by specific Date
+  // Non-admin users cannot access future devotionals
   app.get(api.devotionals.getByDate.path, async (req, res) => {
     const date = req.params.date;
+    const isAdmin = !!req.session?.isAdmin;
+    
+    // Check if this is a future date and user is not admin
+    if (!isAdmin && isFutureDate(date)) {
+      return res.status(403).json({ 
+        restricted: true,
+        message: "This devotional will be available on its scheduled date.",
+        scheduledDate: date
+      });
+    }
+    
     const devotional = await storage.getDevotionalByDate(date);
     if (!devotional) {
       return res.status(404).json({ message: "Devotional not found for this date" });
@@ -101,9 +122,18 @@ export async function registerRoutes(
   });
 
   // GET All Devotionals (Archive)
+  // Non-admin users only see past and present devotionals
   app.get(api.devotionals.list.path, async (req, res) => {
     const list = await storage.getDevotionals();
-    res.json(list);
+    const isAdmin = !!req.session?.isAdmin;
+    
+    if (isAdmin) {
+      res.json(list);
+    } else {
+      // Filter out future devotionals for non-admin users
+      const filteredList = list.filter(d => !isFutureDate(d.date));
+      res.json(filteredList);
+    }
   });
 
   // POST Create Devotional (Admin only)
@@ -587,7 +617,7 @@ export async function registerRoutes(
 async function seedDatabase() {
   const existing = await storage.getDevotionals();
   if (existing.length === 0) {
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayDateString();
     
     await storage.createDevotional({
       date: today,
