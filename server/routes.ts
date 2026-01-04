@@ -160,7 +160,8 @@ export async function registerRoutes(
     res.json(requests);
   });
 
-  app.get(api.prayerRequests.getReplies.path, async (req, res) => {
+  // Get replies for prayer request (Admin only)
+  app.get(api.prayerRequests.getReplies.path, requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID" });
@@ -215,8 +216,8 @@ export async function registerRoutes(
     }
   });
 
-  // Get thread messages
-  app.get(api.prayerRequests.getThread.path, async (req, res) => {
+  // Get thread messages (Admin only)
+  app.get(api.prayerRequests.getThread.path, requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID" });
@@ -225,7 +226,7 @@ export async function registerRoutes(
     res.json(messages);
   });
 
-  // Add thread message
+  // Add thread message (Admin only for admin replies)
   app.post(api.prayerRequests.addThreadMessage.path, async (req, res) => {
     try {
       const id = Number(req.params.id);
@@ -233,6 +234,12 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid ID" });
       }
       const { message, senderType } = req.body;
+      
+      // Only admins can send as "admin"
+      if (senderType === "admin" && !req.session?.isAdmin) {
+        return res.status(401).json({ message: "Unauthorized: Admin access required" });
+      }
+      
       const threadMessage = await storage.createThreadMessage({
         requestId: id,
         message,
@@ -312,8 +319,8 @@ export async function registerRoutes(
   // Object Storage Routes
   registerObjectStorageRoutes(app);
 
-  // Prayer Attachment Routes
-  app.get("/api/prayer-requests/:id/attachments", async (req, res) => {
+  // Prayer Attachment Routes (Admin only)
+  app.get("/api/prayer-requests/:id/attachments", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID" });
