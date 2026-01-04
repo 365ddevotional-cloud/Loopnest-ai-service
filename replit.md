@@ -82,6 +82,13 @@ Preferred communication style: Simple, everyday language.
 - **prayerRequests**: User-submitted prayer requests with contact information
 - **prayerReplies**: Admin replies to prayer requests
 
+### Archive Access Control
+The devotional archive implements role-based visibility:
+- **Users (Non-Admin)**: Can only view present (today) and past devotionals. Future-dated devotionals are hidden from lists, search results, and direct URL access.
+- **Admins**: Have full access to all devotionals including future-dated entries for content scheduling.
+- **Restricted Access Message**: When a non-admin attempts to access a future devotional via URL, they see a "Coming Soon" message with the scheduled date.
+- **Timezone Support**: Date comparisons use configurable timezone via `APP_TIMEZONE` environment variable (defaults to America/New_York). The timezone-aware utility is in `server/date-utils.ts`.
+
 ## External Dependencies
 
 ### Database
