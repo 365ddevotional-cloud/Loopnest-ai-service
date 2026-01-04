@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut } from "lucide-react";
+import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import { cn } from "@/lib/utils";
 import logoImage from "@assets/IMG_202512182225101_-_Copy_1767468127874.PNG";
@@ -39,10 +39,13 @@ export function Header() {
     { href: "/prayer-counseling", label: "Prayer / Counseling", icon: MessageCircleHeart, external: false, adminOnly: false },
     { href: "/about", label: "About", icon: Info, external: false, adminOnly: false },
     { href: "/donate", label: "Donate", icon: Heart, external: false, adminOnly: false },
-    { href: "/admin", label: "Admin", icon: Settings, external: false, adminOnly: true },
   ];
 
-  const visibleNavItems = navItems.filter(item => !item.adminOnly || isAdmin);
+  const adminNavItem = isAdmin 
+    ? { href: "/admin", label: "Admin Dashboard", icon: Settings, external: false }
+    : { href: "/admin-login", label: "Login", icon: LogIn, external: false };
+
+  const visibleNavItems = [...navItems, adminNavItem];
 
   return (
     <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-background/98 via-background/95 to-background/98 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 border-b border-primary/15 shadow-sm">
@@ -77,7 +80,7 @@ export function Header() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-muted-foreground hover:bg-primary/5 hover:text-primary"
-                  data-testid="link-youtube-nav"
+                  data-testid={`link-${item.label.toLowerCase().replace(/\s+/g, '-')}-nav`}
                 >
                   <item.icon className="w-4 h-4" />
                   {item.label}
@@ -93,6 +96,7 @@ export function Header() {
                       ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
                       : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
                   )}
+                  data-testid={`link-${item.label.toLowerCase().replace(/\s+/g, '-')}-nav`}
                 >
                   <item.icon className="w-4 h-4" />
                   {item.label}
@@ -138,7 +142,7 @@ export function Header() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex flex-col items-center gap-1 p-2 rounded-lg text-muted-foreground"
-                data-testid="link-youtube-nav-mobile"
+                data-testid={`link-${item.label.toLowerCase().replace(/\s+/g, '-')}-nav-mobile`}
               >
                 <item.icon className="w-6 h-6" />
                 <span className="text-[10px] font-medium uppercase tracking-wider">{item.label}</span>
@@ -147,10 +151,13 @@ export function Header() {
           }
           return (
             <Link key={item.href} href={item.href}>
-              <div className={cn(
-                "flex flex-col items-center gap-1 p-2 rounded-lg",
-                isActive ? "text-primary" : "text-muted-foreground"
-              )}>
+              <div 
+                className={cn(
+                  "flex flex-col items-center gap-1 p-2 rounded-lg",
+                  isActive ? "text-primary" : "text-muted-foreground"
+                )}
+                data-testid={`link-${item.label.toLowerCase().replace(/\s+/g, '-')}-nav-mobile`}
+              >
                 <item.icon className={cn("w-6 h-6", isActive && "fill-current/20")} />
                 <span className="text-[10px] font-medium uppercase tracking-wider">{item.label}</span>
               </div>

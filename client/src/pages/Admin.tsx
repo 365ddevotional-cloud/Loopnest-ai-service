@@ -6,12 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Lock } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import type { PrayerRequest, ThreadMessage, PrayerAttachment } from "@shared/schema";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -461,32 +461,18 @@ function PrayerInbox() {
 
 export default function Admin() {
   const { isAdmin, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!isLoading && !isAdmin) {
+      setLocation("/admin-login");
+    }
+  }, [isAdmin, isLoading, setLocation]);
+
+  if (isLoading || !isAdmin) {
     return (
       <div className="flex items-center justify-center py-24">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="max-w-md mx-auto py-16 text-center">
-        <Card className="bg-card border-card-border shadow-xl shadow-primary/10 p-8">
-          <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-6">
-            <Lock className="w-8 h-8 text-destructive" />
-          </div>
-          <h1 className="font-serif text-2xl font-bold text-foreground mb-4">Unauthorized Access</h1>
-          <p className="text-muted-foreground mb-6">
-            You must be logged in as an admin to access this page.
-          </p>
-          <Link href="/admin-login">
-            <Button data-testid="button-go-to-login">
-              Go to Admin Login
-            </Button>
-          </Link>
-        </Card>
       </div>
     );
   }
