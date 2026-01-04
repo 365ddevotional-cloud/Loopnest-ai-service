@@ -1,7 +1,38 @@
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Mail, MessageCircle, Heart, Lightbulb, Wrench, ExternalLink, HandHeart, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Mail, MessageCircle, Heart, Lightbulb, Wrench, ExternalLink, HandHeart, Clock, CheckCircle, AlertCircle, X } from "lucide-react";
 import { useLocation } from "wouter";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+
+const composeFormSchema = z.object({
+  fullName: z.string().min(2, "Please enter your name"),
+  email: z.string().email("Please enter a valid email address"),
+  subject: z.string().min(3, "Please enter a subject"),
+  message: z.string().min(10, "Please enter a message (at least 10 characters)"),
+  isUrgent: z.boolean().default(false),
+  isPrayerRelated: z.boolean().default(false),
+});
+
+type ComposeFormValues = z.infer<typeof composeFormSchema>;
 
 interface ContactCardProps {
   icon: React.ReactNode;
@@ -36,14 +67,64 @@ function ContactCard({ icon, title, description, onClick, colorClass, borderClas
 
 export default function Contact() {
   const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
-  const openEmail = (subject: string, body: string) => {
-    const mailto = `mailto:365ddevotional@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
+  const form = useForm<ComposeFormValues>({
+    resolver: zodResolver(composeFormSchema),
+    defaultValues: {
+      fullName: "",
+      email: "",
+      subject: "Contact – 365 Daily Devotional",
+      message: "",
+      isUrgent: false,
+      isPrayerRelated: false,
+    },
+  });
+
+  const submitMutation = useMutation({
+    mutationFn: async (data: ComposeFormValues) => {
+      return apiRequest("POST", "/api/contact-messages", data);
+    },
+    onSuccess: () => {
+      setSubmitted(true);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: ComposeFormValues) => {
+    submitMutation.mutate(data);
+  };
+
+  const handleFallbackEmail = () => {
+    const subject = encodeURIComponent(form.getValues("subject") || "Contact – 365 Daily Devotional");
+    const body = encodeURIComponent(form.getValues("message") || "");
+    window.location.href = `mailto:365ddevotional@gmail.com?subject=${subject}&body=${body}`;
   };
 
   const handleMinistryEmailClick = () => {
-    navigate("/contact/compose");
+    setSubmitted(false);
+    form.reset({
+      fullName: "",
+      email: "",
+      subject: "Contact – 365 Daily Devotional",
+      message: "",
+      isUrgent: false,
+      isPrayerRelated: false,
+    });
+    setComposeOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setComposeOpen(false);
+    setSubmitted(false);
   };
 
   const handleGeneralInquiries = () => {
@@ -215,6 +296,168 @@ export default function Contact() {
           </div>
         </div>
       </Card>
+
+      <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-xl text-primary flex items-center gap-2">
+              <Mail className="w-5 h-5" />
+              Compose Message
+            </DialogTitle>
+          </DialogHeader>
+          
+          {submitted ? (
+            <div className="text-center py-6">
+              <div className="w-14 h-14 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-7 h-7 text-green-600 dark:text-green-400" />
+              </div>
+              <h3 className="font-serif text-lg font-bold text-foreground mb-2">Thank You</h3>
+              <p className="text-muted-foreground mb-4">
+                Your message has been sent successfully.
+              </p>
+              <div className="bg-primary/5 border border-primary/10 rounded-lg p-4 mb-4">
+                <p className="font-serif text-primary italic">
+                  "The Lord bless you and keep you."
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">– Numbers 6:24</p>
+              </div>
+              <Button variant="outline" onClick={handleCloseModal} data-testid="button-close-modal">
+                Close
+              </Button>
+            </div>
+          ) : (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="fullName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Full Name <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="Your name" data-testid="input-modal-name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Email <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="your.email@example.com" data-testid="input-modal-email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="subject"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Subject <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="Message subject" data-testid="input-modal-subject" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="message"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Message <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Write your message here..."
+                          className="min-h-[100px] resize-none"
+                          data-testid="textarea-modal-message"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex gap-4">
+                  <FormField
+                    control={form.control}
+                    name="isUrgent"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center gap-2">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            data-testid="checkbox-modal-urgent"
+                          />
+                        </FormControl>
+                        <FormLabel className="cursor-pointer text-sm">Urgent</FormLabel>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="isPrayerRelated"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center gap-2">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            data-testid="checkbox-modal-prayer"
+                          />
+                        </FormControl>
+                        <FormLabel className="cursor-pointer text-sm">Prayer-related</FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="space-y-2 pt-2">
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={submitMutation.isPending}
+                    data-testid="button-modal-send"
+                  >
+                    {submitMutation.isPending ? "Sending..." : "Send Message"}
+                  </Button>
+                  
+                  <button
+                    type="button"
+                    onClick={handleFallbackEmail}
+                    className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1"
+                    data-testid="link-modal-fallback"
+                  >
+                    <AlertCircle className="w-3 h-3" />
+                    Having trouble? Open in email app
+                  </button>
+                </div>
+              </form>
+            </Form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
