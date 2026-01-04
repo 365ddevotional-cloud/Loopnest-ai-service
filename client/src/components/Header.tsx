@@ -52,7 +52,8 @@ export function Header() {
 
   return (
     <header className="sticky top-2 z-50 w-full bg-gradient-to-r from-background/98 via-background/95 to-background/98 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 border-b border-primary/15 shadow-sm mt-2">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
+      <div className="container mx-auto px-4 h-16 flex items-center justify-center lg:justify-between gap-4 relative">
+        {/* Centered Logo and Title */}
         <Link href="/" className="flex items-center gap-3 group">
           <img 
             src={logoImage} 
@@ -120,11 +121,11 @@ export function Header() {
           )}
         </nav>
 
-        {/* Mobile Menu Button */}
+        {/* Mobile Menu Button - Positioned absolutely on the right */}
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-          <SheetTrigger asChild className="lg:hidden">
-            <Button variant="ghost" size="icon" data-testid="button-mobile-menu">
-              <Menu className="w-6 h-6" />
+          <SheetTrigger asChild className="lg:hidden absolute right-4">
+            <Button variant="ghost" size="icon" className="h-11 w-11" data-testid="button-mobile-menu">
+              <Menu className="w-7 h-7" strokeWidth={2.5} />
               <span className="sr-only">Open menu</span>
             </Button>
           </SheetTrigger>
