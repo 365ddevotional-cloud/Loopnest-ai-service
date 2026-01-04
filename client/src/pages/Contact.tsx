@@ -47,10 +47,7 @@ export default function Contact() {
   };
 
   const handleGeneralInquiries = () => {
-    openEmail(
-      "General Inquiry – 365 Daily Devotional",
-      "I have a question regarding the app / devotional content.\n\n"
-    );
+    navigate("/contact/general");
   };
 
   const handleFeedbackSuggestions = () => {

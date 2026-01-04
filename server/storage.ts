@@ -8,6 +8,7 @@ import {
   prayerAttachments,
   supportTickets,
   contactMessages,
+  generalInquiries,
   type Devotional,
   type InsertDevotional,
   type UpdateDevotionalRequest,
@@ -25,6 +26,8 @@ import {
   type InsertSupportTicket,
   type ContactMessage,
   type InsertContactMessage,
+  type GeneralInquiry,
+  type InsertGeneralInquiry,
 } from "@shared/schema";
 import { eq, desc, and } from "drizzle-orm";
 
@@ -71,6 +74,10 @@ export interface IStorage {
   // Contact Messages
   getContactMessages(): Promise<ContactMessage[]>;
   createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
+  
+  // General Inquiries
+  getGeneralInquiries(): Promise<GeneralInquiry[]>;
+  createGeneralInquiry(inquiry: InsertGeneralInquiry): Promise<GeneralInquiry>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -279,6 +286,19 @@ export class DatabaseStorage implements IStorage {
     const [created] = await db
       .insert(contactMessages)
       .values(message)
+      .returning();
+    return created;
+  }
+
+  // General Inquiries
+  async getGeneralInquiries(): Promise<GeneralInquiry[]> {
+    return await db.select().from(generalInquiries).orderBy(desc(generalInquiries.createdAt));
+  }
+
+  async createGeneralInquiry(inquiry: InsertGeneralInquiry): Promise<GeneralInquiry> {
+    const [created] = await db
+      .insert(generalInquiries)
+      .values(inquiry)
       .returning();
     return created;
   }

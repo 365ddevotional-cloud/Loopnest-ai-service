@@ -193,3 +193,23 @@ export const insertContactMessageSchema = createInsertSchema(contactMessages).om
 
 export type ContactMessage = typeof contactMessages.$inferSelect;
 export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
+
+// General Inquiries Table
+export const generalInquiries = pgTable("general_inquiries", {
+  id: serial("id").primaryKey(),
+  fullName: text("full_name").notNull(),
+  email: text("email").notNull(),
+  topic: text("topic").notNull(),
+  message: text("message").notNull(),
+  status: text("status").default("new").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertGeneralInquirySchema = createInsertSchema(generalInquiries).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+});
+
+export type GeneralInquiry = typeof generalInquiries.$inferSelect;
+export type InsertGeneralInquiry = z.infer<typeof insertGeneralInquirySchema>;

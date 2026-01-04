@@ -1,0 +1,103 @@
+Update the Contact Us page so the General Inquiries card is fully clickable and routes users to a dedicated help page.
+
+1) Click behavior
+
+When user clicks General Inquiries card, navigate to:
+/contact/general
+
+2) If /contact/general does not exist
+
+Create it and add professional, ministry-appropriate content + a simple inquiry form.
+
+Create /contact/general page content (if missing)
+
+Page title: General Inquiries
+Intro text:
+“Have a question about the app, devotionals, or ministry resources? Send us a message and we’ll respond as soon as possible.”
+
+“Quick Help” section (show as clean cards or bullets)
+
+About the App
+
+What is 365 Daily Devotional?
+A daily Scripture-based devotional to help believers grow through the Word, prayer points, and faith declarations.
+
+Today & Archive
+
+Today: Read the current devotional.
+
+Archive: Browse past devotionals by date.
+
+Prayer & Counseling
+
+For prayer requests or counseling needs, use the Prayer / Counseling page to submit your request (anonymous option available).
+
+YouTube
+
+Watch prayers, devotionals, worship, and Bible stories on our YouTube section.
+
+Shop / Resources
+
+Explore resources that support your spiritual growth. Purchases are optional.
+
+Donations
+
+Giving is optional and never required to access devotionals.
+
+“Response Time” section
+
+“We aim to respond within 2–3 business days. During high-volume periods, replies may take a little longer.”
+
+Add a “General Inquiry Form”
+
+Fields:
+
+Full Name (required)
+
+Email Address (required)
+
+Topic (dropdown):
+
+App Question
+
+Devotional Content
+
+Prayer / Counseling
+
+YouTube / Media
+
+Shop / Resources
+
+Other
+
+Message (required)
+
+Submit behavior:
+
+Send to 365ddevotional@gmail.com
+
+Save a copy to the admin inbox as category General Inquiry
+
+Show success toast/message:
+“Thank you! Your message has been received.”
+
+Auto-fill subject line for outgoing email:
+
+General Inquiry – 365 Daily Devotional
+
+3) Fallback behavior
+
+If internal route fails, open the user’s email client using:
+mailto:365ddevotional@gmail.com?subject=General%20Inquiry%20%E2%80%93%20365%20Daily%20Devotional
+
+UX Requirements
+
+Entire card clickable + hover + pointer cursor
+
+Mobile responsive
+
+Consistent styling with the app
+
+No admin links exposed publicly
+
+Keep wording mature, calm, and professional

@@ -20,6 +20,7 @@ import TermsOfUse from "@/pages/TermsOfUse";
 import Disclaimer from "@/pages/Disclaimer";
 import Contact from "@/pages/Contact";
 import ContactCompose from "@/pages/ContactCompose";
+import GeneralInquiries from "@/pages/GeneralInquiries";
 import Support from "@/pages/Support";
 import NotFound from "@/pages/not-found";
 
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/disclaimer" component={Disclaimer} />
       <Route path="/contact" component={Contact} />
       <Route path="/contact/compose" component={ContactCompose} />
+      <Route path="/contact/general" component={GeneralInquiries} />
       <Route path="/support" component={Support} />
       <Route path="/admin-login" component={AdminLogin} />
       <Route component={NotFound} />

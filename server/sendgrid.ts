@@ -144,6 +144,65 @@ export async function sendContactMessageNotification(
   }
 }
 
+export async function sendGeneralInquiryNotification(
+  senderName: string,
+  senderEmail: string,
+  topic: string,
+  message: string
+): Promise<boolean> {
+  try {
+    const { client, fromEmail } = await getUncachableSendGridClient();
+    
+    const topicLabels: Record<string, string> = {
+      app_question: "App Question",
+      devotional_content: "Devotional Content",
+      prayer_counseling: "Prayer / Counseling",
+      youtube_media: "YouTube / Media",
+      shop_resources: "Shop / Resources",
+      other: "Other",
+    };
+    
+    const topicLabel = topicLabels[topic] || topic;
+    
+    const msg = {
+      to: '365ddevotional@gmail.com',
+      from: fromEmail,
+      replyTo: senderEmail,
+      subject: `General Inquiry – 365 Daily Devotional [${topicLabel}]`,
+      text: `New General Inquiry from ${senderName} (${senderEmail})\n\nTopic: ${topicLabel}\n\nMessage:\n${message}\n\n---\nThis message was sent via 365 Daily Devotional General Inquiry form.`,
+      html: `
+        <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #9c6b30; margin: 0;">365 Daily Devotional</h1>
+            <p style="color: #666; margin: 5px 0;">General Inquiry</p>
+          </div>
+          
+          <div style="background-color: #f8f6f3; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <p style="margin: 5px 0;"><strong>From:</strong> ${senderName}</p>
+            <p style="margin: 5px 0;"><strong>Email:</strong> ${senderEmail}</p>
+            <p style="margin: 5px 0;"><strong>Topic:</strong> ${topicLabel}</p>
+          </div>
+          
+          <div style="border-left: 4px solid #9c6b30; padding: 20px; margin: 20px 0;">
+            <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${message}</p>
+          </div>
+          
+          <p style="color: #666; font-size: 12px; margin-top: 30px; text-align: center;">
+            This message was sent via 365 Daily Devotional General Inquiry form.
+          </p>
+        </div>
+      `
+    };
+
+    await client.send(msg);
+    console.log(`General inquiry notification sent for ${senderEmail}`);
+    return true;
+  } catch (error) {
+    console.error('Failed to send general inquiry notification:', error);
+    return false;
+  }
+}
+
 export async function sendContactAutoReply(
   toEmail: string,
   recipientName: string

@@ -3,7 +3,7 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply } from "./sendgrid";
+import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification } from "./sendgrid";
 import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 
@@ -446,6 +446,46 @@ export async function registerRoutes(
   app.get("/api/contact-messages", requireAdmin, async (req, res) => {
     const messages = await storage.getContactMessages();
     res.json(messages);
+  });
+
+  // General Inquiries Routes
+  app.post("/api/general-inquiries", async (req, res) => {
+    try {
+      const { insertGeneralInquirySchema } = await import("@shared/schema");
+      const input = insertGeneralInquirySchema.parse(req.body);
+      const inquiry = await storage.createGeneralInquiry(input);
+      
+      // Send notification email to ministry
+      sendGeneralInquiryNotification(
+        input.fullName,
+        input.email,
+        input.topic,
+        input.message
+      ).catch(err => console.error("Failed to send inquiry notification:", err));
+      
+      // Send auto-reply to sender
+      sendContactAutoReply(
+        input.email,
+        input.fullName
+      ).catch(err => console.error("Failed to send auto-reply:", err));
+      
+      res.status(201).json(inquiry);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join("."),
+        });
+      }
+      console.error("Error creating general inquiry:", err);
+      res.status(500).json({ message: "Failed to submit inquiry" });
+    }
+  });
+
+  // Get general inquiries (Admin only)
+  app.get("/api/general-inquiries", requireAdmin, async (req, res) => {
+    const inquiries = await storage.getGeneralInquiries();
+    res.json(inquiries);
   });
 
   // Seed Data if empty
