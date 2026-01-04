@@ -6,7 +6,7 @@ import { SiPaypal, SiCashapp } from "react-icons/si";
 
 export default function Donate() {
   return (
-    <div className="max-w-4xl mx-auto py-8">
+    <div id="donate" className="max-w-4xl mx-auto py-8">
       <div className="text-center mb-12 space-y-4">
         <h1 className="font-serif text-4xl md:text-5xl font-bold text-primary">Support the Daily Devotional</h1>
         <div className="w-24 h-1 bg-primary mx-auto rounded-full opacity-30" />

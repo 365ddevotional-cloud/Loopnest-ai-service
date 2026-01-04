@@ -311,7 +311,7 @@ export default function PrayerCounseling() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 md:p-12 space-y-6">
+        <form id="request-form" onSubmit={handleSubmit} className="p-8 md:p-12 space-y-6">
           <div className="flex items-center gap-3 mb-6">
             <Checkbox
               id="isAnonymous"

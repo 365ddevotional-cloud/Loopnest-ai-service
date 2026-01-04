@@ -41,7 +41,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
         <Separator className="bg-primary/20 my-8" />
 
         {/* Action Points Grid */}
-        <div className="grid md:grid-cols-2 gap-8 md:gap-12">
+        <div id="prayer-points" className="grid md:grid-cols-2 gap-8 md:gap-12">
           {/* Prayer Points */}
           <div className="bg-primary/5 p-6 rounded-xl border border-primary/10">
             <h3 className="flex items-center gap-2 font-serif text-xl font-bold text-primary mb-4">

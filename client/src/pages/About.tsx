@@ -56,7 +56,7 @@ export default function About() {
 
           <Separator className="bg-primary/10" />
 
-          <div className="text-center space-y-4">
+          <div id="youtube" className="text-center space-y-4">
             <h3 className="font-bold text-foreground">YouTube Channel</h3>
             <p>
               Watch inspiring devotionals, Bible stories, and worship content. Subscribe to stay encouraged in your faith journey.

@@ -2,39 +2,83 @@ import { useTodayDevotional } from "@/hooks/use-devotionals";
 import { DevotionalCard } from "@/components/DevotionalCard";
 import { Loader2, BookX, BookOpen, Heart, MessageCircle, Play, Gift, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useRef } from "react";
 
-const ONBOARDING_ITEMS = [
+type OnboardingAction = 
+  | { type: "scroll"; target: string }
+  | { type: "route"; path: string; hash?: string }
+  | { type: "external"; url: string };
+
+interface OnboardingItem {
+  icon: typeof BookOpen;
+  title: string;
+  description: string;
+  action: OnboardingAction;
+}
+
+const ONBOARDING_ITEMS: OnboardingItem[] = [
   {
     icon: BookOpen,
     title: "Read the Daily Devotional",
     description: "Each day, start with a fresh, Scripture-based devotional designed to strengthen your faith and guide your walk with God.",
+    action: { type: "scroll", target: "today-devotional" },
   },
   {
     icon: Heart,
     title: "Pray and Reflect",
     description: "Use the Prayer Points and Faith Declarations to pray intentionally and apply God's Word to your life.",
+    action: { type: "scroll", target: "prayer-points" },
   },
   {
     icon: MessageCircle,
     title: "Submit Prayer or Counseling Requests",
     description: "Click Prayer / Counseling to share a request. You may submit anonymously, choose urgency, and receive encouragement and follow-up.",
+    action: { type: "route", path: "/prayer-counseling", hash: "request-form" },
   },
   {
     icon: Play,
     title: "Watch & Listen",
     description: "Visit the YouTube section for Bible stories, prayers, worship, and seasonal songs to support your spiritual growth.",
+    action: { type: "route", path: "/about", hash: "youtube" },
   },
   {
     icon: Gift,
     title: "Support This Kingdom Work",
     description: "If this ministry blesses you, you may choose to support through donations or resources in the Shop. Giving is optional and never required.",
+    action: { type: "route", path: "/donate", hash: "donate" },
   },
 ];
 
 function OnboardingSection({ onContinue }: { onContinue: () => void }) {
+  const [, setLocation] = useLocation();
+
+  const handleItemClick = (item: OnboardingItem) => {
+    const { action } = item;
+    
+    if (action.type === "scroll") {
+      const element = document.getElementById(action.target);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    } else if (action.type === "route") {
+      if (action.hash) {
+        setLocation(action.path);
+        setTimeout(() => {
+          const element = document.getElementById(action.hash!);
+          if (element) {
+            element.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }, 100);
+      } else {
+        setLocation(action.path);
+      }
+    } else if (action.type === "external") {
+      window.open(action.url, "_blank", "noopener,noreferrer");
+    }
+  };
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 10 }}
@@ -56,8 +100,17 @@ function OnboardingSection({ onContinue }: { onContinue: () => void }) {
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, delay: index * 0.08 }}
-            className="flex gap-4 p-4 md:p-5 bg-card/50 rounded-lg border border-primary/10"
+            onClick={() => handleItemClick(item)}
+            className="flex gap-4 p-4 md:p-5 bg-card/50 rounded-lg border border-primary/10 cursor-pointer transition-colors hover:bg-primary/5"
             data-testid={`card-onboarding-${index}`}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleItemClick(item);
+              }
+            }}
           >
             <div className="flex-shrink-0">
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -143,7 +196,7 @@ export default function Home() {
     <div className="pb-12">
       <OnboardingSection onContinue={scrollToDevotional} />
       
-      <div ref={devotionalRef}>
+      <div ref={devotionalRef} id="today-devotional">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
