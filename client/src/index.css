@@ -5,46 +5,146 @@
 @tailwind utilities;
 
 :root {
-  /* Elegant Beige & Gold Palette */
-  --background: 40 20% 97%;      /* #F8F6F3 - Warm Beige */
-  --foreground: 30 15% 20%;      /* #3D352E - Dark Brown-Grey */
+  /* Professional Sunrise-Inspired Palette */
+  --background: 40 33% 96%;           /* Warm Ivory */
+  --foreground: 20 15% 22%;           /* Soft Charcoal */
   
-  --primary: 34 53% 40%;         /* #9C6B30 - Gold/Bronze Accent */
-  --primary-foreground: 40 20% 97%; 
+  --card: 30 22% 92%;                 /* Warm Surface */
+  --card-foreground: 20 15% 22%;
+  --card-border: 30 20% 82%;
   
-  --secondary: 40 20% 92%;       /* #EBE8E3 - Slightly darker beige for cards */
-  --secondary-foreground: 30 15% 20%;
+  --popover: 30 22% 92%;
+  --popover-foreground: 20 15% 22%;
+  --popover-border: 30 20% 82%;
   
-  --muted: 40 10% 85%;
-  --muted-foreground: 30 10% 40%;
+  --primary: 12 45% 34%;              /* Deep Fig/Burgundy */
+  --primary-foreground: 40 33% 96%;
+  --primary-border: hsl(12 45% 28%);
   
-  --accent: 34 53% 40%;
-  --accent-foreground: 40 20% 97%;
+  --secondary: 152 16% 36%;           /* Sage Green */
+  --secondary-foreground: 40 33% 96%;
+  --secondary-border: hsl(152 16% 30%);
   
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 210 40% 98%;
+  --muted: 35 15% 88%;
+  --muted-foreground: 20 10% 45%;
+  --muted-border: hsl(35 15% 78%);
+  
+  --accent: 34 46% 52%;               /* Antique Gold */
+  --accent-foreground: 20 15% 15%;
+  --accent-border: hsl(34 46% 42%);
+  
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --destructive-border: hsl(0 72% 41%);
 
-  --border: 34 30% 85%;
-  --input: 34 30% 85%;
-  --ring: 34 53% 40%;
+  --border: 30 20% 82%;
+  --input: 30 20% 85%;
+  --ring: 12 45% 34%;
 
   --radius: 0.5rem;
   
   --font-serif: 'Playfair Display', serif;
   --font-sans: 'DM Sans', sans-serif;
+  
+  /* Chart Colors - Colorful and Harmonious */
+  --chart-1: 12 45% 34%;              /* Deep Fig */
+  --chart-2: 152 16% 36%;             /* Sage */
+  --chart-3: 34 46% 52%;              /* Gold */
+  --chart-4: 10 49% 58%;              /* Coral */
+  --chart-5: 200 35% 45%;             /* Dusty Blue */
+  
+  /* Sidebar */
+  --sidebar: 20 18% 18%;              /* Dark Espresso */
+  --sidebar-foreground: 40 20% 92%;
+  --sidebar-border: 20 15% 25%;
+  --sidebar-ring: 34 46% 52%;
+  --sidebar-primary: 34 46% 52%;
+  --sidebar-primary-foreground: 20 15% 15%;
+  --sidebar-primary-border: hsl(34 46% 42%);
+  --sidebar-accent: 20 18% 25%;
+  --sidebar-accent-foreground: 40 20% 92%;
+  --sidebar-accent-border: hsl(20 15% 30%);
+}
+
+.dark {
+  --background: 20 18% 12%;
+  --foreground: 40 20% 92%;
+  
+  --card: 20 15% 16%;
+  --card-foreground: 40 20% 92%;
+  --card-border: 20 12% 25%;
+  
+  --popover: 20 15% 16%;
+  --popover-foreground: 40 20% 92%;
+  --popover-border: 20 12% 25%;
+  
+  --primary: 12 50% 55%;
+  --primary-foreground: 20 18% 12%;
+  --primary-border: hsl(12 50% 45%);
+  
+  --secondary: 152 20% 50%;
+  --secondary-foreground: 20 18% 12%;
+  --secondary-border: hsl(152 20% 40%);
+  
+  --muted: 20 12% 25%;
+  --muted-foreground: 35 15% 65%;
+  --muted-border: hsl(20 12% 35%);
+  
+  --accent: 34 55% 60%;
+  --accent-foreground: 20 15% 12%;
+  --accent-border: hsl(34 55% 50%);
+  
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --destructive-border: hsl(0 72% 41%);
+
+  --border: 20 12% 25%;
+  --input: 20 12% 22%;
+  --ring: 12 50% 55%;
+  
+  --chart-1: 12 50% 55%;
+  --chart-2: 152 25% 55%;
+  --chart-3: 34 55% 60%;
+  --chart-4: 10 55% 65%;
+  --chart-5: 200 40% 55%;
+  
+  --sidebar: 20 20% 10%;
+  --sidebar-foreground: 40 20% 92%;
+  --sidebar-border: 20 15% 18%;
+  --sidebar-ring: 34 55% 60%;
+  --sidebar-primary: 34 55% 60%;
+  --sidebar-primary-foreground: 20 15% 12%;
+  --sidebar-primary-border: hsl(34 55% 50%);
+  --sidebar-accent: 20 18% 18%;
+  --sidebar-accent-foreground: 40 20% 92%;
+  --sidebar-accent-border: hsl(20 15% 25%);
 }
 
 @layer base {
   body {
     @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
     font-family: var(--font-sans);
-    background-image: radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, transparent 100%),
-                      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239c6b30' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-image: 
+      radial-gradient(ellipse at top, hsl(34 46% 52% / 0.05) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, hsl(12 45% 34% / 0.03) 0%, transparent 40%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%237C3A2A' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-serif);
     @apply font-bold tracking-tight text-primary;
+  }
+  
+  h1 {
+    @apply text-4xl md:text-5xl lg:text-6xl;
+  }
+  
+  h2 {
+    @apply text-2xl md:text-3xl lg:text-4xl;
+  }
+  
+  h3 {
+    @apply text-xl md:text-2xl;
   }
 }
 
@@ -79,4 +179,38 @@
 .page-exit-active {
   opacity: 0;
   transition: opacity 300ms;
+}
+
+/* Gradient text utility */
+.gradient-text {
+  @apply bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent;
+}
+
+/* Decorative divider */
+.decorative-divider {
+  @apply h-1 w-24 mx-auto rounded-full;
+  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--secondary)));
+}
+
+/* Card hover enhancement */
+.card-hover {
+  @apply transition-all duration-300;
+}
+.card-hover:hover {
+  @apply shadow-lg shadow-primary/10 -translate-y-0.5;
+}
+
+/* Professional button glow */
+.btn-glow {
+  @apply relative overflow-hidden;
+}
+.btn-glow::after {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full;
+  animation: shimmer 2s infinite;
+}
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }

@@ -301,12 +301,13 @@ export default function PrayerCounseling() {
     <div className="max-w-2xl mx-auto py-8">
       <div className="text-center mb-12 space-y-4">
         <h1 className="font-serif text-4xl md:text-5xl font-bold text-primary">Prayer & Counseling Request</h1>
-        <div className="w-24 h-1 bg-primary mx-auto rounded-full opacity-30" />
+        <div className="decorative-divider" />
       </div>
 
-      <Card className="bg-white border-primary/10 shadow-xl shadow-primary/5 overflow-hidden">
-        <div className="bg-primary/5 p-8 md:p-12 text-center">
-          <p className="text-lg text-muted-foreground font-serif leading-relaxed">
+      <Card className="bg-card border-card-border shadow-xl shadow-primary/10 overflow-hidden">
+        <div className="relative bg-gradient-to-br from-secondary/15 via-primary/10 to-accent/15 p-8 md:p-12 text-center">
+          <div className="absolute inset-0 opacity-30 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M0%200h20v20H0z%22%20fill%3D%22none%22%2F%3E%3Cpath%20d%3D%22M10%2010m-1%200a1%201%200%201%200%202%200a1%201%200%201%200-2%200%22%20fill%3D%22%234F6A57%22%20fill-opacity%3D%220.1%22%2F%3E%3C%2Fsvg%3E')]" />
+          <p className="relative text-lg text-foreground/80 font-serif leading-relaxed">
             Share your prayer requests or counseling needs with us. Our team will respond with prayer and encouragement.
           </p>
         </div>

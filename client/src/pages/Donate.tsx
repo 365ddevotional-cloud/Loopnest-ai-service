@@ -9,16 +9,21 @@ export default function Donate() {
     <div id="donate" className="max-w-4xl mx-auto py-8">
       <div className="text-center mb-12 space-y-4">
         <h1 className="font-serif text-4xl md:text-5xl font-bold text-primary">Support the Daily Devotional</h1>
-        <div className="w-24 h-1 bg-primary mx-auto rounded-full opacity-30" />
+        <div className="decorative-divider" />
       </div>
 
-      <Card className="bg-white border-primary/10 shadow-xl shadow-primary/5 overflow-hidden">
-        <div className="bg-primary/5 p-8 md:p-12 text-center">
-          <Heart className="w-12 h-12 text-primary mx-auto mb-4" />
-          <p className="text-lg text-primary font-medium italic font-serif">
-            "Each of you should give what you have decided in your heart to give, not reluctantly or under compulsion, for God loves a cheerful giver."
-          </p>
-          <p className="text-sm text-muted-foreground mt-2">— 2 Corinthians 9:7</p>
+      <Card className="bg-card border-card-border shadow-xl shadow-primary/10 overflow-hidden">
+        <div className="relative bg-gradient-to-br from-accent/20 via-primary/10 to-secondary/15 p-8 md:p-12 text-center">
+          <div className="absolute inset-0 opacity-30 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M0%200h20v20H0z%22%20fill%3D%22none%22%2F%3E%3Cpath%20d%3D%22M10%2010m-1%200a1%201%200%201%200%202%200a1%201%200%201%200-2%200%22%20fill%3D%22%23C58E45%22%20fill-opacity%3D%220.1%22%2F%3E%3C%2Fsvg%3E')]" />
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-5 shadow-lg">
+              <Heart className="w-8 h-8 text-white" />
+            </div>
+            <p className="text-lg text-primary font-medium italic font-serif">
+              "Each of you should give what you have decided in your heart to give, not reluctantly or under compulsion, for God loves a cheerful giver."
+            </p>
+            <p className="text-sm text-muted-foreground mt-2 font-medium">— 2 Corinthians 9:7</p>
+          </div>
         </div>
 
         <div className="p-8 md:p-12 space-y-8 font-serif leading-relaxed text-lg text-muted-foreground">

@@ -36,13 +36,13 @@ export function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-primary/10">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 group">
+    <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-background/98 via-background/95 to-background/98 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 border-b border-primary/15 shadow-sm">
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
+        <Link href="/" className="flex items-center gap-3 group">
           <img 
             src={logoImage} 
             alt="365 Daily Devotional" 
-            className="w-10 h-10 object-contain"
+            className="w-10 h-10 object-contain transition-transform group-hover:scale-105"
           />
           <span className="font-serif text-xl font-bold text-primary tracking-tight">
             Daily Devotional

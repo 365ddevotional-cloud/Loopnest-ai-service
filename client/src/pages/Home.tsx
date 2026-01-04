@@ -87,47 +87,63 @@ function OnboardingSection({ onContinue }: { onContinue: () => void }) {
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="mb-12"
     >
-      <div className="text-center mb-8">
-        <h2 className="font-serif text-2xl md:text-3xl font-bold text-primary mb-2" data-testid="text-onboarding-title">
+      <div className="text-center mb-10">
+        <h2 className="font-serif text-2xl md:text-3xl font-bold text-primary mb-3" data-testid="text-onboarding-title">
           How to Use 365 Daily Devotional
         </h2>
-        <div className="w-16 h-1 bg-primary/30 mx-auto rounded-full" />
+        <div className="decorative-divider" />
       </div>
 
-      <div className="grid gap-4 md:gap-6">
-        {ONBOARDING_ITEMS.map((item, index) => (
-          <motion.div
-            key={item.title}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.08 }}
-            onClick={() => handleItemClick(item)}
-            className="flex gap-4 p-4 md:p-5 bg-card/50 rounded-lg border border-primary/10 cursor-pointer transition-colors hover:bg-primary/5"
-            data-testid={`card-onboarding-${index}`}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleItemClick(item);
-              }
-            }}
-          >
-            <div className="flex-shrink-0">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <item.icon className="w-5 h-5 text-primary" />
+      <div className="grid gap-4 md:gap-5">
+        {ONBOARDING_ITEMS.map((item, index) => {
+          const colorVariants = [
+            "from-primary/15 to-primary/5 border-primary/20 hover:border-primary/40",
+            "from-secondary/15 to-secondary/5 border-secondary/20 hover:border-secondary/40",
+            "from-accent/15 to-accent/5 border-accent/20 hover:border-accent/40",
+            "from-primary/10 via-accent/10 to-secondary/10 border-accent/20 hover:border-accent/40",
+            "from-secondary/10 via-primary/5 to-accent/10 border-primary/20 hover:border-primary/40",
+          ];
+          const iconColors = [
+            "bg-primary text-primary-foreground",
+            "bg-secondary text-secondary-foreground",
+            "bg-accent text-accent-foreground",
+            "bg-gradient-to-br from-primary to-accent text-white",
+            "bg-gradient-to-br from-secondary to-primary text-white",
+          ];
+          return (
+            <motion.div
+              key={item.title}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.08 }}
+              onClick={() => handleItemClick(item)}
+              className={`flex gap-4 p-5 md:p-6 bg-gradient-to-br ${colorVariants[index % colorVariants.length]} rounded-xl border cursor-pointer transition-all duration-300 hover:shadow-md hover:-translate-y-0.5`}
+              data-testid={`card-onboarding-${index}`}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleItemClick(item);
+                }
+              }}
+            >
+              <div className="flex-shrink-0">
+                <div className={`w-11 h-11 rounded-xl ${iconColors[index % iconColors.length]} flex items-center justify-center shadow-sm`}>
+                  <item.icon className="w-5 h-5" />
+                </div>
               </div>
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-serif font-semibold text-foreground mb-1">
-                {item.title}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {item.description}
-              </p>
-            </div>
-          </motion.div>
-        ))}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-serif font-bold text-foreground mb-1.5 text-lg">
+                  {item.title}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {item.description}
+                </p>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
       <div className="text-center mt-8">
