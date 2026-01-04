@@ -4,6 +4,15 @@
 
 A faith-based daily devotional web application that provides believers with daily spiritual content including scripture readings, reflections, prayer points, and faith declarations. The platform features a content management system for publishing devotionals, an archive for browsing past entries, and a prayer request submission system.
 
+## Google Play Store Compliance (January 2026)
+
+The app includes all required legal pages for app store compliance:
+- **Privacy Policy** (`/privacy-policy`): Data collection, usage, security, no data selling
+- **Terms of Use** (`/terms-of-use`): Spiritual encouragement disclaimer, acceptable use
+- **Disclaimer** (`/disclaimer`): Faith-based content notice, crisis resources
+- **Contact Us** (`/contact`): Ministry email and contact purposes
+- **Footer**: Links to all legal pages on every page
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -14,7 +23,7 @@ Preferred communication style: Simple, everyday language.
 - **Framework**: React 18 with TypeScript
 - **Routing**: Wouter (lightweight React router)
 - **State Management**: TanStack React Query for server state and caching
-- **Styling**: Tailwind CSS with custom theme configuration (warm beige/gold palette)
+- **Styling**: Tailwind CSS with custom theme configuration (deep burgundy/sage green/antique gold palette)
 - **UI Components**: shadcn/ui component library built on Radix UI primitives
 - **Animations**: Framer Motion for page transitions and card reveals
 - **Build Tool**: Vite with custom path aliases (@/, @shared/, @assets/)
