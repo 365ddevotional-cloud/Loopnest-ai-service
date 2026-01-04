@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
@@ -7,10 +7,52 @@ import { sendPrayerReplyNotification } from "./sendgrid";
 import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+if (!ADMIN_PASSWORD) {
+  console.warn("WARNING: ADMIN_PASSWORD not set. Admin login will be disabled.");
+}
+
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (req.session?.isAdmin) {
+    next();
+  } else {
+    res.status(401).json({ message: "Unauthorized: Admin access required" });
+  }
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express,
 ): Promise<Server> {
+  // Auth Routes
+  app.post("/api/auth/login", (req, res) => {
+    if (!ADMIN_PASSWORD) {
+      return res.status(503).json({ success: false, message: "Admin login not configured" });
+    }
+    const { password } = req.body;
+    if (password === ADMIN_PASSWORD) {
+      req.session.isAdmin = true;
+      res.json({ success: true, message: "Login successful" });
+    } else {
+      res.status(401).json({ success: false, message: "Invalid password" });
+    }
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        res.status(500).json({ message: "Logout failed" });
+      } else {
+        res.json({ success: true, message: "Logged out" });
+      }
+    });
+  });
+
+  app.get("/api/auth/check", (req, res) => {
+    res.json({ isAdmin: !!req.session?.isAdmin });
+  });
+
   // GET Today's Devotional
   app.get(api.devotionals.getToday.path, async (req, res) => {
     // Ideally, we get today's date in 'YYYY-MM-DD' format
@@ -45,8 +87,8 @@ export async function registerRoutes(
     res.json(list);
   });
 
-  // POST Create Devotional
-  app.post(api.devotionals.create.path, async (req, res) => {
+  // POST Create Devotional (Admin only)
+  app.post(api.devotionals.create.path, requireAdmin, async (req, res) => {
     try {
       const input = api.devotionals.create.input.parse(req.body);
       
@@ -69,8 +111,8 @@ export async function registerRoutes(
     }
   });
 
-  // DELETE Devotional
-  app.delete(api.devotionals.delete.path, async (req, res) => {
+  // DELETE Devotional (Admin only)
+  app.delete(api.devotionals.delete.path, requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID" });
@@ -112,7 +154,8 @@ export async function registerRoutes(
     }
   });
 
-  app.get(api.prayerRequests.list.path, async (req, res) => {
+  // Prayer request list (Admin only)
+  app.get(api.prayerRequests.list.path, requireAdmin, async (req, res) => {
     const requests = await storage.getPrayerRequests();
     res.json(requests);
   });
@@ -139,8 +182,8 @@ export async function registerRoutes(
     res.json(request);
   });
 
-  // Update prayer request status
-  app.patch(api.prayerRequests.updateStatus.path, async (req, res) => {
+  // Update prayer request status (Admin only)
+  app.patch(api.prayerRequests.updateStatus.path, requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID" });
@@ -153,8 +196,8 @@ export async function registerRoutes(
     res.json(updated);
   });
 
-  // Update prayer request category
-  app.patch("/api/prayer-requests/:id/category", async (req, res) => {
+  // Update prayer request category (Admin only)
+  app.patch("/api/prayer-requests/:id/category", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID" });
@@ -249,7 +292,8 @@ export async function registerRoutes(
     res.json(template);
   });
 
-  app.post(api.autoReplyTemplates.upsert.path, async (req, res) => {
+  // Update auto-reply templates (Admin only)
+  app.post(api.autoReplyTemplates.upsert.path, requireAdmin, async (req, res) => {
     try {
       const input = api.autoReplyTemplates.upsert.input.parse(req.body);
       const template = await storage.upsertAutoReplyTemplate(input);

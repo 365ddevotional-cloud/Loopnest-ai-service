@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import session from "express-session";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -12,6 +13,12 @@ declare module "http" {
   }
 }
 
+declare module "express-session" {
+  interface SessionData {
+    isAdmin?: boolean;
+  }
+}
+
 app.use(
   express.json({
     verify: (req, _res, buf) => {
@@ -21,6 +28,24 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+
+const sessionSecret = process.env.SESSION_SECRET;
+if (!sessionSecret) {
+  console.warn("WARNING: SESSION_SECRET not set. Using default for development only.");
+}
+
+app.use(
+  session({
+    secret: sessionSecret || "dev-only-secret-not-for-production",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000,
+    },
+  })
+);
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {

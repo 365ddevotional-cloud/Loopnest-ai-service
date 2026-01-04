@@ -5,9 +5,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Header } from "@/components/Header";
 import Footer from "@/components/Footer";
+import { AuthProvider } from "@/contexts/AuthContext";
 import Home from "@/pages/Home";
 import Archive from "@/pages/Archive";
 import Admin from "@/pages/Admin";
+import AdminLogin from "@/pages/AdminLogin";
 import About from "@/pages/About";
 import Donate from "@/pages/Donate";
 import PrayerCounseling from "@/pages/PrayerCounseling";
@@ -34,6 +36,7 @@ function Router() {
       <Route path="/terms-of-use" component={TermsOfUse} />
       <Route path="/disclaimer" component={Disclaimer} />
       <Route path="/contact" component={Contact} />
+      <Route path="/admin-login" component={AdminLogin} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -42,16 +45,18 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <div className="min-h-screen flex flex-col bg-background font-sans text-foreground">
-          <Header />
-          <main className="flex-grow container mx-auto px-4 py-8">
-            <Router />
-          </main>
-          <Footer />
-          <Toaster />
-        </div>
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <div className="min-h-screen flex flex-col bg-background font-sans text-foreground">
+            <Header />
+            <main className="flex-grow container mx-auto px-4 py-8">
+              <Router />
+            </main>
+            <Footer />
+            <Toaster />
+          </div>
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
