@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Loader2, BookOpen } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ShareButton } from "@/components/ShareButton";
 import { useTranslation, TRANSLATION_LABELS } from "@/contexts/TranslationContext";
 import type { BiblePassage } from "@shared/schema";
 
@@ -122,14 +123,20 @@ export function DailyBibleVerse() {
       className="p-6 md:p-8 border-primary/10 bg-gradient-to-br from-primary/5 to-transparent"
       data-testid="card-daily-verse"
     >
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
         <BookOpen className="h-5 w-5 text-primary" />
         <h2 className="font-serif text-lg font-semibold text-primary" data-testid="text-daily-verse-title">
           Daily Bible Verse
         </h2>
-        <Badge variant="secondary" className="ml-auto text-xs">
-          {TRANSLATION_LABELS[translation]}
-        </Badge>
+        <div className="ml-auto flex items-center gap-2">
+          <Badge variant="secondary" className="text-xs">
+            {TRANSLATION_LABELS[translation]}
+          </Badge>
+          <ShareButton
+            title="Daily Bible Verse"
+            text={`"${dailyVerse.content}"\n\n— ${dailyVerse.reference}\n\nBible verse from ${TRANSLATION_LABELS[translation]} (Public Domain)`}
+          />
+        </div>
       </div>
       
       <blockquote 

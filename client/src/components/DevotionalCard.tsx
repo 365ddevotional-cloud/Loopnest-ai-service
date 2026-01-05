@@ -3,6 +3,7 @@ import { type DevotionalResponse } from "@shared/schema";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { ShareButton } from "@/components/ShareButton";
 import { useScriptureText } from "@/hooks/use-scripture";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { Loader2 } from "lucide-react";
@@ -100,8 +101,14 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
           </div>
         </div>
 
-        <div className="text-center pt-8 text-sm text-muted-foreground font-medium tracking-wide">
-          Author: {devotional.author}
+        <div className="flex items-center justify-between pt-8 flex-wrap gap-4">
+          <span className="text-sm text-muted-foreground font-medium tracking-wide">
+            Author: {devotional.author}
+          </span>
+          <ShareButton
+            title={devotional.title}
+            text={`${devotional.title}\n\n"${scriptureText}"\n— ${devotional.scriptureReference}\n\n${devotional.content.slice(0, 200)}...\n\nRead the full devotional at 365 Daily Devotional`}
+          />
         </div>
       </div>
     </article>
