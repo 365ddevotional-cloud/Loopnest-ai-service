@@ -37,11 +37,16 @@ export const devotionals = pgTable("devotionals", {
   faithDeclarations: text("faith_declarations").array().notNull(),
   author: text("author").default("Rev. Moses Afolabi"),
   createdAt: timestamp("created_at").defaultNow(),
+  // Soft-delete: When true, devotional is hidden but not permanently removed
+  isDeleted: boolean("is_deleted").default(false),
+  deletedAt: timestamp("deleted_at"),
 });
 
 export const insertDevotionalSchema = createInsertSchema(devotionals).omit({
   id: true,
   createdAt: true,
+  isDeleted: true,
+  deletedAt: true,
 });
 
 export type Devotional = typeof devotionals.$inferSelect;

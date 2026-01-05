@@ -170,10 +170,21 @@ export async function registerRoutes(
   });
 
   // DELETE Devotional (Admin only - only present and future devotionals can be deleted)
+  // Requires explicit confirmation via query param: ?confirm=true
+  // Uses SOFT DELETE - devotional is marked as deleted but not permanently removed
   app.delete(api.devotionals.delete.path, requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID" });
+    }
+    
+    // SAFETY: Require explicit confirmation for delete operations
+    const confirmed = req.query.confirm === "true";
+    if (!confirmed) {
+      return res.status(400).json({ 
+        message: "Delete requires explicit confirmation. Add ?confirm=true to proceed.",
+        requiresConfirmation: true
+      });
     }
     
     // Check if devotional exists and is not in the past
@@ -187,8 +198,30 @@ export async function registerRoutes(
       return res.status(403).json({ message: "Cannot delete past devotionals" });
     }
     
+    // Soft-delete: marks as deleted but preserves data for potential restoration
     await storage.deleteDevotional(id);
     res.status(204).send();
+  });
+
+  // RESTORE Devotional (Admin only - restores a soft-deleted devotional)
+  app.post("/api/devotionals/:id/restore", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    
+    const restored = await storage.restoreDevotional(id);
+    if (!restored) {
+      return res.status(404).json({ message: "Devotional not found or already active" });
+    }
+    
+    res.json(restored);
+  });
+
+  // GET Deleted Devotionals (Admin only - for restoration purposes)
+  app.get("/api/devotionals/deleted", requireAdmin, async (req, res) => {
+    const deleted = await storage.getDeletedDevotionals();
+    res.json(deleted);
   });
 
   // PATCH Update Devotional (Admin only - only present and future devotionals can be edited)

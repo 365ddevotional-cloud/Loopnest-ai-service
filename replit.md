@@ -115,6 +115,37 @@ Devotionals are automatically generated on server startup:
 - **Coverage**: January through December 2026 (365 days)
 - **Manual Run**: Can also run directly with `npx tsx server/seed-devotionals.ts`
 
+### Data Protection & Safety Guards (January 2026)
+
+The app implements comprehensive data protection to prevent accidental data loss:
+
+**Soft-Delete System**
+- Devotionals use soft-delete instead of permanent deletion
+- `isDeleted` boolean field marks devotionals as hidden without removing data
+- `deletedAt` timestamp records when deletion occurred
+- Deleted devotionals can be restored via `/api/devotionals/:id/restore` (Admin only)
+- Admin can view deleted devotionals via `/api/devotionals/deleted`
+
+**Confirmation Requirements**
+- DELETE endpoint requires explicit `?confirm=true` query parameter
+- Frontend shows user confirmation dialog before triggering delete
+- Past devotionals cannot be deleted or edited (read-only protection)
+
+**Access Control**
+- All destructive operations require admin authentication
+- Non-admin users cannot access future-dated devotionals
+- No bulk delete endpoints exist (single-item operations only)
+
+**Duplicate Prevention**
+- Devotional dates are unique (database constraint)
+- Seed script skips dates that already have devotionals
+- API rejects creation of devotionals for existing dates
+
+**Data Preservation**
+- All 361 devotionals for 2026 (Jan 3 - Dec 31) are preserved
+- Schema changes are additive only (new optional fields)
+- No migrations that drop or alter existing columns
+
 ### Daily Notification System
 Browser-based notifications to remind users when today's devotional is available:
 - **Technology**: Web Notifications API (browser-based, no external push services)

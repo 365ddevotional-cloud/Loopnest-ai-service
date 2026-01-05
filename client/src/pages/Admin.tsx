@@ -102,14 +102,19 @@ function AdminArchive() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest("DELETE", `/api/devotionals/${id}`);
+      // SAFETY: confirm=true is required by the API to prevent accidental deletions
+      // This triggers soft-delete (data is preserved but hidden)
+      return apiRequest("DELETE", `/api/devotionals/${id}?confirm=true`);
     },
     onSuccess: () => {
-      toast({ title: "Devotional deleted successfully" });
+      toast({ 
+        title: "Devotional archived", 
+        description: "The devotional has been moved to trash and can be restored if needed." 
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/devotionals"] });
     },
     onError: (error: Error) => {
-      toast({ title: "Failed to delete", description: error.message, variant: "destructive" });
+      toast({ title: "Failed to archive", description: error.message, variant: "destructive" });
     },
   });
 

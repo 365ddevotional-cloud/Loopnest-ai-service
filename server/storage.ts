@@ -39,7 +39,7 @@ import {
   type InsertBiblePassage,
   type BibleTranslation,
 } from "@shared/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, isNull, or } from "drizzle-orm";
 
 export interface IStorage {
   getDevotionals(): Promise<Devotional[]>;
@@ -105,15 +105,24 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Helper to filter out soft-deleted devotionals
+  private notDeleted() {
+    return or(eq(devotionals.isDeleted, false), isNull(devotionals.isDeleted));
+  }
+
   async getDevotionals(): Promise<Devotional[]> {
-    return await db.select().from(devotionals).orderBy(desc(devotionals.date));
+    return await db
+      .select()
+      .from(devotionals)
+      .where(this.notDeleted())
+      .orderBy(desc(devotionals.date));
   }
 
   async getDevotional(id: number): Promise<Devotional | undefined> {
     const [devotional] = await db
       .select()
       .from(devotionals)
-      .where(eq(devotionals.id, id));
+      .where(and(eq(devotionals.id, id), this.notDeleted()));
     return devotional;
   }
 
@@ -121,7 +130,7 @@ export class DatabaseStorage implements IStorage {
     const [devotional] = await db
       .select()
       .from(devotionals)
-      .where(eq(devotionals.date, date));
+      .where(and(eq(devotionals.date, date), this.notDeleted()));
     return devotional;
   }
 
@@ -129,6 +138,7 @@ export class DatabaseStorage implements IStorage {
     const [devotional] = await db
       .select()
       .from(devotionals)
+      .where(this.notDeleted())
       .orderBy(desc(devotionals.date))
       .limit(1);
     return devotional;
@@ -155,7 +165,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteDevotional(id: number): Promise<void> {
-    await db.delete(devotionals).where(eq(devotionals.id, id));
+    // Soft-delete: mark as deleted instead of permanent removal
+    await db
+      .update(devotionals)
+      .set({ isDeleted: true, deletedAt: new Date() })
+      .where(eq(devotionals.id, id));
+  }
+
+  // Admin-only method to restore a soft-deleted devotional
+  async restoreDevotional(id: number): Promise<Devotional | undefined> {
+    const [restored] = await db
+      .update(devotionals)
+      .set({ isDeleted: false, deletedAt: null })
+      .where(eq(devotionals.id, id))
+      .returning();
+    return restored;
+  }
+
+  // Admin-only method to get deleted devotionals (for restoration)
+  async getDeletedDevotionals(): Promise<Devotional[]> {
+    return await db
+      .select()
+      .from(devotionals)
+      .where(eq(devotionals.isDeleted, true))
+      .orderBy(desc(devotionals.date));
   }
 
   // Prayer Requests
