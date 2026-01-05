@@ -109,6 +109,23 @@ export default function About() {
             <h3 className="font-bold text-foreground">Connect With Us</h3>
             <p>Email: 365ddevotional@gmail.com</p>
           </div>
+
+          <Separator className="bg-primary/10" />
+
+          <div className="text-center space-y-4" data-testid="bible-attribution-about">
+            <h3 className="font-bold text-foreground">Bible Translations</h3>
+            <p>Bible translations used in this app include:</p>
+            <ul className="space-y-1 text-base">
+              <li>King James Version (KJV) – Public Domain</li>
+              <li>World English Bible (WEB) – Public Domain</li>
+              <li>American Standard Version (ASV 1901) – Public Domain</li>
+              <li>Douay-Rheims Bible (DRB) – Public Domain</li>
+            </ul>
+            <p className="text-sm italic text-muted-foreground/80 pt-2">
+              Scripture quotations are from public-domain Bible translations.
+              This app is not affiliated with or endorsed by any Bible publisher or denomination.
+            </p>
+          </div>
         </div>
       </Card>
       

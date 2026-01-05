@@ -38,6 +38,24 @@ export default function Footer() {
               &copy; {currentYear} 365 Daily Devotional. All rights reserved.
             </p>
           </div>
+
+          <div className="w-24 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+
+          <div className="text-center space-y-3 max-w-2xl" data-testid="bible-attribution">
+            <p className="text-xs text-muted-foreground/80 font-medium">
+              Bible translations used in this app include:
+            </p>
+            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground/70">
+              <span>King James Version (KJV) – Public Domain</span>
+              <span>World English Bible (WEB) – Public Domain</span>
+              <span>American Standard Version (ASV 1901) – Public Domain</span>
+              <span>Douay-Rheims Bible (DRB) – Public Domain</span>
+            </div>
+            <p className="text-xs text-muted-foreground/60 italic">
+              Scripture quotations are from public-domain Bible translations.
+              This app is not affiliated with or endorsed by any Bible publisher or denomination.
+            </p>
+          </div>
         </div>
       </div>
     </footer>
