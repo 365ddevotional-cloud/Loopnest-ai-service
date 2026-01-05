@@ -1280,13 +1280,5 @@ export async function seedAllDevotionals() {
   console.log(`Seeding complete. Inserted: ${inserted}, Skipped (already existed): ${skipped}`);
 }
 
-// Run if called directly
-seedAllDevotionals()
-  .then(() => {
-    console.log("Seed script completed successfully.");
-    process.exit(0);
-  })
-  .catch((err) => {
-    console.error("Error seeding devotionals:", err);
-    process.exit(1);
-  });
+// Note: When imported as a module, seedAllDevotionals is called from server/index.ts
+// This file can also be run directly with: npx tsx server/seed-devotionals.ts

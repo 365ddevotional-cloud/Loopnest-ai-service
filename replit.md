@@ -89,6 +89,14 @@ The devotional archive implements role-based visibility:
 - **Restricted Access Message**: When a non-admin attempts to access a future devotional via URL, they see a "Coming Soon" message with the scheduled date.
 - **Timezone Support**: Date comparisons use configurable timezone via `APP_TIMEZONE` environment variable (defaults to America/New_York). The timezone-aware utility is in `server/date-utils.ts`.
 
+### Automatic Devotional Seeding
+Devotionals are automatically generated on server startup:
+- **Location**: `server/seed-devotionals.ts` contains all devotional content for the year
+- **Startup Integration**: `server/index.ts` calls `seedAllDevotionals()` on every startup
+- **Duplicate Prevention**: Only inserts devotionals for dates that don't already exist
+- **Coverage**: January through December 2026 (365 days)
+- **Manual Run**: Can also run directly with `npx tsx server/seed-devotionals.ts`
+
 ### Daily Notification System
 Browser-based notifications to remind users when today's devotional is available:
 - **Technology**: Web Notifications API (browser-based, no external push services)

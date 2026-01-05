@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import path from "path";
+import { seedAllDevotionals } from "./seed-devotionals";
 const app = express();
 
 const httpServer = createServer(app);
@@ -88,6 +89,13 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Seed devotionals on startup (only inserts missing ones)
+  try {
+    await seedAllDevotionals();
+  } catch (err) {
+    console.error("Error seeding devotionals on startup:", err);
+  }
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
