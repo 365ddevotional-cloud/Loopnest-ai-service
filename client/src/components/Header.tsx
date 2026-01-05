@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { TranslationSelector } from "@/components/TranslationSelector";
-import { SettingsModal } from "@/components/SettingsModal";
+import { SettingsModal, MobileSettingsSection } from "@/components/SettingsModal";
 
 function MobileTranslationSelector() {
   const { translation, setTranslation } = useTranslation();
@@ -288,6 +288,8 @@ export function Header() {
               })}
               
               <MobileTranslationSelector />
+              
+              <MobileSettingsSection />
               
               {notificationsSupported && (
                 <div className="flex items-center justify-between px-4 py-3 mt-4 border-t border-primary/10 pt-6">
