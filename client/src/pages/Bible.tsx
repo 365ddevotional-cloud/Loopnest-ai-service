@@ -21,7 +21,22 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { motion } from "framer-motion";
 import { useTranslation, TRANSLATION_LABELS } from "@/contexts/TranslationContext";
+import { useFontSize } from "@/contexts/FontSizeContext";
 import type { BibleTranslation } from "@shared/schema";
+
+const bibleFontSizeClasses = {
+  "small": "prose-base",
+  "medium": "prose-lg",
+  "large": "prose-xl",
+  "extra-large": "prose-2xl",
+};
+
+const verseTextClasses = {
+  "small": "text-sm",
+  "medium": "text-base",
+  "large": "text-lg",
+  "extra-large": "text-xl",
+};
 import {
   BIBLE_BOOKS,
   OLD_TESTAMENT,
@@ -41,6 +56,7 @@ import { getHighlight, type HighlightColor } from "@/lib/bible-storage";
 
 export default function Bible() {
   const { translation, setTranslation } = useTranslation();
+  const { fontSize } = useFontSize();
   const [position, setPosition] = useState<BiblePosition>(() => {
     const saved = loadReadingPosition();
     if (saved) {
@@ -307,7 +323,7 @@ export default function Bible() {
               transition={{ duration: 0.3 }}
               className="p-4 md:p-6"
             >
-              <div className="prose prose-stone prose-lg max-w-none">
+              <div className={`prose prose-stone ${bibleFontSizeClasses[fontSize]} max-w-none`}>
                 {chapterData.verses.map((verse) => {
                   const userHighlight = verseHighlights.get(verse.verse);
                   const highlightClass = getHighlightClass(userHighlight || null);
@@ -325,7 +341,7 @@ export default function Bible() {
                       data-testid={`verse-${verse.verse}`}
                     >
                       <sup className="text-primary font-bold mr-1 text-sm">{verse.verse}</sup>
-                      <span className="font-serif text-foreground/90">{verse.text}</span>
+                      <span className={`font-serif text-foreground/90 ${verseTextClasses[fontSize]}`}>{verse.text}</span>
                       <BibleVerseActions
                         bookId={position.bookId}
                         chapter={position.chapter}

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { TranslationSelector } from "@/components/TranslationSelector";
+import { SettingsModal } from "@/components/SettingsModal";
 
 function MobileTranslationSelector() {
   const { translation, setTranslation } = useTranslation();
@@ -193,6 +194,7 @@ export function Header() {
             </button>
           )}
           <TranslationSelector />
+          <SettingsModal />
           {notificationsSupported && (
             <Button
               size="icon"

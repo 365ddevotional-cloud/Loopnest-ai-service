@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShareButton } from "@/components/ShareButton";
 import { useTranslation, TRANSLATION_LABELS } from "@/contexts/TranslationContext";
+import { useFontSize } from "@/contexts/FontSizeContext";
 import type { BiblePassage } from "@shared/schema";
 
 function getLocalDate(): string {
@@ -55,8 +56,16 @@ function selectVerseForDay(passages: BiblePassage[], localDate: string): BiblePa
   return passages[selectedIndex];
 }
 
+const fontSizeClasses = {
+  "small": "text-lg md:text-xl",
+  "medium": "text-xl md:text-2xl",
+  "large": "text-2xl md:text-3xl",
+  "extra-large": "text-3xl md:text-4xl",
+};
+
 export function DailyBibleVerse() {
   const { translation } = useTranslation();
+  const { fontSize } = useFontSize();
   const [localDate, setLocalDate] = useState(getLocalDate);
 
   const checkDateRollover = useCallback(() => {
@@ -140,7 +149,7 @@ export function DailyBibleVerse() {
       </div>
       
       <blockquote 
-        className="font-serif text-xl md:text-2xl leading-relaxed text-foreground italic mb-4"
+        className={`font-serif ${fontSizeClasses[fontSize]} leading-relaxed text-foreground italic mb-4`}
         data-testid="text-daily-verse-content"
       >
         "{dailyVerse.content}"

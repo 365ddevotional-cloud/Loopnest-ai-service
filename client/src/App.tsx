@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
 import { MenuTransitionProvider, useMenuTransition } from "@/contexts/MenuTransitionContext";
+import { FontSizeProvider } from "@/contexts/FontSizeContext";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { NotificationTrigger } from "@/components/NotificationTrigger";
 import { MenuTransitionOverlay } from "@/components/MenuTransitionOverlay";
@@ -89,11 +90,13 @@ function App() {
       <AuthProvider>
         <NotificationProvider>
           <TranslationProvider>
-            <MenuTransitionProvider>
-              <TooltipProvider>
-                <AppContent />
-              </TooltipProvider>
-            </MenuTransitionProvider>
+            <FontSizeProvider>
+              <MenuTransitionProvider>
+                <TooltipProvider>
+                  <AppContent />
+                </TooltipProvider>
+              </MenuTransitionProvider>
+            </FontSizeProvider>
           </TranslationProvider>
         </NotificationProvider>
       </AuthProvider>

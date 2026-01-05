@@ -6,7 +6,31 @@ import { Badge } from "@/components/ui/badge";
 import { ShareButton } from "@/components/ShareButton";
 import { useScriptureText } from "@/hooks/use-scripture";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useFontSize } from "@/contexts/FontSizeContext";
 import { Loader2 } from "lucide-react";
+
+const fontSizeClasses = {
+  "small": {
+    scripture: "text-base md:text-lg",
+    prose: "prose-base",
+    list: "text-xs md:text-sm",
+  },
+  "medium": {
+    scripture: "text-lg md:text-xl",
+    prose: "prose-lg",
+    list: "text-sm md:text-base",
+  },
+  "large": {
+    scripture: "text-xl md:text-2xl",
+    prose: "prose-xl",
+    list: "text-base md:text-lg",
+  },
+  "extra-large": {
+    scripture: "text-2xl md:text-3xl",
+    prose: "prose-xl",
+    list: "text-lg md:text-xl",
+  },
+};
 
 interface DevotionalCardProps {
   devotional: DevotionalResponse;
@@ -14,6 +38,8 @@ interface DevotionalCardProps {
 
 export function DevotionalCard({ devotional }: DevotionalCardProps) {
   const { translation } = useTranslation();
+  const { fontSize } = useFontSize();
+  const sizeClasses = fontSizeClasses[fontSize];
   const { text: scriptureText, isLoading, isFallback } = useScriptureText(
     devotional.scriptureReference,
     devotional.scriptureText
@@ -34,7 +60,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
           </h1>
 
           <div className="max-w-2xl mx-auto space-y-4">
-            <p className="font-serif text-lg md:text-xl text-primary font-medium italic">
+            <p className={`font-serif ${sizeClasses.scripture} text-primary font-medium italic`}>
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -58,7 +84,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
 
       {/* Main Content */}
       <div className="p-8 md:p-12 space-y-8">
-        <div className="prose prose-stone prose-lg max-w-none font-serif leading-relaxed text-foreground/90 first-letter:text-5xl first-letter:font-bold first-letter:text-primary first-letter:float-left first-letter:mr-3 first-letter:mt-[-10px]">
+        <div className={`prose prose-stone ${sizeClasses.prose} max-w-none font-serif leading-relaxed text-foreground/90 first-letter:text-5xl first-letter:font-bold first-letter:text-primary first-letter:float-left first-letter:mr-3 first-letter:mt-[-10px]`}>
           {devotional.content.split('\n').map((paragraph, idx) => (
             paragraph.trim() && <p key={idx}>{paragraph}</p>
           ))}
@@ -76,7 +102,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
             </h3>
             <ul className="space-y-4">
               {devotional.prayerPoints.map((point, idx) => (
-                <li key={idx} className="flex gap-3 text-sm md:text-base leading-relaxed text-foreground/80">
+                <li key={idx} className={`flex gap-3 ${sizeClasses.list} leading-relaxed text-foreground/80`}>
                   <span className="text-secondary mt-1 font-bold">•</span>
                   <span>{point}</span>
                 </li>
@@ -92,7 +118,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
             </h3>
             <ul className="space-y-4">
               {devotional.faithDeclarations.map((decl, idx) => (
-                <li key={idx} className="flex gap-3 text-sm md:text-base leading-relaxed font-medium text-foreground/80 italic">
+                <li key={idx} className={`flex gap-3 ${sizeClasses.list} leading-relaxed font-medium text-foreground/80 italic`}>
                   <span className="text-accent font-bold mt-1">•</span>
                   <span>"{decl}"</span>
                 </li>
