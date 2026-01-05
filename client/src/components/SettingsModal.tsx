@@ -81,6 +81,7 @@ export function SettingsModal() {
           variant="ghost" 
           size="icon" 
           className="text-muted-foreground hover:text-primary"
+          title="Settings - Adjust text size"
           data-testid="button-settings"
         >
           <Settings className="w-5 h-5" />
