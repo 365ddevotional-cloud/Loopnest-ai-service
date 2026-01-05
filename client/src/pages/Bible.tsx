@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Loader2, Book, ChevronLeft, ChevronRight, BookOpen, Hash, Search, Star, Menu } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Loader2, Book, BookOpen, Hash, Search, Star, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -165,42 +164,19 @@ export default function Bible() {
     setPosition(prev => ({ ...prev, chapter: parseInt(chapter, 10) }));
   };
 
-  const goToPreviousChapter = () => {
-    if (position.chapter > 1) {
-      setPosition(prev => ({ ...prev, chapter: prev.chapter - 1 }));
-    } else {
-      const currentIndex = BIBLE_BOOKS.findIndex(b => b.id === position.bookId);
-      if (currentIndex > 0) {
-        const prevBook = BIBLE_BOOKS[currentIndex - 1];
-        setPosition(prev => ({ ...prev, bookId: prevBook.id, chapter: prevBook.chapters }));
-      }
-    }
-  };
-
-  const goToNextChapter = () => {
-    if (currentBook && position.chapter < currentBook.chapters) {
-      setPosition(prev => ({ ...prev, chapter: prev.chapter + 1 }));
-    } else {
-      const currentIndex = BIBLE_BOOKS.findIndex(b => b.id === position.bookId);
-      if (currentIndex < BIBLE_BOOKS.length - 1) {
-        const nextBook = BIBLE_BOOKS[currentIndex + 1];
-        setPosition(prev => ({ ...prev, bookId: nextBook.id, chapter: 1 }));
-      }
-    }
-  };
-
-  const canGoPrevious = position.chapter > 1 || BIBLE_BOOKS.findIndex(b => b.id === position.bookId) > 0;
-  const canGoNext = (currentBook && position.chapter < currentBook.chapters) || 
-    BIBLE_BOOKS.findIndex(b => b.id === position.bookId) < BIBLE_BOOKS.length - 1;
-
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12">
-      <div className="text-center space-y-3 py-6">
-        <div className="flex items-center justify-center gap-2">
-          <h1 className="font-serif text-3xl md:text-4xl font-bold text-primary" data-testid="text-bible-title">
-            Read the Bible
+    <div className="flex flex-col h-[calc(100vh-4rem)] max-w-4xl mx-auto">
+      <div className="flex-shrink-0 px-3 py-2 border-b border-primary/10 bg-background">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <h1 className="font-serif text-lg font-bold text-primary truncate" data-testid="text-bible-title">
+            {currentBook?.name} {position.chapter}
           </h1>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <Badge variant="secondary" className="text-xs">
+              {chapterData?.isFallback 
+                ? `${TRANSLATION_LABELS[chapterData.actualTranslation as keyof typeof TRANSLATION_LABELS]}`
+                : TRANSLATION_LABELS[translation]}
+            </Badge>
             <Button
               variant="ghost"
               size="icon"
@@ -208,12 +184,12 @@ export default function Bible() {
               aria-label="Search Bible"
               data-testid="button-bible-search"
             >
-              <Search className="h-5 w-5" />
+              <Search className="h-4 w-4" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" aria-label="Bible menu" data-testid="button-bible-menu">
-                  <Menu className="h-5 w-5" />
+                  <Menu className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -229,135 +205,84 @@ export default function Bible() {
             </DropdownMenu>
           </div>
         </div>
-        <p className="text-muted-foreground text-sm max-w-xl mx-auto">
-          Read God's Word in your preferred translation. Select a book and chapter below.
-        </p>
-      </div>
 
-      <Card className="p-4 border-primary/10 bg-card">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="flex-1">
-            <Select value={position.bookId} onValueChange={handleBookChange}>
-              <SelectTrigger className="w-full" data-testid="select-book">
-                <Book className="h-4 w-4 mr-2 text-primary" />
-                <SelectValue placeholder="Select Book" />
-              </SelectTrigger>
-              <SelectContent className="max-h-80">
-                <SelectGroup>
-                  <SelectLabel className="text-primary font-semibold">Old Testament</SelectLabel>
-                  {OLD_TESTAMENT.map(book => (
-                    <SelectItem key={book.id} value={book.id} data-testid={`book-${book.id}`}>
-                      {book.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-                <SelectGroup>
-                  <SelectLabel className="text-primary font-semibold">New Testament</SelectLabel>
-                  {NEW_TESTAMENT.map(book => (
-                    <SelectItem key={book.id} value={book.id} data-testid={`book-${book.id}`}>
-                      {book.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="w-full sm:w-28">
-            <Select value={String(position.chapter)} onValueChange={handleChapterChange}>
-              <SelectTrigger className="w-full" data-testid="select-chapter">
-                <SelectValue placeholder="Ch" />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                {currentBook && Array.from({ length: currentBook.chapters }, (_, i) => (
-                  <SelectItem key={i + 1} value={String(i + 1)} data-testid={`chapter-${i + 1}`}>
-                    Chapter {i + 1}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <Select value={position.bookId} onValueChange={handleBookChange}>
+            <SelectTrigger className="w-full h-9 text-sm" data-testid="select-book">
+              <Book className="h-3.5 w-3.5 mr-1.5 text-primary flex-shrink-0" />
+              <SelectValue placeholder="Book" />
+            </SelectTrigger>
+            <SelectContent className="max-h-80">
+              <SelectGroup>
+                <SelectLabel className="text-primary font-semibold text-xs">Old Testament</SelectLabel>
+                {OLD_TESTAMENT.map(book => (
+                  <SelectItem key={book.id} value={book.id} data-testid={`book-${book.id}`}>
+                    {book.name}
                   </SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="w-full sm:w-24">
-            <Select 
-              value={String(selectedVerse)} 
-              onValueChange={handleVerseChange}
-              disabled={!chapterData || chapterData.verses.length === 0}
-            >
-              <SelectTrigger className="w-full" data-testid="select-verse">
-                <Hash className="h-4 w-4 mr-2 text-primary" />
-                <SelectValue placeholder="Verse" />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                {chapterData && chapterData.verses.map((verse) => (
-                  <SelectItem key={verse.verse} value={String(verse.verse)} data-testid={`verse-option-${verse.verse}`}>
-                    Verse {verse.verse}
+              </SelectGroup>
+              <SelectGroup>
+                <SelectLabel className="text-primary font-semibold text-xs">New Testament</SelectLabel>
+                {NEW_TESTAMENT.map(book => (
+                  <SelectItem key={book.id} value={book.id} data-testid={`book-${book.id}`}>
+                    {book.name}
                   </SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
 
-          <div className="w-full sm:w-36">
-            <Select value={translation} onValueChange={(v) => setTranslation(v as BibleTranslation)}>
-              <SelectTrigger className="w-full" data-testid="select-translation">
-                <BookOpen className="h-4 w-4 mr-2 text-primary" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="KJV">KJV</SelectItem>
-                <SelectItem value="WEB">WEB</SelectItem>
-                <SelectItem value="ASV">ASV 1901</SelectItem>
-                <SelectItem value="DRB">DRB</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={String(position.chapter)} onValueChange={handleChapterChange}>
+            <SelectTrigger className="w-full h-9 text-sm" data-testid="select-chapter">
+              <SelectValue placeholder="Chapter" />
+            </SelectTrigger>
+            <SelectContent className="max-h-60">
+              {currentBook && Array.from({ length: currentBook.chapters }, (_, i) => (
+                <SelectItem key={i + 1} value={String(i + 1)} data-testid={`chapter-${i + 1}`}>
+                  Ch. {i + 1}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select 
+            value={String(selectedVerse)} 
+            onValueChange={handleVerseChange}
+            disabled={!chapterData || chapterData.verses.length === 0}
+          >
+            <SelectTrigger className="w-full h-9 text-sm" data-testid="select-verse">
+              <Hash className="h-3.5 w-3.5 mr-1.5 text-primary flex-shrink-0" />
+              <SelectValue placeholder="Verse" />
+            </SelectTrigger>
+            <SelectContent className="max-h-60">
+              {chapterData && chapterData.verses.map((verse) => (
+                <SelectItem key={verse.verse} value={String(verse.verse)} data-testid={`verse-option-${verse.verse}`}>
+                  v. {verse.verse}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={translation} onValueChange={(v) => setTranslation(v as BibleTranslation)}>
+            <SelectTrigger className="w-full h-9 text-sm" data-testid="select-translation">
+              <BookOpen className="h-3.5 w-3.5 mr-1.5 text-primary flex-shrink-0" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="KJV">KJV</SelectItem>
+              <SelectItem value="WEB">WEB</SelectItem>
+              <SelectItem value="ASV">ASV 1901</SelectItem>
+              <SelectItem value="DRB">DRB</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-      </Card>
-
-      <div className="flex items-center justify-between gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={goToPreviousChapter}
-          disabled={!canGoPrevious}
-          data-testid="button-prev-chapter"
-        >
-          <ChevronLeft className="h-4 w-4 mr-1" />
-          Previous
-        </Button>
-
-        <div className="text-center">
-          <h2 className="font-serif text-lg font-semibold text-foreground" data-testid="text-current-location">
-            {currentBook?.name} {position.chapter}
-          </h2>
-          <div className="flex items-center justify-center gap-2 mt-1">
-            <Badge variant="secondary" className="text-xs">
-              {chapterData?.isFallback 
-                ? `${TRANSLATION_LABELS[chapterData.actualTranslation as keyof typeof TRANSLATION_LABELS]} (fallback)`
-                : TRANSLATION_LABELS[translation]}
-            </Badge>
-            {chapterData?.isFallback && (
-              <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
-                {translation} unavailable
-              </Badge>
-            )}
-          </div>
-        </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={goToNextChapter}
-          disabled={!canGoNext}
-          data-testid="button-next-chapter"
-        >
-          Next
-          <ChevronRight className="h-4 w-4 ml-1" />
-        </Button>
+        
+        {chapterData?.isFallback && (
+          <p className="text-xs text-amber-600 mt-1.5">{translation} unavailable for this chapter</p>
+        )}
       </div>
 
-      <Card className="border-primary/10 bg-white dark:bg-card overflow-hidden">
+      <div className="flex-1 min-h-0 bg-white dark:bg-card">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-primary" data-testid="loading-chapter" />
@@ -374,13 +299,13 @@ export default function Bible() {
             </p>
           </div>
         ) : (
-          <ScrollArea className="h-[60vh]" ref={scrollRef}>
+          <ScrollArea className="h-full" ref={scrollRef}>
             <motion.div
               key={`${position.bookId}-${position.chapter}-${translation}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
-              className="p-6 md:p-8"
+              className="p-4 md:p-6"
             >
               <div className="prose prose-stone prose-lg max-w-none">
                 {chapterData.verses.map((verse) => {
@@ -414,37 +339,12 @@ export default function Bible() {
                   );
                 })}
               </div>
+              <div className="text-center text-xs text-muted-foreground pt-6 pb-4">
+                <p>Scripture texts are from public domain translations.</p>
+              </div>
             </motion.div>
           </ScrollArea>
         )}
-      </Card>
-
-      <div className="flex items-center justify-between gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={goToPreviousChapter}
-          disabled={!canGoPrevious}
-        >
-          <ChevronLeft className="h-4 w-4 mr-1" />
-          Previous Chapter
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={goToNextChapter}
-          disabled={!canGoNext}
-        >
-          Next Chapter
-          <ChevronRight className="h-4 w-4 ml-1" />
-        </Button>
-      </div>
-
-      <div className="text-center text-xs text-muted-foreground pt-4 border-t border-primary/10">
-        <p>
-          Scripture texts are from public domain translations. All Bible text is read-only.
-        </p>
       </div>
 
       <BibleBookmarksView
