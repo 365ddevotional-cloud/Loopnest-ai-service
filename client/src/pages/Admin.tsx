@@ -12,11 +12,12 @@ import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, XCircle,
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
-import { format, parseISO, isAfter, isBefore, isToday, startOfDay } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { useLocation } from "wouter";
 import type { PrayerRequest, ThreadMessage, PrayerAttachment, Devotional } from "@shared/schema";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { getDevotionalStatus } from "@/lib/date-utils";
 
 const PRIORITY_LABELS: Record<string, string> = {
   prayer_normal: "Prayer Request",
@@ -61,17 +62,6 @@ const QUICK_REPLY_SNIPPETS = [
   { label: "Guidance & Direction", text: "We're asking God to guide your steps and make your path clear. 'Trust in the Lord with all your heart, and do not lean on your own understanding. In all your ways acknowledge him, and he will make straight your paths.' (Proverbs 3:5-6)" },
   { label: "Deliverance", text: "We declare freedom over your life in Jesus' name. 'So if the Son sets you free, you will be free indeed.' (John 8:36) God is breaking every chain and setting you free." },
 ];
-
-function getDevotionalStatus(date: string): "past" | "today" | "future" {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const devotionalDate = parseISO(date);
-  devotionalDate.setHours(0, 0, 0, 0);
-  
-  if (devotionalDate.getTime() === today.getTime()) return "today";
-  if (devotionalDate < today) return "past";
-  return "future";
-}
 
 function AdminArchive() {
   const { toast } = useToast();

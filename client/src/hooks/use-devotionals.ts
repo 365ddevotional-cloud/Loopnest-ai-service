@@ -1,12 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl, type InsertDevotional } from "@shared/routes";
+import { api, buildUrl } from "@shared/routes";
+import type { InsertDevotional } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { getLocalDateString } from "@/lib/date-utils";
 
 export function useTodayDevotional() {
+  const localDate = getLocalDateString();
+  
   return useQuery({
-    queryKey: [api.devotionals.getToday.path],
+    queryKey: [api.devotionals.getToday.path, localDate],
     queryFn: async () => {
-      const res = await fetch(api.devotionals.getToday.path, { credentials: "include" });
+      const url = `${api.devotionals.getToday.path}?clientDate=${localDate}`;
+      const res = await fetch(url, { credentials: "include" });
       if (res.status === 404) return null;
       if (!res.ok) throw new Error("Failed to fetch today's devotional");
       return api.devotionals.getToday.responses[200].parse(await res.json());
@@ -21,10 +26,13 @@ export interface RestrictedDevotionalResponse {
 }
 
 export function useDevotionalByDate(date: string) {
+  const localDate = getLocalDateString();
+  
   return useQuery({
-    queryKey: [api.devotionals.getByDate.path, date],
+    queryKey: [api.devotionals.getByDate.path, date, localDate],
     queryFn: async (): Promise<{ devotional: Awaited<ReturnType<typeof api.devotionals.getByDate.responses[200]['parse']>> | null; restricted?: RestrictedDevotionalResponse }> => {
-      const url = buildUrl(api.devotionals.getByDate.path, { date });
+      const baseUrl = buildUrl(api.devotionals.getByDate.path, { date });
+      const url = `${baseUrl}?clientDate=${localDate}`;
       const res = await fetch(url, { credentials: "include" });
       if (res.status === 404) return { devotional: null };
       if (res.status === 403) {
@@ -42,10 +50,13 @@ export function useDevotionalByDate(date: string) {
 }
 
 export function useDevotionalsList() {
+  const localDate = getLocalDateString();
+  
   return useQuery({
-    queryKey: [api.devotionals.list.path],
+    queryKey: [api.devotionals.list.path, localDate],
     queryFn: async () => {
-      const res = await fetch(api.devotionals.list.path, { credentials: "include" });
+      const url = `${api.devotionals.list.path}?clientDate=${localDate}`;
+      const res = await fetch(url, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch devotionals list");
       return api.devotionals.list.responses[200].parse(await res.json());
     },

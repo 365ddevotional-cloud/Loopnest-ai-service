@@ -74,8 +74,10 @@ export async function registerRoutes(
   });
 
   // GET Today's Devotional
+  // Accepts optional clientDate query param for client timezone support
   app.get(api.devotionals.getToday.path, async (req, res) => {
-    const today = getTodayDateString();
+    const clientDate = typeof req.query.clientDate === 'string' ? req.query.clientDate : null;
+    const today = clientDate && /^\d{4}-\d{2}-\d{2}$/.test(clientDate) ? clientDate : getTodayDateString();
     const isAdmin = !!req.session?.isAdmin;
     let devotional = await storage.getDevotionalByDate(today);
     
@@ -88,7 +90,8 @@ export async function registerRoutes(
         devotional = all.length > 0 ? all[0] : undefined;
       } else {
         // Non-admin only sees past/present devotionals - find the first non-future one
-        devotional = all.find(d => !isFutureDate(d.date));
+        // Use client's date for comparison if provided
+        devotional = all.find(d => d.date <= today);
       }
     }
 
@@ -101,12 +104,15 @@ export async function registerRoutes(
 
   // GET Devotional by specific Date
   // Non-admin users cannot access future devotionals
+  // Accepts optional clientDate query param for client timezone support
   app.get(api.devotionals.getByDate.path, async (req, res) => {
     const date = req.params.date;
+    const clientDate = typeof req.query.clientDate === 'string' ? req.query.clientDate : null;
+    const today = clientDate && /^\d{4}-\d{2}-\d{2}$/.test(clientDate) ? clientDate : getTodayDateString();
     const isAdmin = !!req.session?.isAdmin;
     
     // Check if this is a future date and user is not admin
-    if (!isAdmin && isFutureDate(date)) {
+    if (!isAdmin && date > today) {
       return res.status(403).json({ 
         restricted: true,
         message: "This devotional will be available on its scheduled date.",
@@ -123,15 +129,18 @@ export async function registerRoutes(
 
   // GET All Devotionals (Archive)
   // Non-admin users only see past and present devotionals
+  // Accepts optional clientDate query param for client timezone support
   app.get(api.devotionals.list.path, async (req, res) => {
     const list = await storage.getDevotionals();
+    const clientDate = typeof req.query.clientDate === 'string' ? req.query.clientDate : null;
+    const today = clientDate && /^\d{4}-\d{2}-\d{2}$/.test(clientDate) ? clientDate : getTodayDateString();
     const isAdmin = !!req.session?.isAdmin;
     
     if (isAdmin) {
       res.json(list);
     } else {
-      // Filter out future devotionals for non-admin users
-      const filteredList = list.filter(d => !isFutureDate(d.date));
+      // Filter out future devotionals for non-admin users based on client's date
+      const filteredList = list.filter(d => d.date <= today);
       res.json(filteredList);
     }
   });
