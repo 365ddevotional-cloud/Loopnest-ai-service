@@ -1,0 +1,73 @@
+Update the “How to Use 365 Daily Devotional” page so it fully reflects the current app features, layout, and behavior, without removing or breaking any existing functionality.
+
+GOAL:
+Make the How to Use page clear, modern, and accurate for new users and Google Play reviewers.
+
+CONTENT STRUCTURE:
+
+PAGE TITLE:
+“How to Use 365 Daily Devotional”
+
+Optional subtitle (smaller text):
+“A simple guide to growing daily in God’s Word, prayer, and faith.”
+
+SECTION 1 — Read the Daily Devotional
+Title: Read the Daily Devotional
+Description:
+Each day, open the Today section to read a fresh, Scripture-based devotional that automatically updates based on the user’s local time zone. Devotionals are designed to encourage spiritual growth, prayer, and biblical understanding.
+
+SECTION 2 — Read the Bible
+Title: Read the Bible
+Description:
+Access the full Bible directly inside the app. Users can:
+- Select Book, Chapter, and Verse
+- Choose from four public-domain Bible translations (KJV, WEB, ASV, DRB)
+- Read full chapters with a clean, distraction-free layout
+- Enjoy more reading space with simplified navigation
+
+Add small note text:
+“Bible translations are public domain and provided for personal study and devotion.”
+
+SECTION 3 — Navigate the App
+Title: Navigate the App
+Description:
+Use the menu to move between Today, Archive, Bible, YouTube, Prayer / Counseling, and other sections. When switching sections, a brief logo animation appears to provide a smooth and premium transition experience.
+
+SECTION 4 — Devotional Archive
+Title: Devotional Archive
+Description:
+Browse past devotionals or view scheduled future devotionals. Users can read all published devotionals, while admins can manage present and future entries.
+
+SECTION 5 — Pray and Reflect
+Title: Pray and Reflect
+Description:
+Each devotional includes prayer points and faith declarations to help users apply God’s Word through intentional prayer and reflection.
+
+SECTION 6 — Prayer & Counseling
+Title: Prayer & Counseling
+Description:
+Submit prayer or counseling requests directly through the app. Users may submit anonymously, choose urgency level, and receive encouragement and follow-up.
+
+SECTION 7 — Watch & Listen
+Title: Watch & Listen
+Description:
+Visit the YouTube section for Bible stories, prayers, worship, devotionals, and seasonal faith-based content.
+
+SECTION 8 — Donate
+Title: Donate
+Description:
+Support the mission of sharing God’s Word by donating through the app. Contributions help expand access to biblical encouragement worldwide.
+
+SECTION 9 — Admin Dashboard (not visible to public users)
+Title: Admin Dashboard
+Description:
+Authorized admins can securely log in to create devotionals, edit present and future devotionals, manage prayer requests, and maintain app content.
+
+DESIGN & UX RULES:
+- Use the existing card-style layout
+- Keep current icons and color theme
+- Maintain accessibility and readability
+- Do NOT remove any existing navigation or features
+- Do NOT add external links
+
+Ensure the page is clean, welcoming, mobile-friendly, and Google Play reviewer compliant.
