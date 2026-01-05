@@ -1,24 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Lock, Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { login, isAdmin, isLoading } = useAuth();
   const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && isAdmin) {
+      setLocation("/admin");
+    }
+  }, [isAdmin, isLoading, setLocation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     const success = await login(password);
     
@@ -28,8 +34,20 @@ export default function AdminLogin() {
       setError("Invalid password. Please try again.");
     }
     
-    setIsLoading(false);
+    setIsSubmitting(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isAdmin) {
+    return null;
+  }
 
   return (
     <div className="max-w-md mx-auto py-16">
@@ -82,10 +100,10 @@ export default function AdminLogin() {
           <Button
             type="submit"
             className="w-full"
-            disabled={isLoading || !password}
+            disabled={isSubmitting || !password}
             data-testid="button-admin-login"
           >
-            {isLoading ? "Logging in..." : "Login"}
+            {isSubmitting ? "Logging in..." : "Login"}
           </Button>
         </form>
       </Card>
