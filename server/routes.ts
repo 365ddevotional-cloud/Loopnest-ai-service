@@ -270,6 +270,19 @@ export async function registerRoutes(
   });
 
   // Scripture Routes
+  // GET all Bible passages for a translation
+  app.get("/api/bible-passages", async (req, res) => {
+    const translation = (req.query.translation as string) || "KJV";
+    
+    const validTranslations = ["KJV", "WEB", "ASV", "DRB"];
+    if (!validTranslations.includes(translation)) {
+      return res.status(400).json({ message: "Invalid translation. Must be one of: KJV, WEB, ASV, DRB" });
+    }
+    
+    const passages = await storage.getAllBiblePassages(translation as any);
+    res.json(passages);
+  });
+
   // GET Scripture passage by reference and translation
   app.get(api.scripture.get.path, async (req, res) => {
     const reference = req.query.reference as string;

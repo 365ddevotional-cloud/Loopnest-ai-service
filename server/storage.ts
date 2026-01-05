@@ -100,6 +100,7 @@ export interface IStorage {
   // Bible Passages
   getBiblePassage(reference: string, translation: BibleTranslation): Promise<BiblePassage | undefined>;
   getBiblePassages(references: string[], translation: BibleTranslation): Promise<BiblePassage[]>;
+  getAllBiblePassages(translation: BibleTranslation): Promise<BiblePassage[]>;
   createBiblePassage(passage: InsertBiblePassage): Promise<BiblePassage>;
   upsertBiblePassage(passage: InsertBiblePassage): Promise<BiblePassage>;
 }
@@ -406,6 +407,14 @@ export class DatabaseStorage implements IStorage {
       if (passage) results.push(passage);
     }
     return results;
+  }
+
+  async getAllBiblePassages(translation: BibleTranslation): Promise<BiblePassage[]> {
+    return await db
+      .select()
+      .from(biblePassages)
+      .where(eq(biblePassages.translation, translation))
+      .orderBy(biblePassages.reference);
   }
 
   async createBiblePassage(passage: InsertBiblePassage): Promise<BiblePassage> {

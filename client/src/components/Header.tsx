@@ -90,6 +90,7 @@ export function Header() {
   const navItems = [
     { href: "/", label: "Today", icon: BookOpen, external: false, adminOnly: false },
     { href: "/archive", label: "Archive", icon: Calendar, external: false, adminOnly: false },
+    { href: "/bible", label: "Bible", icon: Book, external: false, adminOnly: false },
     { href: "https://www.youtube.com/@365DailyDevotional", label: "YouTube", icon: SiYoutube, external: true, adminOnly: false },
     { href: "https://payhip.com/SpiritToneRecords", label: "Shop", icon: ShoppingBag, external: true, adminOnly: false },
     { href: "/prayer-counseling", label: "Prayer / Counseling", icon: MessageCircleHeart, external: false, adminOnly: false },

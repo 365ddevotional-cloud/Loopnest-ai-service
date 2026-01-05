@@ -29,6 +29,7 @@ import Feedback from "@/pages/Feedback";
 import Partnership from "@/pages/Partnership";
 import Support from "@/pages/Support";
 import HowToUse from "@/pages/HowToUse";
+import Bible from "@/pages/Bible";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -53,6 +54,7 @@ function Router() {
       <Route path="/prayer" component={PrayerCounseling} />
       <Route path="/support" component={Support} />
       <Route path="/how-to-use" component={HowToUse} />
+      <Route path="/bible" component={Bible} />
       <Route path="/admin-login" component={AdminLogin} />
       <Route component={NotFound} />
     </Switch>
