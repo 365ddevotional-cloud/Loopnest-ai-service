@@ -91,50 +91,50 @@ export function BibleSearchDialog({ open, onOpenChange, onNavigate }: BibleSearc
     setSearchProgress("Searching...");
 
     const searchResults: SearchResult[] = [];
-    const maxResults = 30;
+    const maxResults = 25;
     
-    const popularBooks = ["GEN", "EXO", "PSA", "PRO", "ISA", "MAT", "MRK", "LUK", "JHN", "ACT", "ROM", "1CO", "GAL", "EPH", "PHP", "COL", "1TH", "2TI", "HEB", "JAS", "1PE", "1JN", "REV"];
+    const popularBooks = ["MAT", "JHN", "ROM", "PSA", "PRO", "GEN", "ACT", "1CO", "EPH", "PHP", "HEB", "JAS", "1JN", "REV"];
     const booksToSearch = BIBLE_BOOKS.filter(b => popularBooks.includes(b.id));
     
-    for (let i = 0; i < booksToSearch.length; i++) {
-      const book = booksToSearch[i];
-      if (searchAbortRef.current || searchResults.length >= maxResults) break;
-      
-      setSearchProgress(`Searching ${book.name}...`);
-      
-      const chapterPromises = [];
-      for (let ch = 1; ch <= book.chapters; ch++) {
-        chapterPromises.push(fetchChapter(book.id, ch, translation).catch(() => null));
-      }
-      
-      const chapters = await Promise.all(chapterPromises);
-      
-      for (let ch = 0; ch < chapters.length; ch++) {
-        if (searchAbortRef.current || searchResults.length >= maxResults) break;
-        const chapterData = chapters[ch];
+    const searchChapter = async (book: typeof BIBLE_BOOKS[0], ch: number) => {
+      if (searchAbortRef.current || searchResults.length >= maxResults) return;
+      try {
+        const chapterData = await fetchChapter(book.id, ch, translation);
         if (chapterData) {
           for (const v of chapterData.verses) {
+            if (searchResults.length >= maxResults) break;
             const matchIndex = v.text.toLowerCase().indexOf(trimmedQuery);
             if (matchIndex >= 0) {
               searchResults.push({
                 bookId: book.id,
                 bookName: book.name,
-                chapter: ch + 1,
+                chapter: ch,
                 verse: v.verse,
                 text: v.text,
                 matchIndex,
               });
-              if (searchResults.length >= maxResults) break;
             }
           }
         }
-      }
+      } catch {}
+    };
+    
+    for (const book of booksToSearch) {
+      if (searchAbortRef.current || searchResults.length >= maxResults) break;
+      setSearchProgress(`Searching ${book.name}...`);
       
-      if (searchResults.length > 0) {
+      const concurrency = 5;
+      for (let start = 1; start <= book.chapters; start += concurrency) {
+        if (searchAbortRef.current || searchResults.length >= maxResults) break;
+        
+        const batch = [];
+        for (let ch = start; ch < start + concurrency && ch <= book.chapters; ch++) {
+          batch.push(searchChapter(book, ch));
+        }
+        await Promise.all(batch);
         setResults([...searchResults]);
+        await new Promise(r => setTimeout(r, 0));
       }
-      
-      await new Promise(r => setTimeout(r, 0));
     }
 
     setSearchProgress("");

@@ -78,7 +78,7 @@ export default function Bible() {
   const scrollToVerse = useCallback((verseNum: number) => {
     setSelectedVerse(verseNum);
     
-    setTimeout(() => {
+    const attemptScroll = (attempts = 0) => {
       const verseElement = verseRefs.current.get(verseNum);
       if (verseElement && scrollRef.current) {
         const scrollContainer = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
@@ -87,12 +87,18 @@ export default function Bible() {
           const verseRect = verseElement.getBoundingClientRect();
           const scrollTop = verseRect.top - containerRect.top + scrollContainer.scrollTop - 80;
           scrollContainer.scrollTo({ top: Math.max(0, scrollTop), behavior: 'smooth' });
+          
+          setHighlightedVerse(verseNum);
+          setTimeout(() => setHighlightedVerse(null), 2000);
+          return;
         }
       }
-      
-      setHighlightedVerse(verseNum);
-      setTimeout(() => setHighlightedVerse(null), 2000);
-    }, 100);
+      if (attempts < 15) {
+        requestAnimationFrame(() => attemptScroll(attempts + 1));
+      }
+    };
+    
+    requestAnimationFrame(attemptScroll);
   }, []);
 
   const handleVerseChange = (verse: string) => {
