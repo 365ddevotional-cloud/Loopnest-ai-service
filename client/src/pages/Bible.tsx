@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect, useRef } from "react";
-import { Loader2, Book, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Loader2, Book, ChevronLeft, ChevronRight, BookOpen, Hash } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +39,10 @@ export default function Bible() {
     }
     return { ...getDefaultPosition(), translation };
   });
+  const [selectedVerse, setSelectedVerse] = useState<number>(1);
+  const [highlightedVerse, setHighlightedVerse] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const verseRefs = useRef<Map<number, HTMLParagraphElement>>(new Map());
 
   const currentBook = getBookById(position.bookId);
 
@@ -55,7 +58,33 @@ export default function Bible() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = 0;
     }
+    setHighlightedVerse(null);
+    verseRefs.current.clear();
   }, [position.bookId, position.chapter]);
+
+  const scrollToVerse = useCallback((verseNum: number) => {
+    setSelectedVerse(verseNum);
+    
+    setTimeout(() => {
+      const verseElement = verseRefs.current.get(verseNum);
+      if (verseElement && scrollRef.current) {
+        const scrollContainer = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+        if (scrollContainer) {
+          const containerRect = scrollContainer.getBoundingClientRect();
+          const verseRect = verseElement.getBoundingClientRect();
+          const scrollTop = verseRect.top - containerRect.top + scrollContainer.scrollTop - 80;
+          scrollContainer.scrollTo({ top: Math.max(0, scrollTop), behavior: 'smooth' });
+        }
+      }
+      
+      setHighlightedVerse(verseNum);
+      setTimeout(() => setHighlightedVerse(null), 2000);
+    }, 100);
+  }, []);
+
+  const handleVerseChange = (verse: string) => {
+    scrollToVerse(parseInt(verse, 10));
+  };
 
   const { data: chapterData, isLoading, error } = useQuery<ChapterData | null>({
     queryKey: ["bible-chapter", position.bookId, position.chapter, translation],
@@ -63,6 +92,12 @@ export default function Bible() {
     staleTime: 1000 * 60 * 30,
     retry: 2,
   });
+
+  useEffect(() => {
+    if (chapterData && chapterData.verses.length > 0) {
+      setSelectedVerse(1);
+    }
+  }, [chapterData]);
 
   const handleBookChange = (bookId: string) => {
     setPosition(prev => ({ ...prev, bookId, chapter: 1 }));
@@ -155,6 +190,26 @@ export default function Bible() {
             </Select>
           </div>
 
+          <div className="w-full sm:w-24">
+            <Select 
+              value={String(selectedVerse)} 
+              onValueChange={handleVerseChange}
+              disabled={!chapterData || chapterData.verses.length === 0}
+            >
+              <SelectTrigger className="w-full" data-testid="select-verse">
+                <Hash className="h-4 w-4 mr-2 text-primary" />
+                <SelectValue placeholder="Verse" />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                {chapterData && chapterData.verses.map((verse) => (
+                  <SelectItem key={verse.verse} value={String(verse.verse)} data-testid={`verse-option-${verse.verse}`}>
+                    Verse {verse.verse}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="w-full sm:w-36">
             <Select value={translation} onValueChange={(v) => setTranslation(v as BibleTranslation)}>
               <SelectTrigger className="w-full" data-testid="select-translation">
@@ -240,8 +295,19 @@ export default function Bible() {
               className="p-6 md:p-8"
             >
               <div className="prose prose-stone prose-lg max-w-none">
-                {chapterData.verses.map((verse, index) => (
-                  <p key={verse.verse} className="mb-3 leading-relaxed" data-testid={`verse-${verse.verse}`}>
+                {chapterData.verses.map((verse) => (
+                  <p 
+                    key={verse.verse} 
+                    ref={(el) => {
+                      if (el) verseRefs.current.set(verse.verse, el);
+                    }}
+                    className={`mb-3 leading-relaxed transition-all duration-500 rounded-md px-2 -mx-2 ${
+                      highlightedVerse === verse.verse 
+                        ? 'bg-primary/15 ring-2 ring-primary/30' 
+                        : ''
+                    }`}
+                    data-testid={`verse-${verse.verse}`}
+                  >
                     <sup className="text-primary font-bold mr-1 text-sm">{verse.verse}</sup>
                     <span className="font-serif text-foreground/90">{verse.text}</span>
                   </p>

@@ -164,9 +164,10 @@ The following features are considered stable and locked. Any changes require exp
 
 1. **Bible Reading** (`client/src/pages/Bible.tsx`)
    - Full 66-book Bible reader
-   - Book/chapter navigation
+   - Book/chapter/verse navigation with verse locator
    - Translation switching (KJV, WEB, ASV, DRB)
    - Fallback indicators when translation unavailable
+   - Auto-scroll to verse with 2-second highlight
    - Position persistence in localStorage
 
 2. **Daily Bible Verse** (`client/src/components/DailyBibleVerse.tsx`)
