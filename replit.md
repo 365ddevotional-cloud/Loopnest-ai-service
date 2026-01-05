@@ -146,6 +146,49 @@ The app implements comprehensive data protection to prevent accidental data loss
 - Schema changes are additive only (new optional fields)
 - No migrations that drop or alter existing columns
 
+**Admin Backup & Monitoring Endpoints** (January 2026)
+- `/api/admin/backup/devotionals` - Download complete JSON backup of all devotionals (active + deleted)
+- `/api/admin/backup/bible-passages` - Download all stored Bible passages across translations
+- `/api/admin/integrity-check` - Validate data consistency (duplicates, date gaps, empty fields)
+- `/api/admin/system-status` - Overall system health, counts, and feature status
+
+**Client-Side Storage (Not Backed Up)**
+- Bible reading position (book/chapter) - Stored in user's browser localStorage
+- Daily Bible Verse rotation - Deterministic algorithm based on date, no storage needed
+- Preferred translation - Stored in user's browser localStorage
+- Notification preferences - Stored in user's browser localStorage
+
+### Locked Features (Protected from Regression)
+
+The following features are considered stable and locked. Any changes require explicit review:
+
+1. **Bible Reading** (`client/src/pages/Bible.tsx`)
+   - Full 66-book Bible reader
+   - Book/chapter navigation
+   - Translation switching (KJV, WEB, ASV, DRB)
+   - Fallback indicators when translation unavailable
+   - Position persistence in localStorage
+
+2. **Daily Bible Verse** (`client/src/components/DailyBibleVerse.tsx`)
+   - Timezone-aware daily rotation
+   - Deterministic verse selection
+   - Translation integration
+
+3. **Sharing Features** (`client/src/components/ShareButton.tsx`)
+   - WhatsApp, SMS, Email, Native share
+   - Public domain attribution
+
+4. **Devotionals System**
+   - Daily devotional display
+   - Archive browsing
+   - Admin CRUD with soft-delete
+   - Past edit/delete protection
+
+5. **Prayer & Counseling**
+   - Anonymous submission
+   - Threaded messaging
+   - Admin reply system
+
 ### Daily Notification System
 Browser-based notifications to remind users when today's devotional is available:
 - **Technology**: Web Notifications API (browser-based, no external push services)

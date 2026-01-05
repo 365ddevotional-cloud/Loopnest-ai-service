@@ -224,6 +224,210 @@ export async function registerRoutes(
     res.json(deleted);
   });
 
+  // ==== ADMIN SAFETY & BACKUP ENDPOINTS ====
+
+  // BACKUP Export - Non-destructive JSON export of all devotionals (Admin only)
+  // Returns all devotionals including deleted ones for complete backup
+  app.get("/api/admin/backup/devotionals", requireAdmin, async (req, res) => {
+    try {
+      const activeDevotionals = await storage.getDevotionals();
+      const deletedDevotionals = await storage.getDeletedDevotionals();
+      
+      const backup = {
+        exportedAt: new Date().toISOString(),
+        version: "1.0",
+        type: "devotionals_backup",
+        stats: {
+          active: activeDevotionals.length,
+          deleted: deletedDevotionals.length,
+          total: activeDevotionals.length + deletedDevotionals.length,
+        },
+        data: {
+          active: activeDevotionals,
+          deleted: deletedDevotionals,
+        },
+      };
+      
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Content-Disposition", `attachment; filename="devotionals-backup-${getTodayDateString()}.json"`);
+      res.json(backup);
+    } catch (error) {
+      console.error("Backup export failed:", error);
+      res.status(500).json({ message: "Failed to export backup" });
+    }
+  });
+
+  // SYSTEM INTEGRITY CHECK - Validates data consistency (Admin only)
+  // Checks for duplicates, date gaps, and other potential issues
+  app.get("/api/admin/integrity-check", requireAdmin, async (req, res) => {
+    try {
+      const devotionals = await storage.getDevotionals();
+      const issues: Array<{ type: string; severity: "warning" | "error"; message: string; details?: unknown }> = [];
+      
+      // Check for duplicate dates (shouldn't happen due to unique constraint, but verify)
+      const dateMap = new Map<string, number[]>();
+      for (const d of devotionals) {
+        const ids = dateMap.get(d.date) || [];
+        ids.push(d.id);
+        dateMap.set(d.date, ids);
+      }
+      Array.from(dateMap.entries()).forEach(([date, ids]) => {
+        if (ids.length > 1) {
+          issues.push({
+            type: "duplicate_date",
+            severity: "error",
+            message: `Multiple devotionals found for date ${date}`,
+            details: { date, ids },
+          });
+        }
+      });
+      
+      // Check for date gaps in 2026 (if devotionals exist for that year)
+      const dates2026 = devotionals
+        .filter(d => d.date.startsWith("2026-"))
+        .map(d => d.date)
+        .sort();
+      
+      if (dates2026.length > 1) {
+        for (let i = 1; i < dates2026.length; i++) {
+          const prev = new Date(dates2026[i - 1]);
+          const curr = new Date(dates2026[i]);
+          const daysDiff = Math.floor((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+          if (daysDiff > 1) {
+            issues.push({
+              type: "date_gap",
+              severity: "warning",
+              message: `Gap of ${daysDiff - 1} day(s) between ${dates2026[i - 1]} and ${dates2026[i]}`,
+              details: { from: dates2026[i - 1], to: dates2026[i], missingDays: daysDiff - 1 },
+            });
+          }
+        }
+      }
+      
+      // Check for empty required fields
+      for (const d of devotionals) {
+        if (!d.title || d.title.trim() === "") {
+          issues.push({
+            type: "empty_field",
+            severity: "error",
+            message: `Devotional ${d.id} (${d.date}) has empty title`,
+            details: { id: d.id, date: d.date, field: "title" },
+          });
+        }
+        if (!d.scriptureReference || d.scriptureReference.trim() === "") {
+          issues.push({
+            type: "empty_field",
+            severity: "warning",
+            message: `Devotional ${d.id} (${d.date}) has empty scripture reference`,
+            details: { id: d.id, date: d.date, field: "scriptureReference" },
+          });
+        }
+        if (!d.prayerPoints || d.prayerPoints.length === 0) {
+          issues.push({
+            type: "empty_field",
+            severity: "warning",
+            message: `Devotional ${d.id} (${d.date}) has no prayer points`,
+            details: { id: d.id, date: d.date, field: "prayerPoints" },
+          });
+        }
+      }
+      
+      const summary = {
+        checkedAt: new Date().toISOString(),
+        timezone: process.env.APP_TIMEZONE || "America/New_York",
+        totalDevotionals: devotionals.length,
+        issuesFound: issues.length,
+        errorCount: issues.filter(i => i.severity === "error").length,
+        warningCount: issues.filter(i => i.severity === "warning").length,
+        healthy: issues.filter(i => i.severity === "error").length === 0,
+        issues,
+      };
+      
+      res.json(summary);
+    } catch (error) {
+      console.error("Integrity check failed:", error);
+      res.status(500).json({ message: "Integrity check failed" });
+    }
+  });
+
+  // BACKUP Export - Bible passages (Admin only)
+  app.get("/api/admin/backup/bible-passages", requireAdmin, async (req, res) => {
+    try {
+      const allTranslations = ["KJV", "WEB", "ASV", "DRB"] as const;
+      const allPassages: Record<string, Awaited<ReturnType<typeof storage.getAllBiblePassages>>> = {};
+      
+      for (const translation of allTranslations) {
+        allPassages[translation] = await storage.getAllBiblePassages(translation);
+      }
+      
+      const totalCount = Object.values(allPassages).reduce((sum, arr) => sum + arr.length, 0);
+      
+      const backup = {
+        exportedAt: new Date().toISOString(),
+        version: "1.0",
+        type: "bible_passages_backup",
+        stats: {
+          total: totalCount,
+          byTranslation: Object.fromEntries(
+            Object.entries(allPassages).map(([k, v]) => [k, v.length])
+          ),
+        },
+        data: allPassages,
+      };
+      
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Content-Disposition", `attachment; filename="bible-passages-backup-${getTodayDateString()}.json"`);
+      res.json(backup);
+    } catch (error) {
+      console.error("Bible passages backup failed:", error);
+      res.status(500).json({ message: "Failed to export bible passages backup" });
+    }
+  });
+
+  // SYSTEM STATUS - Overall system health (Admin only)
+  app.get("/api/admin/system-status", requireAdmin, async (req, res) => {
+    try {
+      const devotionals = await storage.getDevotionals();
+      const deletedDevotionals = await storage.getDeletedDevotionals();
+      const prayerRequests = await storage.getPrayerRequests();
+      
+      const today = getTodayDateString();
+      const todayDevotional = devotionals.find(d => d.date === today);
+      const futureCount = devotionals.filter(d => d.date > today).length;
+      const pastCount = devotionals.filter(d => d.date < today).length;
+      
+      res.json({
+        timestamp: new Date().toISOString(),
+        timezone: process.env.APP_TIMEZONE || "America/New_York",
+        today,
+        hasTodayDevotional: !!todayDevotional,
+        devotionals: {
+          total: devotionals.length,
+          past: pastCount,
+          future: futureCount,
+          deleted: deletedDevotionals.length,
+        },
+        prayerRequests: {
+          total: prayerRequests.length,
+          unread: prayerRequests.filter(pr => !pr.isRead).length,
+          pending: prayerRequests.filter(pr => pr.status === "new").length,
+        },
+        safetyFeatures: {
+          softDeleteEnabled: true,
+          confirmationRequired: true,
+          pastEditProtection: true,
+          futureAccessControl: true,
+          duplicatePrevention: true,
+        },
+      });
+    } catch (error) {
+      console.error("System status failed:", error);
+      res.status(500).json({ message: "Failed to get system status" });
+    }
+  });
+
+  // ==== END ADMIN SAFETY ENDPOINTS ====
+
   // PATCH Update Devotional (Admin only - only present and future devotionals can be edited)
   app.patch(api.devotionals.update.path, requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
