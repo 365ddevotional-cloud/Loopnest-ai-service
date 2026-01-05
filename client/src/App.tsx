@@ -7,6 +7,7 @@ import { Header } from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import { TranslationProvider } from "@/contexts/TranslationContext";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { NotificationTrigger } from "@/components/NotificationTrigger";
 import Home from "@/pages/Home";
@@ -63,18 +64,20 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <NotificationProvider>
-          <TooltipProvider>
-          <div className="min-h-screen flex flex-col bg-background font-sans text-foreground">
-            <Header />
-            <main className="flex-grow container mx-auto px-4 pt-6 pb-12 sm:pt-8 sm:pb-16">
-              <Router />
-            </main>
-            <Footer />
-            <Toaster />
-            <NotificationPrompt />
-            <NotificationTrigger />
-          </div>
-          </TooltipProvider>
+          <TranslationProvider>
+            <TooltipProvider>
+            <div className="min-h-screen flex flex-col bg-background font-sans text-foreground">
+              <Header />
+              <main className="flex-grow container mx-auto px-4 pt-6 pb-12 sm:pt-8 sm:pb-16">
+                <Router />
+              </main>
+              <Footer />
+              <Toaster />
+              <NotificationPrompt />
+              <NotificationTrigger />
+            </div>
+            </TooltipProvider>
+          </TranslationProvider>
         </NotificationProvider>
       </AuthProvider>
     </QueryClientProvider>

@@ -79,8 +79,26 @@ Preferred communication style: Simple, everyday language.
 
 ### Database Schema
 - **devotionals**: Daily devotional entries with date, title, scripture, content, prayer points, and faith declarations
+- **biblePassages**: Scripture text stored by reference and translation for multi-translation support
 - **prayerRequests**: User-submitted prayer requests with contact information
 - **prayerReplies**: Admin replies to prayer requests
+
+### Bible Translation System
+The app supports four public domain Bible translations:
+- **KJV**: King James Version (default)
+- **WEB**: World English Bible
+- **ASV**: American Standard Version (1901)
+- **DRB**: Douay-Rheims Bible
+
+Key features:
+- **Translation Selector**: Dropdown in header (desktop) and list in mobile menu
+- **User Preference**: Stored in localStorage (`devotional.preferredTranslation`)
+- **Translation Badge**: Displays current translation abbreviation next to scripture reference
+- **Fallback Behavior**: If a translation is not available for a passage, falls back to KJV
+- **Context Provider**: `TranslationContext` manages global translation state
+- **Scripture Hook**: `useScriptureText` fetches scripture by reference and translation
+- **API Endpoint**: `/api/scripture?reference=...&translation=...`
+- **Seeding**: `server/seed-scripture.ts` seeds sample passages and extracts KJV from existing devotionals
 
 ### Archive Access Control
 The devotional archive implements role-based visibility:

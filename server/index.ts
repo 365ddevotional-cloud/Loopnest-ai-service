@@ -5,6 +5,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import path from "path";
 import { seedAllDevotionals } from "./seed-devotionals";
+import { seedBiblePassages, seedScripturesFromDevotionals } from "./seed-scripture";
 const app = express();
 
 const httpServer = createServer(app);
@@ -94,6 +95,14 @@ app.use((req, res, next) => {
     await seedAllDevotionals();
   } catch (err) {
     console.error("Error seeding devotionals on startup:", err);
+  }
+
+  // Seed Bible passages on startup
+  try {
+    await seedBiblePassages();
+    await seedScripturesFromDevotionals();
+  } catch (err) {
+    console.error("Error seeding Bible passages on startup:", err);
   }
 
   await registerRoutes(httpServer, app);

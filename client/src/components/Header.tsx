@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff } from "lucide-react";
+import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff, Book } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import { cn } from "@/lib/utils";
 import logoImage from "@assets/IMG_202512182225101_-_Copy_1767468127874.PNG";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/use-notifications";
+import { useTranslation, TRANSLATION_LABELS } from "@/contexts/TranslationContext";
+import { BIBLE_TRANSLATIONS, type BibleTranslation } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -15,6 +17,40 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
+import { TranslationSelector } from "@/components/TranslationSelector";
+
+function MobileTranslationSelector() {
+  const { translation, setTranslation } = useTranslation();
+  
+  return (
+    <div className="mt-4 border-t border-primary/10 pt-4">
+      <div className="px-4 pb-2">
+        <span className="text-sm font-medium text-muted-foreground">Bible Translation</span>
+      </div>
+      <div className="flex flex-col gap-1 px-2">
+        {BIBLE_TRANSLATIONS.map((t) => (
+          <button
+            key={t}
+            onClick={() => setTranslation(t as BibleTranslation)}
+            className={cn(
+              "flex items-center gap-3 px-4 py-2 rounded-lg text-base font-medium transition-all duration-200",
+              translation === t
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
+            )}
+            data-testid={`button-translation-mobile-${t}`}
+          >
+            <Book className="w-4 h-4" />
+            <div className="flex flex-col items-start gap-0.5">
+              <span>{t}</span>
+              <span className="text-xs opacity-75">{TRANSLATION_LABELS[t as BibleTranslation]}</span>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function Header() {
   const [location, setLocation] = useLocation();
@@ -136,6 +172,7 @@ export function Header() {
               Logout
             </button>
           )}
+          <TranslationSelector />
           {notificationsSupported && (
             <Button
               size="icon"
@@ -227,6 +264,8 @@ export function Header() {
                   </Link>
                 );
               })}
+              
+              <MobileTranslationSelector />
               
               {notificationsSupported && (
                 <div className="flex items-center justify-between px-4 py-3 mt-4 border-t border-primary/10 pt-6">

@@ -236,6 +236,39 @@ export async function registerRoutes(
     }
   });
 
+  // Scripture Routes
+  // GET Scripture passage by reference and translation
+  app.get(api.scripture.get.path, async (req, res) => {
+    const reference = req.query.reference as string;
+    const translation = (req.query.translation as string) || "KJV";
+    
+    if (!reference) {
+      return res.status(400).json({ message: "Reference is required" });
+    }
+    
+    // Validate translation
+    const validTranslations = ["KJV", "WEB", "ASV", "DRB"];
+    if (!validTranslations.includes(translation)) {
+      return res.status(400).json({ message: "Invalid translation. Must be one of: KJV, WEB, ASV, DRB" });
+    }
+    
+    const passage = await storage.getBiblePassage(reference, translation as any);
+    
+    if (!passage) {
+      // If specific translation not found, try to get KJV as fallback
+      if (translation !== "KJV") {
+        const kjvPassage = await storage.getBiblePassage(reference, "KJV");
+        if (kjvPassage) {
+          // Return KJV with a flag indicating it's a fallback
+          return res.json({ ...kjvPassage, isFallback: true, requestedTranslation: translation });
+        }
+      }
+      return res.status(404).json({ message: "Scripture not found for this reference" });
+    }
+    
+    res.json(passage);
+  });
+
   // Prayer Request Routes
   app.post(api.prayerRequests.create.path, async (req, res) => {
     try {

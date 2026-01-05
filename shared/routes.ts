@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { insertDevotionalSchema, devotionals, insertPrayerRequestSchema, prayerRequests, prayerReplies, threadMessages, autoReplyTemplates, insertThreadMessageSchema, insertAutoReplyTemplateSchema } from "./schema";
+import { insertDevotionalSchema, devotionals, insertPrayerRequestSchema, prayerRequests, prayerReplies, threadMessages, autoReplyTemplates, insertThreadMessageSchema, insertAutoReplyTemplateSchema, biblePassages, bibleTranslationSchema } from "./schema";
 
 export const errorSchemas = {
   validation: z.object({
@@ -148,6 +148,20 @@ export const api = {
       responses: {
         200: z.custom<typeof autoReplyTemplates.$inferSelect>(),
         400: errorSchemas.validation,
+      },
+    },
+  },
+  scripture: {
+    get: {
+      method: "GET" as const,
+      path: "/api/scripture",
+      input: z.object({
+        reference: z.string(),
+        translation: bibleTranslationSchema.optional().default("KJV"),
+      }),
+      responses: {
+        200: z.custom<typeof biblePassages.$inferSelect>(),
+        404: errorSchemas.notFound,
       },
     },
   },

@@ -2,12 +2,22 @@ import { format, parseISO } from "date-fns";
 import { type DevotionalResponse } from "@shared/schema";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { useScriptureText } from "@/hooks/use-scripture";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { Loader2 } from "lucide-react";
 
 interface DevotionalCardProps {
   devotional: DevotionalResponse;
 }
 
 export function DevotionalCard({ devotional }: DevotionalCardProps) {
+  const { translation } = useTranslation();
+  const { text: scriptureText, isLoading, isFallback } = useScriptureText(
+    devotional.scriptureReference,
+    devotional.scriptureText
+  );
+
   return (
     <article className="max-w-4xl mx-auto bg-card shadow-xl shadow-primary/10 rounded-none md:rounded-xl overflow-hidden border border-card-border">
       {/* Header Section with gradient */}
@@ -24,11 +34,23 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
 
           <div className="max-w-2xl mx-auto space-y-4">
             <p className="font-serif text-lg md:text-xl text-primary font-medium italic">
-              "{devotional.scriptureText}"
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading scripture...
+                </span>
+              ) : (
+                `"${scriptureText}"`
+              )}
             </p>
-            <p className="text-sm font-semibold tracking-widest text-muted-foreground uppercase">
-              — {devotional.scriptureReference}
-            </p>
+            <div className="flex items-center justify-center gap-2">
+              <p className="text-sm font-semibold tracking-widest text-muted-foreground uppercase">
+                — {devotional.scriptureReference}
+              </p>
+              <Badge variant="outline" className="text-xs font-bold no-default-active-elevate" data-testid="badge-translation">
+                {isFallback ? "KJV" : translation}
+              </Badge>
+            </div>
           </div>
         </div>
       </div>

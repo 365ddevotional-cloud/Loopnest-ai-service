@@ -11,6 +11,7 @@ import {
   generalInquiries,
   feedbackMessages,
   partnershipInquiries,
+  biblePassages,
   type Devotional,
   type InsertDevotional,
   type UpdateDevotionalRequest,
@@ -34,6 +35,9 @@ import {
   type InsertFeedback,
   type PartnershipInquiry,
   type InsertPartnership,
+  type BiblePassage,
+  type InsertBiblePassage,
+  type BibleTranslation,
 } from "@shared/schema";
 import { eq, desc, and } from "drizzle-orm";
 
@@ -92,6 +96,12 @@ export interface IStorage {
   // Partnership
   getPartnershipInquiries(): Promise<PartnershipInquiry[]>;
   createPartnershipInquiry(inquiry: InsertPartnership): Promise<PartnershipInquiry>;
+  
+  // Bible Passages
+  getBiblePassage(reference: string, translation: BibleTranslation): Promise<BiblePassage | undefined>;
+  getBiblePassages(references: string[], translation: BibleTranslation): Promise<BiblePassage[]>;
+  createBiblePassage(passage: InsertBiblePassage): Promise<BiblePassage>;
+  upsertBiblePassage(passage: InsertBiblePassage): Promise<BiblePassage>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -341,6 +351,49 @@ export class DatabaseStorage implements IStorage {
       .values(inquiry)
       .returning();
     return created;
+  }
+
+  // Bible Passages
+  async getBiblePassage(reference: string, translation: BibleTranslation): Promise<BiblePassage | undefined> {
+    const [passage] = await db
+      .select()
+      .from(biblePassages)
+      .where(and(
+        eq(biblePassages.reference, reference),
+        eq(biblePassages.translation, translation)
+      ));
+    return passage;
+  }
+
+  async getBiblePassages(references: string[], translation: BibleTranslation): Promise<BiblePassage[]> {
+    if (references.length === 0) return [];
+    const results: BiblePassage[] = [];
+    for (const ref of references) {
+      const passage = await this.getBiblePassage(ref, translation);
+      if (passage) results.push(passage);
+    }
+    return results;
+  }
+
+  async createBiblePassage(passage: InsertBiblePassage): Promise<BiblePassage> {
+    const [created] = await db
+      .insert(biblePassages)
+      .values(passage)
+      .returning();
+    return created;
+  }
+
+  async upsertBiblePassage(passage: InsertBiblePassage): Promise<BiblePassage> {
+    const existing = await this.getBiblePassage(passage.reference, passage.translation as BibleTranslation);
+    if (existing) {
+      const [updated] = await db
+        .update(biblePassages)
+        .set({ content: passage.content })
+        .where(eq(biblePassages.id, existing.id))
+        .returning();
+      return updated;
+    }
+    return this.createBiblePassage(passage);
   }
 }
 

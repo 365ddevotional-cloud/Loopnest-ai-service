@@ -1,6 +1,30 @@
-import { pgTable, text, serial, date, timestamp, boolean, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, date, timestamp, boolean, integer, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// Bible Translation Types
+export const BIBLE_TRANSLATIONS = ["KJV", "WEB", "ASV", "DRB"] as const;
+export type BibleTranslation = typeof BIBLE_TRANSLATIONS[number];
+export const bibleTranslationSchema = z.enum(BIBLE_TRANSLATIONS);
+
+// Bible Passages Table - stores scripture text by reference and translation
+export const biblePassages = pgTable("bible_passages", {
+  id: serial("id").primaryKey(),
+  reference: text("reference").notNull(), // e.g., "John 3:16", "Psalm 23:1-6"
+  translation: text("translation").notNull(), // KJV, WEB, ASV, DRB
+  content: text("content").notNull(), // The actual scripture text
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  uniqueRefTranslation: unique().on(table.reference, table.translation),
+}));
+
+export const insertBiblePassageSchema = createInsertSchema(biblePassages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type BiblePassage = typeof biblePassages.$inferSelect;
+export type InsertBiblePassage = z.infer<typeof insertBiblePassageSchema>;
 
 export const devotionals = pgTable("devotionals", {
   id: serial("id").primaryKey(),
