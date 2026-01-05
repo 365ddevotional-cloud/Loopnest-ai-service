@@ -1,0 +1,129 @@
+MENU TRANSITION LOGO ANIMATION (NETFLIX-STYLE, MENU ONLY)
+
+Goal:
+Introduce a subtle, premium transition animation using the app logo only when switching between Menu sections, inspired by Netflix’s “N” animation — without affecting performance, navigation, or content rendering.
+
+🔧 IMPLEMENT THE FOLLOWING
+1️⃣ Menu-Only Transition Trigger
+
+The animation should trigger ONLY when:
+
+A user taps a menu item (Today, Archive, Bible, YouTube, etc.)
+
+Do NOT trigger on:
+
+Page scroll
+
+Initial app load
+
+Bible chapter / verse changes
+
+Internal buttons
+
+2️⃣ Logo Transition Overlay
+
+Briefly display the app logo centered on screen during menu navigation.
+
+Overlay behavior:
+
+Semi-transparent background (light blur or soft fade)
+
+Covers content for 300–500ms max
+
+Automatically disappears when the new section finishes loading
+
+3️⃣ Animated Red Outline (Signature Effect)
+
+Add a solid red animated line that traces the outline of the logo, similar to Netflix’s brand animation.
+
+Animation behavior:
+
+Line draws smoothly around the logo perimeter
+
+Single loop (no infinite animation)
+
+Clean, modern, non-flashy
+
+Red color:
+
+Use brand-safe solid red (no gradients)
+
+Must meet accessibility contrast standards
+
+4️⃣ Animation Performance Rules
+
+Must be:
+
+Lightweight (CSS or minimal JS animation)
+
+GPU-friendly
+
+Non-blocking
+
+No impact on:
+
+Page routing
+
+Devotional data
+
+Bible content loading
+
+Admin access
+
+5️⃣ Mobile & Desktop Compatibility
+
+Animation must scale properly on:
+
+Mobile phones
+
+Tablets
+
+Desktop browsers
+
+Logo stays crisp (no blur or pixelation).
+
+6️⃣ Logo Asset Usage
+
+Use the existing app logo asset (provided).
+
+Do NOT modify:
+
+Logo shape
+
+Logo colors
+
+Logo proportions
+
+Only add the animated red outline layer around it.
+
+🚫 DO NOT
+
+Add sound
+
+Add splash screen behavior
+
+Replace page transitions
+
+Trigger animation outside menu navigation
+
+Break back/forward navigation
+
+Affect accessibility settings
+
+✅ SUCCESS CRITERIA
+
+Smooth, premium feel similar to Netflix
+
+Animation feels intentional, not decorative
+
+No delays or flicker
+
+Google Play reviewers see this as UI polish, not branding misuse
+
+🧠 IMPLEMENTATION HINT (OPTIONAL)
+
+Use a temporary MenuTransitionOverlay component
+
+Trigger on menu route change
+
+Auto-dismiss after animation completes
