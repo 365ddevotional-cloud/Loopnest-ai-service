@@ -1,5 +1,6 @@
 import { useTodayDevotional } from "@/hooks/use-devotionals";
 import { DevotionalCard } from "@/components/DevotionalCard";
+import { DailyBibleVerse } from "@/components/DailyBibleVerse";
 import { Loader2, BookX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -49,11 +50,18 @@ export default function Home() {
   }
 
   return (
-    <div className="pb-12">
+    <div className="pb-12 space-y-8">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
+        <DailyBibleVerse />
+      </motion.div>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
       >
         <DevotionalCard devotional={devotional} />
       </motion.div>
