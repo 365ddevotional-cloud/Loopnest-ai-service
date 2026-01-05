@@ -8,8 +8,10 @@ import Footer from "@/components/Footer";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
+import { MenuTransitionProvider, useMenuTransition } from "@/contexts/MenuTransitionContext";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { NotificationTrigger } from "@/components/NotificationTrigger";
+import { MenuTransitionOverlay } from "@/components/MenuTransitionOverlay";
 import Home from "@/pages/Home";
 import Archive from "@/pages/Archive";
 import Admin from "@/pages/Admin";
@@ -61,24 +63,37 @@ function Router() {
   );
 }
 
+function AppContent() {
+  const { isTransitioning, completeTransition } = useMenuTransition();
+  
+  return (
+    <>
+      <div className="min-h-screen flex flex-col bg-background font-sans text-foreground">
+        <Header />
+        <main className="flex-grow container mx-auto px-4 pt-6 pb-12 sm:pt-8 sm:pb-16">
+          <Router />
+        </main>
+        <Footer />
+        <Toaster />
+        <NotificationPrompt />
+        <NotificationTrigger />
+      </div>
+      <MenuTransitionOverlay isVisible={isTransitioning} onComplete={completeTransition} />
+    </>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <NotificationProvider>
           <TranslationProvider>
-            <TooltipProvider>
-            <div className="min-h-screen flex flex-col bg-background font-sans text-foreground">
-              <Header />
-              <main className="flex-grow container mx-auto px-4 pt-6 pb-12 sm:pt-8 sm:pb-16">
-                <Router />
-              </main>
-              <Footer />
-              <Toaster />
-              <NotificationPrompt />
-              <NotificationTrigger />
-            </div>
-            </TooltipProvider>
+            <MenuTransitionProvider>
+              <TooltipProvider>
+                <AppContent />
+              </TooltipProvider>
+            </MenuTransitionProvider>
           </TranslationProvider>
         </NotificationProvider>
       </AuthProvider>

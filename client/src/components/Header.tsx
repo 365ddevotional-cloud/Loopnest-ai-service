@@ -7,6 +7,7 @@ import logoImage from "@assets/IMG_202512182225101_-_Copy_1767468127874.PNG";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useTranslation, TRANSLATION_LABELS } from "@/contexts/TranslationContext";
+import { useMenuTransition } from "@/contexts/MenuTransitionContext";
 import { BIBLE_TRANSLATIONS, type BibleTranslation } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,6 +57,7 @@ export function Header() {
   const [location, setLocation] = useLocation();
   const { isAdmin, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { triggerTransition } = useMenuTransition();
   const { 
     isSupported: notificationsSupported, 
     permission: notificationPermission,
@@ -72,9 +74,19 @@ export function Header() {
     }
   };
 
+  const navigateWithTransition = (href: string) => {
+    if (location !== href) {
+      setMobileMenuOpen(false);
+      triggerTransition(() => {
+        setLocation(href);
+      });
+    } else {
+      setMobileMenuOpen(false);
+    }
+  };
+
   const handleHowToUseClick = () => {
-    setMobileMenuOpen(false);
-    setLocation("/how-to-use");
+    navigateWithTransition("/how-to-use");
   };
 
   const handleLogout = async () => {
@@ -83,8 +95,12 @@ export function Header() {
     setLocation("/");
   };
 
-  const handleNavClick = () => {
-    setMobileMenuOpen(false);
+  const handleNavClick = (href: string, isExternal: boolean) => {
+    if (!isExternal) {
+      navigateWithTransition(href);
+    } else {
+      setMobileMenuOpen(false);
+    }
   };
 
   const navItems = [
@@ -108,7 +124,10 @@ export function Header() {
     <header className="sticky top-2 z-50 w-full bg-gradient-to-r from-background/98 via-background/95 to-background/98 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 border-b border-primary/15 shadow-sm mt-2">
       <div className="container mx-auto px-4 h-16 flex items-center justify-center lg:justify-between gap-4 relative">
         {/* Centered Logo and Title */}
-        <Link href="/" className="flex items-center gap-3 group">
+        <button 
+          onClick={() => navigateWithTransition("/")}
+          className="flex items-center gap-3 group"
+        >
           <img 
             src={logoImage} 
             alt="365 Daily Devotional" 
@@ -117,7 +136,7 @@ export function Header() {
           <span className="font-serif text-2xl font-semibold text-primary tracking-wide">
             Daily Devotional
           </span>
-        </Link>
+        </button>
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center gap-1">
@@ -147,20 +166,20 @@ export function Header() {
               );
             }
             return (
-              <Link key={item.href} href={item.href}>
-                <div
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer",
-                    isActive
-                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
-                      : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
-                  )}
-                  data-testid={`link-${item.label.toLowerCase().replace(/\s+/g, '-')}-nav`}
-                >
-                  <item.icon className="w-4 h-4" />
-                  {item.label}
-                </div>
-              </Link>
+              <button
+                key={item.href}
+                onClick={() => handleNavClick(item.href, item.external)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                    : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                )}
+                data-testid={`link-${item.label.toLowerCase().replace(/\s+/g, '-')}-nav`}
+              >
+                <item.icon className="w-4 h-4" />
+                {item.label}
+              </button>
             );
           })}
           {isAdmin && (
@@ -239,7 +258,7 @@ export function Header() {
                       href={item.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={handleNavClick}
+                      onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 cursor-pointer text-muted-foreground hover:bg-primary/5 hover:text-primary"
                       data-testid={`link-${item.label.toLowerCase().replace(/\s+/g, '-')}-nav-mobile`}
                     >
@@ -249,20 +268,20 @@ export function Header() {
                   );
                 }
                 return (
-                  <Link key={item.href} href={item.href} onClick={handleNavClick}>
-                    <div
-                      className={cn(
-                        "flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 cursor-pointer",
-                        isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
-                      )}
-                      data-testid={`link-${item.label.toLowerCase().replace(/\s+/g, '-')}-nav-mobile`}
-                    >
-                      <item.icon className="w-5 h-5" />
-                      {item.label}
-                    </div>
-                  </Link>
+                  <button
+                    key={item.href}
+                    onClick={() => handleNavClick(item.href, item.external)}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 cursor-pointer text-left",
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                    )}
+                    data-testid={`link-${item.label.toLowerCase().replace(/\s+/g, '-')}-nav-mobile`}
+                  >
+                    <item.icon className="w-5 h-5" />
+                    {item.label}
+                  </button>
                 );
               })}
               
