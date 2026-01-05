@@ -77,6 +77,7 @@ function AdminArchive() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "past" | "today" | "future">("all");
   const [selectedDevotional, setSelectedDevotional] = useState<Devotional | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -131,7 +132,9 @@ function AdminArchive() {
     
     const matchesDate = !dateFilter || d.date === dateFilter;
     
-    return matchesSearch && matchesDate;
+    const matchesStatus = statusFilter === "all" || getDevotionalStatus(d.date) === statusFilter;
+    
+    return matchesSearch && matchesDate && matchesStatus;
   });
 
   const openEditDialog = (devotional: Devotional) => {
@@ -201,22 +204,46 @@ function AdminArchive() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex items-center gap-4 flex-wrap">
-          <Badge variant="secondary" className="text-xs">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant={statusFilter === "all" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setStatusFilter("all")}
+            data-testid="button-filter-all"
+          >
+            <Archive className="w-3 h-3 mr-1" />
+            All ({devotionals.length})
+          </Button>
+          <Button
+            variant={statusFilter === "past" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setStatusFilter("past")}
+            data-testid="button-filter-past"
+          >
             <Clock className="w-3 h-3 mr-1" />
-            Past: {pastCount}
-          </Badge>
-          <Badge variant="outline" className="text-xs border-primary text-primary">
+            Past ({pastCount})
+          </Button>
+          <Button
+            variant={statusFilter === "today" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setStatusFilter("today")}
+            data-testid="button-filter-today"
+          >
             <Calendar className="w-3 h-3 mr-1" />
-            Today: {todayCount}
-          </Badge>
-          <Badge className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-            <Clock className="w-3 h-3 mr-1" />
-            Future: {futureCount}
-          </Badge>
+            Today ({todayCount})
+          </Button>
+          <Button
+            variant={statusFilter === "future" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setStatusFilter("future")}
+            data-testid="button-filter-future"
+          >
+            <Sparkles className="w-3 h-3 mr-1" />
+            Future ({futureCount})
+          </Button>
         </div>
         <div className="text-sm text-muted-foreground">
-          Total: {devotionals.length} devotionals
+          Showing: {filteredDevotionals.length} of {devotionals.length}
         </div>
       </div>
 
