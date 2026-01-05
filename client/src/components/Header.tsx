@@ -112,9 +112,9 @@ export function Header() {
           <img 
             src={logoImage} 
             alt="365 Daily Devotional" 
-            className="w-10 h-10 object-contain transition-transform group-hover:scale-105"
+            className="w-12 h-12 object-contain transition-transform group-hover:scale-105"
           />
-          <span className="font-serif text-xl font-bold text-primary tracking-tight">
+          <span className="font-serif text-2xl font-semibold text-primary tracking-wide">
             Daily Devotional
           </span>
         </Link>
@@ -212,9 +212,9 @@ export function Header() {
                 <img 
                   src={logoImage} 
                   alt="365 Daily Devotional" 
-                  className="w-8 h-8 object-contain"
+                  className="w-10 h-10 object-contain"
                 />
-                <span className="font-serif text-lg font-bold text-primary">
+                <span className="font-serif text-xl font-semibold text-primary tracking-wide">
                   Daily Devotional
                 </span>
               </SheetTitle>
