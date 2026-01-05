@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Loader2, Book, ChevronLeft, ChevronRight, BookOpen, Hash } from "lucide-react";
+import { Loader2, Book, ChevronLeft, ChevronRight, BookOpen, Hash, Search, Star, Menu } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { motion } from "framer-motion";
 import { useTranslation, TRANSLATION_LABELS } from "@/contexts/TranslationContext";
@@ -29,6 +35,10 @@ import {
   type ChapterData,
   type BiblePosition,
 } from "@/lib/bible-data";
+import { BibleVerseActions, getHighlightClass } from "@/components/BibleVerseActions";
+import { BibleBookmarksView } from "@/components/BibleBookmarksView";
+import { BibleSearchDialog } from "@/components/BibleSearchDialog";
+import { getHighlight, type HighlightColor } from "@/lib/bible-storage";
 
 export default function Bible() {
   const { translation, setTranslation } = useTranslation();
@@ -41,6 +51,9 @@ export default function Bible() {
   });
   const [selectedVerse, setSelectedVerse] = useState<number>(1);
   const [highlightedVerse, setHighlightedVerse] = useState<number | null>(null);
+  const [verseHighlights, setVerseHighlights] = useState<Map<number, HighlightColor>>(new Map());
+  const [bookmarksOpen, setBookmarksOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const verseRefs = useRef<Map<number, HTMLParagraphElement>>(new Map());
 
@@ -95,9 +108,48 @@ export default function Bible() {
 
   useEffect(() => {
     if (chapterData && chapterData.verses.length > 0) {
-      setSelectedVerse(1);
+      const highlights = new Map<number, HighlightColor>();
+      for (const verse of chapterData.verses) {
+        const highlight = getHighlight({ bookId: position.bookId, chapter: position.chapter, verse: verse.verse });
+        if (highlight) {
+          highlights.set(verse.verse, highlight.color);
+        }
+      }
+      setVerseHighlights(highlights);
+
+      if (pendingScrollRef.current) {
+        const targetVerse = pendingScrollRef.current;
+        pendingScrollRef.current = null;
+        setSelectedVerse(targetVerse);
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            scrollToVerse(targetVerse);
+          });
+        });
+      } else {
+        setSelectedVerse(1);
+      }
     }
-  }, [chapterData]);
+  }, [chapterData, position.bookId, position.chapter, scrollToVerse]);
+
+  const handleHighlightChange = useCallback((verseNum: number, color: HighlightColor | null) => {
+    setVerseHighlights(prev => {
+      const next = new Map(prev);
+      if (color) {
+        next.set(verseNum, color);
+      } else {
+        next.delete(verseNum);
+      }
+      return next;
+    });
+  }, []);
+
+  const pendingScrollRef = useRef<number | null>(null);
+
+  const handleNavigateFromSearch = useCallback((bookId: string, chapter: number, verse: number) => {
+    pendingScrollRef.current = verse;
+    setPosition(prev => ({ ...prev, bookId, chapter }));
+  }, []);
 
   const handleBookChange = (bookId: string) => {
     setPosition(prev => ({ ...prev, bookId, chapter: 1 }));
@@ -138,9 +190,39 @@ export default function Bible() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
       <div className="text-center space-y-3 py-6">
-        <h1 className="font-serif text-3xl md:text-4xl font-bold text-primary" data-testid="text-bible-title">
-          Read the Bible
-        </h1>
+        <div className="flex items-center justify-center gap-2">
+          <h1 className="font-serif text-3xl md:text-4xl font-bold text-primary" data-testid="text-bible-title">
+            Read the Bible
+          </h1>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSearchOpen(true)}
+              aria-label="Search Bible"
+              data-testid="button-bible-search"
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Bible menu" data-testid="button-bible-menu">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setBookmarksOpen(true)} data-testid="menu-bookmarks">
+                  <Star className="h-4 w-4 mr-2 text-amber-400" />
+                  Bookmarked Verses
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSearchOpen(true)} data-testid="menu-search">
+                  <Search className="h-4 w-4 mr-2" />
+                  Search Bible
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
         <p className="text-muted-foreground text-sm max-w-xl mx-auto">
           Read God's Word in your preferred translation. Select a book and chapter below.
         </p>
@@ -295,23 +377,36 @@ export default function Bible() {
               className="p-6 md:p-8"
             >
               <div className="prose prose-stone prose-lg max-w-none">
-                {chapterData.verses.map((verse) => (
-                  <p 
-                    key={verse.verse} 
-                    ref={(el) => {
-                      if (el) verseRefs.current.set(verse.verse, el);
-                    }}
-                    className={`mb-3 leading-relaxed transition-all duration-500 rounded-md px-2 -mx-2 ${
-                      highlightedVerse === verse.verse 
-                        ? 'bg-primary/15 ring-2 ring-primary/30' 
-                        : ''
-                    }`}
-                    data-testid={`verse-${verse.verse}`}
-                  >
-                    <sup className="text-primary font-bold mr-1 text-sm">{verse.verse}</sup>
-                    <span className="font-serif text-foreground/90">{verse.text}</span>
-                  </p>
-                ))}
+                {chapterData.verses.map((verse) => {
+                  const userHighlight = verseHighlights.get(verse.verse);
+                  const highlightClass = getHighlightClass(userHighlight || null);
+                  return (
+                    <p 
+                      key={verse.verse} 
+                      ref={(el) => {
+                        if (el) verseRefs.current.set(verse.verse, el);
+                      }}
+                      className={`group mb-3 leading-relaxed transition-all duration-500 rounded-md px-2 -mx-2 ${
+                        highlightedVerse === verse.verse 
+                          ? 'bg-primary/15 ring-2 ring-primary/30' 
+                          : highlightClass
+                      }`}
+                      data-testid={`verse-${verse.verse}`}
+                    >
+                      <sup className="text-primary font-bold mr-1 text-sm">{verse.verse}</sup>
+                      <span className="font-serif text-foreground/90">{verse.text}</span>
+                      <BibleVerseActions
+                        bookId={position.bookId}
+                        chapter={position.chapter}
+                        verse={verse.verse}
+                        verseText={verse.text}
+                        translation={translation}
+                        currentHighlight={userHighlight}
+                        onHighlightChange={(color) => handleHighlightChange(verse.verse, color)}
+                      />
+                    </p>
+                  );
+                })}
               </div>
             </motion.div>
           </ScrollArea>
@@ -345,6 +440,18 @@ export default function Bible() {
           Scripture texts are from public domain translations. All Bible text is read-only.
         </p>
       </div>
+
+      <BibleBookmarksView
+        open={bookmarksOpen}
+        onOpenChange={setBookmarksOpen}
+        onNavigate={handleNavigateFromSearch}
+      />
+
+      <BibleSearchDialog
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        onNavigate={handleNavigateFromSearch}
+      />
     </div>
   );
 }

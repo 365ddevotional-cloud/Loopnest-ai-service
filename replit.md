@@ -169,6 +169,11 @@ The following features are considered stable and locked. Any changes require exp
    - Fallback indicators when translation unavailable
    - Auto-scroll to verse with 2-second highlight
    - Position persistence in localStorage
+   - Verse bookmarking with star icon (localStorage)
+   - Verse highlighting with 4 color options (localStorage)
+   - Verse notes with modal editor (localStorage)
+   - Verse sharing (text or branded image card)
+   - Full-text Bible search with verse reference parsing
 
 2. **Daily Bible Verse** (`client/src/components/DailyBibleVerse.tsx`)
    - Timezone-aware daily rotation

@@ -1,0 +1,76 @@
+Enhance the existing Bible reading page by adding the following advanced Bible features.
+Do NOT remove, refactor, or break any existing functionality.
+
+========================
+FEATURES TO ADD
+========================
+
+1) Verse Bookmarking ⭐
+- Add a bookmark (star) icon next to each verse number.
+- Users can tap the star to save or remove a bookmark.
+- Bookmarked verses must persist using local storage (per device).
+- Add a “Bookmarked Verses” view accessible from the Bible page menu.
+- Display bookmarks grouped by Book → Chapter → Verse.
+
+2) Verse Highlighting ✍️
+- Allow users to long-press or tap a verse to highlight it.
+- Provide highlight color options (yellow, blue, green, pink).
+- Highlights must persist using local storage.
+- Highlighting must NOT interfere with verse selection or scrolling.
+
+3) Verse Notes 📝
+- Add a “Notes” icon next to each verse.
+- Tapping opens a modal or inline editor for personal notes.
+- Notes must be saved per verse (Book + Chapter + Verse).
+- Notes persist using local storage.
+- Users can edit or delete notes at any time.
+
+4) Verse Sharing 📤
+- Add a “Share” icon next to each verse.
+- Allow sharing as:
+  - Plain text (verse + reference + translation)
+  - Image (clean verse card with app branding)
+- Include Book, Chapter, Verse, and Translation in shared content.
+- Use native share APIs where available.
+
+5) Verse Search 🔍
+- Add a Bible Search feature accessible from the Bible page header.
+- Search across all loaded public-domain Bible translations.
+- Support:
+  - Keyword search (e.g., “faith”)
+  - Exact verse reference search (e.g., “John 3:16”)
+- Display search results with verse previews.
+- Tapping a result navigates directly to that verse and highlights it.
+
+========================
+UX & ACCESSIBILITY
+========================
+- All icons must be clearly labeled for accessibility.
+- Features must work on mobile and desktop.
+- Maintain existing typography, spacing, and color scheme.
+- Do NOT clutter the UI — keep interactions intuitive.
+
+========================
+SAFETY & CONSTRAINTS
+========================
+- Do NOT remove or modify:
+  - Book selector
+  - Chapter selector
+  - Verse selector
+  - Translation selector
+  - Previous / Next navigation
+  - Existing Bible rendering logic
+- All new features must integrate cleanly with the current system.
+- No breaking changes.
+- No external paid APIs.
+
+========================
+FINAL RESULT
+========================
+The Bible page becomes a fully-featured Bible reader with:
+- Bookmarks
+- Highlights
+- Notes
+- Sharing
+- Full-text search
+while preserving all existing functionality.
