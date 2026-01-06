@@ -227,7 +227,7 @@ export function Header() {
               <span className="sr-only">Open menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-[300px] sm:w-[350px]">
+          <SheetContent side="right" className="w-[300px] sm:w-[350px] overflow-y-auto">
             <SheetHeader className="border-b border-primary/10 pb-4 mb-4">
               <SheetTitle className="flex items-center gap-3">
                 <img 
