@@ -4,8 +4,9 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import path from "path";
-import { seedAllDevotionals } from "./seed-devotionals";
-import { seedBiblePassages, seedScripturesFromDevotionals } from "./seed-scripture";
+// Seeding is now manual - run with: npx tsx server/seed-devotionals.ts or npx tsx server/seed-scripture.ts
+// import { seedAllDevotionals } from "./seed-devotionals";
+// import { seedBiblePassages, seedScripturesFromDevotionals } from "./seed-scripture";
 const app = express();
 
 const httpServer = createServer(app);
@@ -90,20 +91,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Seed devotionals on startup (only inserts missing ones)
-  try {
-    await seedAllDevotionals();
-  } catch (err) {
-    console.error("Error seeding devotionals on startup:", err);
-  }
-
-  // Seed Bible passages on startup
-  try {
-    await seedBiblePassages();
-    await seedScripturesFromDevotionals();
-  } catch (err) {
-    console.error("Error seeding Bible passages on startup:", err);
-  }
+  // Seeding is now manual to prevent production crashes
+  // Run: npx tsx server/seed-devotionals.ts
+  // Run: npx tsx server/seed-scripture.ts
 
   await registerRoutes(httpServer, app);
 

@@ -153,7 +153,7 @@ export async function seedScripturesFromDevotionals(): Promise<void> {
   let inserted = 0;
   let skipped = 0;
   
-  for (const reference of uniqueReferences) {
+  for (const reference of Array.from(uniqueReferences)) {
     const devotional = allDevotionals.find(d => d.scriptureReference === reference);
     if (!devotional) continue;
     
@@ -181,12 +181,5 @@ export async function seedScripturesFromDevotionals(): Promise<void> {
   console.log(`Devotional scriptures seeding complete. Inserted: ${inserted}, Skipped: ${skipped}`);
 }
 
-if (import.meta.url.endsWith(process.argv[1]?.replace(/^file:\/\//, '') || '')) {
-  seedBiblePassages()
-    .then(() => seedScripturesFromDevotionals())
-    .then(() => process.exit(0))
-    .catch((err) => {
-      console.error("Scripture seeding failed:", err);
-      process.exit(1);
-    });
-}
+// To run manually: npx tsx server/seed-scripture.ts
+// Functions are exported for manual execution only
