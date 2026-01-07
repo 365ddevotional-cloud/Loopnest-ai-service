@@ -1,0 +1,80 @@
+CRITICAL PRODUCTION BUG – PREVIEW WORKS, PUBLISHED APP STUCK ON OLD DATE
+
+My Replit Preview shows today’s devotional correctly, but the Published App URL is frozen on January 4, 2026, and the Archive does not update.
+
+This is a production caching + build-time date bug, not a frontend issue.
+
+REQUIRED FIX (DO ALL — NO PARTIAL FIXES):
+
+1. Disable ALL production caching
+Remove any static rendering, build-time caching, or edge caching affecting devotional data.
+
+Add these headers to every devotional and archive API response:
+Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0
+Pragma: no-cache
+Expires: 0
+
+2. Fix date handling (MOST IMPORTANT)
+Do NOT compute today’s date at build time
+
+
+Do NOT store today’s date in global/module scope
+
+
+Do NOT reuse a cached date value
+
+
+
+The date MUST be calculated inside each request handler, for example:
+const today = new Date();
+3. Force production to be fully dynamic
+Disable static generation
+
+
+Disable ISR or cached fetches
+
+
+Ensure production runs request-based logic, not prebuilt output
+
+
+
+4. Fix API base URL mismatch
+Ensure the published app uses the same backend endpoints as Preview.
+Remove any hardcoded preview, localhost, or internal URLs.
+
+5. Fix Archive auto-update logic
+Archive must be generated dynamically based on the current date
+
+
+Must not rely on seeded, cached, or previously stored “today” values
+
+
+
+6. Validation (MANDATORY)
+After applying fixes:
+Open the Published App URL in incognito and another browser
+
+
+Today’s devotional MUST show the real current date
+
+
+Archive MUST update automatically without redeploys
+
+
+
+❌ Do NOT require redeploys for daily date changes
+❌ Do NOT store today’s date permanently in the database
+
+✅ FINAL GOAL:
+The Published App behaves exactly like Preview and updates daily forever.
+
+If Replit AI finishes and says “Fixed”, immediately:
+Click Republish
+
+
+Open the published URL in incognito
+
+
+If it still fails, tell me exactly this and nothing else:
+“Give me the exact backend file and line numbers to edit.”
+
