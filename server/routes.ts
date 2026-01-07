@@ -76,6 +76,11 @@ export async function registerRoutes(
   // GET Today's Devotional
   // Accepts optional clientDate query param for client timezone support
   app.get(api.devotionals.getToday.path, async (req, res) => {
+    // Prevent browser caching to ensure fresh data
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    
     const clientDate = typeof req.query.clientDate === 'string' ? req.query.clientDate : null;
     const today = clientDate && /^\d{4}-\d{2}-\d{2}$/.test(clientDate) ? clientDate : getTodayDateString();
     const isAdmin = !!req.session?.isAdmin;
@@ -106,6 +111,11 @@ export async function registerRoutes(
   // Non-admin users cannot access future devotionals
   // Accepts optional clientDate query param for client timezone support
   app.get(api.devotionals.getByDate.path, async (req, res) => {
+    // Prevent browser caching to ensure fresh data
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    
     const date = req.params.date;
     const clientDate = typeof req.query.clientDate === 'string' ? req.query.clientDate : null;
     const today = clientDate && /^\d{4}-\d{2}-\d{2}$/.test(clientDate) ? clientDate : getTodayDateString();
@@ -131,6 +141,11 @@ export async function registerRoutes(
   // Non-admin users only see past and present devotionals
   // Accepts optional clientDate query param for client timezone support
   app.get(api.devotionals.list.path, async (req, res) => {
+    // Prevent browser caching to ensure fresh data
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    
     const list = await storage.getDevotionals();
     const clientDate = typeof req.query.clientDate === 'string' ? req.query.clientDate : null;
     const today = clientDate && /^\d{4}-\d{2}-\d{2}$/.test(clientDate) ? clientDate : getTodayDateString();
