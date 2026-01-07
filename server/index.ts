@@ -94,9 +94,6 @@ app.use((req, res, next) => {
   // Seeding is now manual to prevent production crashes
   // Run: npx tsx server/seed-devotionals.ts
   // Run: npx tsx server/seed-scripture.ts
-  97   app.get("/", (_req, res) => {
-  98     res.status(200).send("Attachment Parser is running");
-  99   });
 
   await registerRoutes(httpServer, app);
 
