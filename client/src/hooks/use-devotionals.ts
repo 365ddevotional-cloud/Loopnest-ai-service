@@ -11,11 +11,16 @@ export function useTodayDevotional() {
     queryKey: [api.devotionals.getToday.path, localDate],
     queryFn: async () => {
       const url = `${api.devotionals.getToday.path}?clientDate=${localDate}`;
-      const res = await fetch(url, { credentials: "include" });
+      const res = await fetch(url, { 
+        credentials: "include",
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" }
+      });
       if (res.status === 404) return null;
       if (!res.ok) throw new Error("Failed to fetch today's devotional");
       return api.devotionals.getToday.responses[200].parse(await res.json());
     },
+    staleTime: 0, // Always consider stale to ensure fresh data
   });
 }
 
@@ -33,7 +38,11 @@ export function useDevotionalByDate(date: string) {
     queryFn: async (): Promise<{ devotional: Awaited<ReturnType<typeof api.devotionals.getByDate.responses[200]['parse']>> | null; restricted?: RestrictedDevotionalResponse }> => {
       const baseUrl = buildUrl(api.devotionals.getByDate.path, { date });
       const url = `${baseUrl}?clientDate=${localDate}`;
-      const res = await fetch(url, { credentials: "include" });
+      const res = await fetch(url, { 
+        credentials: "include",
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" }
+      });
       if (res.status === 404) return { devotional: null };
       if (res.status === 403) {
         const data = await res.json();
@@ -46,6 +55,7 @@ export function useDevotionalByDate(date: string) {
       return { devotional };
     },
     enabled: !!date,
+    staleTime: 0,
   });
 }
 
@@ -56,10 +66,15 @@ export function useDevotionalsList() {
     queryKey: [api.devotionals.list.path, localDate],
     queryFn: async () => {
       const url = `${api.devotionals.list.path}?clientDate=${localDate}`;
-      const res = await fetch(url, { credentials: "include" });
+      const res = await fetch(url, { 
+        credentials: "include",
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" }
+      });
       if (!res.ok) throw new Error("Failed to fetch devotionals list");
       return api.devotionals.list.responses[200].parse(await res.json());
     },
+    staleTime: 0, // Always consider stale to ensure fresh data
   });
 }
 
