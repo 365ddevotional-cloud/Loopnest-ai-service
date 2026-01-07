@@ -10,7 +10,8 @@ export function useTodayDevotional() {
   return useQuery({
     queryKey: [api.devotionals.getToday.path, localDate],
     queryFn: async () => {
-      const url = `${api.devotionals.getToday.path}?clientDate=${localDate}`;
+      // Add cache-busting timestamp to bypass CDN caching
+      const url = `${api.devotionals.getToday.path}?clientDate=${localDate}&_t=${Date.now()}`;
       const res = await fetch(url, { 
         credentials: "include",
         cache: "no-store",
@@ -37,7 +38,8 @@ export function useDevotionalByDate(date: string) {
     queryKey: [api.devotionals.getByDate.path, date, localDate],
     queryFn: async (): Promise<{ devotional: Awaited<ReturnType<typeof api.devotionals.getByDate.responses[200]['parse']>> | null; restricted?: RestrictedDevotionalResponse }> => {
       const baseUrl = buildUrl(api.devotionals.getByDate.path, { date });
-      const url = `${baseUrl}?clientDate=${localDate}`;
+      // Add cache-busting timestamp to bypass CDN caching
+      const url = `${baseUrl}?clientDate=${localDate}&_t=${Date.now()}`;
       const res = await fetch(url, { 
         credentials: "include",
         cache: "no-store",
@@ -65,7 +67,8 @@ export function useDevotionalsList() {
   return useQuery({
     queryKey: [api.devotionals.list.path, localDate],
     queryFn: async () => {
-      const url = `${api.devotionals.list.path}?clientDate=${localDate}`;
+      // Add cache-busting timestamp to bypass CDN caching
+      const url = `${api.devotionals.list.path}?clientDate=${localDate}&_t=${Date.now()}`;
       const res = await fetch(url, { 
         credentials: "include",
         cache: "no-store",
