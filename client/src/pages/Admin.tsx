@@ -63,6 +63,67 @@ const QUICK_REPLY_SNIPPETS = [
   { label: "Deliverance", text: "We declare freedom over your life in Jesus' name. 'So if the Son sets you free, you will be free indeed.' (John 8:36) God is breaking every chain and setting you free." },
 ];
 
+interface SeedResponse {
+  success: boolean;
+  message: string;
+  stats: { beforeCount: number; afterCount: number; inserted: number };
+}
+
+function SeedDevotionalsButton() {
+  const { toast } = useToast();
+  const [hasSeeded, setHasSeeded] = useState(false);
+  
+  const seedMutation = useMutation({
+    mutationFn: async (): Promise<SeedResponse> => {
+      const response = await apiRequest("POST", "/api/admin/seed-devotionals");
+      return response.json();
+    },
+    onSuccess: (data: SeedResponse) => {
+      setHasSeeded(true);
+      toast({ 
+        title: "Seed completed successfully", 
+        description: `Total: ${data.stats.afterCount} devotionals. Inserted: ${data.stats.inserted} new entries.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/devotionals"] });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Seed failed", 
+        description: error.message, 
+        variant: "destructive" 
+      });
+    },
+  });
+
+  return (
+    <Button 
+      onClick={() => seedMutation.mutate()}
+      disabled={seedMutation.isPending || hasSeeded}
+      variant="outline"
+      size="sm"
+      className="gap-2"
+      data-testid="button-seed-devotionals"
+    >
+      {seedMutation.isPending ? (
+        <>
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Seeding...
+        </>
+      ) : hasSeeded ? (
+        <>
+          <CheckCircle className="w-4 h-4 text-green-600" />
+          Seeded
+        </>
+      ) : (
+        <>
+          <Sparkles className="w-4 h-4" />
+          Seed Devotionals
+        </>
+      )}
+    </Button>
+  );
+}
+
 function AdminArchive() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
@@ -946,10 +1007,13 @@ export default function Admin() {
         <TabsContent value="archive">
           <Card className="border-primary/10 shadow-lg shadow-primary/5">
             <CardHeader className="bg-muted/30 border-b border-border">
-              <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
-                <Archive className="w-6 h-6" />
-                Devotional Archive
-              </CardTitle>
+              <div className="flex flex-row items-center justify-between gap-4 flex-wrap">
+                <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+                  <Archive className="w-6 h-6" />
+                  Devotional Archive
+                </CardTitle>
+                <SeedDevotionalsButton />
+              </div>
               <p className="text-sm text-muted-foreground mt-1">
                 View all devotionals. Edit present and future entries only.
               </p>
