@@ -76,3 +76,7 @@ export function formatWithRedLetterMarkers(
   }
   return text;
 }
+
+export function stripRedLetterMarkers(text: string): string {
+  return text.replace(/\[DIVINE\]([\s\S]*?)\[\/DIVINE\]/g, "$1");
+}

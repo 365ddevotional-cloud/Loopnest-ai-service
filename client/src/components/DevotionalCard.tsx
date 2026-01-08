@@ -4,6 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ShareButton } from "@/components/ShareButton";
+import { RedLetterScripture, stripRedLetterMarkers } from "@/components/RedLetterScripture";
 import { useScriptureText } from "@/hooks/use-scripture";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useFontSize } from "@/contexts/FontSizeContext";
@@ -67,7 +68,12 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
                   Loading scripture...
                 </span>
               ) : (
-                `"${scriptureText}"`
+                <>
+                  "<RedLetterScripture 
+                    text={scriptureText} 
+                    enabled={devotional.redLetterEnabled !== false}
+                  />"
+                </>
               )}
             </p>
             <div className="flex items-center justify-center gap-2">
@@ -133,7 +139,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
           </span>
           <ShareButton
             title={devotional.title}
-            text={`${devotional.title}\n\n"${scriptureText}"\n— ${devotional.scriptureReference}\n\n${devotional.content.slice(0, 200)}...\n\nRead the full devotional at 365 Daily Devotional`}
+            text={`${devotional.title}\n\n"${stripRedLetterMarkers(scriptureText)}"\n— ${devotional.scriptureReference}\n\n${devotional.content.slice(0, 200)}...\n\nRead the full devotional at 365 Daily Devotional`}
           />
         </div>
       </div>
