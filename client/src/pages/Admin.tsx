@@ -18,6 +18,7 @@ import type { PrayerRequest, ThreadMessage, PrayerAttachment, Devotional } from 
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getDevotionalStatus } from "@/lib/date-utils";
+import { RedLetterScripture } from "@/components/RedLetterScripture";
 
 const PRIORITY_LABELS: Record<string, string> = {
   prayer_normal: "Prayer Request",
@@ -422,7 +423,12 @@ function AdminArchive() {
               <div>
                 <Label className="text-muted-foreground">Scripture Reference</Label>
                 <p className="font-medium">{selectedDevotional.scriptureReference}</p>
-                <p className="italic text-muted-foreground mt-1">{selectedDevotional.scriptureText}</p>
+                <p className="italic text-muted-foreground mt-1">
+                  <RedLetterScripture 
+                    text={selectedDevotional.scriptureText} 
+                    enabled={selectedDevotional.redLetterEnabled !== false}
+                  />
+                </p>
               </div>
               <div>
                 <Label className="text-muted-foreground">Content</Label>
