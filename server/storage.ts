@@ -48,6 +48,7 @@ export interface IStorage {
   getLatestDevotional(): Promise<Devotional | undefined>;
   createDevotional(devotional: InsertDevotional): Promise<Devotional>;
   updateDevotional(id: number, updates: UpdateDevotionalRequest): Promise<Devotional>;
+  upsertDevotional(devotional: InsertDevotional): Promise<Devotional>;
   deleteDevotional(id: number): Promise<void>;
   
   // Prayer Requests
@@ -165,8 +166,29 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
+  async upsertDevotional(insertDevotional: InsertDevotional): Promise<Devotional> {
+    const [devotional] = await db
+      .insert(devotionals)
+      .values(insertDevotional)
+      .onConflictDoUpdate({
+        target: devotionals.date,
+        set: {
+          title: insertDevotional.title,
+          scriptureReference: insertDevotional.scriptureReference,
+          scriptureText: insertDevotional.scriptureText,
+          content: insertDevotional.content,
+          prayerPoints: insertDevotional.prayerPoints,
+          faithDeclarations: insertDevotional.faithDeclarations,
+          author: insertDevotional.author,
+          isDeleted: false,
+          deletedAt: null,
+        },
+      })
+      .returning();
+    return devotional;
+  }
+
   async deleteDevotional(id: number): Promise<void> {
-    // Soft-delete: mark as deleted instead of permanent removal
     await db
       .update(devotionals)
       .set({ isDeleted: true, deletedAt: new Date() })

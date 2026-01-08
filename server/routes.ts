@@ -221,18 +221,22 @@ export async function registerRoutes(
     }
   });
 
-  // POST Create Devotional (Admin only)
+  // POST Create/Update Devotional (Admin only)
+  // Uses UPSERT: Creates new or updates existing devotional for the given date
+  // Only allowed for present or future dates (past dates are immutable)
   app.post(api.devotionals.create.path, requireAdmin, async (req, res) => {
     try {
       const input = api.devotionals.create.input.parse(req.body);
       
-      // Check if one exists for this date
-      const existing = await storage.getDevotionalByDate(input.date);
-      if (existing) {
-        return res.status(400).json({ message: "A devotional already exists for this date." });
+      // Check if date is in the past (computed at request time using server time)
+      if (isPastDate(input.date)) {
+        return res.status(403).json({ 
+          message: "Cannot create or modify past devotionals. Past dates are read-only." 
+        });
       }
 
-      const devotional = await storage.createDevotional(input);
+      // UPSERT: Insert new or update existing devotional for this date
+      const devotional = await storage.upsertDevotional(input);
       res.status(201).json(devotional);
     } catch (err) {
       if (err instanceof z.ZodError) {
