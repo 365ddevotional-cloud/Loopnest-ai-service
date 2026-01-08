@@ -7,6 +7,7 @@ import { sendPrayerReplyNotification, sendContactMessageNotification, sendContac
 import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { getTodayDateString, isFutureDate, isPastDate } from "./date-utils";
+import { seedAllDevotionals } from "./seed-devotionals";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
@@ -498,6 +499,42 @@ export async function registerRoutes(
     } catch (error) {
       console.error("System status failed:", error);
       res.status(500).json({ message: "Failed to get system status" });
+    }
+  });
+
+  // SEED DATABASE - Populate database with all 2026 devotionals (Admin only)
+  // This is idempotent - it will skip existing dates and only insert missing ones
+  app.post("/api/admin/seed-devotionals", requireAdmin, async (req, res) => {
+    try {
+      console.log("Admin triggered database seeding...");
+      
+      // Get current count before seeding
+      const beforeCount = (await storage.getDevotionals()).length;
+      
+      // Run the seed function (idempotent - skips existing dates)
+      await seedAllDevotionals();
+      
+      // Get count after seeding
+      const afterCount = (await storage.getDevotionals()).length;
+      const inserted = afterCount - beforeCount;
+      
+      res.json({
+        success: true,
+        message: `Database seeding complete`,
+        stats: {
+          beforeCount,
+          afterCount,
+          inserted,
+          skipped: afterCount === beforeCount ? "All devotionals already existed" : `${beforeCount} existing devotionals preserved`,
+        }
+      });
+    } catch (error) {
+      console.error("Seeding failed:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to seed database",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
