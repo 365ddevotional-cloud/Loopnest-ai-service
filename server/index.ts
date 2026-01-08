@@ -40,6 +40,11 @@ if (!sessionSecret) {
   );
 }
 
+// Trust proxy for Replit's infrastructure (required for secure cookies behind reverse proxy)
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+
 app.use(
   session({
     secret: sessionSecret || "dev-only-secret-not-for-production",
@@ -49,6 +54,7 @@ app.use(
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
+      sameSite: "lax",
     },
   }),
 );
