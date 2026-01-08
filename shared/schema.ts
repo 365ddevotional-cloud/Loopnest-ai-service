@@ -40,6 +40,8 @@ export const devotionals = pgTable("devotionals", {
   // Soft-delete: When true, devotional is hidden but not permanently removed
   isDeleted: boolean("is_deleted").default(false),
   deletedAt: timestamp("deleted_at"),
+  // Red Letter Scripture: When true, renders divine speech (God/Jesus) in red
+  redLetterEnabled: boolean("red_letter_enabled").default(true),
 });
 
 export const insertDevotionalSchema = createInsertSchema(devotionals).omit({

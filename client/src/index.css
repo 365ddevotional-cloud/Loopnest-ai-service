@@ -214,3 +214,11 @@
     transform: translateX(100%);
   }
 }
+
+/* Red Letter Scripture - Divine Speech Styling */
+.text-red-letter {
+  color: hsl(0 65% 42%);
+}
+.dark .text-red-letter {
+  color: hsl(0 60% 58%);
+}
