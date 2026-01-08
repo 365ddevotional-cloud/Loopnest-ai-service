@@ -54,6 +54,63 @@ export async function registerRoutes(
     res.json({ isAdmin: !!req.session?.isAdmin });
   });
 
+  // PUBLIC DEBUG ENDPOINT - Returns current server state for diagnosing production issues
+  // This endpoint bypasses all caching and returns raw server data
+  app.get("/api/_debug/server-status", async (req, res) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("Surrogate-Control", "no-store");
+    
+    const serverNow = new Date();
+    const todayString = getTodayDateString();
+    const clientDate = typeof req.query.clientDate === 'string' ? req.query.clientDate : null;
+    const effectiveDate = clientDate && /^\d{4}-\d{2}-\d{2}$/.test(clientDate) ? clientDate : todayString;
+    
+    try {
+      const todayDevotional = await storage.getDevotionalByDate(effectiveDate);
+      const allDevotionals = await storage.getDevotionals();
+      
+      res.json({
+        serverTimestamp: serverNow.toISOString(),
+        serverDateUTC: serverNow.toUTCString(),
+        timezone: process.env.APP_TIMEZONE || "America/New_York",
+        computedToday: todayString,
+        clientDateProvided: clientDate,
+        effectiveDate,
+        requestId: Math.random().toString(36).substring(7),
+        database: {
+          connected: true,
+          totalDevotionals: allDevotionals.length,
+          hasDevotionalForEffectiveDate: !!todayDevotional,
+          devotionalTitle: todayDevotional?.title || null,
+          devotionalDate: todayDevotional?.date || null,
+          firstDevotionalDate: allDevotionals[allDevotionals.length - 1]?.date || null,
+          lastDevotionalDate: allDevotionals[0]?.date || null,
+        },
+        environment: {
+          nodeEnv: process.env.NODE_ENV || 'not set',
+          hasDatabaseUrl: !!process.env.DATABASE_URL,
+        }
+      });
+    } catch (error) {
+      res.json({
+        serverTimestamp: serverNow.toISOString(),
+        serverDateUTC: serverNow.toUTCString(),
+        timezone: process.env.APP_TIMEZONE || "America/New_York",
+        computedToday: todayString,
+        error: error instanceof Error ? error.message : "Unknown database error",
+        database: {
+          connected: false,
+        },
+        environment: {
+          nodeEnv: process.env.NODE_ENV || 'not set',
+          hasDatabaseUrl: !!process.env.DATABASE_URL,
+        }
+      });
+    }
+  });
+
   // Digital Asset Links for Google Play TWA verification
   // Configure ANDROID_PACKAGE_NAME and ANDROID_SHA256_FINGERPRINT env vars before publishing
   app.get("/.well-known/assetlinks.json", (req, res) => {
