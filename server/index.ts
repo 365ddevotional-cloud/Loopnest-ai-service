@@ -4,9 +4,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import path from "path";
-// Seeding is now manual - run with: npx tsx server/seed-devotionals.ts or npx tsx server/seed-scripture.ts
-// import { seedAllDevotionals } from "./seed-devotionals";
-// import { seedBiblePassages, seedScripturesFromDevotionals } from "./seed-scripture";
+
 const app = express();
 
 const httpServer = createServer(app);
