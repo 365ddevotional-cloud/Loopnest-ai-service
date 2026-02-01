@@ -1,0 +1,12 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "365 Daily Devotional",
+  "short_name": "365 Devotional",
+  "start_url": "/",
+  "scope": "/",
+  "theme_color": "#f5e6a8",
+  "id": "com.dailydevotional.app",
+  "description": "A daily Christian devotional app providing scripture, encouragement, and faith-building messages."
+}
