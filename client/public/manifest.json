@@ -1,77 +1,13 @@
 {
-  "id": "com.spirittone.devotional",
-  "version": "1.0.2",
-  "name": "365 Daily Devotional",
-  "short_name": "365 Devotional",
-  "description": "Daily scripture readings, prayer points, and faith declarations to strengthen your walk with God throughout the year.",
-  "start_url": "/",
-  "scope": "/",
-  "display": "standalone",
-  "orientation": "portrait-primary",
   "background_color": "#ffffff",
-  "theme_color": "#6B2737",
-  "categories": ["lifestyle", "books", "education"],
-  "lang": "en",
   "dir": "ltr",
-  "icons": [
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-maskable-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icon-maskable-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Today's Devotional",
-      "short_name": "Today",
-      "description": "Read today's devotional",
-      "url": "/",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Prayer Requests",
-      "short_name": "Prayer",
-      "description": "Submit a prayer request",
-      "url": "/prayer",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
-    }
-  ],
-  "prefer_related_applications": false,
-  "related_applications": [],
-  "iarc_rating_id": "0",
-  "screenshots": [
-    {
-      "src": "/screenshot-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Daily devotional reading experience"
-    },
-    {
-      "src": "/screenshot-narrow.png",
-      "sizes": "540x720",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Mobile devotional view"
-    }
-  ]
+  "display": "standalone",
+  "name": "365 Daily Devotional",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "365 Devotional",
+  "start_url": "/",
+  "theme_color": "#f5e6a8",
+  "id": "com.dailydevotional.app",
+  "description": "A daily Christian devotional app providing scripture, encouragement, and faith-building messages."
 }
