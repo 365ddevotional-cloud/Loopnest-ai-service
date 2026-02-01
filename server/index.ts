@@ -63,6 +63,13 @@ app.use(
 app.use(express.static(path.join(process.cwd(), "client", "public")));
 app.use(express.static(path.join(process.cwd(), "dist", "public")));
 
+// Explicit route for manifest.json to ensure it's always reachable
+app.get("/manifest.json", (req, res) => {
+  res.sendFile(
+    path.join(process.cwd(), "dist", "public", "manifest.json")
+  );
+});
+
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
