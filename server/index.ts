@@ -59,6 +59,9 @@ app.use(
   }),
 );
 
+// Serve PWA assets from client/public BEFORE routes (production fix)
+app.use(express.static(path.join(process.cwd(), "client", "public")));
+
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
