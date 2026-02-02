@@ -27,6 +27,13 @@ export default function Donate() {
         </div>
 
         <div className="p-8 md:p-12 space-y-8 font-serif leading-relaxed text-lg text-muted-foreground">
+          <div className="text-center space-y-4">
+            <p className="font-bold text-foreground text-xl">
+              Your generosity helps spread God's Word daily.
+            </p>
+            <p className="text-sm text-muted-foreground italic">"Give, and it will be given to you. A good measure, pressed down, shaken together and running over." — Luke 6:38</p>
+          </div>
+
           <p>
             Your generous support helps us continue our mission of spreading God's Word daily. 
             Every contribution, no matter the size, makes a meaningful difference in our ability to serve believers around the world.
@@ -53,10 +60,6 @@ export default function Donate() {
           <Separator className="bg-primary/10" />
 
           <div className="text-center space-y-6">
-            <p className="font-bold text-foreground text-xl">
-              Your generosity helps spread God's Word daily.
-            </p>
-
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
               <a
                 href="https://www.paypal.com/donate/?hosted_button_id=Y9PAZK36FKT8L"
@@ -84,10 +87,6 @@ export default function Donate() {
           </div>
         </div>
       </Card>
-      
-      <div className="text-center mt-12 text-sm text-muted-foreground opacity-60">
-        <p className="font-serif italic">"Give, and it will be given to you. A good measure, pressed down, shaken together and running over." — Luke 6:38</p>
-      </div>
     </div>
   );
 }
