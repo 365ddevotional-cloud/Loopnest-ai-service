@@ -6,7 +6,6 @@ import { createServer } from "http";
 import path from "path";
 
 const app = express();
-
 const httpServer = createServer(app);
 
 declare module "http" {
@@ -79,7 +78,7 @@ export function log(message: string, source = "express") {
 
 app.use((req, res, next) => {
   const start = Date.now();
-  const reqPath = req.path;
+  const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   const originalResJson = res.json;
@@ -90,8 +89,8 @@ app.use((req, res, next) => {
 
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (reqPath.startsWith("/api")) {
-      let logLine = `${req.method} ${reqPath} ${res.statusCode} in ${duration}ms`;
+    if (path.startsWith("/api")) {
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
@@ -104,6 +103,10 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Seeding is now manual to prevent production crashes
+  // Run: npx tsx server/seed-devotionals.ts
+  // Run: npx tsx server/seed-scripture.ts
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
