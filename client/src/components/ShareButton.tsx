@@ -13,9 +13,11 @@ interface ShareButtonProps {
   title: string;
   text: string;
   className?: string;
+  variant?: "ghost" | "default" | "accent";
 }
 
-export function ShareButton({ title, text, className = "" }: ShareButtonProps) {
+export function ShareButton({ title, text, className = "", variant = "ghost" }: ShareButtonProps) {
+  const buttonVariant = variant === "accent" ? "default" : variant;
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
 
@@ -53,7 +55,7 @@ export function ShareButton({ title, text, className = "" }: ShareButtonProps) {
 
   if (showSuccess) {
     return (
-      <Button size="sm" variant="ghost" className={`text-green-600 ${className}`} disabled>
+      <Button size="sm" variant={buttonVariant} className={`text-green-600 ${className}`} disabled>
         <Check className="h-4 w-4 mr-1" />
         Shared
       </Button>
@@ -62,7 +64,7 @@ export function ShareButton({ title, text, className = "" }: ShareButtonProps) {
 
   if (showError) {
     return (
-      <Button size="sm" variant="ghost" className={`text-destructive ${className}`} disabled>
+      <Button size="sm" variant={buttonVariant} className={`text-destructive ${className}`} disabled>
         <X className="h-4 w-4 mr-1" />
         Failed
       </Button>
@@ -73,7 +75,7 @@ export function ShareButton({ title, text, className = "" }: ShareButtonProps) {
     return (
       <Button
         size="sm"
-        variant="ghost"
+        variant={buttonVariant}
         onClick={handleNativeShare}
         className={className}
         data-testid="button-share"
@@ -87,7 +89,7 @@ export function ShareButton({ title, text, className = "" }: ShareButtonProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="sm" variant="ghost" className={className} data-testid="button-share">
+        <Button size="sm" variant={buttonVariant} className={className} data-testid="button-share">
           <Share2 className="h-4 w-4 mr-1" />
           Share
         </Button>

@@ -1,0 +1,156 @@
+We are improving the Share functionality and Dark Mode UI for 365 Daily Devotional.
+
+STRICT RULES:
+- Do NOT modify devotional content logic
+- Do NOT modify backend date logic
+- Do NOT change routing
+- Do NOT refactor database
+- Only update share behavior and UI styling
+- Maintain backward compatibility
+
+GOAL:
+1) Move Share button to devotional header (top of page)
+2) Ensure Share exports FULL devotional content
+3) Brighten Faith Declaration section in dark mode
+4) Improve visual energy in dark mode (no dull sections)
+
+========================================
+STEP 1 — MOVE SHARE BUTTON TO HEADER
+========================================
+
+Remove existing share button from bottom of devotional.
+
+Add Share button in devotional header section:
+
+Position:
+- Right side of title/date row
+- Same level as theme toggle
+
+Style:
+- Use accent color background (var(--accent))
+- Rounded pill
+- White icon + “Share”
+- Slight shadow
+- Highly visible
+
+Example structure:
+
+[Devotional Title]        [🌙 Toggle]  [🔗 Share]
+
+Ensure responsive layout for mobile.
+
+========================================
+STEP 2 — SHARE FULL DEVOTIONAL CONTENT
+========================================
+
+Modify share logic so it includes:
+
+- Title
+- Date
+- Scripture reference
+- Scripture quotation
+- Full devotional body text
+- Prayer Points
+- Faith Declarations
+- Author name
+- App name footer
+
+Implementation:
+
+1. Extract all devotional content from DOM.
+2. Combine into formatted plain text string.
+3. Preserve paragraph spacing.
+4. Remove unnecessary icons/emojis if needed.
+5. Ensure no truncation.
+
+Example share format:
+
+Title: Growing Together Into Spiritual Maturity
+Date: February 14, 2026
+
+Scripture:
+"Christ gave different gifts..."
+
+Devotional:
+[Full devotional text]
+
+Prayer Points:
+• Point 1
+• Point 2
+...
+
+Faith Declarations:
+• Declaration 1
+• Declaration 2
+...
+
+— Shared from 365 Daily Devotional App
+
+Use Web Share API if available:
+navigator.share()
+
+Fallback:
+Copy full text to clipboard and show confirmation toast:
+"Full devotional copied successfully."
+
+Ensure content is NOT truncated.
+
+========================================
+STEP 3 — BRIGHTEN FAITH DECLARATION SECTION (DARK MODE)
+========================================
+
+Update dark mode styling for Faith Declaration card:
+
+Current: too dark and dull
+
+New styling:
+
+.dark .faith-declaration-card {
+  background: #1e293b;          /* brighter elevated dark blue */
+  border: 1px solid #334155;
+  color: #ffffff;
+}
+
+Add subtle glow accent border:
+
+border-left: 4px solid var(--accent);
+
+Increase text brightness:
+
+.dark .faith-declaration-card p {
+  color: #ffffff;
+}
+
+Add subtle hover or shadow:
+
+box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+
+========================================
+STEP 4 — ENERGIZE ALL DARK SECTIONS
+========================================
+
+Audit dark mode and ensure:
+
+- No muddy brown tones
+- No gray-on-gray text
+- All main text: #ffffff
+- Secondary text: #e5e7eb
+- Card backgrounds: #1f2937 or #1e293b
+- Accent: brighter copper/orange (#f97316)
+
+Remove any low-contrast combinations.
+
+========================================
+STEP 5 — TESTING
+========================================
+
+Verify:
+
+- Share button visible without scrolling
+- Share exports FULL devotional content
+- No text truncation
+- Faith Declaration bright and readable
+- Smooth theme transition still works
+- Build compiles cleanly
+
+Return summary of updates.
