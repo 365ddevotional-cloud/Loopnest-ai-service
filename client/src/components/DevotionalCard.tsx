@@ -3,12 +3,14 @@ import { type DevotionalResponse } from "@shared/schema";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ShareButton } from "@/components/ShareButton";
 import { RedLetterScripture, stripRedLetterMarkers } from "@/components/RedLetterScripture";
 import { useScriptureText } from "@/hooks/use-scripture";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useFontSize } from "@/contexts/FontSizeContext";
-import { Loader2 } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
+import { Loader2, Sun, Moon } from "lucide-react";
 
 const fontSizeClasses = {
   "small": {
@@ -40,6 +42,7 @@ interface DevotionalCardProps {
 export function DevotionalCard({ devotional }: DevotionalCardProps) {
   const { translation } = useTranslation();
   const { fontSize } = useFontSize();
+  const { resolvedTheme, setTheme } = useTheme();
   const sizeClasses = fontSizeClasses[fontSize];
   const { text: scriptureText, isLoading, isFallback } = useScriptureText(
     devotional.scriptureReference,
@@ -52,8 +55,23 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
       <div className="relative bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10 p-8 md:p-12 text-center border-b border-primary/10">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M0%200h20v20H0z%22%20fill%3D%22none%22%2F%3E%3Cpath%20d%3D%22M10%2010m-1%200a1%201%200%201%200%202%200a1%201%200%201%200-2%200%22%20fill%3D%22%237C3A2A%22%20fill-opacity%3D%220.03%22%2F%3E%3C%2Fsvg%3E')]" />
         <div className="relative">
-          <div className="inline-block px-5 py-1.5 mb-6 border-2 border-primary/40 rounded-full text-xs font-bold text-primary tracking-widest uppercase bg-background/80 backdrop-blur-sm shadow-sm">
-            {format(parseISO(devotional.date), "MMMM d, yyyy")}
+          <div className="flex items-center justify-center gap-3 mb-6 flex-wrap">
+            <div className="inline-block px-5 py-1.5 border-2 border-primary/40 rounded-full text-xs font-bold text-primary tracking-widest uppercase bg-background/80 backdrop-blur-sm shadow-sm">
+              {format(parseISO(devotional.date), "MMMM d, yyyy")}
+            </div>
+            <Button
+              size="sm"
+              onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+              className="rounded-full text-xs font-bold tracking-wide uppercase shadow-md"
+              data-testid="button-theme-toggle-devotional"
+              title={resolvedTheme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {resolvedTheme === "dark" ? (
+                <><Sun className="w-3.5 h-3.5" /> Light</>
+              ) : (
+                <><Moon className="w-3.5 h-3.5" /> Dark</>
+              )}
+            </Button>
           </div>
           
           <h1 className="font-serif text-3xl md:text-5xl font-bold text-foreground mb-6 leading-tight">

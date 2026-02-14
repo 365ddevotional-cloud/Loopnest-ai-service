@@ -67,63 +67,64 @@
 }
 
 .dark {
-  --background: 20 18% 12%;
-  --foreground: 40 20% 92%;
+  --background: 222 47% 11%;             /* Deep navy #0f172a */
+  --foreground: 0 0% 100%;              /* Pure white */
   
-  --card: 20 15% 16%;
-  --card-foreground: 40 20% 92%;
-  --card-border: 20 12% 25%;
+  --card: 217 33% 17%;                  /* Elevated dark card #1e293b */
+  --card-foreground: 0 0% 100%;
+  --card-border: 217 25% 25%;
   
-  --popover: 20 15% 16%;
-  --popover-foreground: 40 20% 92%;
-  --popover-border: 20 12% 25%;
+  --popover: 217 33% 17%;
+  --popover-foreground: 0 0% 100%;
+  --popover-border: 217 25% 25%;
   
-  --primary: 12 50% 55%;
-  --primary-foreground: 20 18% 12%;
-  --primary-border: hsl(12 50% 45%);
+  --primary: 24 95% 53%;                /* Bright orange-copper #f97316 */
+  --primary-foreground: 0 0% 100%;
+  --primary-border: hsl(24 95% 43%);
   
-  --secondary: 152 20% 50%;
-  --secondary-foreground: 20 18% 12%;
-  --secondary-border: hsl(152 20% 40%);
+  --secondary: 152 30% 55%;             /* Brighter sage */
+  --secondary-foreground: 0 0% 100%;
+  --secondary-border: hsl(152 30% 45%);
   
-  --muted: 20 12% 25%;
-  --muted-foreground: 35 15% 65%;
-  --muted-border: hsl(20 12% 35%);
+  --muted: 217 20% 22%;                 /* Slate muted */
+  --muted-foreground: 220 13% 75%;      /* Bright soft gray */
+  --muted-border: hsl(217 20% 32%);
   
-  --accent: 34 55% 60%;
-  --accent-foreground: 20 15% 12%;
-  --accent-border: hsl(34 55% 50%);
+  --accent: 34 80% 55%;                 /* Bright gold */
+  --accent-foreground: 222 47% 11%;
+  --accent-border: hsl(34 80% 45%);
   
-  --destructive: 0 72% 51%;
+  --destructive: 0 72% 55%;
   --destructive-foreground: 0 0% 100%;
-  --destructive-border: hsl(0 72% 41%);
+  --destructive-border: hsl(0 72% 45%);
 
-  --border: 20 12% 25%;
-  --input: 20 12% 22%;
-  --ring: 12 50% 55%;
+  --border: 217 25% 25%;                /* Slate border */
+  --input: 217 25% 20%;
+  --ring: 24 95% 53%;
   
-  --chart-1: 12 50% 55%;
-  --chart-2: 152 25% 55%;
-  --chart-3: 34 55% 60%;
-  --chart-4: 10 55% 65%;
-  --chart-5: 200 40% 55%;
+  --chart-1: 24 95% 53%;
+  --chart-2: 152 35% 55%;
+  --chart-3: 34 80% 55%;
+  --chart-4: 10 60% 65%;
+  --chart-5: 200 50% 55%;
   
-  --sidebar: 20 20% 10%;
-  --sidebar-foreground: 40 20% 92%;
-  --sidebar-border: 20 15% 18%;
-  --sidebar-ring: 34 55% 60%;
-  --sidebar-primary: 34 55% 60%;
-  --sidebar-primary-foreground: 20 15% 12%;
-  --sidebar-primary-border: hsl(34 55% 50%);
-  --sidebar-accent: 20 18% 18%;
-  --sidebar-accent-foreground: 40 20% 92%;
-  --sidebar-accent-border: hsl(20 15% 25%);
+  --sidebar: 222 47% 8%;
+  --sidebar-foreground: 0 0% 95%;
+  --sidebar-border: 217 25% 18%;
+  --sidebar-ring: 24 95% 53%;
+  --sidebar-primary: 24 95% 53%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-primary-border: hsl(24 95% 43%);
+  --sidebar-accent: 222 40% 16%;
+  --sidebar-accent-foreground: 0 0% 95%;
+  --sidebar-accent-border: hsl(217 25% 22%);
 }
 
 @layer base {
   body {
     @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
     font-family: var(--font-sans);
+    transition: background-color 0.3s ease, color 0.3s ease;
     background-image: 
       radial-gradient(ellipse at top, hsl(34 46% 52% / 0.05) 0%, transparent 50%),
       radial-gradient(ellipse at bottom right, hsl(12 45% 34% / 0.03) 0%, transparent 40%),
@@ -213,6 +214,10 @@
   100% {
     transform: translateX(100%);
   }
+}
+
+.dark body {
+  background-image: none;
 }
 
 /* Red Letter Scripture - Divine Speech Styling */

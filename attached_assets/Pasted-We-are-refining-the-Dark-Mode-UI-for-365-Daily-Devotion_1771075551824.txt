@@ -1,0 +1,116 @@
+We are refining the Dark Mode UI for 365 Daily Devotional.
+
+STRICT RULES:
+- Do NOT modify devotional content logic
+- Do NOT modify routing
+- Do NOT modify backend date generation
+- Do NOT refactor database
+- Only update theme styling and UI toggle placement
+- Maintain backward compatibility
+
+GOAL:
+1) Make Dark Mode bright, high-contrast, energetic
+2) Make text pure white and highly readable
+3) Improve background color to modern deep charcoal/navy
+4) Add visible Light/Dark toggle directly on devotional page (not only in menu)
+5) Maintain system theme option
+6) Ensure changes persist using localStorage
+
+========================================
+STEP 1 — IMPROVE DARK COLOR PALETTE
+========================================
+
+Update dark theme CSS variables:
+
+:root.dark {
+  --bg-primary: #0f172a;        /* deep navy */
+  --bg-card: #1f2937;           /* elevated dark card */
+  --text-primary: #ffffff;      /* pure white */
+  --text-secondary: #e5e7eb;    /* bright soft white */
+  --accent: #f97316;            /* brighter copper/orange */
+  --border-color: #334155;
+}
+
+Ensure:
+
+body.dark {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+Card containers:
+background-color: var(--bg-card);
+color: var(--text-primary);
+
+All paragraph text:
+color: var(--text-primary);
+
+All muted text:
+color: var(--text-secondary);
+
+Remove any brown/dull tint from dark mode.
+
+========================================
+STEP 2 — INCREASE FONT VISIBILITY
+========================================
+
+- Increase body font-weight slightly (400 → 500 where needed)
+- Ensure devotional text uses color: #ffffff
+- Increase line-height to 1.7 for readability
+- Ensure scripture blocks also use bright white
+
+========================================
+STEP 3 — ADD DEVOTIONAL PAGE TOGGLE
+========================================
+
+On the devotional header section:
+
+Add a visible theme toggle button next to the devotional title or date.
+
+Example structure:
+
+[🌞 Light]  [🌙 Dark]
+
+Or single toggle button:
+
+Toggle label: "Switch Theme"
+
+Behavior:
+- Clicking toggles between light and dark
+- Save choice in localStorage: theme = 'light' or 'dark'
+- If no choice saved, default to system preference
+
+Make button highly visible:
+- Use accent color background
+- Rounded pill style
+- Small shadow
+- Positioned near top of devotional
+
+========================================
+STEP 4 — KEEP MENU TOGGLE
+========================================
+
+Do NOT remove existing theme selector in menu.
+Keep both.
+
+========================================
+STEP 5 — SMOOTH TRANSITION
+========================================
+
+Add smooth transition for background and text:
+
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+========================================
+FINAL CHECK
+========================================
+
+- Ensure no TypeScript errors
+- Ensure production build compiles
+- Ensure theme persists after refresh
+- Ensure devotional content untouched
+- Ensure toggle works in TWA
+
+Return summary of what was updated.
