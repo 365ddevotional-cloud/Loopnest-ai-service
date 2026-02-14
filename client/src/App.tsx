@@ -51,8 +51,8 @@ function Router() {
       <Route path="/donate" component={Donate} />
       <Route path="/prayer-counseling" component={PrayerCounseling} />
       <Route path="/my-requests" component={MyPrayerRequests} />
+      <Route path="/devotional/today" component={PublicDevotionalToday} />
       <Route path="/devotional/:date" component={SingleDevotional} />
-      <Route path="/public/today" component={PublicDevotionalToday} />
       <Route path="/public/archive" component={PublicArchive} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/terms-of-use" component={TermsOfUse} />
@@ -75,7 +75,8 @@ function Router() {
 function AppContent() {
   const { isTransitioning, completeTransition } = useMenuTransition();
   const [location] = useLocation();
-  const isPublicRoute = location.startsWith("/public");
+  const isPublicRoute =
+    location.startsWith("/devotional") || location.startsWith("/public");
 
   if (isPublicRoute) {
     return <Router />;

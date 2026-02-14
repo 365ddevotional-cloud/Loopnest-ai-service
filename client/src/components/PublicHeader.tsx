@@ -18,7 +18,7 @@ export default function PublicHeader() {
           textAlign: "center",
         }}
       >
-        <Link href="/public/today">
+        <Link href="/devotional/today">
           <span
             data-testid="link-public-logo"
             style={{
@@ -59,7 +59,7 @@ export default function PublicHeader() {
           }}
           data-testid="public-nav"
         >
-          <Link href="/public/today">
+          <Link href="/devotional/today">
             <span
               data-testid="link-public-nav-today"
               style={{

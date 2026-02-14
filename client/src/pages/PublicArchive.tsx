@@ -253,7 +253,7 @@ export default function PublicArchive() {
             textAlign: "center",
           }}
         >
-          <Link href="/public/today">
+          <Link href="/devotional/today">
             <span
               data-testid="link-back-today"
               style={{

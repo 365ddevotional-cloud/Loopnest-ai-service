@@ -113,19 +113,6 @@ export default function PublicDevotionalToday() {
               Browse the Archive
             </span>
           </Link>
-          <Link href="/">
-            <span
-              style={{
-                display: "inline-block",
-                marginTop: "1rem",
-                color: "#888",
-                textDecoration: "none",
-                fontSize: "0.9rem",
-              }}
-            >
-              Open the App
-            </span>
-          </Link>
         </div>
       </div>
     );
@@ -423,7 +410,7 @@ export default function PublicDevotionalToday() {
           </Link>
           <Link href="/">
             <span
-              data-testid="button-public-app"
+              data-testid="button-open-app"
               style={{
                 display: "inline-block",
                 padding: "0.7rem 1.5rem",
