@@ -1,0 +1,166 @@
+We are implementing seasonal devotional overrides between now and April 30, 2027.
+
+STRICT RULES:
+- Do NOT modify database schema
+- Do NOT remove admin edit capability
+- Do NOT regenerate entire months
+- Only override specific holiday date ranges
+- Preserve devotional ID and date
+- Resume book progression immediately after each override block
+- Maintain structured devotional format
+
+==================================================
+EASTER 2026 OVERRIDE
+==================================================
+
+Easter 2026 (United States calendar) falls on April 5, 2026.
+
+Override the following dates:
+
+March 22 – April 4, 2026  (2 weeks before Easter)
+April 5, 2026 (Easter Sunday)
+April 6 – April 12, 2026 (Resurrection power week)
+
+Content Theme:
+
+- Messianic prophecies (Isaiah 53, Psalm 22, Daniel 9)
+- The cross and substitutionary sacrifice
+- Fulfillment of prophecy
+- Resurrection power
+- Call to salvation
+- Renewal for believers
+- Gentle, intelligent evangelistic tone
+- International sensitivity language:
+  “In this season when many believers reflect…”
+
+Use structured format:
+- 5–6 paragraphs
+- 5 prayer points
+- 5 faith declarations
+- 3 Christian quotes
+- 1 prophetic declaration
+- Footer: Written by Moses Afolabi
+
+After April 12, resume Romans progression from next logical passage.
+
+==================================================
+MOTHER’S EMPHASIS WEEK 2026
+==================================================
+
+Mother’s Day (US) 2026: May 10, 2026
+
+Override:
+May 3 – May 9, 2026
+
+Theme:
+- Honor mothers biblically
+- Proverbs 31
+- Spiritual influence of mothers
+- International sensitivity language:
+  “While celebration dates vary across nations…”
+
+Resume normal book progression May 11.
+
+==================================================
+FATHER’S EMPHASIS WEEK 2026
+==================================================
+
+Father’s Day (US) 2026: June 21, 2026
+
+Override:
+June 14 – June 20, 2026
+
+Theme:
+- Biblical fatherhood
+- Responsibility and sacrifice
+- Malachi 4:6
+- Ephesians 6 fathers’ role
+- Encouraging stronger honor culture
+- Balance celebration tone carefully
+
+Resume progression June 22.
+
+==================================================
+CHILDREN EMPHASIS WEEK 2026
+==================================================
+
+Override:
+May 25 – May 31, 2026 (International Children emphasis)
+
+Theme:
+- Jesus blessing children
+- Psalm 127
+- Parenting stewardship
+- Restoration of family relationships
+
+Resume progression June 1.
+
+==================================================
+THANKSGIVING 2026
+==================================================
+
+Thanksgiving (US) 2026: November 26, 2026
+
+Override:
+November 22 – November 28, 2026
+
+Theme:
+- Gratitude
+- Contentment
+- God’s provision
+- Avoid US exclusivity language
+- Use phrase:
+  “In seasons when many reflect on gratitude…”
+
+Resume progression November 29.
+
+==================================================
+CHRISTMAS 2026 OVERRIDE
+==================================================
+
+Christmas 2026: December 25, 2026
+
+Override:
+December 13 – December 25, 2026
+
+Theme:
+- Incarnation
+- Messianic prophecies
+- Emmanuel
+- Love of God
+- Avoid cultural bias
+- Evangelistic invitation tone
+
+Resume progression December 26.
+
+==================================================
+EASTER 2027 OVERRIDE
+==================================================
+
+Easter 2027: March 28, 2027
+
+Override:
+March 14 – March 27, 2027
+March 28 (Easter)
+March 29 – April 4, 2027
+
+Same thematic structure as Easter 2026.
+
+Resume normal progression April 5, 2027.
+
+==================================================
+VALIDATION
+==================================================
+
+After implementing overrides:
+
+- Ensure only specified date ranges are replaced.
+- Ensure progression resumes correctly after each block.
+- Ensure admin editing still functions.
+- Ensure no duplicate entries.
+- Ensure production build compiles cleanly.
+
+Return summary of:
+- Date ranges overridden
+- Confirmation progression resumed correctly
+- Confirmation admin unaffected
