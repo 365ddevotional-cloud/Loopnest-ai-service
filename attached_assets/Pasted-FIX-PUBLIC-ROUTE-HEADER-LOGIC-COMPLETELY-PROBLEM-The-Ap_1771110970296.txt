@@ -1,0 +1,99 @@
+FIX PUBLIC ROUTE HEADER LOGIC COMPLETELY.
+
+PROBLEM:
+The AppHeader is still rendering on /devotional/today.
+PublicHeader is not replacing it.
+Login and Bible selector are still visible.
+
+GOAL:
+On ANY route starting with:
+- /devotional
+- /public
+
+The AppHeader and AppFooter must NOT render.
+Only PublicHeader should render.
+
+========================================
+STEP 1 – FIX ROUTE DETECTION IN App.tsx
+========================================
+
+Inside App.tsx:
+
+Find where AppHeader and AppFooter are rendered.
+
+Add route detection using useLocation:
+
+import { useLocation } from "react-router-dom";
+
+Inside AppContent:
+
+const location = useLocation();
+
+const isPublicRoute =
+  location.pathname.startsWith("/devotional") ||
+  location.pathname.startsWith("/public");
+
+Then change header rendering to:
+
+{!isPublicRoute && <AppHeader />}
+
+And footer:
+
+{!isPublicRoute && <AppFooter />}
+
+========================================
+STEP 2 – ENSURE PUBLIC ROUTES USE PublicHeader
+========================================
+
+In PublicDevotionalToday.tsx
+AND
+PublicArchive.tsx
+
+Ensure they import:
+
+import PublicHeader from "@/components/PublicHeader";
+
+And render it at the top:
+
+<PublicHeader />
+
+========================================
+STEP 3 – REMOVE LOGIN FROM PublicHeader
+========================================
+
+Open PublicHeader.tsx.
+
+Ensure navigation ONLY contains:
+
+- Today
+- Archive
+- YouTube
+- Donate
+
+Remove:
+- Login
+- Bible selector
+- Prayer/Counseling
+- Admin links
+
+========================================
+STEP 4 – VERIFY ROUTES ORDER
+========================================
+
+In App.tsx routes:
+
+Make sure this route appears BEFORE /devotional/:date
+
+<Route path="/devotional/today" element={<PublicDevotionalToday />} />
+
+Then:
+
+<Route path="/devotional/:date" element={<DevotionalPage />} />
+
+========================================
+DO NOT TOUCH BACKEND.
+DO NOT TOUCH DATABASE.
+DO NOT TOUCH AUTHENTICATION.
+
+This is strictly UI header rendering logic.
+After fix, rebuild and confirm.
