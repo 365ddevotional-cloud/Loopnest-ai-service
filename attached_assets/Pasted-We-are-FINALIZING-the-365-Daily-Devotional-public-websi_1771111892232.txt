@@ -1,0 +1,143 @@
+We are FINALIZING the 365 Daily Devotional public website header.
+
+STRICT RULES:
+- Do NOT touch backend
+- Do NOT touch database
+- Do NOT touch admin routes
+- Do NOT delete authentication system
+- Only modify header rendering logic
+
+GOAL:
+1. Public routes must use ONLY PublicHeader
+2. AppHeader must NEVER appear on public routes
+3. Remove Login completely from public header (desktop and mobile)
+4. Remove Bible selector from public header
+5. Ensure YouTube and Donate links are clickable
+6. Increase logo size
+7. Clean spacing to avoid crowding
+
+========================================
+STEP 1 — LOCK PUBLIC ROUTES
+========================================
+
+In App.tsx:
+
+Find where header is conditionally rendered.
+
+Ensure this logic exists exactly:
+
+const isPublicRoute =
+  location.pathname.startsWith("/devotional") ||
+  location.pathname.startsWith("/public");
+
+Then render headers like this:
+
+{!isPublicRoute && <AppHeader />}
+
+Public pages must NEVER render AppHeader.
+
+========================================
+STEP 2 — CLEAN PUBLIC HEADER
+========================================
+
+Open PublicHeader.tsx
+
+Replace entire component with this:
+
+----------------------------------------------------
+
+import { Link } from "react-router-dom";
+
+export default function PublicHeader() {
+  return (
+    <header className="w-full border-b border-neutral-200 bg-white">
+      <div className="max-w-5xl mx-auto px-6 py-8 text-center">
+
+        {/* LOGO + TITLE */}
+        <Link to="/devotional/today" className="block">
+          <h1 className="text-5xl md:text-6xl font-serif font-bold text-neutral-900">
+            365 Daily Devotional
+          </h1>
+          <p className="mt-2 text-lg text-neutral-500">
+            Daily Scripture. Prayer. Transformation.
+          </p>
+        </Link>
+
+        {/* CLEAN NAVIGATION */}
+        <nav className="mt-6 flex justify-center gap-10 text-lg font-medium text-neutral-700">
+
+          <Link to="/devotional/today" className="hover:text-black">
+            Today
+          </Link>
+
+          <Link to="/public/archive" className="hover:text-black">
+            Archive
+          </Link>
+
+          <a
+            href="https://www.youtube.com/@365DailyDevotional"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-black"
+          >
+            YouTube
+          </a>
+
+          <a
+            href="https://payhip.com/SpiritToneRecords"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-black"
+          >
+            Donate
+          </a>
+
+        </nav>
+
+      </div>
+    </header>
+  );
+}
+
+----------------------------------------------------
+
+IMPORTANT:
+There must be:
+- NO Login
+- NO Bible selector
+- NO burger menu
+- NO admin links
+
+========================================
+STEP 3 — VERIFY
+========================================
+
+Confirm:
+
+1. Visiting:
+   /devotional/today
+   /public/archive
+
+Shows:
+- Big centered title
+- Clean 4 links
+- No login anywhere
+
+2. Visiting:
+   /admin-login
+
+Still shows admin login page normally.
+
+3. Visiting root:
+   /
+
+Should redirect to:
+   /devotional/today
+
+If not, add:
+
+<Route path="/" element={<Navigate to="/devotional/today" />} />
+
+========================================
+STOP AFTER THIS.
+DO NOT ADD EXTRA FEATURES.

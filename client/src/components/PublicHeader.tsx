@@ -1,20 +1,12 @@
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 
 export default function PublicHeader() {
-  const [location] = useLocation();
-
-  const navItems = [
-    { label: "Today", href: "/devotional/today" },
-    { label: "Archive", href: "/public/archive" },
-    { label: "YouTube", href: "#" },
-    { label: "Donate", href: "#" },
-  ];
-
   return (
     <header
       style={{
-        background: "#f9f6f1",
-        borderBottom: "1px solid #e0d9cb",
+        width: "100%",
+        borderBottom: "1px solid #e5e5e5",
+        backgroundColor: "#ffffff",
       }}
       data-testid="public-header"
     >
@@ -22,7 +14,7 @@ export default function PublicHeader() {
         style={{
           maxWidth: 1100,
           margin: "0 auto",
-          padding: "clamp(28px, 5vw, 52px) 24px clamp(24px, 4vw, 40px)",
+          padding: "clamp(32px, 5vw, 48px) 24px clamp(24px, 4vw, 36px)",
           textAlign: "center",
         }}
       >
@@ -31,10 +23,9 @@ export default function PublicHeader() {
             data-testid="link-public-logo"
             style={{
               fontFamily: "'Playfair Display', 'Georgia', serif",
-              fontSize: "clamp(28px, 5vw, 42px)",
-              fontWeight: 600,
-              letterSpacing: "-0.01em",
-              color: "#1a1a1a",
+              fontSize: "clamp(32px, 6vw, 56px)",
+              fontWeight: 700,
+              color: "#111",
               textDecoration: "none",
               cursor: "pointer",
               display: "block",
@@ -46,17 +37,15 @@ export default function PublicHeader() {
         </Link>
         <p
           style={{
-            fontSize: "clamp(12px, 1.5vw, 14px)",
-            color: "#8a8172",
+            fontSize: "clamp(14px, 1.8vw, 18px)",
+            color: "#777",
             marginTop: 8,
-            marginBottom: "clamp(20px, 3vw, 32px)",
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            fontWeight: 400,
+            marginBottom: "clamp(20px, 3vw, 28px)",
           }}
         >
           Daily Scripture. Prayer. Transformation.
         </p>
+
         <nav
           style={{
             display: "flex",
@@ -64,46 +53,77 @@ export default function PublicHeader() {
             gap: "clamp(24px, 4vw, 44px)",
             flexWrap: "wrap",
             rowGap: 12,
+            fontSize: "clamp(15px, 1.6vw, 18px)",
+            fontWeight: 500,
+            color: "#555",
           }}
           data-testid="public-nav"
         >
-          {navItems.map((item) => {
-            const isActive = location === item.href;
-            return (
-              <Link key={item.label} href={item.href}>
-                <span
-                  data-testid={`link-public-nav-${item.label.toLowerCase()}`}
-                  style={{
-                    fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-                    fontSize: 15,
-                    fontWeight: 550,
-                    color: isActive ? "#1a1a1a" : "#5c5650",
-                    textDecoration: "none",
-                    cursor: "pointer",
-                    transition: "color 0.2s ease",
-                    paddingBottom: 3,
-                    borderBottom: isActive
-                      ? "2px solid #c9a84c"
-                      : "2px solid transparent",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = "#1a1a1a";
-                    if (!isActive) {
-                      e.currentTarget.style.borderBottomColor = "#d4c9a8";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.color = "#5c5650";
-                      e.currentTarget.style.borderBottomColor = "transparent";
-                    }
-                  }}
-                >
-                  {item.label}
-                </span>
-              </Link>
-            );
-          })}
+          <Link href="/devotional/today">
+            <span
+              data-testid="link-public-nav-today"
+              style={{
+                color: "#555",
+                textDecoration: "none",
+                cursor: "pointer",
+                transition: "color 0.2s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#000")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
+            >
+              Today
+            </span>
+          </Link>
+
+          <Link href="/public/archive">
+            <span
+              data-testid="link-public-nav-archive"
+              style={{
+                color: "#555",
+                textDecoration: "none",
+                cursor: "pointer",
+                transition: "color 0.2s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#000")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
+            >
+              Archive
+            </span>
+          </Link>
+
+          <a
+            href="https://www.youtube.com/@365DailyDevotional"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="link-public-nav-youtube"
+            style={{
+              color: "#555",
+              textDecoration: "none",
+              cursor: "pointer",
+              transition: "color 0.2s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#000")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
+          >
+            YouTube
+          </a>
+
+          <a
+            href="https://payhip.com/SpiritToneRecords"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="link-public-nav-donate"
+            style={{
+              color: "#555",
+              textDecoration: "none",
+              cursor: "pointer",
+              transition: "color 0.2s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#000")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
+          >
+            Donate
+          </a>
         </nav>
       </div>
     </header>
