@@ -1,0 +1,107 @@
+We are completing controlled devotional updates for April 2026.
+
+STRICT RULES:
+- Do NOT modify database schema
+- Do NOT alter authentication or admin permissions
+- Do NOT regenerate dates outside specified ranges
+- Do NOT delete records
+- Only update existing devotional records
+- Preserve IDs and date values
+- Maintain admin editing capability
+
+==================================================
+PROMPT 3 — ROMANS (APRIL 1–APRIL 15, 2026)
+==================================================
+
+Generate structured devotionals for:
+
+April 1, 2026
+through
+April 15, 2026
+
+Book: Romans (continue sequentially from previous March entries)
+
+Requirements:
+
+- Follow structured format:
+    Title
+    Date
+    Scripture Reference
+    Scripture (public domain translation only)
+    5–6 paragraph devotional message
+    5 prayer points
+    5 faith declarations
+    3 Christian quotes (original wording)
+    1 prophetic declaration
+    Footer: Written by Moses Afolabi
+
+- Maintain theological depth:
+    Righteousness by faith
+    Life in the Spirit
+    Grace vs law
+    Practical Christian living
+
+- Update existing records only.
+- Do not create duplicates.
+- Preserve admin edit ability.
+
+==================================================
+PROMPT 4 — ROMANS (APRIL 16–APRIL 30, 2026)
+==================================================
+
+Generate structured devotionals for:
+
+April 16, 2026
+through
+April 30, 2026
+
+Continue Romans sequentially.
+
+Same format requirements as above:
+
+- 5–6 paragraphs
+- 5 prayer points
+- 5 faith declarations
+- 3 Christian quotes
+- 1 prophetic declaration
+- Footer: Written by Moses Afolabi
+
+Update existing records only.
+Do NOT regenerate other months.
+Do NOT alter schema.
+Preserve admin functionality.
+
+==================================================
+PROMPT 5 — GLOBAL AUTHOR VERIFICATION
+==================================================
+
+Scan ALL devotional records in the database.
+
+If any author field contains:
+"Rev."
+"Reverend"
+
+Replace with:
+"Moses Afolabi"
+
+Do NOT modify other fields.
+Return confirmation count of records updated.
+
+==================================================
+FINAL VALIDATION
+==================================================
+
+After completion, verify:
+
+- April 1–April 30 devotionals are updated.
+- Romans progression remains sequential.
+- All devotionals show:
+  Written by Moses Afolabi
+- Admin dashboard remains functional.
+- No duplicate entries exist.
+- Production build compiles successfully.
+
+Return summary of:
+- Number of devotionals updated (April 1–15)
+- Number updated (April 16–30)
+- Number of author corrections made
