@@ -1,0 +1,118 @@
+We are performing a controlled devotional regeneration and author correction update.
+
+STRICT RULES:
+- Do NOT modify database schema
+- Do NOT remove admin permissions
+- Do NOT break existing routes
+- Do NOT change authentication logic
+- Only update devotional content and author field safely
+- Preserve manual editing functionality
+
+GOAL:
+1) Replace all instances of "Rev. Moses Afolabi" with "Moses Afolabi" in database devotionals
+2) Regenerate devotionals from current date through April 30 next year
+3) Maintain admin edit capability
+4) Follow structured devotional format
+5) Finish Ephesians this month
+6) Then move to 45-day New Testament book cycles
+
+========================================
+STEP 1 — AUTHOR GLOBAL UPDATE
+========================================
+
+Run a safe database update:
+
+For ALL devotional records:
+If author contains "Rev."
+Replace with "Moses Afolabi"
+
+Do NOT alter other fields.
+
+========================================
+STEP 2 — STRUCTURED DEVOTIONAL TEMPLATE
+========================================
+
+Create structured format template:
+
+Title
+Date
+Scripture Reference
+Scripture (quoted)
+
+Devotional Message (5–8 strong paragraphs)
+
+Prayer Points (5–7 points)
+
+Faith Declaration (5 declarations)
+
+Christian Quotes (3 quotes)
+
+Prophetic Declaration (1–2 strong declarations)
+
+Footer:
+Written by Moses Afolabi
+
+========================================
+STEP 3 — SCRIPTURE PROGRESSION PLAN
+========================================
+
+Current Book: Ephesians
+
+Continue sequentially until end of Ephesians this month.
+
+After Ephesians:
+
+Assign 45 days per book in this order:
+
+Romans (45 days)
+Philippians (45 days)
+Colossians (45 days)
+Galatians (45 days)
+Hebrews (45 days)
+1 Peter (45 days)
+James (45 days)
+1 John (45 days)
+
+Continue progression until April 30 next year.
+
+========================================
+STEP 4 — SAFE DATABASE REGENERATION
+========================================
+
+For each devotional date from today through April 30 next year:
+
+1. Determine assigned book and passage
+2. Generate structured devotional content
+3. Update existing record in database
+4. Preserve ID and admin editing ability
+5. Do NOT delete records
+6. Do NOT create duplicates
+
+========================================
+STEP 5 — DO NOT TOUCH PAST DEVOTIONALS
+========================================
+
+Only regenerate:
+
+Future devotionals from today forward.
+
+Past devotionals remain unchanged.
+
+========================================
+STEP 6 — TESTING
+========================================
+
+Verify:
+
+- Author field updated everywhere
+- New devotionals match structured format
+- Admin dashboard still allows editing
+- No schema changes
+- No broken routes
+- Production build compiles cleanly
+
+Return summary of:
+
+- How many devotionals updated
+- Which books assigned
+- Confirmation author updated
