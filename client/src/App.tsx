@@ -1,6 +1,7 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { HelmetProvider } from "react-helmet-async";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Header } from "@/components/Header";
@@ -36,7 +37,11 @@ import Partnership from "@/pages/Partnership";
 import Support from "@/pages/Support";
 import HowToUse from "@/pages/HowToUse";
 import Bible from "@/pages/Bible";
+import PublicDevotionalToday from "@/pages/PublicDevotionalToday";
+import PublicArchive from "@/pages/PublicArchive";
 import NotFound from "@/pages/not-found";
+
+const PUBLIC_ROUTES = ["/devotional/today", "/public/archive"];
 
 function Router() {
   return (
@@ -48,7 +53,9 @@ function Router() {
       <Route path="/donate" component={Donate} />
       <Route path="/prayer-counseling" component={PrayerCounseling} />
       <Route path="/my-requests" component={MyPrayerRequests} />
+      <Route path="/devotional/today" component={PublicDevotionalToday} />
       <Route path="/devotional/:date" component={SingleDevotional} />
+      <Route path="/public/archive" component={PublicArchive} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/terms-of-use" component={TermsOfUse} />
       <Route path="/disclaimer" component={Disclaimer} />
@@ -69,7 +76,13 @@ function Router() {
 
 function AppContent() {
   const { isTransitioning, completeTransition } = useMenuTransition();
-  
+  const [location] = useLocation();
+  const isPublicRoute = PUBLIC_ROUTES.some((r) => location === r);
+
+  if (isPublicRoute) {
+    return <Router />;
+  }
+
   return (
     <>
       <div className="min-h-screen flex flex-col bg-background font-sans text-foreground">
@@ -91,23 +104,25 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <NotificationProvider>
-            <TranslationProvider>
-              <FontSizeProvider>
-                <MenuTransitionProvider>
-                  <TooltipProvider>
-                    <AppContent />
-                  </TooltipProvider>
-                </MenuTransitionProvider>
-              </FontSizeProvider>
-            </TranslationProvider>
-          </NotificationProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <NotificationProvider>
+              <TranslationProvider>
+                <FontSizeProvider>
+                  <MenuTransitionProvider>
+                    <TooltipProvider>
+                      <AppContent />
+                    </TooltipProvider>
+                  </MenuTransitionProvider>
+                </FontSizeProvider>
+              </TranslationProvider>
+            </NotificationProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 }
 

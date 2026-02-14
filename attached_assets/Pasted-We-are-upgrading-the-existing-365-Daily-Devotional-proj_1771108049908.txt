@@ -1,0 +1,137 @@
+We are upgrading the existing 365 Daily Devotional project.
+
+STRICT RULES:
+- Do NOT modify database schema
+- Do NOT modify authentication logic
+- Do NOT modify existing API routes
+- Do NOT modify mobile app behavior
+- Do NOT refactor backend structure
+- Do NOT rename files
+- Do NOT delete anything
+- Only ADD new public website routes and UI
+- Must remain fully backward compatible
+- Must not break production
+- Must not interfere with Preview or Published DB separation
+
+GOAL:
+Add a clean, modern, public devotional website layer inside the SAME project using the existing backend and API.
+
+====================================================
+STEP 1: AUTO-DETECT STACK (DO NOT CHANGE STACK)
+====================================================
+
+Detect whether frontend is:
+- React (Vite)
+- Next.js
+- Express static
+- Other
+
+Work strictly within the existing structure.
+Do NOT introduce a new framework.
+Do NOT split deployments.
+Do NOT create a separate server.
+
+====================================================
+STEP 2: ADD PUBLIC WEBSITE ROUTES
+====================================================
+
+Add the following public routes:
+
+1) Homepage "/"
+   - Must fetch devotional dynamically from existing endpoint
+   - Use same API endpoint the app uses
+   - Must calculate date at request time
+   - No build-time date
+   - No caching
+   - Must not interfere with app routes
+
+2) "/devotional/today"
+   - Public readable devotional page
+   - SEO-friendly
+   - Server-side rendered if stack allows
+   - Pull from existing API
+
+3) "/archive"
+   - List devotionals from existing DB
+   - Simple pagination
+   - Clean layout
+   - No schema change
+
+====================================================
+STEP 3: DESIGN REQUIREMENTS
+====================================================
+
+Design must be:
+
+- Minimal
+- Elegant
+- Mature
+- Mobile-first
+- Off-white background (#f9f9f7)
+- Dark charcoal text (#222)
+- Soft gold accent
+- Serif font for scripture
+- Clean sans-serif for body
+- Spacious layout
+- No flashy animations
+- No heavy UI libraries
+
+Homepage layout:
+
+Header:
+"365 Daily Devotional"
+Short subtitle: "Daily Scripture. Prayer. Transformation."
+
+Main Section:
+- Today's Devotional (auto pulled)
+- Scripture (styled in serif)
+- Devotional text
+- Prayer points
+- Declarations
+
+Below content:
+Button: "Read Archive"
+Button: "Download the App"
+Button: "Watch on YouTube"
+
+Footer:
+Copyright
+Contact
+Privacy
+
+====================================================
+STEP 4: SAFETY GUARANTEES
+====================================================
+
+- Must use existing API endpoints only
+- Must not modify app routing
+- Must not break production build
+- Must not change DB queries
+- Must not affect mobile app UI
+- Must not introduce caching bugs
+- Must calculate devotional date at request time
+
+====================================================
+STEP 5: SEO IMPLEMENTATION
+====================================================
+
+Add:
+
+- Dynamic <title>
+- Meta description (first 150 characters of devotional)
+- OpenGraph tags
+- Clean URL structure
+- Proper heading hierarchy (H1, H2, etc.)
+
+====================================================
+
+After implementation:
+
+1) Explain exactly what files were added.
+2) Confirm no existing files were modified.
+3) Confirm production remains safe.
+4) Confirm mobile app behavior is unchanged.
+5) Confirm request-time date logic is used (no build-time freeze).
+
+Proceed carefully.
+Do not break anything.
