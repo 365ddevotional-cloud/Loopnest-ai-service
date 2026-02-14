@@ -113,6 +113,19 @@ export default function PublicDevotionalToday() {
               Browse the Archive
             </span>
           </Link>
+          <Link href="/">
+            <span
+              style={{
+                display: "inline-block",
+                marginTop: "1rem",
+                color: "#888",
+                textDecoration: "none",
+                fontSize: "0.9rem",
+              }}
+            >
+              Open the App
+            </span>
+          </Link>
         </div>
       </div>
     );

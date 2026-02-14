@@ -18,7 +18,7 @@ export default function PublicHeader() {
           textAlign: "center",
         }}
       >
-        <Link href="/devotional/today">
+        <Link href="/public/today">
           <span
             data-testid="link-public-logo"
             style={{
@@ -59,7 +59,7 @@ export default function PublicHeader() {
           }}
           data-testid="public-nav"
         >
-          <Link href="/devotional/today">
+          <Link href="/public/today">
             <span
               data-testid="link-public-nav-today"
               style={{
@@ -108,22 +108,21 @@ export default function PublicHeader() {
             YouTube
           </a>
 
-          <a
-            href="https://payhip.com/SpiritToneRecords"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="link-public-nav-donate"
-            style={{
-              color: "#555",
-              textDecoration: "none",
-              cursor: "pointer",
-              transition: "color 0.2s ease",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#000")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
-          >
-            Donate
-          </a>
+          <Link href="/donate">
+            <span
+              data-testid="link-public-nav-donate"
+              style={{
+                color: "#555",
+                textDecoration: "none",
+                cursor: "pointer",
+                transition: "color 0.2s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#000")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
+            >
+              Donate
+            </span>
+          </Link>
         </nav>
       </div>
     </header>

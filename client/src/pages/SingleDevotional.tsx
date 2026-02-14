@@ -49,7 +49,7 @@ export default function SingleDevotional() {
             </p>
             <div className="flex items-center justify-center gap-2 text-primary font-medium" data-testid="text-scheduled-date">
               <Calendar className="w-5 h-5" />
-              <span>Scheduled for {format(parseISO(scheduledDate), "MMMM d, yyyy")}</span>
+              <span>Scheduled for {(() => { try { return format(parseISO(scheduledDate), "MMMM d, yyyy"); } catch { return scheduledDate; } })()}</span>
             </div>
           </Card>
         </motion.div>
