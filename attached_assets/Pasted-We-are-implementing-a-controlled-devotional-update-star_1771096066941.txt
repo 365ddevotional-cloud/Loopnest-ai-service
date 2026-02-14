@@ -1,0 +1,144 @@
+We are implementing a controlled devotional update starting March 16, 2026.
+
+STRICT RULES:
+- Do NOT modify database schema
+- Do NOT remove admin editing capability
+- Do NOT change authentication logic
+- Do NOT delete any devotional records
+- Only update devotional content safely
+- Preserve ID values
+- Preserve date values
+- Preserve admin permissions
+- Do NOT touch past devotionals before March 16, 2026
+
+GOAL:
+1) Insert a structured transition devotional on March 16, 2026
+2) Begin 45-day Romans study on March 17, 2026
+3) Maintain structured long-format devotional style
+4) Keep ability to pause for seasonal overrides later
+5) Ensure admin dashboard remains fully functional
+
+==================================================
+STEP 1 — TRANSITION DEVOTIONAL (MARCH 16, 2026)
+==================================================
+
+Locate devotional record dated March 16, 2026.
+
+Replace content with structured devotional:
+
+Title:
+From Identity to Righteousness — A New Journey Begins
+
+Scripture Reference:
+Romans 1:16–17
+
+Scripture (include full quoted passage from public domain translation).
+
+Devotional Message:
+5–8 strong paragraphs explaining:
+
+- Summary of what we learned in Ephesians (identity in Christ, unity, maturity, armor of God)
+- Transition into Romans as deeper foundation of righteousness, faith, and the gospel
+- Emphasize salvation by grace through faith
+- Invite readers to prepare their hearts for doctrinal depth
+- Gentle call to commitment
+
+Prayer Points:
+5–7 strong prayer points.
+
+Faith Declarations:
+5 faith declarations focused on righteousness and boldness in Christ.
+
+Christian Quotes:
+3 short Christ-centered quotes (original wording, not copied from copyrighted authors).
+
+Prophetic Declaration:
+1–2 strong declarations about walking boldly in the gospel.
+
+Footer:
+Written by Moses Afolabi
+
+==================================================
+STEP 2 — ROMANS 45-DAY STRUCTURE
+==================================================
+
+Starting March 17, 2026:
+
+Begin 45-day structured study through the Book of Romans.
+
+Rules:
+
+- Move sequentially through Romans chapters.
+- Do not skip key doctrinal passages.
+- Maintain daily structured format:
+    Title
+    Date
+    Scripture Reference
+    Scripture (quoted public domain)
+    5–8 paragraph devotional
+    5–7 prayer points
+    5 faith declarations
+    3 Christian quotes
+    1–2 prophetic declarations
+    Footer: Written by Moses Afolabi
+
+- Ensure theological depth:
+    Justification
+    Grace
+    Sin nature
+    Righteousness
+    Spirit-filled life
+    Sovereignty of God
+    Practical Christian living
+
+- Tone:
+    Non-denominational
+    Evangelistic
+    Mature
+    Scripturally grounded
+    Internationally inclusive
+
+Update only dates from:
+March 17, 2026
+through
+April 30, 2026
+
+Do NOT regenerate beyond April 30 for now.
+
+==================================================
+STEP 3 — PREPARE FOR SEASONAL OVERRIDES (STRUCTURE ONLY)
+==================================================
+
+Add placeholder logic support (without generating content yet):
+
+Create internal tagging field:
+"seasonalOverride: boolean"
+
+Default = false.
+
+This will allow future Easter, Christmas, Family emphasis weeks.
+
+Do NOT implement seasonal content now.
+Just prepare support field without breaking schema.
+
+If schema change is required:
+Add nullable field safely without deleting data.
+
+==================================================
+STEP 4 — VALIDATION
+==================================================
+
+Verify:
+
+- March 16 devotional updated
+- Romans begins March 17
+- Structured format applied
+- Admin dashboard can still edit entries
+- No duplicate dates
+- No schema errors
+- Production build compiles cleanly
+
+Return summary:
+- Confirmation of transition devotional
+- Number of Romans devotionals generated
+- Confirmation admin functionality preserved

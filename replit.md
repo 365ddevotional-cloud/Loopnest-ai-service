@@ -117,6 +117,14 @@ The devotional archive implements role-based visibility:
 - **Restricted Access Message**: When a non-admin attempts to access a future devotional via URL, they see a "Coming Soon" message with the scheduled date.
 - **Timezone Support**: Date comparisons use configurable timezone via `APP_TIMEZONE` environment variable (defaults to America/New_York). The timezone-aware utility is in `server/date-utils.ts`.
 
+### Romans Study Update (March 2026)
+Controlled devotional update for March 16 - April 30, 2026:
+- **Transition Devotional**: March 16, 2026 — "From Identity to Righteousness — A New Journey Begins" bridges Ephesians to Romans
+- **45-Day Romans Study**: March 17 - April 30, 2026 — Sequential study through Romans 1-15
+- **Update Script**: `server/update-romans-study.ts` (run manually: `npx tsx server/update-romans-study.ts`)
+- **Doctrinal Coverage**: Justification, grace, sin nature, righteousness, Spirit-filled life, sovereignty, practical Christian living
+- **Seasonal Override Field**: `seasonal_override` boolean (nullable, default false) added to devotionals table for future Easter/Christmas overrides
+
 ### Manual Devotional & Scripture Seeding (Production-Safe)
 Seeding is now manual to prevent production crash loops:
 - **Location**: `server/seed-devotionals.ts` contains all devotional content for the year

@@ -42,6 +42,8 @@ export const devotionals = pgTable("devotionals", {
   deletedAt: timestamp("deleted_at"),
   // Red Letter Scripture: When true, renders divine speech (God/Jesus) in red
   redLetterEnabled: boolean("red_letter_enabled").default(true),
+  // Seasonal Override: When true, marks devotional as a seasonal entry (Easter, Christmas, etc.)
+  seasonalOverride: boolean("seasonal_override").default(false),
 });
 
 export const insertDevotionalSchema = createInsertSchema(devotionals).omit({
