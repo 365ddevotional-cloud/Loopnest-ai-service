@@ -10,9 +10,12 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
 import { MenuTransitionProvider, useMenuTransition } from "@/contexts/MenuTransitionContext";
 import { FontSizeProvider } from "@/contexts/FontSizeContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { NotificationTrigger } from "@/components/NotificationTrigger";
 import { MenuTransitionOverlay } from "@/components/MenuTransitionOverlay";
+import { WalkthroughModal } from "@/components/WalkthroughModal";
+import { FloatingFeedbackButton } from "@/components/FloatingFeedbackButton";
 import Home from "@/pages/Home";
 import Archive from "@/pages/Archive";
 import Admin from "@/pages/Admin";
@@ -78,6 +81,8 @@ function AppContent() {
         <Toaster />
         <NotificationPrompt />
         <NotificationTrigger />
+        <WalkthroughModal />
+        <FloatingFeedbackButton />
       </div>
       <MenuTransitionOverlay isVisible={isTransitioning} onComplete={completeTransition} />
     </>
@@ -87,19 +92,21 @@ function AppContent() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <NotificationProvider>
-          <TranslationProvider>
-            <FontSizeProvider>
-              <MenuTransitionProvider>
-                <TooltipProvider>
-                  <AppContent />
-                </TooltipProvider>
-              </MenuTransitionProvider>
-            </FontSizeProvider>
-          </TranslationProvider>
-        </NotificationProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <TranslationProvider>
+              <FontSizeProvider>
+                <MenuTransitionProvider>
+                  <TooltipProvider>
+                    <AppContent />
+                  </TooltipProvider>
+                </MenuTransitionProvider>
+              </FontSizeProvider>
+            </TranslationProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

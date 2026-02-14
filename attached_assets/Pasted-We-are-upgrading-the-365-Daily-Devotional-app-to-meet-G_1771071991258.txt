@@ -1,0 +1,117 @@
+We are upgrading the 365 Daily Devotional app to meet Google Play production readiness feedback.
+
+STRICT RULES:
+- DO NOT modify devotional content logic
+- DO NOT modify backend date generation
+- DO NOT modify production caching behavior
+- DO NOT rename existing routes
+- DO NOT refactor working database logic
+- DO NOT touch TWA config
+- Only add frontend enhancements
+- Maintain backward compatibility
+
+GOAL:
+Implement the following safe feature upgrades:
+
+1️⃣ Dark Mode
+2️⃣ First-Time User Walkthrough
+3️⃣ User Feedback Button
+4️⃣ Social Share Button
+5️⃣ Optional Local Offline Cache
+6️⃣ Notification Framework (non-breaking)
+7️⃣ Minor UI polish for update release
+
+========================================
+STEP 1: DARK MODE IMPLEMENTATION
+========================================
+
+- Add theme state using localStorage
+- Default to system preference (prefers-color-scheme)
+- Add toggle in header menu
+- Create dark theme CSS variables
+- Ensure full contrast for text and devotional content
+- Do NOT alter layout structure
+
+========================================
+STEP 2: FIRST-TIME WALKTHROUGH
+========================================
+
+- Detect first visit using localStorage flag: hasSeenWalkthrough
+- Create 3-slide modal overlay:
+  Slide 1: Welcome to 365 Daily Devotional
+  Slide 2: Browse Devotionals by Date
+  Slide 3: Share & Save Your Favorite Reflections
+- Include:
+  - Next button
+  - Skip button
+  - Done button
+- Set hasSeenWalkthrough=true after completion
+- Do NOT block normal navigation
+
+========================================
+STEP 3: USER FEEDBACK BUTTON
+========================================
+
+- Add floating feedback button bottom-right
+- Opens modal with:
+   - Name (optional)
+   - Email (optional)
+   - Message textarea
+- Send POST to /api/feedback (create endpoint if missing)
+- Store feedback safely in database or log file
+- Show success confirmation
+
+========================================
+STEP 4: SOCIAL SHARE FEATURE
+========================================
+
+- Add "Share" button inside devotional view
+- Use Web Share API if available
+- Fallback to copy-to-clipboard
+- Share title + current devotional text
+- Do NOT modify devotional structure
+
+========================================
+STEP 5: OFFLINE CACHE (SAFE)
+========================================
+
+- Implement basic Service Worker
+- Cache:
+   - Home route
+   - Static assets
+   - Most recent devotional
+- Do NOT cache dynamic API endpoints
+- Use stale-while-revalidate pattern
+
+========================================
+STEP 6: DAILY NOTIFICATION PREP
+========================================
+
+- Add notification permission request (optional)
+- If granted:
+   - Schedule local reminder at 8 AM using browser Notification API
+- Do NOT implement external push server
+- Make this optional and non-blocking
+
+========================================
+STEP 7: UI POLISH (COUNTS AS UPDATE)
+========================================
+
+- Improve button spacing
+- Improve header typography
+- Slight card shadow enhancement
+- Add smooth fade transition between dates
+- Maintain existing color identity
+
+========================================
+FINAL STEP
+========================================
+
+- Bump app version
+- Ensure build succeeds
+- Ensure no TypeScript errors
+- Ensure production build compiles cleanly
+
+After completion:
+Return summary of all added components.
+Do NOT remove any existing functionality.
