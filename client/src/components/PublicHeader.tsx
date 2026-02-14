@@ -13,84 +13,99 @@ export default function PublicHeader() {
   return (
     <header
       style={{
-        maxWidth: 1000,
-        margin: "0 auto",
-        padding: "48px 20px 32px 20px",
-        textAlign: "center",
-        borderBottom: "1px solid #e5e5e5",
-        background: "#ffffff",
+        background: "#f9f6f1",
+        borderBottom: "1px solid #e0d9cb",
       }}
       data-testid="public-header"
     >
-      <Link href="/devotional/today">
-        <span
-          data-testid="link-public-logo"
+      <div
+        style={{
+          maxWidth: 1100,
+          margin: "0 auto",
+          padding: "clamp(28px, 5vw, 52px) 24px clamp(24px, 4vw, 40px)",
+          textAlign: "center",
+        }}
+      >
+        <Link href="/devotional/today">
+          <span
+            data-testid="link-public-logo"
+            style={{
+              fontFamily: "'Playfair Display', 'Georgia', serif",
+              fontSize: "clamp(28px, 5vw, 42px)",
+              fontWeight: 600,
+              letterSpacing: "-0.01em",
+              color: "#1a1a1a",
+              textDecoration: "none",
+              cursor: "pointer",
+              display: "block",
+              lineHeight: 1.15,
+            }}
+          >
+            365 Daily Devotional
+          </span>
+        </Link>
+        <p
           style={{
-            fontFamily: "'Playfair Display', 'Georgia', serif",
-            fontSize: "clamp(28px, 4vw, 36px)",
-            fontWeight: 600,
-            letterSpacing: "0.5px",
-            color: "#111",
-            textDecoration: "none",
-            cursor: "pointer",
-            display: "block",
-            marginBottom: 6,
+            fontSize: "clamp(12px, 1.5vw, 14px)",
+            color: "#8a8172",
+            marginTop: 8,
+            marginBottom: "clamp(20px, 3vw, 32px)",
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            fontWeight: 400,
           }}
         >
-          365 Daily Devotional
-        </span>
-      </Link>
-      <p
-        style={{
-          fontSize: 14,
-          color: "#777",
-          marginBottom: 28,
-          letterSpacing: "0.04em",
-        }}
-      >
-        Daily Scripture. Prayer. Transformation.
-      </p>
-      <nav
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          gap: 32,
-          flexWrap: "wrap",
-        }}
-        data-testid="public-nav"
-      >
-        {navItems.map((item) => {
-          const isActive = location === item.href;
-          return (
-            <Link key={item.label} href={item.href}>
-              <span
-                data-testid={`link-public-nav-${item.label.toLowerCase()}`}
-                style={{
-                  fontSize: 15,
-                  fontWeight: 500,
-                  color: isActive ? "#000" : "#444",
-                  textDecoration: isActive ? "underline" : "none",
-                  textUnderlineOffset: "4px",
-                  cursor: "pointer",
-                  transition: "color 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = "#000";
-                  e.currentTarget.style.textDecoration = "underline";
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.color = "#444";
-                    e.currentTarget.style.textDecoration = "none";
-                  }
-                }}
-              >
-                {item.label}
-              </span>
-            </Link>
-          );
-        })}
-      </nav>
+          Daily Scripture. Prayer. Transformation.
+        </p>
+        <nav
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: "clamp(24px, 4vw, 44px)",
+            flexWrap: "wrap",
+            rowGap: 12,
+          }}
+          data-testid="public-nav"
+        >
+          {navItems.map((item) => {
+            const isActive = location === item.href;
+            return (
+              <Link key={item.label} href={item.href}>
+                <span
+                  data-testid={`link-public-nav-${item.label.toLowerCase()}`}
+                  style={{
+                    fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
+                    fontSize: 15,
+                    fontWeight: 550,
+                    color: isActive ? "#1a1a1a" : "#5c5650",
+                    textDecoration: "none",
+                    cursor: "pointer",
+                    transition: "color 0.2s ease",
+                    paddingBottom: 3,
+                    borderBottom: isActive
+                      ? "2px solid #c9a84c"
+                      : "2px solid transparent",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = "#1a1a1a";
+                    if (!isActive) {
+                      e.currentTarget.style.borderBottomColor = "#d4c9a8";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.color = "#5c5650";
+                      e.currentTarget.style.borderBottomColor = "transparent";
+                    }
+                  }}
+                >
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
     </header>
   );
 }

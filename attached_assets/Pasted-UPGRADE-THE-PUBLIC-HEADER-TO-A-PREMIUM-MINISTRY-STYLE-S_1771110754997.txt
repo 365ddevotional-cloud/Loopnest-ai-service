@@ -1,0 +1,90 @@
+UPGRADE THE PUBLIC HEADER TO A PREMIUM MINISTRY STYLE.
+
+STRICT RULES:
+- Do NOT modify backend.
+- Do NOT modify database.
+- Do NOT touch authentication.
+- Only modify the PublicHeader component and its styling.
+
+GOALS:
+
+1. Make the header feel spacious and elegant.
+2. Make the logo area bigger and more authoritative.
+3. Improve spacing between nav links.
+4. Keep it minimal (no Login, no Bible selector).
+5. Maintain off-white / charcoal / soft gold color palette.
+
+====================================
+STEP 1 – UPDATE PublicHeader.tsx
+====================================
+
+Modify the header container:
+
+- Add generous vertical padding (py-10 desktop, py-6 mobile)
+- Center everything
+- Increase max-width to 1100px
+- Add subtle bottom border with soft gold tone
+
+====================================
+STEP 2 – LOGO IMPROVEMENT
+====================================
+
+Increase title size:
+
+Desktop:
+- Title: text-4xl (or 42px equivalent)
+- Font weight: 600
+- Letter spacing slightly tightened
+- Elegant serif font if available
+
+Mobile:
+- Title: text-2xl or 28px
+
+Subtitle:
+- Smaller, muted tone
+- Slight letter spacing
+- Margin top 6px
+
+====================================
+STEP 3 – NAVIGATION CLEANUP
+====================================
+
+Navigation links:
+
+- Add gap-x-10 spacing (desktop)
+- gap-x-6 (mobile)
+- Slight font weight increase
+- Add subtle hover color transition
+- Active link should have small underline indicator
+
+Remove:
+- Login
+- Bible selector
+- Admin links
+
+====================================
+STEP 4 – ADD SUBTLE BACKGROUND DEPTH
+====================================
+
+Add a very soft gradient or warm off-white background:
+- Background: #f9f6f1 or similar
+- No heavy colors
+- Keep it clean and ministry style
+
+====================================
+STEP 5 – RESPONSIVE POLISH
+====================================
+
+Ensure:
+- Navigation stacks cleanly on small screens
+- No overcrowding
+- No wrapping issues
+
+====================================
+DO NOT TOUCH ANY ROUTES.
+DO NOT TOUCH APP SHELL.
+DO NOT TOUCH ADMIN.
+
+ONLY IMPROVE THE PUBLIC HEADER DESIGN.
+
+After changes, rebuild and confirm preview.
