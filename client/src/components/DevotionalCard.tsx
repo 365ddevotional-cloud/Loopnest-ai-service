@@ -10,7 +10,7 @@ import { useScriptureText } from "@/hooks/use-scripture";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useFontSize } from "@/contexts/FontSizeContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { Loader2, Sun, Moon, Share2 } from "lucide-react";
+import { Loader2, Sun, Moon, Share2, Shield, Quote, Flame } from "lucide-react";
 
 const fontSizeClasses = {
   "small": {
@@ -49,6 +49,16 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
     devotional.scriptureText
   );
 
+  const declarations = devotional.faithDeclarations || [];
+  const len = declarations.length;
+  const baseSize = Math.floor(len / 3);
+  const remainder = len % 3;
+  const s1 = baseSize + (remainder > 0 ? 1 : 0);
+  const s2 = baseSize + (remainder > 1 ? 1 : 0);
+  const faithItems = declarations.slice(0, s1);
+  const quoteItems = declarations.slice(s1, s1 + s2);
+  const propheticItems = declarations.slice(s1 + s2);
+
   const fullShareText = [
     `Title: ${devotional.title}`,
     `Date: ${format(parseISO(devotional.date), "MMMM d, yyyy")}`,
@@ -63,9 +73,9 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
     `Prayer Points:`,
     ...devotional.prayerPoints.map(p => `• ${p}`),
     ``,
-    `Faith Declarations:`,
-    ...devotional.faithDeclarations.map(d => `• ${d}`),
-    ``,
+    ...(faithItems.length > 0 ? [`Faith Declaration:`, ...faithItems.map(d => `• ${d}`), ``] : []),
+    ...(quoteItems.length > 0 ? [`Christian Quotes:`, ...quoteItems.map(d => `• ${d}`), ``] : []),
+    ...(propheticItems.length > 0 ? [`Prophetic Declaration:`, ...propheticItems.map(d => `• ${d}`), ``] : []),
     `Written by ${devotional.author}`,
     ``,
     `— Shared from 365 Daily Devotional App`,
@@ -144,40 +154,81 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
 
         <Separator className="bg-primary/20 my-8" />
 
-        {/* Action Points Grid */}
-        <div id="prayer-points" className="grid md:grid-cols-2 gap-6">
-          {/* Prayer Points */}
-          <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 dark:from-secondary/20 dark:to-card p-6 rounded-xl border border-secondary/20 dark:border-secondary/40 shadow-sm dark:shadow-lg dark:shadow-secondary/10">
-            <h3 className="flex items-center gap-3 font-serif text-xl font-bold text-secondary mb-5">
-              <span className="flex items-center justify-center w-9 h-9 rounded-full bg-secondary text-secondary-foreground text-sm font-sans font-bold shadow-sm">P</span>
-              Prayer Points
-            </h3>
-            <ul className="space-y-4">
-              {devotional.prayerPoints.map((point, idx) => (
-                <li key={idx} className={`flex gap-3 ${sizeClasses.list} leading-relaxed text-foreground/80 dark:text-foreground`}>
-                  <span className="text-secondary mt-1 font-bold">•</span>
-                  <span>{point}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {/* Prayer Points */}
+        <div id="prayer-points" className="bg-gradient-to-br from-secondary/10 to-secondary/5 dark:from-secondary/20 dark:to-card p-6 rounded-xl border border-secondary/20 dark:border-secondary/40 shadow-sm dark:shadow-lg dark:shadow-secondary/10" data-testid="section-prayer-points">
+          <h3 className="flex items-center gap-3 font-serif text-xl font-bold text-secondary mb-5">
+            <span className="flex items-center justify-center w-9 h-9 rounded-full bg-secondary text-secondary-foreground text-sm font-sans font-bold shadow-sm">P</span>
+            Prayer Points
+          </h3>
+          <ul className="space-y-4">
+            {devotional.prayerPoints.map((point, idx) => (
+              <li key={idx} className={`flex gap-3 ${sizeClasses.list} leading-relaxed text-foreground/80 dark:text-foreground`}>
+                <span className="text-secondary mt-1 font-bold">{'\u2022'}</span>
+                <span>{point}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
 
-          {/* Faith Declarations */}
-          <div className="bg-gradient-to-br from-accent/15 to-accent/5 dark:from-accent/20 dark:to-card p-6 rounded-xl border border-accent/20 dark:border-accent/40 shadow-sm dark:shadow-lg dark:shadow-accent/10">
-            <h3 className="flex items-center gap-3 font-serif text-xl font-bold text-accent-foreground dark:text-accent mb-5">
-              <span className="flex items-center justify-center w-9 h-9 rounded-full bg-accent text-accent-foreground text-sm font-sans font-bold shadow-sm">D</span>
-              Prophetic Declaration
+        {/* Faith Declaration */}
+        {faithItems.length > 0 && (
+          <div className="faith-declaration-card bg-[#e0f2fe] dark:bg-[#1e3a8a] p-6 rounded-r-md border-l-4 border-l-[hsl(var(--accent))] border-y border-r border-sky-200 dark:border-blue-700 shadow-sm dark:shadow-lg" data-testid="section-faith-declaration">
+            <h3 className="flex items-center gap-3 font-serif text-xl font-bold text-sky-800 dark:text-white mb-5">
+              <span className="flex items-center justify-center w-9 h-9 rounded-full bg-sky-600 text-white text-sm shadow-sm">
+                <Shield className="w-4 h-4" />
+              </span>
+              Faith Declaration
             </h3>
             <ul className="space-y-4">
-              {devotional.faithDeclarations.map((decl, idx) => (
-                <li key={idx} className={`flex gap-3 ${sizeClasses.list} leading-relaxed font-medium text-foreground/80 dark:text-foreground italic`}>
-                  <span className="text-accent font-bold mt-1">•</span>
+              {faithItems.map((decl, idx) => (
+                <li key={idx} className={`flex gap-3 ${sizeClasses.list} leading-relaxed font-medium text-sky-900 dark:text-white italic`}>
+                  <span className="text-sky-600 dark:text-sky-300 font-bold mt-1">{'\u2022'}</span>
                   <span>"{decl}"</span>
                 </li>
               ))}
             </ul>
           </div>
-        </div>
+        )}
+
+        {/* Christian Quotes */}
+        {quoteItems.length > 0 && (
+          <div className="christian-quotes-card bg-[#dcfce7] dark:bg-[#064e3b] p-6 rounded-r-md border-l-4 border-l-[#22c55e] border-y border-r border-green-200 dark:border-emerald-700 shadow-sm dark:shadow-lg" data-testid="section-christian-quotes">
+            <h3 className="flex items-center gap-3 font-serif text-xl font-bold text-green-800 dark:text-white mb-5">
+              <span className="flex items-center justify-center w-9 h-9 rounded-full bg-green-600 text-white text-sm shadow-sm">
+                <Quote className="w-4 h-4" />
+              </span>
+              Christian Quotes
+            </h3>
+            <ul className="space-y-4">
+              {quoteItems.map((quote, idx) => (
+                <li key={idx} className={`flex gap-3 ${sizeClasses.list} leading-relaxed font-medium text-green-900 dark:text-white italic`}>
+                  <span className="text-green-600 dark:text-green-300 font-bold mt-1">{'\u2022'}</span>
+                  <span>"{quote}"</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Prophetic Declaration */}
+        {propheticItems.length > 0 && (
+          <div className="prophetic-declaration-card bg-[#fef3c7] dark:bg-[#78350f] p-6 rounded-r-md border-l-4 border-l-[#f59e0b] border-y border-r border-amber-200 dark:border-amber-700 shadow-sm dark:shadow-lg" data-testid="section-prophetic-declaration">
+            <h3 className="flex items-center gap-3 font-serif text-xl font-bold text-amber-800 dark:text-white mb-5">
+              <span className="flex items-center justify-center w-9 h-9 rounded-full bg-amber-500 text-white text-sm shadow-sm">
+                <Flame className="w-4 h-4" />
+              </span>
+              Prophetic Declaration
+            </h3>
+            <ul className="space-y-4">
+              {propheticItems.map((decl, idx) => (
+                <li key={idx} className={`flex gap-3 ${sizeClasses.list} leading-relaxed font-medium text-amber-900 dark:text-white italic`}>
+                  <span className="text-amber-600 dark:text-amber-300 font-bold mt-1">{'\u2022'}</span>
+                  <span>"{decl}"</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="flex items-center justify-center pt-8">
           <span className="text-sm text-muted-foreground font-medium tracking-wide">

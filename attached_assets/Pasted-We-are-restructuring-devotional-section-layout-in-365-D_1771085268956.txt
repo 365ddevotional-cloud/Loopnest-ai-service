@@ -1,0 +1,135 @@
+We are restructuring devotional section layout in 365 Daily Devotional.
+
+STRICT RULES:
+- Do NOT modify devotional text content
+- Do NOT modify backend devotional generation logic
+- Do NOT change routing
+- Do NOT refactor database
+- Only restructure frontend UI segmentation
+- Apply changes globally to ALL devotionals
+
+GOAL:
+Separate the following sections into distinct visual segments:
+
+1) Faith Declaration
+2) Christian Quotes
+3) Prophetic Declaration
+
+Currently these are grouped under one section. We must separate them into individual cards.
+
+========================================
+STEP 1 — IDENTIFY SECTION HEADERS
+========================================
+
+Locate devotional rendering component.
+
+Identify blocks containing:
+
+- "Faith Declaration"
+- "Christian Quotes"
+- "Prophetic Declaration"
+
+Ensure each section is parsed independently.
+
+========================================
+STEP 2 — CREATE SEPARATE CARD COMPONENTS
+========================================
+
+Each section must have its own card structure:
+
+Example structure:
+
+<div class="devotional-card faith-declaration">
+   <h3>Faith Declaration</h3>
+   <ul>...</ul>
+</div>
+
+<div class="devotional-card christian-quotes">
+   <h3>Christian Quotes</h3>
+   <ul>...</ul>
+</div>
+
+<div class="devotional-card prophetic-declaration">
+   <h3>Prophetic Declaration</h3>
+   <ul>...</ul>
+</div>
+
+Do NOT merge them into one container.
+
+========================================
+STEP 3 — VISUAL STYLING
+========================================
+
+LIGHT MODE:
+
+Faith Declaration:
+Background: soft blue tone (#e0f2fe)
+Icon: 🔵
+Border-left accent: var(--accent)
+
+Christian Quotes:
+Background: soft green tone (#dcfce7)
+Icon: 🟢
+Border-left accent: #22c55e
+
+Prophetic Declaration:
+Background: soft amber tone (#fef3c7)
+Icon: 🟠
+Border-left accent: #f59e0b
+
+========================================
+STEP 4 — DARK MODE STYLING
+========================================
+
+Ensure all three are bright and energetic.
+
+.dark .faith-declaration {
+  background: #1e3a8a;
+  color: #ffffff;
+}
+
+.dark .christian-quotes {
+  background: #064e3b;
+  color: #ffffff;
+}
+
+.dark .prophetic-declaration {
+  background: #78350f;
+  color: #ffffff;
+}
+
+Ensure:
+- Text is pure white
+- High contrast
+- No muddy brown tones
+- Slight elevation shadow
+
+========================================
+STEP 5 — GLOBAL APPLICATION
+========================================
+
+Apply this segmentation logic across all devotional pages.
+
+Ensure:
+- All sections render separately
+- No devotional content breaks
+- Empty sections are hidden if not present
+- Layout spacing consistent
+
+========================================
+STEP 6 — TESTING
+========================================
+
+Verify:
+
+- All four sections appear separately:
+   Prayer Points
+   Faith Declaration
+   Christian Quotes
+   Prophetic Declaration
+
+- Dark mode sections bright and readable
+- No TypeScript errors
+- Production build compiles cleanly
+
+Return summary of changes.
