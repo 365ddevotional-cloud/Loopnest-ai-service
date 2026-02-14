@@ -77,7 +77,8 @@ function Router() {
 function AppContent() {
   const { isTransitioning, completeTransition } = useMenuTransition();
   const [location] = useLocation();
-  const isPublicRoute = PUBLIC_ROUTES.some((r) => location === r);
+  const isPublicRoute =
+    location.startsWith("/devotional") || location.startsWith("/public");
 
   if (isPublicRoute) {
     return <Router />;

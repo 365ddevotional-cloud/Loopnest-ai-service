@@ -1,0 +1,137 @@
+We are refining the PUBLIC WEBSITE header for 365 Daily Devotional.
+
+STRICT RULES:
+- DO NOT modify backend
+- DO NOT modify authentication logic
+- DO NOT delete login route
+- DO NOT remove admin functionality
+- DO NOT modify database
+- Only modify public presentation layer
+
+GOAL:
+Create a clean, mature, elegant public header.
+Make the logo BIGGER and more premium.
+Hide Login from public pages only.
+
+========================================
+STEP 1: CREATE LARGE PREMIUM PUBLIC HEADER
+========================================
+
+Create new file:
+
+client/src/components/PublicHeader.tsx
+
+Build this layout:
+
+Container:
+- maxWidth: 1000px
+- margin: 0 auto
+- padding: 48px 20px 32px 20px
+- textAlign: center
+- borderBottom: 1px solid #e5e5e5
+- background: #ffffff
+
+Logo Section:
+Title:
+- Text: "365 Daily Devotional"
+- Font size: 36px (desktop)
+- Font size: 28px (mobile)
+- Font weight: 600
+- Letter spacing: 0.5px
+- Color: #111
+- Margin bottom: 6px
+
+Subtitle:
+- Text: "Daily Scripture. Prayer. Transformation."
+- Font size: 14px
+- Color: #777
+- Margin bottom: 28px
+
+Navigation Row:
+Centered horizontal links:
+
+Links:
+• Today → /devotional/today
+• Archive → /public/archive
+• YouTube → "#"
+• Donate → "#"
+
+Nav styling:
+- display: flex
+- justifyContent: center
+- gap: 32px
+- fontSize: 15px
+- fontWeight: 500
+- color: #444
+- cursor: pointer
+- transition: 0.2s ease
+
+Hover:
+- color: #000
+- textDecoration: underline
+
+NO Login.
+NO Bible selector.
+NO Admin links.
+
+========================================
+STEP 2: USE PublicHeader ONLY ON PUBLIC PAGES
+========================================
+
+In:
+
+PublicDevotionalToday.tsx
+PublicArchive.tsx
+
+Import:
+
+import PublicHeader from "../components/PublicHeader";
+
+Place <PublicHeader /> at the top of each page.
+
+Remove any existing navigation/header from those pages.
+
+========================================
+STEP 3: HIDE MAIN APP HEADER ON PUBLIC ROUTES
+========================================
+
+In App.tsx:
+
+Find where the main app Header renders.
+
+Add this logic:
+
+const isPublicRoute =
+  location.pathname.startsWith("/devotional") ||
+  location.pathname.startsWith("/public");
+
+Render main app Header and Footer ONLY if:
+
+!isPublicRoute
+
+This ensures:
+- Login remains inside app
+- Admin untouched
+- Public pages clean
+
+========================================
+STEP 4: DO NOT TOUCH BACKEND
+========================================
+
+Do NOT:
+- Change API routes
+- Modify authentication
+- Change database
+- Remove login functionality
+
+Only adjust presentation.
+
+========================================
+
+After implementation:
+Verify:
+- Logo is visibly larger
+- Header looks spacious and premium
+- Login is not visible on public pages
+- Admin login still works via direct route
+- Devotional content unchanged

@@ -1,5 +1,6 @@
 import { useTodayDevotional } from "@/hooks/use-devotionals";
 import { SEOHead } from "@/components/SEOHead";
+import PublicHeader from "@/components/PublicHeader";
 import { format, parseISO } from "date-fns";
 import { Link } from "wouter";
 import { Loader2 } from "lucide-react";
@@ -76,6 +77,7 @@ export default function PublicDevotionalToday() {
         }}
       >
         <SEOHead title="365 Daily Devotional" />
+        <PublicHeader />
         <div
           style={{
             maxWidth: 680,
@@ -154,39 +156,7 @@ export default function PublicDevotionalToday() {
         description={seoDescription}
       />
 
-      <header
-        style={{
-          textAlign: "center",
-          padding: "2.5rem 1.5rem 1.5rem",
-          borderBottom: "1px solid #e5e2da",
-        }}
-      >
-        <Link href="/devotional/today">
-          <span
-            data-testid="link-public-home"
-            style={{
-              fontFamily: "'Playfair Display', 'Georgia', serif",
-              fontSize: "1.5rem",
-              fontWeight: 700,
-              color: "#222",
-              textDecoration: "none",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            365 Daily Devotional
-          </span>
-        </Link>
-        <p
-          style={{
-            color: "#888",
-            fontSize: "0.9rem",
-            marginTop: "0.35rem",
-            letterSpacing: "0.05em",
-          }}
-        >
-          Daily Scripture. Prayer. Transformation.
-        </p>
-      </header>
+      <PublicHeader />
 
       <main style={{ maxWidth: 680, margin: "0 auto", padding: "3rem 1.5rem 4rem" }}>
         <p
