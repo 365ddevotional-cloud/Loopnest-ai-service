@@ -100,6 +100,16 @@ Key features:
 - **API Endpoint**: `/api/scripture?reference=...&translation=...`
 - **Seeding**: `server/seed-scripture.ts` seeds sample passages and extracts KJV from existing devotionals
 
+### Perpetual Devotional Cycle (February 2026)
+The app automatically loops devotionals every year so it never stops functioning:
+- **Day-of-Year Modulo Logic**: When the current date exceeds the latest devotional date in the database, the app calculates `(dayOfYear - 1) % totalDevotionals` to select the appropriate devotional
+- **Yearly Reset**: January 1 always loads devotional 1, December 31 loads devotional 365
+- **Failsafe**: If no devotional is found for the calculated index, falls back to devotional 1
+- **Author Branding**: All devotionals attributed to "Moses Afolabi" (no title prefix)
+- **Footer Format**: "Written by Moses Afolabi" (standardized across UI and share text)
+- **Helper Function**: `getDayOfYear()` in `server/date-utils.ts`
+- **No Redeployment Needed**: App continues working indefinitely without content updates
+
 ### Archive Access Control
 The devotional archive implements role-based visibility:
 - **Users (Non-Admin)**: Can only view present (today) and past devotionals. Future-dated devotionals are hidden from lists, search results, and direct URL access.

@@ -33,7 +33,7 @@ export function CreateDevotionalForm() {
       content: "",
       prayerPoints: [],
       faithDeclarations: [],
-      author: "Rev. Moses Afolabi",
+      author: "Moses Afolabi",
     },
   });
 
@@ -43,7 +43,7 @@ export function CreateDevotionalForm() {
         form.reset();
         // Reset defaults specifically because form.reset clears everything
         form.setValue("date", format(new Date(), "yyyy-MM-dd"));
-        form.setValue("author", "Rev. Moses Afolabi");
+        form.setValue("author", "Moses Afolabi");
       }
     });
   };

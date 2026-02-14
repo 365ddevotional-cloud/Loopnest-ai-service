@@ -66,7 +66,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
     `Faith Declarations:`,
     ...devotional.faithDeclarations.map(d => `• ${d}`),
     ``,
-    `Author: ${devotional.author}`,
+    `Written by ${devotional.author}`,
     ``,
     `— Shared from 365 Daily Devotional App`,
   ].join('\n');
@@ -181,7 +181,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
 
         <div className="flex items-center justify-center pt-8">
           <span className="text-sm text-muted-foreground font-medium tracking-wide">
-            Author: {devotional.author}
+            Written by {devotional.author}
           </span>
         </div>
       </div>

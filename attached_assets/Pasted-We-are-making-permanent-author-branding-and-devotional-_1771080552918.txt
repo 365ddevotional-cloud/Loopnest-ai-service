@@ -1,0 +1,103 @@
+We are making permanent author branding and devotional lifecycle improvements to 365 Daily Devotional.
+
+STRICT RULES:
+- Do NOT modify devotional content structure
+- Do NOT modify database schema
+- Do NOT change routing
+- Do NOT refactor backend architecture
+- Only update author naming and devotional year lifecycle logic
+- Maintain full backward compatibility
+
+GOAL:
+1) Remove all instances of "Rev. Moses Afolabi"
+2) Replace with "Moses Afolabi"
+3) Standardize devotional footer to:
+   "Written by Moses Afolabi"
+4) Implement automatic yearly devotional cycle reset
+5) Ensure app never stops functioning even if not updated
+
+========================================
+STEP 1 — GLOBAL AUTHOR NAME UPDATE
+========================================
+
+Search entire project for:
+
+"Rev. Moses Afolabi"
+"Reverend Moses Afolabi"
+
+Replace ALL occurrences with:
+
+"Moses Afolabi"
+
+Ensure no leftover references remain.
+
+Do NOT change email signatures or external documentation files unless inside app UI.
+
+========================================
+STEP 2 — STANDARDIZE DEVOTIONAL FOOTER
+========================================
+
+At bottom of every devotional page, ensure author section is:
+
+Written by Moses Afolabi
+
+Keep it minimal.
+No additional titles.
+No additional formatting.
+Maintain existing layout spacing.
+
+========================================
+STEP 3 — IMPLEMENT PERPETUAL DEVOTIONAL CYCLE
+========================================
+
+Current Issue:
+If devotionals stop at end of year and no new content is added, app could fail.
+
+New Requirement:
+App must automatically loop devotionals every year.
+
+Implementation Strategy:
+
+1. Determine day-of-year index (1–365)
+2. If current year exceeds available devotional dataset:
+   - Use modulo logic to loop back to beginning
+   - Example:
+
+   const dayIndex = getDayOfYear(today);
+   const devotionalIndex = (dayIndex - 1) % totalDevotionals;
+
+3. Always load devotional based on index within dataset range.
+
+4. Ensure:
+   - January 1 always loads devotional 1
+   - December 31 loads devotional 365
+   - Next year January 1 starts again at devotional 1 automatically
+
+5. If dataset contains more than 365 devotionals:
+   - Still use modulo logic based on dataset length
+
+========================================
+STEP 4 — FAILSAFE PROTECTION
+========================================
+
+If devotional content is missing for calculated index:
+
+Fallback:
+Load devotional 1.
+
+App must NEVER break due to missing content.
+
+========================================
+STEP 5 — TESTING
+========================================
+
+Verify:
+
+- Author name updated everywhere
+- Footer shows: Written by Moses Afolabi
+- Devotional loads correctly for any date
+- Simulate future year date and confirm loop works
+- No TypeScript errors
+- Production build compiles cleanly
+
+Return summary of changes.

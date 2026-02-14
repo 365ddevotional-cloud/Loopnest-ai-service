@@ -6,7 +6,7 @@ import { z } from "zod";
 import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification } from "./sendgrid";
 import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { getTodayDateString, isFutureDate, isPastDate } from "./date-utils";
+import { getTodayDateString, isFutureDate, isPastDate, getDayOfYear } from "./date-utils";
 import { seedAllDevotionals } from "./seed-devotionals";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
@@ -133,8 +133,9 @@ export async function registerRoutes(
 
   // GET Today's Devotional
   // Accepts optional clientDate query param for client timezone support
+  // Implements perpetual yearly cycle: if no devotional for today's exact date,
+  // uses day-of-year modulo logic to cycle through existing devotionals
   app.get(api.devotionals.getToday.path, async (req, res) => {
-    // Prevent ALL caching (browser, proxy, CDN) to ensure fresh data
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
@@ -145,17 +146,23 @@ export async function registerRoutes(
     const isAdmin = !!req.session?.isAdmin;
     let devotional = await storage.getDevotionalByDate(today);
     
-    // If no devotional for today, fallback to the latest available one
-    // Note: getDevotionals() returns items sorted by date descending (newest first)
     if (!devotional) {
       const all = await storage.getDevotionals();
-      if (isAdmin) {
-        // Admin sees the latest devotional regardless of date
-        devotional = all.length > 0 ? all[0] : undefined;
-      } else {
-        // Non-admin only sees past/present devotionals - find the first non-future one
-        // Use client's date for comparison if provided
-        devotional = all.find(d => d.date <= today);
+      
+      if (all.length > 0) {
+        const activeDevotionals = all.filter(d => !d.isDeleted);
+        const sortedAsc = [...activeDevotionals].sort((a, b) => a.date.localeCompare(b.date));
+        const latestDate = sortedAsc.length > 0 ? sortedAsc[sortedAsc.length - 1].date : "";
+
+        if (sortedAsc.length > 0 && today > latestDate) {
+          const dayOfYear = getDayOfYear(today);
+          const index = (dayOfYear - 1) % sortedAsc.length;
+          devotional = sortedAsc[index >= 0 ? index : 0];
+        } else if (isAdmin) {
+          devotional = all[0];
+        } else {
+          devotional = all.find(d => d.date <= today);
+        }
       }
     }
 
@@ -1099,7 +1106,7 @@ async function seedDatabase() {
         "I have the mind of Christ",
         "My steps are ordered by the Lord"
       ],
-      author: "Rev. Moses Afolabi"
+      author: "Moses Afolabi"
     });
 
     console.log("Database seeded with initial devotional.");

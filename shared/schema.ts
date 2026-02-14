@@ -35,7 +35,7 @@ export const devotionals = pgTable("devotionals", {
   content: text("content").notNull(),
   prayerPoints: text("prayer_points").array().notNull(),
   faithDeclarations: text("faith_declarations").array().notNull(),
-  author: text("author").default("Rev. Moses Afolabi"),
+  author: text("author").default("Moses Afolabi"),
   createdAt: timestamp("created_at").defaultNow(),
   // Soft-delete: When true, devotional is hidden but not permanently removed
   isDeleted: boolean("is_deleted").default(false),

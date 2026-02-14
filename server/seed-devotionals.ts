@@ -24,7 +24,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Faith is the foundation upon which our Christian walk is built. It is not mere wishful thinking but a confident assurance in God's promises. When we exercise faith, we declare that God's Word is more real than our circumstances. Today, let your faith rise above every doubt and fear that seeks to hold you back.",
     prayerPoints: ["Lord, increase my faith to trust You completely", "Help me to see beyond my circumstances", "Strengthen my belief in Your promises"],
     faithDeclarations: ["My faith moves mountains", "I walk by faith, not by sight", "Nothing is impossible for me through Christ"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-05",
@@ -34,7 +34,7 @@ const allDevotionals: DevotionalData[] = [
     content: "God has a specific purpose for your life that no one else can fulfill. You are not an accident; you are divinely designed for greatness. Every experience, every trial, and every victory is shaping you for your destiny. Embrace God's plan with confidence, knowing that He who began a good work in you will complete it.",
     prayerPoints: ["Father, reveal Your purpose for my life", "Guide my steps according to Your will", "Remove every distraction from my destiny path"],
     faithDeclarations: ["I am created for a divine purpose", "God's plans for me are good", "I am walking in my destiny"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-06",
@@ -44,7 +44,7 @@ const allDevotionals: DevotionalData[] = [
     content: "In our weakness, God's strength shines brightest. When we acknowledge our limitations, we create space for His power to work through us. Do not be discouraged by your inadequacies; instead, see them as opportunities for God's grace to manifest. His power is perfected when we surrender our weaknesses to Him.",
     prayerPoints: ["Lord, be my strength in every weak moment", "Transform my limitations into testimonies", "Let Your power rest upon me"],
     faithDeclarations: ["When I am weak, then I am strong", "God's grace is sufficient for me", "His power works mightily through me"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-07",
@@ -54,7 +54,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Transformation begins in the mind. What you think determines who you become. Allow God's Word to reshape your thoughts, replacing fear with faith, doubt with confidence, and negativity with hope. As your mind is renewed, your life will be transformed. Guard your thoughts, for they are the seeds of your future.",
     prayerPoints: ["Renew my mind according to Your Word", "Remove every negative thought pattern", "Help me to think on things that are pure and lovely"],
     faithDeclarations: ["My mind is being renewed daily", "I have the mind of Christ", "I think thoughts of victory and success"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-08",
@@ -64,7 +64,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Jehovah Jireh, the Lord our Provider, has never failed and will never fail. He knows your needs before you ask and has already made provision for them. Trust in His timing and His methods. What seems impossible in your eyes is already accomplished in heaven. Your provision is on its way.",
     prayerPoints: ["Father, provide for all my needs today", "Open doors of provision that no man can shut", "Increase my faith to trust Your provision"],
     faithDeclarations: ["All my needs are met according to His riches", "I lack nothing", "Abundance flows to me from unexpected sources"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-09",
@@ -74,7 +74,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Love is not just an emotion; it is the very nature of God expressed through us. When we choose to love, even when it is difficult, we reflect the heart of our Father. Love covers a multitude of sins, heals broken relationships, and brings heaven to earth. Let love be the motivation behind every action today.",
     prayerPoints: ["Fill my heart with Your unconditional love", "Help me to love those who are difficult to love", "Let Your love flow through me to others"],
     faithDeclarations: ["I am rooted and grounded in love", "God's love flows through me", "I choose to walk in love daily"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-10",
@@ -84,7 +84,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Fear is not from God. Every time fear tries to grip your heart, remember that the Spirit within you is greater than any challenge before you. God has equipped you with power to overcome, love to endure, and a sound mind to navigate every situation. Stand firm and refuse to bow to fear.",
     prayerPoints: ["Deliver me from every spirit of fear", "Replace my fears with Your perfect peace", "Give me boldness to face every challenge"],
     faithDeclarations: ["I am not afraid", "I have power, love, and a sound mind", "Fear has no place in my life"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-11",
@@ -94,7 +94,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Joy is not dependent on circumstances; it is a divine strength that sustains us through every season. When you tap into the joy of the Lord, you find strength to endure, courage to continue, and hope to overcome. Choose joy today, not because everything is perfect, but because God is with you.",
     prayerPoints: ["Fill me with Your supernatural joy", "Let my joy be constant regardless of circumstances", "Restore the joy of my salvation"],
     faithDeclarations: ["The joy of the Lord is my strength", "I choose joy over despair", "My heart is full of divine joy"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-12",
@@ -104,7 +104,7 @@ const allDevotionals: DevotionalData[] = [
     content: "God's timing is perfect, even when it does not align with our expectations. What seems like delay is often divine preparation. Trust that the One who holds the universe also holds your future. In His time, every promise will manifest, every prayer will be answered, and every dream will come to fruition.",
     prayerPoints: ["Help me to trust Your perfect timing", "Give me patience to wait on Your promises", "Align my expectations with Your will"],
     faithDeclarations: ["God's timing for my life is perfect", "I will not rush ahead of God", "Everything is working out in divine order"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-13",
@@ -114,7 +114,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Prayer is not a religious ritual; it is a powerful weapon in the hands of believers. Through prayer, we access heaven's resources, change circumstances, and release God's will on earth. Never underestimate the power of your prayers. The same God who parted the Red Sea hears you when you pray.",
     prayerPoints: ["Teach me to pray with power and authority", "Ignite a fresh fire of prayer in my heart", "Let my prayers move mountains"],
     faithDeclarations: ["My prayers are powerful and effective", "Heaven responds when I pray", "I am a person of prayer"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-14",
@@ -124,7 +124,7 @@ const allDevotionals: DevotionalData[] = [
     content: "In a world of constant change, God's Word remains unchanging. It is the solid rock upon which we build our lives. When everything around you seems unstable, stand firmly on the eternal promises of God. His Word has never failed, and it will not fail you now.",
     prayerPoints: ["Root Your Word deep in my heart", "Help me to stand on Your promises", "Let Your Word be a lamp to my feet"],
     faithDeclarations: ["I stand on the solid rock of God's Word", "His promises never fail me", "The Word of God is my foundation"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-15",
@@ -134,7 +134,7 @@ const allDevotionals: DevotionalData[] = [
     content: "God's grace is inexhaustible. Just when you think you have exhausted His mercy, you discover there is more. Grace covers your past, empowers your present, and secures your future. You are not saved by your works but by His amazing grace. Receive it afresh today.",
     prayerPoints: ["Let Your grace be sufficient for me today", "Help me to extend grace to others", "May I never take Your grace for granted"],
     faithDeclarations: ["I am covered by God's abundant grace", "Grace empowers me to live victoriously", "I receive fresh grace every morning"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-16",
@@ -144,7 +144,7 @@ const allDevotionals: DevotionalData[] = [
     content: "God's faithfulness is not based on our performance but on His character. He remains faithful even when we falter. Every new day is a fresh demonstration of His unwavering commitment to His children. Take heart, for the God who has been faithful in the past will be faithful today and forever.",
     prayerPoints: ["Thank You for Your faithfulness in my life", "Help me to trust in Your unchanging nature", "Let Your faithfulness be my testimony"],
     faithDeclarations: ["God is faithful to me always", "His mercies are new every morning", "I serve a faithful God"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-17",
@@ -154,7 +154,7 @@ const allDevotionals: DevotionalData[] = [
     content: "The Christian life is a race that requires determination and focus. Do not be distracted by past failures or present challenges. Keep your eyes on the prize and press forward with all your might. The finish line is ahead, and the crown of glory awaits those who persevere.",
     prayerPoints: ["Give me strength to press forward", "Help me to forget what lies behind", "Keep my eyes fixed on the goal"],
     faithDeclarations: ["I am pressing toward my divine destiny", "Nothing will hold me back", "I will finish my race strong"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-18",
@@ -164,7 +164,7 @@ const allDevotionals: DevotionalData[] = [
     content: "You are under divine protection. God has assigned angels to watch over you, to guard you from danger, and to keep you safe in all your ways. No weapon formed against you shall prosper. Walk confidently today, knowing that the Most High is your refuge and your fortress.",
     prayerPoints: ["Thank You for Your angels that guard me", "Cover me and my family with Your protection", "Deliver me from every hidden danger"],
     faithDeclarations: ["I am protected by the Most High", "Angels guard me in all my ways", "No evil shall befall me"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-19",
@@ -174,7 +174,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Temptation is common to all, but victory is available to those who rely on God. He has promised to provide a way of escape with every temptation. You are not destined to fall; you are equipped to overcome. Lean on His strength, and you will stand victorious.",
     prayerPoints: ["Strengthen me against every temptation", "Show me the way of escape in difficult moments", "Purify my heart and renew my resolve"],
     faithDeclarations: ["I overcome every temptation through Christ", "I am stronger than any temptation", "God always provides a way out"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-20",
@@ -184,7 +184,7 @@ const allDevotionals: DevotionalData[] = [
     content: "In the midst of chaos, God offers a peace that defies logic. It is a peace that cannot be manufactured by the world but is given freely by the Prince of Peace. When anxiety knocks at your door, let God's peace answer. It will guard your heart and keep you steady.",
     prayerPoints: ["Fill me with Your supernatural peace", "Calm every storm raging in my life", "Let Your peace rule in my heart"],
     faithDeclarations: ["I have peace that surpasses understanding", "My heart is guarded by God's peace", "I refuse to be anxious about anything"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-21",
@@ -194,7 +194,7 @@ const allDevotionals: DevotionalData[] = [
     content: "True greatness in the kingdom of God is measured by service. Jesus, the King of Kings, came not to be served but to serve. As His followers, we are called to the same path of humble service. Look for opportunities today to serve others, and in doing so, you will find true fulfillment.",
     prayerPoints: ["Give me a servant's heart like Jesus", "Open my eyes to see the needs of others", "Use me as a vessel of Your love"],
     faithDeclarations: ["I am called to serve others", "My greatness is in my service", "I follow Jesus' example of servanthood"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-22",
@@ -204,7 +204,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Jesus came to break every chain that binds you. Whether it is addiction, fear, unforgiveness, or any other bondage, His power is greater. The freedom He offers is complete and lasting. Today, receive your freedom. The chains that once held you have no more power over you.",
     prayerPoints: ["Break every chain holding me captive", "Set me free from generational bondages", "Let Your freedom flow through my entire life"],
     faithDeclarations: ["I am free indeed", "No chain can hold me", "Christ has liberated me completely"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-23",
@@ -214,7 +214,7 @@ const allDevotionals: DevotionalData[] = [
     content: "You are not left to navigate life alone. The Holy Spirit, your Counselor and Guide, is with you every step of the way. He leads you into truth, reveals hidden things, and directs your path. Learn to listen to His gentle voice, and you will never lose your way.",
     prayerPoints: ["Holy Spirit, guide me in every decision", "Sharpen my spiritual ears to hear Your voice", "Lead me in the path of righteousness"],
     faithDeclarations: ["The Holy Spirit guides me daily", "I am led by the Spirit of God", "I will not miss my way"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-24",
@@ -224,7 +224,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Fruitfulness is the natural result of abiding in Christ. When we stay connected to the Vine, His life flows through us and produces lasting fruit. Do not strive in your own strength; instead, rest in Him and let His power work through you. The fruit you bear will glorify the Father.",
     prayerPoints: ["Help me to abide in You always", "Produce lasting fruit through my life", "Prune away anything that hinders fruitfulness"],
     faithDeclarations: ["I am connected to the True Vine", "I bear much fruit for God's glory", "My life produces lasting impact"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-25",
@@ -234,7 +234,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Forgiveness is not optional for believers; it is essential. Just as Christ freely forgave us, we are called to forgive others. Holding onto unforgiveness only poisons our own soul. Release those who have wronged you today, and experience the freedom that comes with letting go.",
     prayerPoints: ["Help me to forgive as You forgave me", "Heal my heart from past hurts", "Give me the grace to release all offenses"],
     faithDeclarations: ["I freely forgive those who hurt me", "My heart is free from bitterness", "I walk in the freedom of forgiveness"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-26",
@@ -244,7 +244,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Crisis reveals character and demands courage. But our courage is not self-generated; it comes from knowing that God is with us. The same God who parted the sea and conquered enemies goes before you. Face your challenges with boldness, for He who is with you is greater than any crisis against you.",
     prayerPoints: ["Fill me with holy courage", "Remind me of Your presence in every crisis", "Turn my fears into faith"],
     faithDeclarations: ["I am strong and courageous", "God is with me wherever I go", "No crisis can defeat me"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-27",
@@ -254,7 +254,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Children trust without questioning, believe without doubting, and love without conditions. Jesus calls us to have this same childlike faith. Lay aside your sophisticated doubts and trust your Father completely. He delights in simple, pure-hearted faith that takes Him at His word.",
     prayerPoints: ["Restore childlike faith in my heart", "Remove cynicism and doubt from me", "Help me to trust You simply and completely"],
     faithDeclarations: ["I have the faith of a child", "I trust my Father completely", "I believe without doubting"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-28",
@@ -264,7 +264,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Unity among believers is a powerful testimony to the world. When we stand together in love, we reflect the heart of God and confound the enemy. Do not allow division to take root in your relationships. Be a peacemaker, a bridge-builder, and an agent of unity wherever you go.",
     prayerPoints: ["Help me to be an instrument of unity", "Heal divisions in the body of Christ", "Give me wisdom to maintain peace"],
     faithDeclarations: ["I am an agent of unity", "I build bridges, not walls", "Peace follows me wherever I go"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-29",
@@ -274,7 +274,7 @@ const allDevotionals: DevotionalData[] = [
     content: "This life is but a vapor compared to eternity. When we keep an eternal perspective, present troubles shrink in significance. The investments we make in heaven will last forever, while earthly treasures fade away. Live today with eternity in view.",
     prayerPoints: ["Give me an eternal perspective", "Help me to invest in things that last", "Keep my focus on heavenly treasures"],
     faithDeclarations: ["I live with eternity in view", "My treasures are in heaven", "Temporary troubles do not define me"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-30",
@@ -284,7 +284,7 @@ const allDevotionals: DevotionalData[] = [
     content: "God's love for you is unshakeable and unconditional. No failure, no sin, no circumstance can separate you from His love. You are loved beyond measure, beyond reason, beyond comprehension. Rest secure in this truth: you are forever loved by the King of the universe.",
     prayerPoints: ["Let me experience the depths of Your love", "Remove every lie that says I am unloved", "Anchor my identity in Your love"],
     faithDeclarations: ["Nothing can separate me from God's love", "I am unconditionally loved", "God's love never fails me"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-01-31",
@@ -294,7 +294,7 @@ const allDevotionals: DevotionalData[] = [
     content: "God is the God of new beginnings. No matter what has happened in your past, He can create something new in your life. Old things are passing away; behold, all things are becoming new. Open your eyes to perceive what God is doing and embrace the fresh start He offers.",
     prayerPoints: ["Do a new thing in my life, Lord", "Help me to let go of the past", "Open my eyes to see Your new work"],
     faithDeclarations: ["God is doing a new thing in my life", "I embrace new beginnings", "My best days are ahead"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   // FEBRUARY
   {
@@ -305,7 +305,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Worship is not about songs or rituals; it is about the posture of our hearts. True worship flows from a heart that recognizes God's greatness and responds with adoration. When we worship in spirit and truth, we enter His presence and experience transformation. Let your whole life be an act of worship.",
     prayerPoints: ["Create in me a heart of pure worship", "Teach me to worship in spirit and truth", "Let my life be a continuous offering of praise"],
     faithDeclarations: ["I am a true worshiper", "My worship touches God's heart", "I live a life of worship"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-02",
@@ -315,7 +315,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Those who hunger for more of God will always be satisfied. Spiritual hunger drives us to seek Him passionately, to dive deeper into His Word, and to pursue His presence above all else. Cultivate a holy dissatisfaction with spiritual mediocrity. Chase after God with all your heart.",
     prayerPoints: ["Increase my hunger for Your presence", "Fill me until I overflow", "Never let me be satisfied with spiritual mediocrity"],
     faithDeclarations: ["I hunger and thirst for God", "I am continually being filled", "My appetite for God grows daily"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-03",
@@ -325,7 +325,7 @@ const allDevotionals: DevotionalData[] = [
     content: "We are in a spiritual battle, and God has equipped us with armor for victory. The belt of truth, breastplate of righteousness, shoes of peace, shield of faith, helmet of salvation, and sword of the Spirit are our weapons. Put on your armor daily and stand firm against every attack.",
     prayerPoints: ["Help me to wear Your armor daily", "Strengthen me for spiritual warfare", "Expose every scheme of the enemy"],
     faithDeclarations: ["I am equipped for battle", "I wear the full armor of God", "I stand victorious against every attack"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-04",
@@ -335,7 +335,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Generosity unlocks heaven's abundance in our lives. What we sow, we will reap. When we give freely, we position ourselves to receive freely. God loves a cheerful giver and rewards those who trust Him with their resources. Plant seeds of generosity today and watch God multiply them.",
     prayerPoints: ["Give me a generous heart like Yours", "Help me to sow bountifully", "Multiply my seeds of faith"],
     faithDeclarations: ["I am a generous giver", "My seeds produce abundant harvest", "Generosity flows through me"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-05",
@@ -345,7 +345,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Jesus is our Healer. By His stripes, we are healed—spirit, soul, and body. No sickness is too great, no wound too deep for His healing touch. Reach out to Him in faith today and receive the healing that flows from His presence. He makes all things new.",
     prayerPoints: ["Touch me with Your healing power", "Restore what sickness has stolen", "Let Your healing flow through every part of my being"],
     faithDeclarations: ["I am healed by His stripes", "Divine health is my portion", "Healing flows through my body"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-06",
@@ -355,7 +355,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Surrender is not defeat; it is victory. When we lay our lives on the altar before God, we exchange our limited plans for His unlimited possibilities. A surrendered life is a powerful life, fully available for God's purposes. Give Him your all today and watch Him do exceeding abundantly.",
     prayerPoints: ["I surrender my all to You, Lord", "Take full control of my life", "Use me for Your glory"],
     faithDeclarations: ["My life is fully surrendered to God", "I am a living sacrifice", "God's will is my priority"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-07",
@@ -365,7 +365,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Integrity is doing the right thing even when no one is watching. It is the foundation of a life that pleases God and earns the trust of others. When you walk in integrity, you walk in security. Your conscience is clear, your path is straight, and your future is bright.",
     prayerPoints: ["Help me to walk in integrity always", "Purify my motives and actions", "Let my life be above reproach"],
     faithDeclarations: ["I walk in integrity", "My character honors God", "I am trustworthy in all things"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-08",
@@ -375,7 +375,7 @@ const allDevotionals: DevotionalData[] = [
     content: "God is sovereign over all creation. Nothing happens outside His knowledge or control. Even when circumstances seem chaotic, He is working all things together for good. Trust in His sovereignty and rest in the assurance that He holds your life in His capable hands.",
     prayerPoints: ["Help me to trust Your sovereign plan", "Give me peace in uncertainty", "Let Your purposes prevail in my life"],
     faithDeclarations: ["God is in control", "His purposes for me will stand", "I trust His sovereign hand"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-09",
@@ -385,7 +385,7 @@ const allDevotionals: DevotionalData[] = [
     content: "There is power in the name of Jesus. Demons tremble, sicknesses flee, and chains are broken at the mention of His name. You carry the authority of that name. Use it boldly in prayer, in spiritual warfare, and in every situation that confronts you. His name is above every other name.",
     prayerPoints: ["Teach me to use Your name with authority", "Let Your name be glorified through my life", "Break every opposition at the sound of Your name"],
     faithDeclarations: ["I carry the power of Jesus' name", "Every knee bows to His name", "His name is my victory"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-10",
@@ -395,7 +395,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Trials are not meant to destroy you but to develop you. In the furnace of testing, your faith is refined and your character is strengthened. Do not despise the process; embrace it. God is using every trial to make you mature, complete, and fully equipped for your destiny.",
     prayerPoints: ["Give me patience in every trial", "Complete Your work in me", "Help me to grow through challenges"],
     faithDeclarations: ["Trials make me stronger", "I am becoming mature and complete", "Every test leads to my testimony"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-11",
@@ -405,7 +405,7 @@ const allDevotionals: DevotionalData[] = [
     content: "God places specific people in our lives for divine purposes. The right relationships sharpen us, encourage us, and propel us toward our destiny. Value the godly connections God has given you and steward them well. Together, you can accomplish far more than you could alone.",
     prayerPoints: ["Bring divine connections into my life", "Remove toxic relationships that hinder me", "Help me to be a blessing to others"],
     faithDeclarations: ["I attract divine connections", "My relationships are blessed", "Iron sharpens iron in my life"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-12",
@@ -415,7 +415,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Gratitude shifts our focus from what we lack to what we have. It opens our eyes to God's faithfulness and fills our hearts with joy. When we give thanks in all circumstances, we declare our trust in God's goodness. Start counting your blessings today and watch your perspective transform.",
     prayerPoints: ["Cultivate a thankful heart in me", "Help me to see Your blessings everywhere", "Let gratitude flow from my lips"],
     faithDeclarations: ["I am grateful in all circumstances", "Thanksgiving fills my heart", "My life overflows with gratitude"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-13",
@@ -425,7 +425,7 @@ const allDevotionals: DevotionalData[] = [
     content: "When we prioritize God's kingdom above our own desires, everything else falls into place. Seeking first the kingdom means making God's will our primary pursuit. As we do this, He promises to provide for every need. Put God first today and trust Him for everything else.",
     prayerPoints: ["Help me to seek Your kingdom first", "Align my priorities with Your will", "Provide for all my needs as I seek You"],
     faithDeclarations: ["God's kingdom is my first priority", "I seek Him above all else", "All my needs are met as I pursue Him"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-14",
@@ -435,7 +435,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Love is the greatest force in the universe. It never fails, never gives up, and never loses hope. God's love for you is relentless and unfailing. Let this love flow through you to others today. In a world desperate for genuine love, be the hands and heart of Christ.",
     prayerPoints: ["Fill me with Your unfailing love", "Help me to love without conditions", "Let Your love flow through me to others"],
     faithDeclarations: ["Love never fails in my life", "I am a conduit of God's love", "His love flows through me"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-15",
@@ -445,7 +445,7 @@ const allDevotionals: DevotionalData[] = [
     content: "A tree with deep roots can withstand any storm. When we are deeply rooted in Christ, nothing can shake us. Our faith becomes strong, our hearts become stable, and our lives overflow with gratitude. Sink your roots deep into His Word and His presence.",
     prayerPoints: ["Root me deeply in Christ", "Strengthen my foundation of faith", "Let me overflow with thankfulness"],
     faithDeclarations: ["I am deeply rooted in Christ", "My faith is unshakeable", "I am strengthened in Him"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-16",
@@ -455,7 +455,7 @@ const allDevotionals: DevotionalData[] = [
     content: "You are called to shine in the darkness of this world. Your light dispels fear, exposes lies, and shows the way to Christ. Do not hide your light under a basket; let it shine brightly for all to see. The darker the world becomes, the brighter your light appears.",
     prayerPoints: ["Let my light shine for Your glory", "Use me to dispel darkness", "Make me a beacon of hope"],
     faithDeclarations: ["I am the light of the world", "My light shines brightly", "Darkness flees before me"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-17",
@@ -465,7 +465,7 @@ const allDevotionals: DevotionalData[] = [
     content: "God's blessings are not meant to be hoarded; they are meant to flow through us to others. Every blessing you receive is an opportunity to be a channel of blessing. As you give, you receive. As you bless, you are blessed. Be a river, not a reservoir.",
     prayerPoints: ["Bless me so I can bless others", "Open my eyes to needs around me", "Make me a channel of Your blessing"],
     faithDeclarations: ["I am blessed to be a blessing", "Blessings flow through me to others", "I am a conduit of God's goodness"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-18",
@@ -475,7 +475,7 @@ const allDevotionals: DevotionalData[] = [
     content: "As believers, we have access to the very thoughts of Christ. We can think His thoughts, see from His perspective, and make decisions with His wisdom. Do not rely on human understanding; tap into the divine mind that dwells within you through the Holy Spirit.",
     prayerPoints: ["Help me to think with the mind of Christ", "Replace my limited thinking with Your thoughts", "Give me divine perspective"],
     faithDeclarations: ["I have the mind of Christ", "I think God's thoughts", "Divine wisdom guides my decisions"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-19",
@@ -485,7 +485,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Jesus invites the weary to find rest in Him. Not the kind of rest that comes from sleep alone, but a deep, soul-satisfying rest that comes from surrendering our burdens to Him. Stop striving and start trusting. In His presence, you will find the rest your soul craves.",
     prayerPoints: ["Give me rest for my weary soul", "Help me to cast all my burdens on You", "Let me dwell in Your peace"],
     faithDeclarations: ["I find rest in Jesus", "My soul is at peace", "I am no longer burdened"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-20",
@@ -495,7 +495,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Where we fix our eyes determines our direction. When we keep our eyes on Jesus, we run the race with endurance. When we look at our problems, we sink like Peter on the water. Fix your gaze on Christ today. He is the author and finisher of your faith.",
     prayerPoints: ["Help me to keep my eyes on You", "Remove every distraction from my focus", "Let Jesus be my constant vision"],
     faithDeclarations: ["My eyes are fixed on Jesus", "He is my focus and my goal", "I run my race looking to Him"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-21",
@@ -505,7 +505,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Faith sees what the natural eyes cannot. It trusts God's promises over visible circumstances. Walking by faith means taking steps even when the path is unclear, knowing that God goes before us. Let faith, not fear, be your guide today.",
     prayerPoints: ["Increase my faith to walk with You", "Help me to trust beyond what I see", "Lead me in paths of faith"],
     faithDeclarations: ["I walk by faith, not by sight", "My faith guides my steps", "I trust God in the unseen"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-22",
@@ -515,7 +515,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Your words carry tremendous power. They can build up or tear down, heal or wound, bless or curse. Choose your words carefully today, for they shape your reality and influence those around you. Speak words of life, hope, and encouragement.",
     prayerPoints: ["Guard my tongue from harmful words", "Fill my mouth with words of life", "Let my speech bring healing to others"],
     faithDeclarations: ["My words bring life", "I speak blessings, not curses", "My tongue is an instrument of God"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-23",
@@ -525,7 +525,7 @@ const allDevotionals: DevotionalData[] = [
     content: "God has anointed you for a specific purpose. The Holy Spirit's anointing empowers you to accomplish what you could never do in your own strength. This anointing breaks yokes, opens doors, and releases supernatural ability. Walk in your anointing today.",
     prayerPoints: ["Let Your anointing flow fresh in me", "Reveal the purpose for which I am anointed", "Break every yoke through Your anointing"],
     faithDeclarations: ["I am anointed by God", "His anointing empowers me", "I walk in divine purpose"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-24",
@@ -535,7 +535,7 @@ const allDevotionals: DevotionalData[] = [
     content: "In a world that constantly shifts, we are called to stand firm. Our foundation is Christ, and He never changes. When pressures come and winds blow, do not be moved. Plant your feet on the solid rock of God's Word and stand courageous and strong.",
     prayerPoints: ["Help me to stand firm in faith", "Strengthen me against every pressure", "Let nothing move me from Your truth"],
     faithDeclarations: ["I stand firm in my faith", "I am courageous and strong", "Nothing can shake my foundation"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-25",
@@ -545,7 +545,7 @@ const allDevotionals: DevotionalData[] = [
     content: "God's discipline is evidence of His love. He corrects us not to harm us but to help us grow. Though discipline may be painful in the moment, it produces lasting fruit—righteousness and peace. Welcome His correction as a sign that you are His beloved child.",
     prayerPoints: ["Give me a teachable heart", "Help me to receive Your correction with grace", "Produce righteousness in me through discipline"],
     faithDeclarations: ["I embrace God's loving discipline", "Correction leads me to growth", "I am becoming more like Christ"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-26",
@@ -555,7 +555,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Jesus has delegated His authority to you. You are not a victim of circumstances or demonic attacks; you are a victor with power to overcome. Use the authority Christ has given you to trample on every work of darkness. The enemy has no power over you.",
     prayerPoints: ["Help me to walk in my authority", "Defeat every enemy under my feet", "Let Your power manifest through me"],
     faithDeclarations: ["I have authority over the enemy", "I trample on every work of darkness", "Greater is He that is in me"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-27",
@@ -565,7 +565,7 @@ const allDevotionals: DevotionalData[] = [
     content: "When you feel depleted, there is a source of endless strength available to you. Those who wait on the Lord experience supernatural renewal. Like eagles, they rise above the storms of life. Place your hope in God, and He will renew your strength day by day.",
     prayerPoints: ["Renew my strength, O Lord", "Help me to wait on You", "Lift me up on eagle's wings"],
     faithDeclarations: ["My strength is renewed daily", "I soar above every challenge", "I mount up with wings like eagles"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-02-28",
@@ -575,7 +575,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Every promise God has made is guaranteed through Christ. Not one word will fail. When doubt whispers that God's promises are too good to be true, remember this: in Christ, God says yes to every promise. Hold fast to His Word; it will surely come to pass.",
     prayerPoints: ["Strengthen my faith in Your promises", "Help me to hold onto Your Word", "Fulfill every promise in my life"],
     faithDeclarations: ["God's promises are yes for me", "Not one word will fail", "I receive every promise by faith"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   // MARCH
   {
@@ -586,7 +586,7 @@ const allDevotionals: DevotionalData[] = [
     content: "As a new month begins, so do fresh mercies from the Lord. Whatever challenges you faced before, today is a new opportunity. His compassions are new every morning, sufficient for every need you will encounter. Step into this month with confidence, knowing that His mercies will meet you.",
     prayerPoints: ["Thank You for Your new mercies", "Let this month bring fresh blessings", "Cover every day with Your grace"],
     faithDeclarations: ["This is my month of new mercies", "God's compassions never fail me", "Every day brings fresh grace"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-02",
@@ -596,7 +596,7 @@ const allDevotionals: DevotionalData[] = [
     content: "God's goodness is not just for eternity; it is for here and now. In the land of the living, in the midst of your daily struggles, you will see His goodness. Keep your eyes open and your heart expectant. His goodness is pursuing you every day of your life.",
     prayerPoints: ["Open my eyes to see Your goodness", "Let Your goodness follow me", "Show me Your favor today"],
     faithDeclarations: ["I will see God's goodness", "His goodness pursues me", "I experience His favor daily"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-03",
@@ -606,7 +606,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Salt preserves, flavors, and heals. As the salt of the earth, you are called to bring preservation, enhancement, and healing wherever you go. Your influence matters. Do not lose your saltiness by conforming to the world. Be the distinctive presence of Christ in every environment.",
     prayerPoints: ["Make me effective salt in this world", "Preserve my distinctive Christian witness", "Let me bring flavor and healing to others"],
     faithDeclarations: ["I am the salt of the earth", "My influence preserves and heals", "I make a difference wherever I go"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-04",
@@ -616,7 +616,7 @@ const allDevotionals: DevotionalData[] = [
     content: "The hope we have in Christ is not wishful thinking; it is a living, breathing certainty anchored in His resurrection. Because He lives, we have hope that transcends every circumstance. This hope will never disappoint because it is founded on the risen Christ.",
     prayerPoints: ["Fill me with living hope", "Anchor my soul in Your resurrection power", "Let hope rise within me today"],
     faithDeclarations: ["I have a living hope in Christ", "My hope never disappoints", "The resurrection power is in me"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-05",
@@ -626,7 +626,7 @@ const allDevotionals: DevotionalData[] = [
     content: "The Christian life is a journey of continuous growth. We are never meant to stagnate but to grow deeper in grace and knowledge of Christ. Each day is an opportunity to become more like Jesus. Embrace the growth process, even when it stretches you beyond comfort.",
     prayerPoints: ["Help me to grow spiritually every day", "Increase my knowledge of You", "Stretch me beyond my comfort zone"],
     faithDeclarations: ["I am growing in grace and knowledge", "Every day I become more like Christ", "I embrace spiritual growth"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-06",
@@ -636,7 +636,7 @@ const allDevotionals: DevotionalData[] = [
     content: "God promises overflowing blessings to those who honor Him with their first fruits. This is the one area where God invites us to test Him. When we are faithful in giving, He opens windows of heaven that cannot be contained. Trust Him with your resources and watch Him multiply.",
     prayerPoints: ["Open the windows of heaven over my life", "Help me to honor You with my giving", "Pour out blessings I cannot contain"],
     faithDeclarations: ["Heaven's windows are open over me", "I receive overflowing blessings", "My obedience releases abundance"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-07",
@@ -646,7 +646,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Christ's heart was moved with compassion for the multitudes. As His followers, we are called to wear compassion like clothing. It should be evident in how we treat others, especially those who are hurting. Let compassion guide your interactions today.",
     prayerPoints: ["Give me a heart of compassion", "Help me to see others through Your eyes", "Use me to bring comfort to the hurting"],
     faithDeclarations: ["I am clothed with compassion", "My heart is moved by others' needs", "I reflect Christ's kindness"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-08",
@@ -656,7 +656,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Victory is not something we strive for; it is something we already have in Christ. By faith, we have overcome the world with all its challenges and temptations. Walk in this victory today. You are not fighting for victory; you are fighting from a place of victory.",
     prayerPoints: ["Remind me of my victory in Christ", "Help me to walk in overcoming faith", "Let victory be evident in my life"],
     faithDeclarations: ["I am an overcomer", "My faith overcomes the world", "Victory is already mine"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-09",
@@ -666,7 +666,7 @@ const allDevotionals: DevotionalData[] = [
     content: "The blessed person finds delight in God's Word. Scripture is not a burden but a treasure, not an obligation but a delight. When we meditate on His Word day and night, we become like a tree planted by streams of water, flourishing in every season.",
     prayerPoints: ["Create in me a love for Your Word", "Help me to meditate on Scripture daily", "Let Your Word produce fruit in my life"],
     faithDeclarations: ["I delight in God's Word", "His law is my meditation", "I flourish as I read Scripture"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-10",
@@ -676,7 +676,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Holiness is not optional; it is essential. It is the pursuit of living a life set apart for God, distinct from the world's patterns. As we pursue holiness, we draw closer to God and become more effective witnesses. Let today be marked by holy choices.",
     prayerPoints: ["Purify my heart, O Lord", "Help me to pursue holiness daily", "Set me apart for Your purposes"],
     faithDeclarations: ["I am called to holiness", "I pursue a set-apart life", "God's holiness marks my life"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-11",
@@ -686,7 +686,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Jesus offers a peace unlike anything the world can provide. His peace is not dependent on circumstances but on His presence. It guards your heart in chaos, calms your mind in confusion, and steadies your soul in storms. Receive His gift of peace today.",
     prayerPoints: ["Fill me with Your supernatural peace", "Calm every storm in my life", "Let Your peace guard my heart and mind"],
     faithDeclarations: ["I have the peace of Jesus", "His peace rules in my heart", "Nothing disturbs my peace"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-12",
@@ -696,7 +696,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Your confidence in God will be rewarded. Do not let setbacks or delays cause you to doubt His faithfulness. Hold fast to your confidence, for God honors those who trust Him completely. The reward is coming; keep believing.",
     prayerPoints: ["Strengthen my confidence in You", "Help me to persevere in faith", "Reward my trust in Your time"],
     faithDeclarations: ["My confidence is in God alone", "I will not doubt His faithfulness", "My trust will be rewarded"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-13",
@@ -706,7 +706,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Your testimony is a powerful weapon. When you share what God has done in your life, you encourage others and defeat the enemy. Never underestimate the power of your story. It gives hope to the hopeless and points others to Christ.",
     prayerPoints: ["Give me boldness to share my testimony", "Use my story to encourage others", "Let my testimony defeat the enemy"],
     faithDeclarations: ["My testimony is powerful", "I overcome by sharing what God has done", "My story brings hope to others"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-14",
@@ -716,7 +716,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Your heart is the wellspring of your life. What you allow into it shapes everything that flows out. Guard it carefully from bitterness, unforgiveness, and wrong desires. Protect it with truth, fill it with love, and nurture it with God's Word.",
     prayerPoints: ["Help me to guard my heart diligently", "Protect me from harmful influences", "Keep my heart pure and focused on You"],
     faithDeclarations: ["I guard my heart above all else", "My heart is protected", "Good things flow from my heart"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-15",
@@ -726,7 +726,7 @@ const allDevotionals: DevotionalData[] = [
     content: "It is not the size of your faith that matters but the size of your God. Even faith as small as a mustard seed can move mountains when placed in the hands of an almighty God. Speak to your mountains today. In Jesus' name, they must move.",
     prayerPoints: ["Increase my mountain-moving faith", "Help me to speak to my obstacles with authority", "Let nothing be impossible for me"],
     faithDeclarations: ["My faith moves mountains", "No obstacle can stand before me", "I speak and things change"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-16",
@@ -736,7 +736,7 @@ const allDevotionals: DevotionalData[] = [
     content: "You are not an accident. Before the foundation of the world, God chose you. You are part of a royal priesthood, a holy nation, His special possession. Let this truth transform how you see yourself. You are chosen, treasured, and deeply loved.",
     prayerPoints: ["Help me to walk in my chosen identity", "Remind me that I am Your special possession", "Let me live as royalty"],
     faithDeclarations: ["I am chosen by God", "I belong to a royal priesthood", "I am God's special possession"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-17",
@@ -746,7 +746,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Great opportunities often come disguised as small responsibilities. When we are faithful in the little things, God entrusts us with greater things. Do not despise small beginnings. Excel in the tasks before you, and God will open doors to greater influence.",
     prayerPoints: ["Help me to be faithful in small things", "Prepare me for greater responsibility", "Let my faithfulness please You"],
     faithDeclarations: ["I am faithful in little things", "God trusts me with more", "Excellence marks my smallest tasks"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-18",
@@ -756,7 +756,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Daniel stood out because of his excellent spirit. He did not settle for mediocrity but pursued excellence in everything. This spirit attracted favor and promotion. Cultivate a spirit of excellence in your work, your relationships, and your walk with God.",
     prayerPoints: ["Fill me with a spirit of excellence", "Help me to stand out for Your glory", "Let excellence be my trademark"],
     faithDeclarations: ["An excellent spirit is in me", "I distinguish myself through excellence", "My work reflects God's glory"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-19",
@@ -766,7 +766,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Waiting is not passive; it is active trust. When we wait on the Lord, we are not idle but expectant, not anxious but confident. In the waiting, He strengthens us, prepares us, and aligns us with His perfect timing. Be patient; your answer is coming.",
     prayerPoints: ["Give me patience to wait on You", "Strengthen my heart in the waiting", "Align me with Your perfect timing"],
     faithDeclarations: ["I wait on the Lord with confidence", "My strength increases as I wait", "God's timing is perfect"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-20",
@@ -776,7 +776,7 @@ const allDevotionals: DevotionalData[] = [
     content: "God is a restorer. What the enemy has stolen, what has been lost through hardship or wrong choices, God can restore. He promises to repay the years the locusts have eaten. Trust Him for restoration. Your comeback will be greater than your setback.",
     prayerPoints: ["Restore what has been stolen from me", "Redeem my wasted years", "Let my latter be greater than my former"],
     faithDeclarations: ["God restores what was lost", "My years are being redeemed", "My comeback is greater than my setback"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-21",
@@ -786,7 +786,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Humility is the posture that invites God's grace. Pride repels, but humility attracts His favor. Walk humbly before God, acknowledging your dependence on Him. In your dealings with others, choose mercy over judgment. This is what the Lord requires.",
     prayerPoints: ["Create a humble heart in me", "Help me to act justly and love mercy", "Keep me walking humbly with You"],
     faithDeclarations: ["I walk humbly with my God", "Humility is my lifestyle", "God's favor rests on the humble"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-22",
@@ -796,7 +796,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Faith is not based on feelings; it is based on God's Word. Sometimes we feel nothing, but our faith remains unchanged. Believe you have received your answer even before you see it. This is the faith that pleases God and moves mountains.",
     prayerPoints: ["Help me to believe beyond my feelings", "Increase my faith to receive", "Let my faith override my emotions"],
     faithDeclarations: ["I believe I have received", "My faith is not based on feelings", "What I ask in faith is mine"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-23",
@@ -806,7 +806,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Strongholds are patterns of thinking or behavior that keep us bound. But God has given us weapons with divine power to demolish them. Through prayer, the Word, and the name of Jesus, every stronghold must fall. You are equipped for victory.",
     prayerPoints: ["Demolish every stronghold in my life", "Give me wisdom to use my spiritual weapons", "Set me free from every pattern of bondage"],
     faithDeclarations: ["Strongholds are falling in my life", "My weapons are divinely powerful", "I am free from every bondage"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-24",
@@ -816,7 +816,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Jesus came to give you abundant life—not just existence, but a rich, full, overflowing life. This abundance is not measured in material wealth but in spiritual richness, purpose, joy, and peace. Embrace the full life Christ offers. You were made for more.",
     prayerPoints: ["Lead me into abundant life", "Help me to experience the fullness of Christ", "Remove every limitation from my life"],
     faithDeclarations: ["I live an abundant life in Christ", "Fullness overflows in my life", "I experience the more that Christ offers"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-25",
@@ -826,7 +826,7 @@ const allDevotionals: DevotionalData[] = [
     content: "God speaks to His children. His voice comes through Scripture, prayer, circumstances, and the Holy Spirit's prompting. As His sheep, you can learn to recognize His voice and follow His leading. Tune your ears to heaven today and listen for your Shepherd.",
     prayerPoints: ["Open my ears to hear Your voice", "Help me to distinguish Your voice from others", "Lead me as I follow You"],
     faithDeclarations: ["I hear God's voice clearly", "I follow my Shepherd", "His voice guides me daily"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-26",
@@ -836,7 +836,7 @@ const allDevotionals: DevotionalData[] = [
     content: "In a world of constant change, Jesus remains the same. The God who healed in the Bible still heals today. The God who provided miraculously still provides. His character, His love, His power—all unchanged. You can trust the unchanging One.",
     prayerPoints: ["Thank You for Your unchanging nature", "Help me to trust Your consistency", "Let me find stability in You"],
     faithDeclarations: ["Jesus is the same today", "What He did before, He does now", "I serve an unchanging God"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-27",
@@ -846,7 +846,7 @@ const allDevotionals: DevotionalData[] = [
     content: "Hope in Christ is the anchor that keeps your soul steady in every storm. When waves of uncertainty crash around you, this hope holds you firm. It is not wishful thinking but confident expectation based on God's promises. Let hope anchor you today.",
     prayerPoints: ["Anchor my soul in Your hope", "Keep me steady in every storm", "Strengthen my confidence in Your promises"],
     faithDeclarations: ["Hope anchors my soul", "I am firm and secure in Christ", "No storm can move me"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-28",
@@ -856,7 +856,7 @@ const allDevotionals: DevotionalData[] = [
     content: "There is no greater place than the presence of God. In His presence, we find direction for our path, fullness of joy, and pleasures forevermore. Seek His presence above all else. It is the source of everything your soul truly needs.",
     prayerPoints: ["Draw me closer to Your presence", "Fill me with joy as I dwell with You", "Make Your presence my home"],
     faithDeclarations: ["I dwell in God's presence", "Joy fills me in His presence", "His presence is my greatest treasure"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-29",
@@ -866,7 +866,7 @@ const allDevotionals: DevotionalData[] = [
     content: "In Christ, you are complete. You do not need to add anything to what He has done. Every spiritual blessing, every resource you need, is already yours in Him. Stop striving for what you already have. Rest in the completeness that Christ provides.",
     prayerPoints: ["Help me to realize my completeness in You", "Remove every striving and restlessness", "Let me rest in what Christ has done"],
     faithDeclarations: ["I am complete in Christ", "I lack nothing in Him", "His fullness dwells in me"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-30",
@@ -876,7 +876,7 @@ const allDevotionals: DevotionalData[] = [
     content: "When we walk in step with the Holy Spirit, we find strength to overcome fleshly desires. The Spirit's power enables what willpower alone cannot achieve. Stay sensitive to His leading today. Let Him direct your thoughts, words, and actions.",
     prayerPoints: ["Help me to walk in the Spirit daily", "Strengthen me against fleshly desires", "Keep me in step with Your leading"],
     faithDeclarations: ["I walk by the Spirit", "The Spirit empowers me to overcome", "I am led by God's Spirit"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   {
     date: "2026-03-31",
@@ -886,7 +886,7 @@ const allDevotionals: DevotionalData[] = [
     content: "God does not start what He cannot finish. The work He has begun in your life will be completed. Your setbacks do not disqualify you; His faithfulness ensures your progress. Trust the One who started this journey with you. He will see it through.",
     prayerPoints: ["Thank You for the work You are doing in me", "Complete what You have started", "Help me to cooperate with Your process"],
     faithDeclarations: ["God will complete His work in me", "My transformation is guaranteed", "He who started will finish"],
-    author: "Rev. Moses Afolabi"
+    author: "Moses Afolabi"
   },
   // Continue with remaining months...
 ];
@@ -1198,7 +1198,7 @@ function generateRemainingDevotionals(): DevotionalData[] {
         content: contents[contentIndex],
         prayerPoints: prayerPointsSets[prayerIndex],
         faithDeclarations: faithDeclarationsSets[declarationIndex],
-        author: "Rev. Moses Afolabi"
+        author: "Moses Afolabi"
       });
     }
   }
@@ -1234,7 +1234,7 @@ function generateRemainingDevotionals(): DevotionalData[] {
           content: aprilJulyContents[(day - 1) % aprilJulyContents.length],
           prayerPoints: prayerPointsSets[prayerIndex],
           faithDeclarations: faithDeclarationsSets[declarationIndex],
-          author: "Rev. Moses Afolabi"
+          author: "Moses Afolabi"
         });
       }
     }
