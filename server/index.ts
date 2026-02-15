@@ -137,9 +137,20 @@ httpServer.listen(
     log(`serving on port ${port}`);
 
     import("./seed-devotionals").then(({ seedAllDevotionals }) => {
-      seedAllDevotionals()
-        .then(() => log("Devotional auto-sync complete"))
-        .catch((err) => console.error("Devotional auto-sync failed:", err));
+      import("./storage").then(({ storage }) => {
+        storage.getDevotionals().then((before) => {
+          const beforeCount = before.length;
+          log(`Devotional auto-sync starting (beforeCount: ${beforeCount}, NODE_ENV: ${process.env.NODE_ENV || "development"})`);
+          seedAllDevotionals()
+            .then(() => {
+              storage.getDevotionals().then((after) => {
+                const afterCount = after.length;
+                log(`Devotional auto-sync complete (beforeCount: ${beforeCount}, afterCount: ${afterCount}, inserted: ${afterCount - beforeCount})`);
+              });
+            })
+            .catch((err) => console.error("Devotional auto-sync failed:", err));
+        });
+      });
     });
   },
 );
