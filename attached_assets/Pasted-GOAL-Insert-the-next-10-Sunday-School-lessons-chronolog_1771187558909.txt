@@ -1,0 +1,119 @@
+GOAL:
+Insert the next 10 Sunday School lessons chronologically after December 5, 2027.
+Use UPSERT (INSERT ... ON CONFLICT (date) DO UPDATE).
+Match EXACT existing Sunday School structure.
+Use KJV only.
+Do NOT modify previous entries.
+
+LESSONS:
+
+1) TITLE: The Joy of the Lord (Christmas Reflection)
+DATE: 2027-12-12
+SCRIPTURES: Luke 2:10–11; Nehemiah 8:10 (KJV)
+
+SCRIPTURE TEXT (KJV):
+Luke 2:10 — Fear not: for, behold, I bring you good tidings of great joy...
+Nehemiah 8:10 — The joy of the Lord is your strength.
+
+LESSON CONTENT:
+OUTLINE POINT 1: Joy Rooted in Salvation
+True joy flows from redemption.
+
+OUTLINE POINT 2: Joy Strengthens the Believer
+Joy empowers perseverance.
+
+OUTLINE POINT 3: Sharing the Joy
+The gospel is good news meant to be shared.
+
+TEACHER EMPHASIS:
+Encourage joyful faith.
+Invite gratitude.
+Call for evangelistic boldness.
+
+APPLICATION:
+Share the joy of Christ this week.
+
+DISCUSSION QUESTIONS:
+1. Why is joy central to the gospel?
+2. What robs believers of joy?
+3. How can joy strengthen us?
+4. How do we share this joy?
+
+PRAYER FOCUS:
+Lord, restore our joy.
+Let our lives reflect Your salvation.
+
+WEEKLY ASSIGNMENT:
+Encourage someone with Scripture.
+
+---
+
+2) TITLE: Christ Our Hope for the Future
+DATE: 2027-12-19
+SCRIPTURES: Titus 2:11–13; Colossians 1:27 (KJV)
+
+[Full structured lesson]
+
+---
+
+3) TITLE: Ending the Year with Gratitude
+DATE: 2027-12-26
+SCRIPTURES: Psalm 116:12–14; 1 Thessalonians 5:18 (KJV)
+
+[Full structured lesson]
+
+---
+
+4) TITLE: A New Beginning in Christ
+DATE: 2028-01-02
+SCRIPTURES: 2 Corinthians 5:17; Isaiah 43:19 (KJV)
+
+[Full structured lesson]
+
+---
+
+5) TITLE: Consecration and Commitment
+DATE: 2028-01-09
+SCRIPTURES: Romans 12:1–2; Joshua 3:5 (KJV)
+
+[Full structured lesson]
+
+---
+
+6) TITLE: Establishing Spiritual Discipline
+DATE: 2028-01-16
+SCRIPTURES: Acts 2:42; 1 Timothy 4:7–8 (KJV)
+
+[Full structured lesson]
+
+---
+
+7) TITLE: The Power of Prayer and Fasting
+DATE: 2028-01-23
+SCRIPTURES: Matthew 6:16–18; Mark 9:29 (KJV)
+
+[Full structured lesson]
+
+---
+
+8) TITLE: Walking in Daily Obedience
+DATE: 2028-01-30
+SCRIPTURES: John 14:15; 1 Samuel 15:22 (KJV)
+
+[Full structured lesson]
+
+---
+
+9) TITLE: Faith That Moves Mountains
+DATE: 2028-02-06
+SCRIPTURES: Mark 11:22–24; Hebrews 11:6 (KJV)
+
+[Full structured lesson]
+
+---
+
+10) TITLE: Love in Action
+DATE: 2028-02-13
+SCRIPTURES: 1 John 3:18; John 13:34–35 (KJV)
+
+[Full structured lesson]
