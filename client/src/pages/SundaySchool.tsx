@@ -13,21 +13,19 @@ export default function SundaySchool() {
     queryKey: ["/api/sunday-school"],
   });
 
+  const { data: previewLessons, isLoading: isPreviewLoading } = useQuery<SundaySchoolLesson[]>({
+    queryKey: ["/api/sunday-school/preview"],
+  });
+
   const today = startOfDay(new Date());
 
-  const upcomingLessons = (lessons || [])
-    .filter((l) => {
-      const d = startOfDay(parseISO(l.date));
-      return !isBefore(d, today);
-    })
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(0, 4);
+  const upcomingLessons = previewLessons || [];
 
   const pastLessons = (lessons || [])
     .filter((l) => isBefore(startOfDay(parseISO(l.date)), today))
     .sort((a, b) => b.date.localeCompare(a.date));
 
-  if (isLoading) {
+  if (isLoading || isPreviewLoading) {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />

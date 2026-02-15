@@ -133,8 +133,8 @@ export async function registerRoutes(
 
   // GET Today's Devotional
   // Accepts optional clientDate query param for client timezone support
-  // Implements perpetual yearly cycle: if no devotional for today's exact date,
-  // uses day-of-year modulo logic to cycle through existing devotionals
+  // Implements perpetual cyclical loop: if no devotional for today's exact date,
+  // calculates days since earliest devotional and uses modulo to cycle forever
   app.get(api.devotionals.getToday.path, async (req, res) => {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
     res.setHeader("Pragma", "no-cache");
@@ -152,16 +152,17 @@ export async function registerRoutes(
       if (all.length > 0) {
         const activeDevotionals = all.filter(d => !d.isDeleted);
         const sortedAsc = [...activeDevotionals].sort((a, b) => a.date.localeCompare(b.date));
-        const latestDate = sortedAsc.length > 0 ? sortedAsc[sortedAsc.length - 1].date : "";
 
-        if (sortedAsc.length > 0 && today > latestDate) {
-          const dayOfYear = getDayOfYear(today);
-          const index = (dayOfYear - 1) % sortedAsc.length;
-          devotional = sortedAsc[index >= 0 ? index : 0];
+        if (sortedAsc.length > 0) {
+          const earliestDate = sortedAsc[0].date;
+          const todayMs = new Date(today + "T00:00:00").getTime();
+          const earliestMs = new Date(earliestDate + "T00:00:00").getTime();
+          const daysDiff = Math.floor((todayMs - earliestMs) / (1000 * 60 * 60 * 24));
+          const index = ((daysDiff % sortedAsc.length) + sortedAsc.length) % sortedAsc.length;
+          devotional = sortedAsc[index];
+          console.log("Loop fallback activated for devotional");
         } else if (isAdmin) {
           devotional = all[0];
-        } else {
-          devotional = all.find(d => d.date <= today);
         }
       }
     }
@@ -837,6 +838,57 @@ export async function registerRoutes(
   });
 
   // Sunday School Routes
+
+  // GET Sunday School preview - returns current + next 3 upcoming lessons using cyclical loop
+  app.get("/api/sunday-school/preview", async (_req, res) => {
+    const allLessons = await storage.getSundaySchoolLessons();
+    if (allLessons.length === 0) {
+      return res.json([]);
+    }
+
+    const sortedAsc = [...allLessons].sort((a, b) => a.date.localeCompare(b.date));
+    const totalCount = sortedAsc.length;
+
+    const today = getTodayDateString();
+    const [todayY, todayM, todayD] = today.split("-").map(Number);
+    const todayDate = new Date(todayY, todayM - 1, todayD);
+    const dayOfWeek = todayDate.getDay();
+    const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+
+    function formatDateLocal(d: Date): string {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+
+    const currentSundayDate = new Date(todayY, todayM - 1, todayD + daysUntilSunday);
+    const currentSundayMs = currentSundayDate.getTime();
+
+    const earliestDate = sortedAsc[0].date;
+    const [eY, eM, eD] = earliestDate.split("-").map(Number);
+    const earliestMs = new Date(eY, eM - 1, eD).getTime();
+
+    const preview = [];
+    for (let i = 0; i < 4; i++) {
+      const targetSundayDate = new Date(todayY, todayM - 1, todayD + daysUntilSunday + i * 7);
+      const targetSundayMs = targetSundayDate.getTime();
+      const targetSunday = formatDateLocal(targetSundayDate);
+
+      const exact = sortedAsc.find(l => l.date === targetSunday);
+      if (exact) {
+        preview.push(exact);
+      } else {
+        const weeksDiff = Math.floor((targetSundayMs - earliestMs) / (7 * 86400000));
+        const index = ((weeksDiff % totalCount) + totalCount) % totalCount;
+        preview.push(sortedAsc[index]);
+        if (i === 0) console.log("Loop fallback activated for Sunday School");
+      }
+    }
+
+    res.json(preview);
+  });
+
   app.get(api.sundaySchool.list.path, async (_req, res) => {
     const lessons = await storage.getSundaySchoolLessons();
     res.json(lessons);

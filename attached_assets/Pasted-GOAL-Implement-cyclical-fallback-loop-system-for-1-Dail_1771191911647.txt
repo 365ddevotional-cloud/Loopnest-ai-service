@@ -1,0 +1,108 @@
+GOAL:
+Implement cyclical fallback loop system for:
+
+1. Daily Devotional
+2. Sunday School
+
+STRICT RULES:
+- DO NOT modify database schema
+- DO NOT modify existing admin insert logic
+- DO NOT delete any routes
+- DO NOT modify UI layout
+- ONLY modify fetch logic
+- Add safe fallback rotation
+- Add offline support (Service Worker caching)
+
+========================================
+PART 1 — DAILY DEVOTIONAL LOOP
+========================================
+
+Modify daily devotional GET route.
+
+LOGIC:
+
+1. Get today's date (YYYY-MM-DD).
+2. Try to fetch devotional WHERE date = today.
+3. If exists → return it normally.
+4. If NOT exists:
+   a. Get earliest devotional date in DB.
+   b. Get total devotional count.
+   c. Calculate days difference between today and first devotional date.
+   d. Compute index = daysDifference % totalCount.
+   e. Fetch devotional ordered by date ASC OFFSET index LIMIT 1.
+   f. Return that devotional.
+
+IMPORTANT:
+- This must NOT modify stored dates.
+- This is selection logic only.
+- Works forever.
+
+========================================
+PART 2 — SUNDAY SCHOOL LOOP
+========================================
+
+Modify Sunday School GET route.
+
+LOGIC:
+
+1. Get current Sunday date.
+2. Try to fetch lesson WHERE sundayDate = currentSunday.
+3. If exists → return it.
+4. If NOT exists:
+   a. Get earliest sundayDate.
+   b. Get total Sunday School lesson count.
+   c. Calculate weeks difference from first sundayDate.
+   d. index = weeksDifference % totalCount.
+   e. Fetch lesson ORDER BY sundayDate ASC OFFSET index LIMIT 1.
+   f. Return that lesson.
+
+IMPORTANT:
+- Keep 4-week preview working.
+- Apply same loop logic to preview generator.
+- No schema changes.
+
+========================================
+PART 3 — OFFLINE SUPPORT
+========================================
+
+Implement PWA-style caching.
+
+1. Create service-worker.js
+2. Cache:
+   - /api/devotional/today
+   - /api/sundayschool/current
+   - /api/sundayschool/preview
+   - static assets
+3. Use cache-first strategy.
+4. If offline:
+   - Serve last cached devotional.
+   - Serve last cached Sunday School.
+5. Ensure automatic cache update when online.
+
+Add service worker registration in main frontend entry file:
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js');
+}
+
+========================================
+PART 4 — SAFETY CHECKS
+========================================
+
+- Ensure no duplicate logic
+- Ensure no infinite recursion
+- Ensure admin routes unaffected
+- Log:
+  "Loop fallback activated for devotional"
+  "Loop fallback activated for Sunday School"
+
+========================================
+FINAL OUTPUT
+========================================
+
+After implementation:
+
+1. Print total devotional count
+2. Print total Sunday School count
+3. Confirm loop system enabled
+4. Confirm service worker active
