@@ -1,0 +1,119 @@
+GOAL:
+Insert the next 10 Sunday School lessons chronologically after July 18, 2027.
+Use UPSERT (INSERT ... ON CONFLICT (date) DO UPDATE).
+Match EXACT existing Sunday School structure.
+Use KJV only.
+Do NOT modify previous entries.
+
+LESSONS:
+
+1) TITLE: Guarding Your Heart Daily
+DATE: 2027-07-25
+SCRIPTURES: Proverbs 4:23; Philippians 4:8 (KJV)
+
+SCRIPTURE TEXT (KJV):
+Proverbs 4:23 — Keep thy heart with all diligence; for out of it are the issues of life.
+Philippians 4:8 — Finally, brethren, whatsoever things are true... think on these things.
+
+LESSON CONTENT:
+OUTLINE POINT 1: The Heart Directs the Life
+Every decision flows from the heart.
+
+OUTLINE POINT 2: Choosing What to Meditate On
+Thought life shapes behavior.
+
+OUTLINE POINT 3: Building Spiritual Discipline
+Intentional daily discipline protects purity.
+
+TEACHER EMPHASIS:
+Encourage self-examination.
+Promote Scripture meditation.
+Stress personal responsibility.
+
+APPLICATION:
+Remove one unhealthy influence.
+
+DISCUSSION QUESTIONS:
+1. Why is guarding the heart essential?
+2. What influences your thinking most?
+3. How can Scripture reshape thoughts?
+4. What habits protect purity?
+
+PRAYER FOCUS:
+Lord, purify my heart.
+Guard my thoughts.
+
+WEEKLY ASSIGNMENT:
+Memorize Philippians 4:8.
+
+---
+
+2) TITLE: Perseverance Through Trials
+DATE: 2027-08-01
+SCRIPTURES: James 1:2–4; Romans 5:3–5 (KJV)
+
+[Full structured lesson]
+
+---
+
+3) TITLE: Faithfulness in Stewardship
+DATE: 2027-08-08
+SCRIPTURES: Luke 16:10; 1 Peter 4:10 (KJV)
+
+[Full structured lesson]
+
+---
+
+4) TITLE: Serving With a Willing Heart
+DATE: 2027-08-15
+SCRIPTURES: Colossians 3:23–24; Mark 10:45 (KJV)
+
+[Full structured lesson]
+
+---
+
+5) TITLE: The Power of Unity
+DATE: 2027-08-22
+SCRIPTURES: Ephesians 4:3–6; Psalm 133:1 (KJV)
+
+[Full structured lesson]
+
+---
+
+6) TITLE: Overcoming Temptation
+DATE: 2027-08-29
+SCRIPTURES: 1 Corinthians 10:13; Matthew 4:1–4 (KJV)
+
+[Full structured lesson]
+
+---
+
+7) TITLE: Living With Eternal Perspective
+DATE: 2027-09-05
+SCRIPTURES: Colossians 3:1–4; 2 Corinthians 4:18 (KJV)
+
+[Full structured lesson]
+
+---
+
+8) TITLE: The Discipline of Prayer
+DATE: 2027-09-12
+SCRIPTURES: Luke 18:1; 1 Thessalonians 5:17 (KJV)
+
+[Full structured lesson]
+
+---
+
+9) TITLE: Gratitude as a Lifestyle
+DATE: 2027-09-19
+SCRIPTURES: Psalm 100:4; 1 Thessalonians 5:18 (KJV)
+
+[Full structured lesson preparing toward Thanksgiving emphasis]
+
+---
+
+10) TITLE: Giving Thanks in All Things
+DATE: 2027-09-26
+SCRIPTURES: Ephesians 5:20; Colossians 3:17 (KJV)
+
+[Full structured lesson]
