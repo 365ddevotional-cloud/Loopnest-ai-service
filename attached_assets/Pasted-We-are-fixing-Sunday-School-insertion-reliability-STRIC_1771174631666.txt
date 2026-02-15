@@ -1,0 +1,125 @@
+We are fixing Sunday School insertion reliability.
+
+STRICT RULES:
+- Do NOT modify schema
+- Do NOT change UI
+- Do NOT modify Daily Devotional logic
+- Only improve insertion stability
+- Use existing DB client (Prisma if present)
+- Make operation idempotent (UPSERT by date)
+
+GOAL:
+Insert 20 new Sunday School lessons in 2 batches of 10 each.
+Prevent crash from large content generation.
+Surface real DB errors if any.
+
+-----------------------------------
+STEP 1 — LOCATE MODEL STRUCTURE
+-----------------------------------
+Find how SundaySchoolLesson is stored:
+- Prisma model? (schema.prisma)
+- Sequelize?
+- Direct SQL?
+- JSON?
+
+Print the model structure so fields match EXACTLY.
+
+-----------------------------------
+STEP 2 — CREATE SAFE BATCH SCRIPT
+-----------------------------------
+Create file:
+
+scripts/seed-sunday-school-batch.ts
+(or .js if project is JS)
+
+This script must:
+
+1) Accept env variable:
+   BATCH=1 or BATCH=2
+
+2) Insert 10 lessons per batch:
+
+BATCH 1:
+Mar 22, 2026
+Mar 29, 2026
+Apr 5, 2026 (Easter)
+Apr 12, 2026
+Apr 19, 2026
+Apr 26, 2026
+May 3, 2026
+May 10, 2026
+May 17, 2026
+May 24, 2026
+
+BATCH 2:
+May 31, 2026
+Jun 7, 2026
+Jun 14, 2026
+Jun 21, 2026
+Jun 28, 2026
+Jul 5, 2026
+Jul 12, 2026
+Jul 19, 2026
+Jul 26, 2026
+Aug 2, 2026
+
+-----------------------------------
+IMPORTANT INSERT LOGIC
+-----------------------------------
+Use UPSERT by unique date field.
+
+Example (Prisma style):
+
+await prisma.sundaySchoolLesson.upsert({
+  where: { date: "2026-03-22" },
+  update: { ...lessonData },
+  create: { ...lessonData }
+})
+
+If not Prisma, use equivalent UPSERT.
+
+-----------------------------------
+CONTENT RULES
+-----------------------------------
+- Match existing lesson format exactly.
+- Keep content medium-length.
+- Include KJV scripture.
+- Do NOT generate excessively long paragraphs.
+- Avoid very large strings that cause token crash.
+- Use same field names currently used.
+
+-----------------------------------
+STEP 3 — ADD RUN COMMAND
+-----------------------------------
+Add to package.json:
+
+"seed:sundayschool": "node scripts/seed-sunday-school-batch.js"
+
+(or ts-node/tsx if needed)
+
+-----------------------------------
+STEP 4 — RUN SAFELY
+-----------------------------------
+Run:
+
+BATCH=1 npm run seed:sundayschool
+
+Confirm:
+- 10 lessons inserted
+- No duplicates
+- 4-week preview intact
+- No crash
+
+Then run:
+
+BATCH=2 npm run seed:sundayschool
+
+-----------------------------------
+STEP 5 — PRINT SUMMARY
+-----------------------------------
+After both batches print:
+
+- Total SundaySchoolLesson count
+- Confirm no duplicate dates
+- Confirm March 22 → Aug 2 visible
+- Confirm UI loads correctly
