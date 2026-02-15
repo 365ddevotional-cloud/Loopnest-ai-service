@@ -955,6 +955,7 @@ function SundaySchoolAdmin() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingLesson, setEditingLesson] = useState<SundaySchoolLesson | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [formErrors, setFormErrors] = useState<string[]>([]);
 
   const [formTitle, setFormTitle] = useState("");
   const [formDate, setFormDate] = useState("");
@@ -1016,6 +1017,7 @@ function SundaySchoolAdmin() {
   const resetForm = () => {
     setShowCreateForm(false);
     setEditingLesson(null);
+    setFormErrors([]);
     setFormTitle("");
     setFormDate("");
     setFormScriptureRefs("");
@@ -1039,7 +1041,28 @@ function SundaySchoolAdmin() {
     setFormAssignment(lesson.weeklyAssignment);
   };
 
-  const handleSubmit = () => {
+  const validateForm = (): string[] => {
+    const errors: string[] = [];
+    if (!formTitle.trim()) errors.push("Title is required");
+    if (!formDate.trim()) errors.push("Sunday Date is required");
+    if (!formScriptureRefs.trim()) errors.push("Scripture References is required");
+    if (!formScriptureText.trim()) errors.push("Scripture Text (KJV) is required");
+    if (!formLessonContent.trim()) errors.push("Lesson Content is required");
+    const questionLines = formQuestions.split("\n").map((q) => q.trim()).filter(Boolean);
+    if (questionLines.length < 3) errors.push("Discussion Questions requires at least 3 questions (one per line)");
+    if (!formPrayerFocus.trim()) errors.push("Prayer Focus is required");
+    if (!formAssignment.trim()) errors.push("Weekly Assignment is required");
+    return errors;
+  };
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const errors = validateForm();
+    if (errors.length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors([]);
     const questions = formQuestions.split("\n").map((q) => q.trim()).filter(Boolean);
     const data = {
       title: formTitle,
@@ -1083,50 +1106,60 @@ function SundaySchoolAdmin() {
               {editingLesson ? "Edit Lesson" : "Create New Lesson"}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Title</Label>
-                <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="Lesson title" data-testid="input-lesson-title" />
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4 pb-[120px] md:pb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Title</Label>
+                  <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="Lesson title" data-testid="input-lesson-title" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Sunday Date</Label>
+                  <Input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} data-testid="input-lesson-date" />
+                </div>
               </div>
               <div className="space-y-2">
-                <Label>Sunday Date</Label>
-                <Input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} data-testid="input-lesson-date" />
+                <Label>Scripture References</Label>
+                <Input value={formScriptureRefs} onChange={(e) => setFormScriptureRefs(e.target.value)} placeholder="e.g. Ephesians 2:8-9 (KJV)" data-testid="input-lesson-refs" />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Scripture References</Label>
-              <Input value={formScriptureRefs} onChange={(e) => setFormScriptureRefs(e.target.value)} placeholder="e.g. Ephesians 2:8-9 (KJV)" data-testid="input-lesson-refs" />
-            </div>
-            <div className="space-y-2">
-              <Label>Scripture Text (KJV)</Label>
-              <Textarea value={formScriptureText} onChange={(e) => setFormScriptureText(e.target.value)} placeholder="Full KJV scripture text" rows={3} data-testid="input-lesson-scripture" />
-            </div>
-            <div className="space-y-2">
-              <Label>Lesson Content</Label>
-              <Textarea value={formLessonContent} onChange={(e) => setFormLessonContent(e.target.value)} placeholder="Full lesson content with outline points, teacher emphasis, and application" rows={10} data-testid="input-lesson-content" />
-            </div>
-            <div className="space-y-2">
-              <Label>Discussion Questions (one per line)</Label>
-              <Textarea value={formQuestions} onChange={(e) => setFormQuestions(e.target.value)} placeholder="Enter each question on a new line" rows={4} data-testid="input-lesson-questions" />
-            </div>
-            <div className="space-y-2">
-              <Label>Prayer Focus</Label>
-              <Textarea value={formPrayerFocus} onChange={(e) => setFormPrayerFocus(e.target.value)} placeholder="Prayer focus text" rows={3} data-testid="input-lesson-prayer" />
-            </div>
-            <div className="space-y-2">
-              <Label>Weekly Assignment</Label>
-              <Textarea value={formAssignment} onChange={(e) => setFormAssignment(e.target.value)} placeholder="Weekly assignment text" rows={3} data-testid="input-lesson-assignment" />
-            </div>
-            <div className="flex gap-3">
-              <Button onClick={handleSubmit} disabled={isPending || !formTitle || !formDate} className="gap-2" data-testid="button-submit-lesson">
-                {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                {editingLesson ? "Update Lesson" : "Create Lesson"}
-              </Button>
-              <Button variant="outline" onClick={resetForm} data-testid="button-cancel-lesson">
-                Cancel
-              </Button>
-            </div>
+              <div className="space-y-2">
+                <Label>Scripture Text (KJV)</Label>
+                <Textarea value={formScriptureText} onChange={(e) => setFormScriptureText(e.target.value)} placeholder="Full KJV scripture text" rows={3} data-testid="input-lesson-scripture" />
+              </div>
+              <div className="space-y-2">
+                <Label>Lesson Content</Label>
+                <Textarea value={formLessonContent} onChange={(e) => setFormLessonContent(e.target.value)} placeholder="Full lesson content with outline points, teacher emphasis, and application" rows={10} data-testid="input-lesson-content" />
+              </div>
+              <div className="space-y-2">
+                <Label>Discussion Questions (one per line)</Label>
+                <Textarea value={formQuestions} onChange={(e) => setFormQuestions(e.target.value)} placeholder="Enter each question on a new line" rows={4} data-testid="input-lesson-questions" />
+                <p className="text-xs text-muted-foreground">Enter at least 3 questions, each on a new line.</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Prayer Focus</Label>
+                <Textarea value={formPrayerFocus} onChange={(e) => setFormPrayerFocus(e.target.value)} placeholder="Prayer focus text" rows={3} data-testid="input-lesson-prayer" />
+              </div>
+              <div className="space-y-2">
+                <Label>Weekly Assignment</Label>
+                <Textarea value={formAssignment} onChange={(e) => setFormAssignment(e.target.value)} placeholder="Weekly assignment text" rows={3} data-testid="input-lesson-assignment" />
+              </div>
+              {formErrors.length > 0 && (
+                <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 space-y-1" data-testid="form-errors">
+                  {formErrors.map((err, i) => (
+                    <p key={i} className="text-sm text-destructive">{err}</p>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-3 relative z-50" style={{ pointerEvents: "auto" }}>
+                <Button type="submit" disabled={isPending} className="gap-2" data-testid="button-submit-lesson">
+                  {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {editingLesson ? "Update Lesson" : "Create Lesson"}
+                </Button>
+                <Button type="button" variant="outline" onClick={resetForm} data-testid="button-cancel-lesson">
+                  Cancel
+                </Button>
+              </div>
+            </form>
           </CardContent>
         </Card>
       )}

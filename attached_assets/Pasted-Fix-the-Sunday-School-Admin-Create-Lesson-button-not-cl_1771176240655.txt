@@ -1,0 +1,82 @@
+Fix the Sunday School Admin “Create Lesson” button not clickable on mobile.
+
+STRICT RULES:
+- Do NOT change database schema
+- Do NOT change Drizzle models
+- Only fix the Admin Create Lesson form UX + submit wiring
+- Keep existing field names and API endpoints
+
+GOAL:
+- The “Create Lesson” button must always be clickable/tappable on mobile
+- If required fields are missing, show inline errors (do NOT silently disable the button)
+- Ensure no overlay blocks taps
+- Ensure the form submits and saves successfully
+
+STEP 1 — FIND THE CREATE LESSON FORM COMPONENT
+Locate the component used on /admin → Sunday School → Create New Lesson.
+Common names:
+- SundaySchoolManagement
+- CreateLessonForm
+- SundaySchoolAdmin
+- admin/sunday-school.tsx
+
+STEP 2 — REMOVE SILENT DISABLE LOGIC
+If the button has disabled={...} based on validation, change to:
+- Always enabled (disabled=false)
+- On submit, validate and show a list of missing fields above the button
+
+Add an “errors” state and render:
+- “Title is required”
+- “Sunday Date is required”
+- “Scripture References is required”
+- “Scripture Text (KJV) is required”
+- “Lesson Content is required”
+- “Discussion Questions (at least 3 lines) is required”
+- “Prayer Focus is required”
+- “Weekly Assignment is required”
+
+STEP 3 — ENSURE SUBMIT WIRING IS CORRECT
+- Wrap inputs in a <form onSubmit={handleSubmit}>
+- Make button: <button type="submit">Create Lesson</button>
+- In handleSubmit:
+  - event.preventDefault()
+  - run validate()
+  - if errors, setErrors and return
+  - else call the existing POST endpoint used for creating lessons
+  - show success toast/message and reset form
+
+Also add temporary debug logs:
+console.log("Create Lesson submit clicked", payload)
+
+STEP 4 — FIX MOBILE TAP BLOCKING (OVERLAY / Z-INDEX)
+The floating chat button and/or containers may be blocking taps.
+
+- Ensure the floating chat button has lower z-index than the form footer area OR
+  move it away from the bottom area on admin pages.
+- Ensure the Create Lesson button has:
+  position: relative;
+  z-index: 50;
+  pointer-events: auto;
+
+Search for any wrapper with:
+pointer-events: none;
+or overlays/modals/backdrops and ensure they are not active here.
+
+STEP 5 — FIX SCROLL CONTAINER BOTTOM PADDING
+If the form is inside an overflow container, add bottom padding so the button is never under fixed UI:
+Add CSS class to the form container:
+padding-bottom: 120px;
+
+If there is a sticky/fixed footer/header, ensure the form content area accounts for it.
+
+STEP 6 — SHOW FIELD REQUIREMENTS CLEARLY
+Under “Discussion Questions (one per line)” show helper text:
+“Enter at least 3 questions, each on a new line.”
+
+STEP 7 — VERIFY
+- On mobile: button must be tappable
+- If missing fields: errors appear
+- If fields filled: POST succeeds and the new lesson appears in the list
+- No console errors
+
+Deliver the exact files changed and a short note of what to test.
