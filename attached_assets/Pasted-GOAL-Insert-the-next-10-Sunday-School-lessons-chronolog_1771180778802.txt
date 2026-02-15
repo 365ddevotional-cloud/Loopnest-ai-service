@@ -1,0 +1,119 @@
+GOAL:
+Insert the next 10 Sunday School lessons chronologically after October 11, 2026.
+Use UPSERT (INSERT ... ON CONFLICT (date) DO UPDATE).
+Match EXACT existing Sunday School structure.
+Use KJV only.
+Do NOT modify previous entries.
+
+LESSONS:
+
+1) TITLE: Guarding the Heart
+DATE: 2026-10-18
+SCRIPTURES: Proverbs 4:23; Matthew 15:18–19 (KJV)
+
+SCRIPTURE TEXT (KJV):
+Proverbs 4:23 — Keep thy heart with all diligence; for out of it are the issues of life.
+Matthew 15:18 — But those things which proceed out of the mouth come forth from the heart...
+
+LESSON CONTENT:
+OUTLINE POINT 1: The Heart Determines Direction
+The condition of the heart determines the direction of life.
+
+OUTLINE POINT 2: Recognizing Hidden Influences
+What we allow into the heart eventually shapes character.
+
+OUTLINE POINT 3: Guarding Through Scripture and Prayer
+Intentional discipline protects spiritual sensitivity.
+
+TEACHER EMPHASIS:
+Challenge hidden attitudes.
+Encourage accountability.
+Stress daily self-examination.
+
+APPLICATION:
+Identify one area needing heart correction.
+
+DISCUSSION QUESTIONS:
+1. Why is the heart central in Scripture?
+2. What influences shape the heart?
+3. How can we guard it practically?
+4. What signs reveal a neglected heart?
+
+PRAYER FOCUS:
+Lord, purify my heart.
+Remove hidden compromise.
+
+WEEKLY ASSIGNMENT:
+Memorize Proverbs 4:23.
+
+---
+
+2) TITLE: Persevering in Purpose
+DATE: 2026-10-25
+SCRIPTURES: Philippians 3:13–14; Galatians 6:9 (KJV)
+
+[Full structured lesson]
+
+---
+
+3) TITLE: A Lifestyle of Thanksgiving
+DATE: 2026-11-01
+SCRIPTURES: Psalm 103:1–5; Colossians 3:15 (KJV)
+
+[Full structured lesson]
+
+---
+
+4) TITLE: Grateful in All Circumstances
+DATE: 2026-11-08
+SCRIPTURES: 1 Thessalonians 5:18; Habakkuk 3:17–18 (KJV)
+
+[Full structured lesson]
+
+---
+
+5) TITLE: Thanksgiving and the Faithfulness of God
+DATE: 2026-11-15
+SCRIPTURES: Psalm 136:1; Lamentations 3:22–23 (KJV)
+
+[Full structured lesson]
+
+---
+
+6) TITLE: Giving Thanks as a Testimony
+DATE: 2026-11-22
+SCRIPTURES: Psalm 107:1–2; Hebrews 13:15 (KJV)
+
+[Full structured lesson]
+
+---
+
+7) TITLE: The Promise of the Messiah (Christmas Preparation Week 1)
+DATE: 2026-11-29
+SCRIPTURES: Isaiah 9:6; Micah 5:2 (KJV)
+
+[Full structured lesson emphasizing prophecy fulfillment]
+
+---
+
+8) TITLE: The Virgin Birth and God With Us (Christmas Preparation Week 2)
+DATE: 2026-12-06
+SCRIPTURES: Matthew 1:23; Luke 1:35 (KJV)
+
+[Full structured lesson]
+
+---
+
+9) TITLE: The Savior Is Born (Christmas Preparation Week 3)
+DATE: 2026-12-13
+SCRIPTURES: Luke 2:10–14; John 1:14 (KJV)
+
+[Full structured lesson]
+
+---
+
+10) TITLE: The Meaning of the Incarnation (Christmas Preparation Week 4)
+DATE: 2026-12-20
+SCRIPTURES: Philippians 2:5–11; 2 Corinthians 8:9 (KJV)
+
+[Full structured lesson]
