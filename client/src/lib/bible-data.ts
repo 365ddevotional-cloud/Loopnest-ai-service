@@ -1,3 +1,5 @@
+import { getBibleChapter, saveBibleChapters, type BibleChapterEntry } from "@/lib/offlineDb";
+
 export interface BibleBook {
   id: string;
   name: string;
@@ -193,6 +195,19 @@ async function fetchChapterInternal(
       text: v.text.trim(),
     }));
 
+    if (translationCode === "kjv") {
+      try {
+        const entry: BibleChapterEntry = {
+          reference: `${bookId}:${chapter}`,
+          book: book.name,
+          bookId,
+          chapter,
+          verses,
+        };
+        saveBibleChapters([entry]).catch(() => {});
+      } catch {}
+    }
+
     return {
       book: book.name,
       chapter,
@@ -202,6 +217,22 @@ async function fetchChapterInternal(
     };
   } catch (error) {
     console.error("Failed to fetch chapter:", error);
+
+    if (translation === "KJV" || isRetry) {
+      try {
+        const cached = await getBibleChapter(bookId, chapter);
+        if (cached) {
+          return {
+            book: cached.book,
+            chapter: cached.chapter,
+            verses: cached.verses as ChapterVerse[],
+            actualTranslation: "KJV",
+            isFallback: true,
+          };
+        }
+      } catch {}
+    }
+
     if (!isRetry && translation !== "KJV") {
       const fallback = await fetchChapterInternal(bookId, chapter, "KJV", true);
       if (fallback) {
@@ -217,5 +248,20 @@ export async function fetchChapter(
   chapter: number,
   translation: string
 ): Promise<ChapterData | null> {
+  if (!navigator.onLine) {
+    try {
+      const cached = await getBibleChapter(bookId, chapter);
+      if (cached) {
+        const book = getBookById(bookId);
+        return {
+          book: cached.book || book?.name || bookId,
+          chapter: cached.chapter,
+          verses: cached.verses as ChapterVerse[],
+          actualTranslation: "KJV",
+          isFallback: translation !== "KJV",
+        };
+      }
+    } catch {}
+  }
   return fetchChapterInternal(bookId, chapter, translation, false);
 }

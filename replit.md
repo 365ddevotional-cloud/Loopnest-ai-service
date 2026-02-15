@@ -22,13 +22,15 @@ The architecture emphasizes shared types and type-safe APIs, with schema definit
 
 ### Feature Specifications
 - **Bible Translation System**: Supports KJV, WEB, ASV, DRB, with user preference storage, a translation selector, and a fallback mechanism to KJV.
-- **Perpetual Devotional Cycle**: Automatically loops devotionals annually using day-of-year modulo logic, ensuring continuous content availability without redeployment.
+- **Perpetual Devotional Cycle**: Uses days-difference-from-earliest-date modulo logic to cycle through existing devotionals forever, ensuring continuous content availability without redeployment. Both server-side and client-side (offline) implementations share identical modulo formula.
 - **Archive Access Control**: Implements role-based access where non-admin users can only view present and past devotionals, while admins have full access.
 - **Seasonal Override Devotionals**: Incorporates specific devotionals for holidays like Easter, Mother's/Children's/Father's Emphasis Weeks, Thanksgiving, and Christmas, managed via a `seasonal_override` field.
 - **Data Protection**: Includes a soft-delete system for devotionals with `isDeleted` and `deletedAt` fields, requiring explicit confirmation for deletion, and restricting operations on past devotionals. Admin backup and monitoring endpoints are available.
 - **Locked Features**: Stable features like the Bible Reading interface (with verse bookmarking, highlighting, notes, and sharing), Daily Bible Verse, Sharing features, Devotionals System, and Prayer & Counseling system are protected from regression.
 - **Daily Notification System**: Browser-based web notifications allow users to opt-in for daily reminders when new devotionals are available, managed via `NotificationContext` and localStorage.
 - **Sunday School System**: Free public feature at `/sunday-school` with weekly KJV-only lessons. Shows 4 upcoming Sunday lessons and an archive of past lessons. Each lesson includes scripture, full lesson content, discussion questions, prayer focus, and weekly assignment. Admin can create, edit, and delete lessons via the admin dashboard "Sunday School" tab. Seed data auto-populates 4 initial lessons. Copy button formats lessons for sharing. Schema: `sundaySchoolLessons` table. API: `/api/sunday-school` endpoints. Seed: `server/seed-sunday-school.ts`.
+- **Cyclical Fallback Loop**: Both Daily Devotionals and Sunday School implement perpetual cycling to ensure content availability beyond initial date range using modulo-based indexing from earliest content date.
+- **Offline-First Architecture**: IndexedDB-based offline persistence using native API (no external library). DB name: `devotionalOfflineDB` with stores for `devotionals`, `sundayLessons`, and `bibleKJV`. On app load when online, `useOfflineSync` hook prefetches all devotionals, Sunday School lessons, and KJV Bible chapters into IndexedDB. When offline, all hooks (`useTodayDevotional`, `useDevotionalsList`, Sunday School queries, Bible `fetchChapter`) fall back to IndexedDB with identical modulo loop logic. Service worker (v3) only caches static assets; structured data is handled by IndexedDB. Key files: `client/src/lib/offlineDb.ts`, `client/src/hooks/use-offline-sync.ts`.
 
 ## External Dependencies
 

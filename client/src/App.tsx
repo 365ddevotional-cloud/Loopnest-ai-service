@@ -17,6 +17,7 @@ import { NotificationTrigger } from "@/components/NotificationTrigger";
 import { MenuTransitionOverlay } from "@/components/MenuTransitionOverlay";
 import { WalkthroughModal } from "@/components/WalkthroughModal";
 import { FloatingFeedbackButton } from "@/components/FloatingFeedbackButton";
+import { useOfflineSync } from "@/hooks/use-offline-sync";
 import Home from "@/pages/Home";
 import Archive from "@/pages/Archive";
 import Admin from "@/pages/Admin";
@@ -77,6 +78,7 @@ function Router() {
 }
 
 function AppContent() {
+  useOfflineSync();
   const { isTransitioning, completeTransition } = useMenuTransition();
   const [location] = useLocation();
   const isPublicRoute =

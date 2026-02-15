@@ -1,0 +1,122 @@
+We are implementing FULL OFFLINE-FIRST architecture for 365 Daily Devotional app.
+
+STRICT RULES:
+- Do NOT remove existing cyclical fallback logic
+- Do NOT break existing API endpoints
+- Do NOT change schema
+- Only ADD offline persistence layer
+- Must work for both Daily Devotional and Sunday School
+- Must support KJV Bible offline
+
+==================================================
+STEP 1: ADD INDEXEDDB WRAPPER (client-side)
+==================================================
+
+Create file: client/src/lib/offlineDb.ts
+
+Implement IndexedDB using native API (no external library).
+
+Create DB name: devotionalOfflineDB
+Version: 1
+
+Create object stores:
+- devotionals (key: date)
+- sundayLessons (key: date)
+- bibleKJV (key: reference)
+
+Expose functions:
+
+saveDevotionals(devotionalsArray)
+getAllDevotionals()
+
+saveSundayLessons(lessonsArray)
+getAllSundayLessons()
+
+saveBibleKJV(bibleArray)
+getBibleVerse(reference)
+getChapter(book, chapter)
+
+==================================================
+STEP 2: ON APP LOAD (WHEN ONLINE)
+==================================================
+
+Modify main app bootstrap:
+
+If navigator.onLine === true:
+
+1. Fetch ALL devotionals via existing API
+2. Save them to IndexedDB
+3. Fetch ALL Sunday school lessons
+4. Save to IndexedDB
+5. Fetch KJV JSON (store in public folder as /bible/kjv.json)
+6. Save to IndexedDB (only once)
+
+==================================================
+STEP 3: DAILY DEVOTIONAL OFFLINE HANDLER
+==================================================
+
+Modify devotional fetch logic:
+
+If navigator.onLine === false:
+  Load devotionals from IndexedDB
+  Apply existing modulo fallback logic
+  Return devotional
+Else:
+  Fetch from API normally
+
+Archive:
+When offline:
+  Generate 15 days before + 15 days after using modulo loop
+  Render from IndexedDB
+
+==================================================
+STEP 4: SUNDAY SCHOOL OFFLINE HANDLER
+==================================================
+
+When offline:
+  Load all lessons from IndexedDB
+  Compute current Sunday
+  Compute:
+    - 2 previous Sundays
+    - current Sunday
+    - 2 next Sundays
+  For missing lessons:
+    Apply modulo week loop logic
+  Always return 5 lessons
+
+==================================================
+STEP 5: SERVICE WORKER UPDATE
+==================================================
+
+Upgrade service worker:
+
+- Cache bible/kjv.json during install
+- Cache static assets
+- Remove API cache-first logic
+- Let IndexedDB handle structured content
+
+==================================================
+STEP 6: REMOVE "Unable to Load" ERROR
+==================================================
+
+If offline and IndexedDB has data:
+  NEVER show error
+  Always render from local DB
+
+If offline and DB empty:
+  Show:
+    "Content will be available after first online visit."
+
+==================================================
+FINAL REQUIREMENTS
+==================================================
+
+- Today devotional loads offline
+- Archive shows 30-day window offline
+- Sunday School shows 5 lessons offline
+- KJV Bible fully usable offline
+- Loop logic continues forever
+- No blank states
+- No API dependency when offline
+
+Implement safely and confirm verification steps.

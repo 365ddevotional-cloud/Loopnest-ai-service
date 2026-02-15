@@ -7,14 +7,84 @@ import { format, parseISO, startOfDay, isBefore } from "date-fns";
 import { Link } from "wouter";
 import type { SundaySchoolLesson } from "@shared/schema";
 import { Helmet } from "react-helmet-async";
+import { getAllSundayLessons } from "@/lib/offlineDb";
+
+function getLocalDateString(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function computeOfflinePreview(lessons: any[]): any[] {
+  if (!lessons.length) return [];
+  const sorted = [...lessons].sort((a, b) => a.date.localeCompare(b.date));
+  const totalCount = sorted.length;
+
+  const today = getLocalDateString();
+  const [tY, tM, tD] = today.split("-").map(Number);
+  const todayDate = new Date(tY, tM - 1, tD);
+  const dayOfWeek = todayDate.getDay();
+  const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+
+  const earliestDate = sorted[0].date;
+  const [eY, eM, eD] = earliestDate.split("-").map(Number);
+  const earliestMs = new Date(eY, eM - 1, eD).getTime();
+
+  const result: any[] = [];
+  for (let i = -2; i <= 2; i++) {
+    const targetDate = new Date(tY, tM - 1, tD + daysUntilSunday + i * 7);
+    const targetMs = targetDate.getTime();
+    const targetStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}-${String(targetDate.getDate()).padStart(2, "0")}`;
+
+    const exact = sorted.find((l) => l.date === targetStr);
+    if (exact) {
+      result.push(exact);
+    } else {
+      const weeksDiff = Math.floor((targetMs - earliestMs) / (7 * 86400000));
+      const index = ((weeksDiff % totalCount) + totalCount) % totalCount;
+      result.push(sorted[index]);
+    }
+  }
+
+  return result;
+}
 
 export default function SundaySchool() {
   const { data: lessons, isLoading } = useQuery<SundaySchoolLesson[]>({
     queryKey: ["/api/sunday-school"],
+    queryFn: async () => {
+      if (navigator.onLine) {
+        const res = await fetch("/api/sunday-school", { credentials: "include" });
+        if (!res.ok) throw new Error("Failed to fetch");
+        return res.json();
+      }
+      const offline = await getAllSundayLessons();
+      if (offline.length > 0) return offline;
+      throw new Error("offline_no_data");
+    },
+    retry: (failureCount, error) => {
+      if (error instanceof Error && error.message === "offline_no_data") return false;
+      return failureCount < 2;
+    },
   });
 
   const { data: previewLessons, isLoading: isPreviewLoading } = useQuery<SundaySchoolLesson[]>({
     queryKey: ["/api/sunday-school/preview"],
+    queryFn: async () => {
+      if (navigator.onLine) {
+        const res = await fetch("/api/sunday-school/preview", { credentials: "include" });
+        if (!res.ok) throw new Error("Failed to fetch preview");
+        return res.json();
+      }
+      const offline = await getAllSundayLessons();
+      if (offline.length > 0) {
+        return computeOfflinePreview(offline);
+      }
+      throw new Error("offline_no_data");
+    },
+    retry: (failureCount, error) => {
+      if (error instanceof Error && error.message === "offline_no_data") return false;
+      return failureCount < 2;
+    },
   });
 
   const today = startOfDay(new Date());
@@ -29,6 +99,16 @@ export default function SundaySchool() {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!lessons?.length && !navigator.onLine) {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center text-center p-8">
+        <p className="text-muted-foreground text-lg" data-testid="text-offline-empty">
+          Content will be available after first online visit.
+        </p>
       </div>
     );
   }

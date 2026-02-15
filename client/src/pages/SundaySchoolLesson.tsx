@@ -8,6 +8,7 @@ import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { SundaySchoolLesson } from "@shared/schema";
 import { Helmet } from "react-helmet-async";
+import { getAllSundayLessons } from "@/lib/offlineDb";
 
 const numberEmojis = ["1\uFE0F\u20E3", "2\uFE0F\u20E3", "3\uFE0F\u20E3", "4\uFE0F\u20E3", "5\uFE0F\u20E3", "6\uFE0F\u20E3", "7\uFE0F\u20E3", "8\uFE0F\u20E3", "9\uFE0F\u20E3"];
 
@@ -54,6 +55,21 @@ export default function SundaySchoolLessonPage() {
 
   const { data: lesson, isLoading, error } = useQuery<SundaySchoolLesson>({
     queryKey: ["/api/sunday-school", params.id],
+    queryFn: async () => {
+      if (navigator.onLine) {
+        const res = await fetch(`/api/sunday-school/${params.id}`, { credentials: "include" });
+        if (!res.ok) throw new Error("Failed to fetch lesson");
+        return res.json();
+      }
+      const all = await getAllSundayLessons();
+      const found = all.find((l: any) => String(l.id) === params.id);
+      if (found) return found;
+      throw new Error("offline_no_data");
+    },
+    retry: (failureCount, error) => {
+      if (error instanceof Error && error.message === "offline_no_data") return false;
+      return failureCount < 2;
+    },
   });
 
   const handleCopy = async () => {
