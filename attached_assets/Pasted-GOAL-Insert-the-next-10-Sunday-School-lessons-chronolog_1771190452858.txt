@@ -1,0 +1,118 @@
+GOAL:
+Insert the next 10 Sunday School lessons chronologically after November 19, 2028.
+Use UPSERT (INSERT ... ON CONFLICT (date) DO UPDATE).
+Match EXACT existing Sunday School structure.
+Use KJV only.
+Do NOT modify previous entries.
+
+LESSONS:
+
+1) TITLE: Ending the Year with Gratitude  
+DATE: 2028-11-26  
+SCRIPTURES: Psalm 116:12–14; 1 Thessalonians 5:18 (KJV)
+
+SCRIPTURE TEXT (KJV):
+Psalm 116:12 — What shall I render unto the Lord for all his benefits toward me?
+1 Thessalonians 5:18 — In every thing give thanks...
+
+LESSON CONTENT:
+OUTLINE POINT 1: Remembering God’s Benefits  
+Reflection strengthens faith.
+
+OUTLINE POINT 2: Gratitude Builds Expectation  
+Thanksgiving prepares us for new seasons.
+
+OUTLINE POINT 3: Responding with Commitment  
+True gratitude produces obedience.
+
+TEACHER EMPHASIS:
+Encourage testimony.
+Promote reflection.
+Challenge complacency.
+
+APPLICATION:
+Write a year-end reflection prayer.
+
+DISCUSSION QUESTIONS:
+1. Why must we remember God’s benefits?
+2. How does gratitude strengthen faith?
+3. What has God done this year?
+4. How should we respond?
+
+PRAYER FOCUS:
+Lord, we thank You for this year.
+
+WEEKLY ASSIGNMENT:
+List answered prayers.
+
+---
+
+2) TITLE: Preparing for a New Season  
+DATE: 2028-12-03  
+SCRIPTURES: Isaiah 43:19; Ecclesiastes 3:1 (KJV)
+
+[Full structured lesson]
+
+---
+
+3) TITLE: A Renewed Mind for a New Year  
+DATE: 2028-12-10  
+SCRIPTURES: Romans 12:2; 2 Corinthians 5:17 (KJV)
+
+[Full structured lesson]
+
+---
+
+4) TITLE: Consecration and Commitment  
+DATE: 2028-12-17  
+SCRIPTURES: Joshua 3:5; Romans 12:1 (KJV)
+
+[Full structured lesson]
+
+---
+
+5) TITLE: Establishing Spiritual Discipline  
+DATE: 2028-12-24  
+SCRIPTURES: Acts 2:42; 1 Timothy 4:7–8 (KJV)
+
+[Full structured lesson]
+
+---
+
+6) TITLE: The Power of Prayer and Fasting  
+DATE: 2028-12-31  
+SCRIPTURES: Matthew 6:16–18; Mark 9:29 (KJV)
+
+[Full structured lesson]
+
+---
+
+7) TITLE: Walking in Daily Obedience  
+DATE: 2029-01-07  
+SCRIPTURES: John 14:15; 1 Samuel 15:22 (KJV)
+
+[Full structured lesson]
+
+---
+
+8) TITLE: Faith That Overcomes  
+DATE: 2029-01-14  
+SCRIPTURES: 1 John 5:4; Hebrews 11:6 (KJV)
+
+[Full structured lesson]
+
+---
+
+9) TITLE: Love That Reflects Christ  
+DATE: 2029-01-21  
+SCRIPTURES: John 13:34–35; 1 Corinthians 13:4–7 (KJV)
+
+[Full structured lesson]
+
+---
+
+10) TITLE: The Path to Spiritual Maturity  
+DATE: 2029-01-28  
+SCRIPTURES: Hebrews 5:12–14; Colossians 1:10 (KJV)
+
+[Full structured lesson]
