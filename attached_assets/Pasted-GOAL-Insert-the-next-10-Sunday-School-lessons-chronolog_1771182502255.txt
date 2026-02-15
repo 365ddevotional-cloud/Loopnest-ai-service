@@ -1,0 +1,119 @@
+GOAL:
+Insert the next 10 Sunday School lessons chronologically after February 28, 2027.
+Use UPSERT (INSERT ... ON CONFLICT (date) DO UPDATE).
+Match EXACT existing Sunday School structure.
+Use KJV only.
+Do NOT modify previous entries.
+
+LESSONS:
+
+1) TITLE: The Lamb Foretold (Easter Build-Up Week 2)
+DATE: 2027-03-07
+SCRIPTURES: Isaiah 53:7; Exodus 12:13; 1 Peter 1:18–19 (KJV)
+
+SCRIPTURE TEXT (KJV):
+Isaiah 53:7 — He was oppressed, and he was afflicted, yet he opened not his mouth...
+1 Peter 1:19 — But with the precious blood of Christ, as of a lamb without blemish and without spot.
+
+LESSON CONTENT:
+OUTLINE POINT 1: The Passover Pattern
+The lamb in Exodus pointed to Christ.
+
+OUTLINE POINT 2: The Silent Suffering Servant
+Prophecy revealed His sacrificial role.
+
+OUTLINE POINT 3: Redemption Through Blood
+Salvation required a perfect sacrifice.
+
+TEACHER EMPHASIS:
+Explain fulfilled prophecy clearly.
+Invite salvation response.
+Highlight substitutionary atonement.
+
+APPLICATION:
+Reflect on the cost of redemption.
+
+DISCUSSION QUESTIONS:
+1. How does Passover point to Christ?
+2. Why must the Lamb be spotless?
+3. What does redemption mean personally?
+4. How should we respond?
+
+PRAYER FOCUS:
+Lord, thank You for the blood of Jesus.
+Help me never treat it lightly.
+
+WEEKLY ASSIGNMENT:
+Read Isaiah 53 fully.
+
+---
+
+2) TITLE: The Cross and Divine Love (Easter Build-Up Week 3)
+DATE: 2027-03-14
+SCRIPTURES: John 3:16; Romans 5:8; Luke 23:33–34 (KJV)
+
+[Full structured lesson]
+
+---
+
+3) TITLE: The Triumphal Entry (Palm Sunday Focus)
+DATE: 2027-03-21
+SCRIPTURES: Matthew 21:5–9; Zechariah 9:9 (KJV)
+
+[Full structured lesson]
+
+---
+
+4) TITLE: The Resurrection and Living Hope (Resurrection Sunday)
+DATE: 2027-03-28
+SCRIPTURES: Matthew 28:5–6; 1 Corinthians 15:20–22 (KJV)
+
+[Full structured lesson emphasizing victory, salvation invitation, fulfilled prophecy]
+
+---
+
+5) TITLE: The Power of the Resurrection
+DATE: 2027-04-04
+SCRIPTURES: Philippians 3:10; Romans 8:11 (KJV)
+
+[Full structured lesson]
+
+---
+
+6) TITLE: Restored After Failure
+DATE: 2027-04-11
+SCRIPTURES: John 21:15–17; Psalm 51:10 (KJV)
+
+[Full structured lesson on restoration and repentance]
+
+---
+
+7) TITLE: The Great Commission
+DATE: 2027-04-18
+SCRIPTURES: Matthew 28:18–20; Acts 1:8 (KJV)
+
+[Full structured lesson on evangelism and mission]
+
+---
+
+8) TITLE: The Empowered Church
+DATE: 2027-04-25
+SCRIPTURES: Acts 2:1–4; Acts 2:42 (KJV)
+
+[Full structured lesson]
+
+---
+
+9) TITLE: Walking in the Spirit Daily
+DATE: 2027-05-02
+SCRIPTURES: Galatians 5:16; Romans 8:14 (KJV)
+
+[Full structured lesson]
+
+---
+
+10) TITLE: Honoring Our Fathers (Father’s Day Preparation 1)
+DATE: 2027-05-09
+SCRIPTURES: Exodus 20:12; Proverbs 20:7; Ephesians 6:4 (KJV)
+
+[Full structured lesson written universally, not U.S.-centric, emphasizing honor, responsibility, forgiveness, restoration]
