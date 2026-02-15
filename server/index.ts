@@ -135,5 +135,11 @@ httpServer.listen(
   },
   () => {
     log(`serving on port ${port}`);
+
+    import("./seed-devotionals").then(({ seedAllDevotionals }) => {
+      seedAllDevotionals()
+        .then(() => log("Devotional auto-sync complete"))
+        .catch((err) => console.error("Devotional auto-sync failed:", err));
+    });
   },
 );
