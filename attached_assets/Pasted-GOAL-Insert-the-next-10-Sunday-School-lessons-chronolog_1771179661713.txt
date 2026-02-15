@@ -1,0 +1,124 @@
+GOAL:
+Insert the next 10 Sunday School lessons chronologically after May 24, 2026.
+Use UPSERT (INSERT ... ON CONFLICT (date) DO UPDATE).
+Match EXACT existing Sunday School structure.
+Use KJV only.
+Do NOT modify previous entries.
+
+LESSONS:
+
+1) TITLE: Honoring Fathers: Strength, Sacrifice, and Spiritual Leadership
+DATE: 2026-05-31
+SCRIPTURES: Ephesians 6:4; Proverbs 20:7; Psalm 103:13 (KJV)
+
+SCRIPTURE TEXT (KJV):
+Ephesians 6:4 — And, ye fathers, provoke not your children to wrath: but bring them up in the nurture and admonition of the Lord.
+Proverbs 20:7 — The just man walketh in his integrity: his children are blessed after him.
+Psalm 103:13 — Like as a father pitieth his children, so the Lord pitieth them that fear him.
+
+LESSON CONTENT:
+OUTLINE POINT 1: The Role of a Father
+God designed fathers to reflect His heart — protective, compassionate, and guiding.
+
+OUTLINE POINT 2: Integrity Leaves Generational Impact
+A father's character shapes a family’s future.
+
+OUTLINE POINT 3: Healing and Honor
+Even where fathers failed, believers are called to forgiveness and honor.
+
+TEACHER EMPHASIS:
+Affirm fathers.
+Encourage restoration.
+Invite men to step into spiritual leadership.
+
+APPLICATION:
+Pray for fathers.
+Encourage fathers.
+Forgive where needed.
+
+DISCUSSION QUESTIONS:
+1. What does biblical fatherhood look like?
+2. How can men lead spiritually?
+3. How do we honor fathers even when imperfect?
+4. What legacy are we building?
+
+PRAYER FOCUS:
+Lord, strengthen fathers.
+Restore broken relationships.
+Raise godly men.
+
+WEEKLY ASSIGNMENT:
+Encourage a father this week.
+Pray daily for fathers.
+
+---
+
+2) TITLE: The Blessing of Spiritual Fathers
+DATE: 2026-06-07
+SCRIPTURES: 1 Corinthians 4:15; 2 Kings 2:12 (KJV)
+
+[Insert structured content same format]
+
+---
+
+3) TITLE: The Power of Godly Influence in Children
+DATE: 2026-06-14
+SCRIPTURES: Proverbs 22:6; Psalm 127:3 (KJV)
+
+[Full structured lesson]
+
+---
+
+4) TITLE: Children in the Kingdom of God
+DATE: 2026-06-21
+SCRIPTURES: Matthew 19:14; Mark 10:15 (KJV)
+
+[Full structured lesson]
+
+---
+
+5) TITLE: Walking in Humility
+DATE: 2026-06-28
+SCRIPTURES: Philippians 2:3–8 (KJV)
+
+[Full structured lesson]
+
+---
+
+6) TITLE: Faithfulness in Small Things
+DATE: 2026-07-05
+SCRIPTURES: Luke 16:10; Matthew 25:21 (KJV)
+
+[Full structured lesson]
+
+---
+
+7) TITLE: Guarding Your Heart
+DATE: 2026-07-12
+SCRIPTURES: Proverbs 4:23; Philippians 4:8 (KJV)
+
+[Full structured lesson]
+
+---
+
+8) TITLE: The Ministry of Reconciliation
+DATE: 2026-07-19
+SCRIPTURES: 2 Corinthians 5:17–20 (KJV)
+
+[Full structured lesson]
+
+---
+
+9) TITLE: Living as Salt and Light
+DATE: 2026-07-26
+SCRIPTURES: Matthew 5:13–16 (KJV)
+
+[Full structured lesson]
+
+---
+
+10) TITLE: Standing Firm in Spiritual Warfare
+DATE: 2026-08-02
+SCRIPTURES: Ephesians 6:10–18 (KJV)
+
+[Full structured lesson]
