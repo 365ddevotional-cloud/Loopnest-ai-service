@@ -1,0 +1,137 @@
+We are extending Sunday School forward.
+
+STRICT RULES:
+- Do NOT modify schema
+- Do NOT modify template
+- Do NOT modify preview logic
+- Do NOT delete existing entries
+- Only insert 20 new SundaySchoolLesson entries
+- Use existing structure exactly
+- Use KJV scripture only
+- Keep formatting consistent with existing lessons
+
+START DATE:
+March 22, 2026
+
+INSERT 20 CONSECUTIVE SUNDAYS WEEKLY.
+
+==================================================
+INSERT THE FOLLOWING LESSONS
+==================================================
+
+1) March 22, 2026
+Title: The Lamb Foretold
+Scripture: Isaiah 53:4–6 (KJV)
+Theme: Humanity’s need and prophetic fulfillment
+Include 3 structured lesson points inside lessonContent.
+
+2) March 29, 2026
+Title: The Suffering Servant
+Scripture: Psalm 22:1–18 (KJV)
+Theme: Messianic prophecy fulfilled in Christ
+
+3) April 5, 2026 (EASTER SUNDAY)
+Title: The Risen King
+Scripture: Matthew 28:1–10 (KJV)
+Theme: Resurrection power and victory over death
+
+4) April 12, 2026
+Title: The Power of the Resurrection
+Scripture: Philippians 3:10–11 (KJV)
+Theme: Living in resurrection life
+
+5) April 19, 2026
+Title: Justified by Faith
+Scripture: Romans 5:1–5 (KJV)
+
+6) April 26, 2026
+Title: Dead to Sin, Alive to God
+Scripture: Romans 6:6–11 (KJV)
+
+7) May 3, 2026
+Title: Walking in Newness of Life
+Scripture: Romans 6:4 (KJV)
+
+8) May 10, 2026 (Mother’s Day emphasis – framed globally)
+Title: The Virtuous Woman
+Scripture: Proverbs 31:10–31 (selected verses KJV)
+Theme: Honoring godly influence of mothers
+
+9) May 17, 2026
+Title: Honoring Parents in the Lord
+Scripture: Ephesians 6:1–3 (KJV)
+
+10) May 24, 2026
+Title: The Renewed Mind
+Scripture: Romans 12:1–2 (KJV)
+
+11) May 31, 2026
+Title: The Discipline of Prayer
+Scripture: Matthew 6:5–13 (KJV)
+
+12) June 7, 2026
+Title: The Heart of Forgiveness
+Scripture: Matthew 18:21–35 (KJV)
+
+13) June 14, 2026 (Father’s Day preparation)
+Title: The Strength of a Godly Father
+Scripture: Joshua 24:15 (KJV)
+
+14) June 21, 2026 (Father’s Day emphasis – framed globally)
+Title: Honoring Fathers
+Scripture: Proverbs 20:7 (KJV)
+
+15) June 28, 2026
+Title: Servant Leadership
+Scripture: Mark 10:42–45 (KJV)
+
+16) July 5, 2026
+Title: Standing Firm in Trials
+Scripture: James 1:2–4 (KJV)
+
+17) July 12, 2026
+Title: Faith Under Pressure
+Scripture: Hebrews 11:1–6 (KJV)
+
+18) July 19, 2026
+Title: The Power of Obedience
+Scripture: 1 Samuel 15:22 (KJV)
+
+19) July 26, 2026
+Title: Living with Eternal Perspective
+Scripture: Colossians 3:1–4 (KJV)
+
+20) August 2, 2026
+Title: The Great Commission
+Scripture: Matthew 28:18–20 (KJV)
+
+==================================================
+CONTENT REQUIREMENTS FOR EACH LESSON
+==================================================
+
+For each lesson:
+
+- Include full quoted KJV scripture text.
+- Include 3 structured teaching sections inside lessonContent.
+- Each section must contain 2–3 solid paragraphs.
+- Include subtle correction and encouragement.
+- Include evangelistic clarity.
+- Include Teacher Emphasis section.
+- Include Discussion Questions (3).
+- Include Prayer Focus.
+- Include Weekly Assignment.
+
+Keep formatting identical to existing Sunday School entries.
+
+==================================================
+VALIDATION
+==================================================
+
+After insertion confirm:
+
+- 20 new Sundays created
+- Dates are correct weekly sequence
+- 4-week preview still working
+- No template modified
+- No schema changed
+- Admin can edit normally
