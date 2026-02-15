@@ -1,0 +1,162 @@
+We are implementing PRODUCTION-GRADE OFFLINE FIX (Option 2).
+Do NOT redesign UI.
+Do NOT change routes.
+Do NOT modify database schema.
+Do NOT remove existing cyclical loop logic.
+Only fix offline architecture cleanly.
+
+========================================
+OBJECTIVE
+========================================
+
+Ensure FULL offline functionality for:
+
+1) Today devotional page
+2) Archive page (search + list)
+3) Individual devotional page
+4) Sunday School listing
+5) Sunday School lesson page
+6) Bible (KJV full offline)
+
+All must work with NO internet after first successful load.
+
+========================================
+STEP 1 — VERIFY INDEXEDDB STRUCTURE
+========================================
+
+Ensure IndexedDB has these stores:
+
+- devotionals (key: id or date)
+- sundayLessons (key: id or date)
+- bibleChapters (key: book+chapter+version)
+- metadata
+
+If missing, create migration safely.
+
+========================================
+STEP 2 — FORCE PRELOAD SYNC
+========================================
+
+On app startup (after successful API load):
+
+• Fetch ALL devotionals
+• Fetch ALL sunday lessons
+• Fetch ALL KJV chapters
+
+Then:
+
+- Store them into IndexedDB
+- Use bulk put (not single inserts)
+- Wrap in transaction
+- Log success
+
+Do NOT rely on lazy caching.
+
+========================================
+STEP 3 — OFFLINE-FIRST DATA LAYER
+========================================
+
+Refactor data fetch hooks:
+
+For devotionals:
+If navigator.onLine === false:
+    read from IndexedDB ONLY
+Else:
+    try API
+    if API fails:
+        fallback to IndexedDB
+
+For Sunday lessons:
+Same logic.
+
+For Bible:
+Remove API dependency.
+Bible must read ONLY from IndexedDB after preload.
+
+========================================
+STEP 4 — ARCHIVE FIX
+========================================
+
+Archive must:
+
+- Read ALL devotionals from IndexedDB
+- Apply client-side search filtering
+- Display results even if offline
+- Remove “No devotionals found” when data exists
+
+========================================
+STEP 5 — SUNDAY SCHOOL FIX
+========================================
+
+SundaySchool page:
+
+If offline:
+    load preview from IndexedDB
+    apply cyclical week modulo fallback
+    always return 4 lessons
+
+Lesson page:
+
+When opening /sunday-school/:id
+If API fails:
+    read lesson by ID from IndexedDB
+If not found:
+    apply cyclical mapping
+Never show “Lesson not found” if cached exists.
+
+========================================
+STEP 6 — BIBLE FIX
+========================================
+
+Bible page:
+
+- Load KJV from IndexedDB only
+- If chapter not found:
+    check preload flag
+    if preload incomplete:
+        show “Bible still syncing”
+    else:
+        show real error
+
+Remove current “Unable to load chapter” generic message.
+
+========================================
+STEP 7 — SERVICE WORKER ADJUSTMENT
+========================================
+
+Keep:
+
+- Cache-first for API
+- Stale-while-revalidate for assets
+
+Add:
+
+- Do NOT cache failed API responses
+- Do NOT overwrite IndexedDB with empty results
+
+========================================
+STEP 8 — SAFETY CHECK
+========================================
+
+After implementation:
+
+Simulate offline:
+
+- Today loads
+- Archive loads
+- Sunday list loads
+- Sunday lesson opens
+- Bible Genesis 1 loads
+
+Log verification results.
+
+========================================
+
+IMPORTANT:
+Do NOT modify UI.
+Do NOT change routes.
+Do NOT break production build.
+Do NOT remove cyclical fallback.
+Do NOT alter Google Play build config.
+
+Proceed carefully and complete all tasks before marking finished.

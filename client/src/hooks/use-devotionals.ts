@@ -68,34 +68,58 @@ function getArchiveWindow(devotionals: any[], today: string, windowDays: number 
   });
 }
 
+async function fallbackTodayFromIndexedDB(localDate: string): Promise<any | null> {
+  try {
+    const offlineExact = await getOfflineDevotional(localDate);
+    if (offlineExact) return offlineExact;
+
+    const allOffline = await getAllDevotionals();
+    if (allOffline.length > 0) {
+      const result = getModuloDevotional(allOffline, localDate);
+      if (result) return result;
+    }
+  } catch (e) {
+    console.warn("[Offline] Failed to read devotional from IndexedDB:", e);
+  }
+  return null;
+}
+
 export function useTodayDevotional() {
   const localDate = getLocalDateString();
   
   return useQuery({
     queryKey: [api.devotionals.getToday.path, localDate],
     queryFn: async () => {
-      if (navigator.onLine) {
+      if (!navigator.onLine) {
+        const offline = await fallbackTodayFromIndexedDB(localDate);
+        if (offline) return offline;
+        throw new Error("offline_no_data");
+      }
+
+      try {
         const url = `${api.devotionals.getToday.path}?clientDate=${localDate}&_t=${Date.now()}`;
         const res = await fetch(url, { 
           credentials: "include",
           cache: "no-store",
           headers: { "Cache-Control": "no-cache" }
         });
-        if (res.status === 404) return null;
-        if (!res.ok) throw new Error("Failed to fetch today's devotional");
+        if (res.status === 404) {
+          const offline = await fallbackTodayFromIndexedDB(localDate);
+          if (offline) return offline;
+          return null;
+        }
+        if (!res.ok) {
+          const offline = await fallbackTodayFromIndexedDB(localDate);
+          if (offline) return offline;
+          throw new Error("Failed to fetch today's devotional");
+        }
         return api.devotionals.getToday.responses[200].parse(await res.json());
+      } catch (e) {
+        if (e instanceof Error && e.message === "offline_no_data") throw e;
+        const offline = await fallbackTodayFromIndexedDB(localDate);
+        if (offline) return offline;
+        throw e;
       }
-
-      const offlineExact = await getOfflineDevotional(localDate);
-      if (offlineExact) return offlineExact;
-
-      const allOffline = await getAllDevotionals();
-      if (allOffline.length > 0) {
-        const result = getModuloDevotional(allOffline, localDate);
-        if (result) return result;
-      }
-
-      throw new Error("offline_no_data");
     },
     staleTime: 0,
     retry: (failureCount, error) => {
@@ -117,7 +141,29 @@ export function useDevotionalByDate(date: string) {
   return useQuery({
     queryKey: [api.devotionals.getByDate.path, date, localDate],
     queryFn: async (): Promise<{ devotional: Awaited<ReturnType<typeof api.devotionals.getByDate.responses[200]['parse']>> | null; restricted?: RestrictedDevotionalResponse }> => {
-      if (navigator.onLine) {
+      if (!navigator.onLine) {
+        try {
+          const offline = await getOfflineDevotional(date);
+          if (offline) return { devotional: offline };
+          const all = await getAllDevotionals();
+          const byModulo = getModuloDevotional(all, date);
+          if (byModulo) return { devotional: byModulo };
+        } catch {}
+        return { devotional: null };
+      }
+
+      async function fallbackByDate(): Promise<any | null> {
+        try {
+          const offline = await getOfflineDevotional(date);
+          if (offline) return offline;
+          const all = await getAllDevotionals();
+          const byModulo = getModuloDevotional(all, date);
+          if (byModulo) return byModulo;
+        } catch {}
+        return null;
+      }
+
+      try {
         const baseUrl = buildUrl(api.devotionals.getByDate.path, { date });
         const url = `${baseUrl}?clientDate=${localDate}&_t=${Date.now()}`;
         const res = await fetch(url, { 
@@ -132,14 +178,18 @@ export function useDevotionalByDate(date: string) {
             return { devotional: null, restricted: data as RestrictedDevotionalResponse };
           }
         }
-        if (!res.ok) throw new Error("Failed to fetch devotional");
+        if (!res.ok) {
+          const offline = await fallbackByDate();
+          if (offline) return { devotional: offline };
+          throw new Error("Failed to fetch devotional");
+        }
         const devotional = api.devotionals.getByDate.responses[200].parse(await res.json());
         return { devotional };
+      } catch (e) {
+        const offline = await fallbackByDate();
+        if (offline) return { devotional: offline };
+        throw e;
       }
-
-      const offline = await getOfflineDevotional(date);
-      if (offline) return { devotional: offline };
-      return { devotional: null };
     },
     enabled: !!date,
     staleTime: 0,
@@ -152,23 +202,37 @@ export function useDevotionalsList() {
   return useQuery({
     queryKey: [api.devotionals.list.path, localDate],
     queryFn: async () => {
-      if (navigator.onLine) {
+      if (!navigator.onLine) {
+        const allOffline = await getAllDevotionals();
+        if (allOffline.length > 0) {
+          return allOffline.filter((d: any) => !d.isDeleted).sort((a: any, b: any) => b.date.localeCompare(a.date));
+        }
+        throw new Error("offline_no_data");
+      }
+
+      try {
         const url = `${api.devotionals.list.path}?clientDate=${localDate}&_t=${Date.now()}`;
         const res = await fetch(url, { 
           credentials: "include",
           cache: "no-store",
           headers: { "Cache-Control": "no-cache" }
         });
-        if (!res.ok) throw new Error("Failed to fetch devotionals list");
+        if (!res.ok) {
+          const allOffline = await getAllDevotionals();
+          if (allOffline.length > 0) {
+            return allOffline.filter((d: any) => !d.isDeleted).sort((a: any, b: any) => b.date.localeCompare(a.date));
+          }
+          throw new Error("Failed to fetch devotionals list");
+        }
         return api.devotionals.list.responses[200].parse(await res.json());
+      } catch (e) {
+        if (e instanceof Error && e.message === "offline_no_data") throw e;
+        const allOffline = await getAllDevotionals();
+        if (allOffline.length > 0) {
+          return allOffline.filter((d: any) => !d.isDeleted).sort((a: any, b: any) => b.date.localeCompare(a.date));
+        }
+        throw e;
       }
-
-      const allOffline = await getAllDevotionals();
-      if (allOffline.length > 0) {
-        return getArchiveWindow(allOffline, localDate);
-      }
-
-      throw new Error("offline_no_data");
     },
     staleTime: 0,
     retry: (failureCount, error) => {

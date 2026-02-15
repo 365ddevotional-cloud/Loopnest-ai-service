@@ -307,11 +307,14 @@ export default function Bible() {
           <div className="text-center py-16 px-4">
             <Book className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="font-serif text-xl font-semibold text-foreground mb-2">
-              Unable to Load Chapter
+              {error instanceof Error && error.message.startsWith("bible_still_syncing")
+                ? "Bible Still Syncing"
+                : "Unable to Load Chapter"}
             </h3>
             <p className="text-muted-foreground text-sm">
-              This chapter may not be available in {TRANSLATION_LABELS[translation]}. 
-              Try selecting KJV or another translation.
+              {error instanceof Error && error.message.startsWith("bible_still_syncing")
+                ? `The Bible is still being downloaded for offline use (${error.message.split(":")[1] || "0"} chapters saved so far). Please try again shortly.`
+                : `This chapter may not be available in ${TRANSLATION_LABELS[translation]}. Try selecting KJV or another translation.`}
             </p>
           </div>
         ) : (

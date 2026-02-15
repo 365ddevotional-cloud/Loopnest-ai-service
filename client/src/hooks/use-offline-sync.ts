@@ -4,12 +4,13 @@ import {
   saveSundayLessons,
   saveBibleChapters,
   hasOfflineBible,
+  setMeta,
+  getMeta,
   type BibleChapterEntry,
 } from "@/lib/offlineDb";
 import { BIBLE_BOOKS } from "@/lib/bible-data";
 
 const SYNC_KEY = "offlineSyncTimestamp";
-const BIBLE_SYNC_KEY = "offlineBibleSynced";
 const SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 const BOOK_NUMBERS: Record<string, number> = {
@@ -40,40 +41,59 @@ function shouldSync(): boolean {
 
 async function syncDevotionals(): Promise<void> {
   try {
+    console.log("[OfflineSync] Fetching all devotionals...");
     const res = await fetch("/api/devotionals?_t=" + Date.now(), { credentials: "include" });
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
         await saveDevotionals(data);
+        await setMeta("devotionalsSynced", true);
+        await setMeta("devotionalsCount", data.length);
+        console.log(`[OfflineSync] Devotionals synced: ${data.length} items`);
       }
+    } else {
+      console.warn("[OfflineSync] Devotionals API returned:", res.status);
     }
   } catch (e) {
-    console.warn("Offline sync: devotionals failed", e);
+    console.warn("[OfflineSync] Devotionals sync failed:", e);
   }
 }
 
 async function syncSundayLessons(): Promise<void> {
   try {
+    console.log("[OfflineSync] Fetching all Sunday lessons...");
     const res = await fetch("/api/sunday-school?_t=" + Date.now(), { credentials: "include" });
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
         await saveSundayLessons(data);
+        await setMeta("sundayLessonsSynced", true);
+        await setMeta("sundayLessonsCount", data.length);
+        console.log(`[OfflineSync] Sunday lessons synced: ${data.length} items`);
       }
+    } else {
+      console.warn("[OfflineSync] Sunday lessons API returned:", res.status);
     }
   } catch (e) {
-    console.warn("Offline sync: sunday lessons failed", e);
+    console.warn("[OfflineSync] Sunday lessons sync failed:", e);
   }
 }
 
 async function syncBibleKJV(): Promise<void> {
-  const alreadySynced = localStorage.getItem(BIBLE_SYNC_KEY);
-  if (alreadySynced === "true") {
+  const alreadyComplete = await getMeta("bibleSyncComplete");
+  if (alreadyComplete === true) {
     const hasData = await hasOfflineBible();
-    if (hasData) return;
+    if (hasData) {
+      console.log("[OfflineSync] Bible KJV already synced, skipping");
+      return;
+    }
   }
 
+  console.log("[OfflineSync] Starting Bible KJV sync...");
+  await setMeta("bibleSyncInProgress", true);
+
   const batch: BibleChapterEntry[] = [];
+  let totalSaved = 0;
   let failures = 0;
 
   for (const book of BIBLE_BOOKS) {
@@ -105,6 +125,7 @@ async function syncBibleKJV(): Promise<void> {
 
         if (batch.length >= 20) {
           await saveBibleChapters([...batch]);
+          totalSaved += batch.length;
           batch.length = 0;
         }
 
@@ -117,10 +138,17 @@ async function syncBibleKJV(): Promise<void> {
 
   if (batch.length > 0) {
     await saveBibleChapters(batch);
+    totalSaved += batch.length;
   }
 
+  await setMeta("bibleSyncInProgress", false);
+
   if (failures < 100) {
-    localStorage.setItem(BIBLE_SYNC_KEY, "true");
+    await setMeta("bibleSyncComplete", true);
+    localStorage.setItem("offlineBibleSynced", "true");
+    console.log(`[OfflineSync] Bible KJV sync complete: ${totalSaved} chapters saved, ${failures} failures`);
+  } else {
+    console.warn(`[OfflineSync] Bible KJV sync incomplete: ${totalSaved} saved, ${failures} failures`);
   }
 }
 
@@ -135,14 +163,16 @@ export function useOfflineSync() {
 
     (async () => {
       try {
+        console.log("[OfflineSync] Starting sync...");
         await Promise.all([syncDevotionals(), syncSundayLessons()]);
         localStorage.setItem(SYNC_KEY, String(Date.now()));
+        console.log("[OfflineSync] Devotionals + Sunday lessons sync complete");
 
         syncBibleKJV().catch((e) =>
-          console.warn("Bible KJV background sync error:", e)
+          console.warn("[OfflineSync] Bible KJV background sync error:", e)
         );
       } catch (e) {
-        console.warn("Offline sync error:", e);
+        console.warn("[OfflineSync] Sync error:", e);
       } finally {
         syncingRef.current = false;
       }

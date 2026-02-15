@@ -30,37 +30,75 @@ function computeOfflinePreview(lessons: any[]): any[] {
   const earliestMs = new Date(eY, eM - 1, eD).getTime();
 
   const result: any[] = [];
-  for (let i = -2; i <= 2; i++) {
+  const seen = new Set<number>();
+  for (let i = 0; i <= 5; i++) {
     const targetDate = new Date(tY, tM - 1, tD + daysUntilSunday + i * 7);
     const targetMs = targetDate.getTime();
     const targetStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}-${String(targetDate.getDate()).padStart(2, "0")}`;
 
     const exact = sorted.find((l) => l.date === targetStr);
-    if (exact) {
+    if (exact && !seen.has(exact.id)) {
+      seen.add(exact.id);
       result.push(exact);
-    } else {
+    } else if (!exact) {
       const weeksDiff = Math.floor((targetMs - earliestMs) / (7 * 86400000));
       const index = ((weeksDiff % totalCount) + totalCount) % totalCount;
-      result.push(sorted[index]);
+      const looped = sorted[index];
+      if (!seen.has(looped.id)) {
+        seen.add(looped.id);
+        result.push({ ...looped, _displayDate: targetStr });
+      }
     }
+    if (result.length >= 4) break;
   }
 
   return result;
 }
 
+async function fetchLessonsWithFallback(): Promise<any[]> {
+  if (!navigator.onLine) {
+    const offline = await getAllSundayLessons();
+    if (offline.length > 0) return offline;
+    throw new Error("offline_no_data");
+  }
+  try {
+    const res = await fetch("/api/sunday-school", { credentials: "include" });
+    if (!res.ok) throw new Error("API error");
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) return data;
+    throw new Error("Empty response");
+  } catch (e) {
+    const offline = await getAllSundayLessons();
+    if (offline.length > 0) return offline;
+    if (e instanceof Error && e.message === "offline_no_data") throw e;
+    throw new Error("offline_no_data");
+  }
+}
+
+async function fetchPreviewWithFallback(): Promise<any[]> {
+  if (!navigator.onLine) {
+    const offline = await getAllSundayLessons();
+    if (offline.length > 0) return computeOfflinePreview(offline);
+    throw new Error("offline_no_data");
+  }
+  try {
+    const res = await fetch("/api/sunday-school/preview", { credentials: "include" });
+    if (!res.ok) throw new Error("API error");
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) return data;
+    throw new Error("Empty response");
+  } catch (e) {
+    const offline = await getAllSundayLessons();
+    if (offline.length > 0) return computeOfflinePreview(offline);
+    if (e instanceof Error && e.message === "offline_no_data") throw e;
+    throw new Error("offline_no_data");
+  }
+}
+
 export default function SundaySchool() {
   const { data: lessons, isLoading } = useQuery<SundaySchoolLesson[]>({
     queryKey: ["/api/sunday-school"],
-    queryFn: async () => {
-      if (navigator.onLine) {
-        const res = await fetch("/api/sunday-school", { credentials: "include" });
-        if (!res.ok) throw new Error("Failed to fetch");
-        return res.json();
-      }
-      const offline = await getAllSundayLessons();
-      if (offline.length > 0) return offline;
-      throw new Error("offline_no_data");
-    },
+    queryFn: fetchLessonsWithFallback,
     retry: (failureCount, error) => {
       if (error instanceof Error && error.message === "offline_no_data") return false;
       return failureCount < 2;
@@ -69,18 +107,7 @@ export default function SundaySchool() {
 
   const { data: previewLessons, isLoading: isPreviewLoading } = useQuery<SundaySchoolLesson[]>({
     queryKey: ["/api/sunday-school/preview"],
-    queryFn: async () => {
-      if (navigator.onLine) {
-        const res = await fetch("/api/sunday-school/preview", { credentials: "include" });
-        if (!res.ok) throw new Error("Failed to fetch preview");
-        return res.json();
-      }
-      const offline = await getAllSundayLessons();
-      if (offline.length > 0) {
-        return computeOfflinePreview(offline);
-      }
-      throw new Error("offline_no_data");
-    },
+    queryFn: fetchPreviewWithFallback,
     retry: (failureCount, error) => {
       if (error instanceof Error && error.message === "offline_no_data") return false;
       return failureCount < 2;

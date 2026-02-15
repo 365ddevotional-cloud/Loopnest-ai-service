@@ -1,4 +1,4 @@
-import { getBibleChapter, saveBibleChapters, type BibleChapterEntry } from "@/lib/offlineDb";
+import { getBibleChapter, saveBibleChapters, isBibleSyncComplete, getBibleChapterCount, type BibleChapterEntry } from "@/lib/offlineDb";
 
 export interface BibleBook {
   id: string;
@@ -261,7 +261,33 @@ export async function fetchChapter(
           isFallback: translation !== "KJV",
         };
       }
+      const syncComplete = await isBibleSyncComplete();
+      if (!syncComplete) {
+        const count = await getBibleChapterCount();
+        throw new Error(`bible_still_syncing:${count}`);
+      }
+    } catch (e) {
+      if (e instanceof Error && e.message.startsWith("bible_still_syncing")) throw e;
+    }
+    return null;
+  }
+
+  if (translation === "KJV") {
+    try {
+      const cached = await getBibleChapter(bookId, chapter);
+      if (cached) {
+        const book = getBookById(bookId);
+        fetchChapterInternal(bookId, chapter, "KJV", false).catch(() => {});
+        return {
+          book: cached.book || book?.name || bookId,
+          chapter: cached.chapter,
+          verses: cached.verses as ChapterVerse[],
+          actualTranslation: "KJV",
+          isFallback: false,
+        };
+      }
     } catch {}
   }
+
   return fetchChapterInternal(bookId, chapter, translation, false);
 }

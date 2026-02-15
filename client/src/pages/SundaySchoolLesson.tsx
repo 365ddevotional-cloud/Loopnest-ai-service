@@ -8,7 +8,7 @@ import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { SundaySchoolLesson } from "@shared/schema";
 import { Helmet } from "react-helmet-async";
-import { getAllSundayLessons } from "@/lib/offlineDb";
+import { getAllSundayLessons, getSundayLessonById } from "@/lib/offlineDb";
 
 const numberEmojis = ["1\uFE0F\u20E3", "2\uFE0F\u20E3", "3\uFE0F\u20E3", "4\uFE0F\u20E3", "5\uFE0F\u20E3", "6\uFE0F\u20E3", "7\uFE0F\u20E3", "8\uFE0F\u20E3", "9\uFE0F\u20E3"];
 
@@ -56,15 +56,44 @@ export default function SundaySchoolLessonPage() {
   const { data: lesson, isLoading, error } = useQuery<SundaySchoolLesson>({
     queryKey: ["/api/sunday-school", params.id],
     queryFn: async () => {
-      if (navigator.onLine) {
-        const res = await fetch(`/api/sunday-school/${params.id}`, { credentials: "include" });
-        if (!res.ok) throw new Error("Failed to fetch lesson");
-        return res.json();
+      const lessonId = parseInt(params.id || "0", 10);
+
+      async function getFromIndexedDB(): Promise<SundaySchoolLesson | null> {
+        try {
+          const byId = await getSundayLessonById(lessonId);
+          if (byId) return byId;
+          const all = await getAllSundayLessons();
+          const found = all.find((l: any) => String(l.id) === params.id);
+          if (found) return found;
+          if (all.length > 0) {
+            const sorted = [...all].sort((a: any, b: any) => a.date.localeCompare(b.date));
+            const index = ((lessonId % sorted.length) + sorted.length) % sorted.length;
+            return sorted[index];
+          }
+        } catch {}
+        return null;
       }
-      const all = await getAllSundayLessons();
-      const found = all.find((l: any) => String(l.id) === params.id);
-      if (found) return found;
-      throw new Error("offline_no_data");
+
+      if (!navigator.onLine) {
+        const offline = await getFromIndexedDB();
+        if (offline) return offline;
+        throw new Error("offline_no_data");
+      }
+
+      try {
+        const res = await fetch(`/api/sunday-school/${params.id}`, { credentials: "include" });
+        if (!res.ok) {
+          const offline = await getFromIndexedDB();
+          if (offline) return offline;
+          throw new Error("Failed to fetch lesson");
+        }
+        return res.json();
+      } catch (e) {
+        if (e instanceof Error && e.message === "offline_no_data") throw e;
+        const offline = await getFromIndexedDB();
+        if (offline) return offline;
+        throw e;
+      }
     },
     retry: (failureCount, error) => {
       if (error instanceof Error && error.message === "offline_no_data") return false;
