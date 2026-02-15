@@ -152,5 +152,9 @@ httpServer.listen(
         });
       });
     });
+
+    import("./seed-sunday-school").then(({ seedSundaySchoolLessons }) => {
+      seedSundaySchoolLessons().catch((err) => console.error("Sunday School seed failed:", err));
+    });
   },
 );

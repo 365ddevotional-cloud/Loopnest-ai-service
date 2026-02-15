@@ -39,6 +39,8 @@ import HowToUse from "@/pages/HowToUse";
 import Bible from "@/pages/Bible";
 import PublicDevotionalToday from "@/pages/PublicDevotionalToday";
 import PublicArchive from "@/pages/PublicArchive";
+import SundaySchool from "@/pages/SundaySchool";
+import SundaySchoolLessonPage from "@/pages/SundaySchoolLesson";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -66,6 +68,8 @@ function Router() {
       <Route path="/support" component={Support} />
       <Route path="/how-to-use" component={HowToUse} />
       <Route path="/bible" component={Bible} />
+      <Route path="/sunday-school/:id" component={SundaySchoolLessonPage} />
+      <Route path="/sunday-school" component={SundaySchool} />
       <Route path="/admin-login" component={AdminLogin} />
       <Route component={NotFound} />
     </Switch>

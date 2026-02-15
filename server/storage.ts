@@ -12,6 +12,7 @@ import {
   feedbackMessages,
   partnershipInquiries,
   biblePassages,
+  sundaySchoolLessons,
   type Devotional,
   type InsertDevotional,
   type UpdateDevotionalRequest,
@@ -38,6 +39,8 @@ import {
   type BiblePassage,
   type InsertBiblePassage,
   type BibleTranslation,
+  type SundaySchoolLesson,
+  type InsertSundaySchoolLesson,
 } from "@shared/schema";
 import { eq, desc, and, isNull, or } from "drizzle-orm";
 
@@ -104,6 +107,13 @@ export interface IStorage {
   getAllBiblePassages(translation: BibleTranslation): Promise<BiblePassage[]>;
   createBiblePassage(passage: InsertBiblePassage): Promise<BiblePassage>;
   upsertBiblePassage(passage: InsertBiblePassage): Promise<BiblePassage>;
+
+  // Sunday School
+  getSundaySchoolLessons(): Promise<SundaySchoolLesson[]>;
+  getSundaySchoolLesson(id: number): Promise<SundaySchoolLesson | undefined>;
+  createSundaySchoolLesson(lesson: InsertSundaySchoolLesson): Promise<SundaySchoolLesson>;
+  updateSundaySchoolLesson(id: number, updates: Partial<InsertSundaySchoolLesson>): Promise<SundaySchoolLesson>;
+  deleteSundaySchoolLesson(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -458,6 +468,43 @@ export class DatabaseStorage implements IStorage {
       return updated;
     }
     return this.createBiblePassage(passage);
+  }
+
+  // Sunday School
+  async getSundaySchoolLessons(): Promise<SundaySchoolLesson[]> {
+    return await db
+      .select()
+      .from(sundaySchoolLessons)
+      .orderBy(desc(sundaySchoolLessons.date));
+  }
+
+  async getSundaySchoolLesson(id: number): Promise<SundaySchoolLesson | undefined> {
+    const [lesson] = await db
+      .select()
+      .from(sundaySchoolLessons)
+      .where(eq(sundaySchoolLessons.id, id));
+    return lesson;
+  }
+
+  async createSundaySchoolLesson(lesson: InsertSundaySchoolLesson): Promise<SundaySchoolLesson> {
+    const [created] = await db
+      .insert(sundaySchoolLessons)
+      .values(lesson)
+      .returning();
+    return created;
+  }
+
+  async updateSundaySchoolLesson(id: number, updates: Partial<InsertSundaySchoolLesson>): Promise<SundaySchoolLesson> {
+    const [updated] = await db
+      .update(sundaySchoolLessons)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(sundaySchoolLessons.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteSundaySchoolLesson(id: number): Promise<void> {
+    await db.delete(sundaySchoolLessons).where(eq(sundaySchoolLessons.id, id));
   }
 }
 

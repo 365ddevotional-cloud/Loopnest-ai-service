@@ -287,3 +287,26 @@ export const insertPartnershipSchema = createInsertSchema(partnershipInquiries).
 
 export type PartnershipInquiry = typeof partnershipInquiries.$inferSelect;
 export type InsertPartnership = z.infer<typeof insertPartnershipSchema>;
+
+export const sundaySchoolLessons = pgTable("sunday_school_lessons", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  date: date("date").notNull().unique(),
+  scriptureReferences: text("scripture_references").notNull(),
+  scriptureText: text("scripture_text").notNull(),
+  lessonContent: text("lesson_content").notNull(),
+  discussionQuestions: text("discussion_questions").array().notNull(),
+  prayerFocus: text("prayer_focus").notNull(),
+  weeklyAssignment: text("weekly_assignment").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSundaySchoolLessonSchema = createInsertSchema(sundaySchoolLessons).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type SundaySchoolLesson = typeof sundaySchoolLessons.$inferSelect;
+export type InsertSundaySchoolLesson = z.infer<typeof insertSundaySchoolLessonSchema>;

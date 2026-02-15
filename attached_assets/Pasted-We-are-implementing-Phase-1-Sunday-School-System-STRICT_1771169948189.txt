@@ -1,0 +1,167 @@
+We are implementing Phase 1 Sunday School System.
+
+STRICT RULES:
+- Do NOT modify devotional database schema
+- Do NOT affect daily devotional logic
+- Do NOT alter admin authentication
+- Do NOT implement messaging or group features
+- Only add Sunday School feature safely
+- Keep Sunday School free and public
+- Maintain production stability
+
+GOAL:
+1) Add Sunday School as separate tab
+2) Display 4 upcoming Sunday lessons
+3) Display archive of past Sunday lessons
+4) Use KJV Scripture only
+5) Ensure no interference with existing system
+
+==================================================
+STEP 1 — CREATE SUNDAY SCHOOL DATA STRUCTURE
+==================================================
+
+Create new database table/model:
+
+SundaySchoolLesson
+
+Fields:
+- id
+- title
+- date (Sunday date only)
+- scriptureReferences (string)
+- scriptureText (text, KJV only)
+- lessonContent (text)
+- createdAt
+- updatedAt
+
+Do NOT modify devotional table.
+
+==================================================
+STEP 2 — ADD SUNDAY SCHOOL TAB
+==================================================
+
+Add new navigation tab labeled:
+
+"Sunday School"
+
+Route:
+ /sunday-school
+
+Layout:
+
+Section 1: Upcoming Lessons
+- Display 4 upcoming Sunday lessons
+- Based on current date
+- Sorted ascending
+- Each card shows:
+   Title
+   Date
+   Short excerpt (first 2 lines)
+   Button: "Open Lesson"
+
+Section 2: Archive
+- Display past Sunday lessons
+- Sorted descending by date
+- Paginated or lazy load
+
+==================================================
+STEP 3 — 4-WEEK PREVIEW LOGIC
+==================================================
+
+Logic:
+
+Find current date.
+Identify next Sunday.
+Fetch:
+- That Sunday
+- Next 3 Sundays after that
+
+Display all 4 under "Upcoming Lessons".
+
+Even if today is Monday, show next 4 Sundays.
+
+==================================================
+STEP 4 — LESSON VIEW PAGE
+==================================================
+
+When user clicks lesson:
+
+Display:
+
+- Title
+- Date
+- Scripture references
+- Full KJV quoted text
+- Structured lesson content
+- Discussion questions
+- Prayer focus
+- Weekly assignment
+
+Add button:
+
+"Copy Lesson"
+
+Function:
+Copy full lesson text cleanly formatted for teachers.
+
+==================================================
+STEP 5 — ADMIN MANAGEMENT
+==================================================
+
+Allow admin to:
+- Create new Sunday School lesson
+- Edit existing lesson
+- Delete lesson
+
+Add SundaySchool management section inside admin dashboard.
+
+==================================================
+STEP 6 — INITIAL CONTENT SEED
+==================================================
+
+Create first 4 Sunday lessons starting from next upcoming Sunday.
+
+Topic sequence:
+
+Lesson 1:
+Salvation by Grace (Ephesians 2:8–9 KJV)
+
+Lesson 2:
+The Assurance of Salvation (1 John 5:11–13 KJV)
+
+Lesson 3:
+Walking in the Spirit (Galatians 5:16–18 KJV)
+
+Lesson 4:
+Growing in Spiritual Maturity (Hebrews 5:12–14 KJV)
+
+Each lesson must include:
+
+- Full KJV quoted scripture
+- 2–3 paragraph explanation per outline point
+- Psychological engagement
+- Teacher emphasis lines
+- Application
+- Discussion questions
+- Prayer focus
+- Assignment
+
+==================================================
+STEP 7 — VALIDATION
+==================================================
+
+Confirm:
+
+- Sunday School tab visible
+- 4 upcoming Sundays display
+- Archive works
+- Copy button works
+- Admin can manage lessons
+- No impact on daily devotionals
+- Production build compiles cleanly
+
+Return summary of:
+- Table created
+- Lessons seeded
+- Routes added
+- Admin features added

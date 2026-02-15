@@ -836,6 +836,71 @@ export async function registerRoutes(
     }
   });
 
+  // Sunday School Routes
+  app.get(api.sundaySchool.list.path, async (_req, res) => {
+    const lessons = await storage.getSundaySchoolLessons();
+    res.json(lessons);
+  });
+
+  app.get(api.sundaySchool.get.path, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    const lesson = await storage.getSundaySchoolLesson(id);
+    if (!lesson) {
+      return res.status(404).json({ message: "Lesson not found" });
+    }
+    res.json(lesson);
+  });
+
+  app.post(api.sundaySchool.create.path, requireAdmin, async (req, res) => {
+    try {
+      const input = api.sundaySchool.create.input.parse(req.body);
+      const lesson = await storage.createSundaySchoolLesson(input);
+      res.status(201).json(lesson);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join(".") });
+      }
+      throw err;
+    }
+  });
+
+  app.patch(api.sundaySchool.update.path, requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    const existing = await storage.getSundaySchoolLesson(id);
+    if (!existing) {
+      return res.status(404).json({ message: "Lesson not found" });
+    }
+    try {
+      const input = api.sundaySchool.update.input.parse(req.body);
+      const updated = await storage.updateSundaySchoolLesson(id, input);
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join(".") });
+      }
+      throw err;
+    }
+  });
+
+  app.delete(api.sundaySchool.delete.path, requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    const existing = await storage.getSundaySchoolLesson(id);
+    if (!existing) {
+      return res.status(404).json({ message: "Lesson not found" });
+    }
+    await storage.deleteSundaySchoolLesson(id);
+    res.status(204).send();
+  });
+
   // Object Storage Routes
   registerObjectStorageRoutes(app);
 

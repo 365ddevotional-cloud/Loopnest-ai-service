@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff, Book } from "lucide-react";
+import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff, Book, GraduationCap } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import { cn } from "@/lib/utils";
 import logoImage from "@assets/IMG_202512182225101_-_Copy_1767468127874.PNG";
@@ -108,6 +108,7 @@ export function Header() {
     { href: "/", label: "Today", icon: BookOpen, external: false, adminOnly: false },
     { href: "/archive", label: "Archive", icon: Calendar, external: false, adminOnly: false },
     { href: "/bible", label: "Bible", icon: Book, external: false, adminOnly: false },
+    { href: "/sunday-school", label: "Sunday School", icon: GraduationCap, external: false, adminOnly: false },
     { href: "https://www.youtube.com/@365DailyDevotional", label: "YouTube", icon: SiYoutube, external: true, adminOnly: false },
     { href: "https://payhip.com/SpiritToneRecords", label: "Shop", icon: ShoppingBag, external: true, adminOnly: false },
     { href: "/prayer-counseling", label: "Prayer / Counseling", icon: MessageCircleHeart, external: false, adminOnly: false },

@@ -15,7 +15,7 @@ The frontend is built with React 18 and TypeScript, utilizing Wouter for routing
 The backend runs on Node.js with Express and is written in TypeScript using ES modules. It exposes RESTful API endpoints defined in `shared/routes.ts` with Zod validation for type safety. esbuild is used for server bundling.
 
 ### Data Storage
-PostgreSQL serves as the database, managed by Drizzle ORM with `drizzle-zod` for schema validation. The database schema is defined in `shared/schema.ts` and includes tables for `devotionals`, `biblePassages`, `prayerRequests`, and `prayerReplies`. Drizzle Kit handles database migrations.
+PostgreSQL serves as the database, managed by Drizzle ORM with `drizzle-zod` for schema validation. The database schema is defined in `shared/schema.ts` and includes tables for `devotionals`, `biblePassages`, `prayerRequests`, `prayerReplies`, and `sundaySchoolLessons`. Drizzle Kit handles database migrations.
 
 ### Key Design Patterns
 The architecture emphasizes shared types and type-safe APIs, with schema definitions and API routes shared between client and server via the `/shared` directory. A Repository Pattern (IStorage interface) abstracts database operations. UI components are designed for composition.
@@ -28,6 +28,7 @@ The architecture emphasizes shared types and type-safe APIs, with schema definit
 - **Data Protection**: Includes a soft-delete system for devotionals with `isDeleted` and `deletedAt` fields, requiring explicit confirmation for deletion, and restricting operations on past devotionals. Admin backup and monitoring endpoints are available.
 - **Locked Features**: Stable features like the Bible Reading interface (with verse bookmarking, highlighting, notes, and sharing), Daily Bible Verse, Sharing features, Devotionals System, and Prayer & Counseling system are protected from regression.
 - **Daily Notification System**: Browser-based web notifications allow users to opt-in for daily reminders when new devotionals are available, managed via `NotificationContext` and localStorage.
+- **Sunday School System**: Free public feature at `/sunday-school` with weekly KJV-only lessons. Shows 4 upcoming Sunday lessons and an archive of past lessons. Each lesson includes scripture, full lesson content, discussion questions, prayer focus, and weekly assignment. Admin can create, edit, and delete lessons via the admin dashboard "Sunday School" tab. Seed data auto-populates 4 initial lessons. Copy button formats lessons for sharing. Schema: `sundaySchoolLessons` table. API: `/api/sunday-school` endpoints. Seed: `server/seed-sunday-school.ts`.
 
 ## External Dependencies
 

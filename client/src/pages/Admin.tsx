@@ -8,13 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
 import { useLocation } from "wouter";
-import type { PrayerRequest, ThreadMessage, PrayerAttachment, Devotional } from "@shared/schema";
+import type { PrayerRequest, ThreadMessage, PrayerAttachment, Devotional, SundaySchoolLesson } from "@shared/schema";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getDevotionalStatus } from "@/lib/date-utils";
@@ -950,6 +950,241 @@ function PrayerInbox() {
   );
 }
 
+function SundaySchoolAdmin() {
+  const { toast } = useToast();
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingLesson, setEditingLesson] = useState<SundaySchoolLesson | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+
+  const [formTitle, setFormTitle] = useState("");
+  const [formDate, setFormDate] = useState("");
+  const [formScriptureRefs, setFormScriptureRefs] = useState("");
+  const [formScriptureText, setFormScriptureText] = useState("");
+  const [formLessonContent, setFormLessonContent] = useState("");
+  const [formQuestions, setFormQuestions] = useState("");
+  const [formPrayerFocus, setFormPrayerFocus] = useState("");
+  const [formAssignment, setFormAssignment] = useState("");
+
+  const { data: lessons, isLoading } = useQuery<SundaySchoolLesson[]>({
+    queryKey: ["/api/sunday-school"],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/sunday-school", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sunday-school"] });
+      toast({ title: "Lesson created successfully." });
+      resetForm();
+    },
+    onError: (err: any) => {
+      toast({ title: "Failed to create lesson.", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await apiRequest("PATCH", `/api/sunday-school/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sunday-school"] });
+      toast({ title: "Lesson updated successfully." });
+      resetForm();
+    },
+    onError: (err: any) => {
+      toast({ title: "Failed to update lesson.", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/sunday-school/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sunday-school"] });
+      toast({ title: "Lesson deleted." });
+      setDeleteId(null);
+    },
+    onError: (err: any) => {
+      toast({ title: "Failed to delete lesson.", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const resetForm = () => {
+    setShowCreateForm(false);
+    setEditingLesson(null);
+    setFormTitle("");
+    setFormDate("");
+    setFormScriptureRefs("");
+    setFormScriptureText("");
+    setFormLessonContent("");
+    setFormQuestions("");
+    setFormPrayerFocus("");
+    setFormAssignment("");
+  };
+
+  const openEdit = (lesson: SundaySchoolLesson) => {
+    setEditingLesson(lesson);
+    setShowCreateForm(true);
+    setFormTitle(lesson.title);
+    setFormDate(lesson.date);
+    setFormScriptureRefs(lesson.scriptureReferences);
+    setFormScriptureText(lesson.scriptureText);
+    setFormLessonContent(lesson.lessonContent);
+    setFormQuestions(lesson.discussionQuestions.join("\n"));
+    setFormPrayerFocus(lesson.prayerFocus);
+    setFormAssignment(lesson.weeklyAssignment);
+  };
+
+  const handleSubmit = () => {
+    const questions = formQuestions.split("\n").map((q) => q.trim()).filter(Boolean);
+    const data = {
+      title: formTitle,
+      date: formDate,
+      scriptureReferences: formScriptureRefs,
+      scriptureText: formScriptureText,
+      lessonContent: formLessonContent,
+      discussionQuestions: questions,
+      prayerFocus: formPrayerFocus,
+      weeklyAssignment: formAssignment,
+    };
+    if (editingLesson) {
+      updateMutation.mutate({ id: editingLesson.id, data });
+    } else {
+      createMutation.mutate(data);
+    }
+  };
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <p className="text-sm text-muted-foreground">
+          {lessons ? `${lessons.length} lesson(s)` : "Loading..."}
+        </p>
+        <Button
+          onClick={() => { resetForm(); setShowCreateForm(true); }}
+          className="gap-2"
+          data-testid="button-create-lesson"
+        >
+          <Plus className="w-4 h-4" />
+          New Lesson
+        </Button>
+      </div>
+
+      {showCreateForm && (
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">
+              {editingLesson ? "Edit Lesson" : "Create New Lesson"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Title</Label>
+                <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="Lesson title" data-testid="input-lesson-title" />
+              </div>
+              <div className="space-y-2">
+                <Label>Sunday Date</Label>
+                <Input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} data-testid="input-lesson-date" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Scripture References</Label>
+              <Input value={formScriptureRefs} onChange={(e) => setFormScriptureRefs(e.target.value)} placeholder="e.g. Ephesians 2:8-9 (KJV)" data-testid="input-lesson-refs" />
+            </div>
+            <div className="space-y-2">
+              <Label>Scripture Text (KJV)</Label>
+              <Textarea value={formScriptureText} onChange={(e) => setFormScriptureText(e.target.value)} placeholder="Full KJV scripture text" rows={3} data-testid="input-lesson-scripture" />
+            </div>
+            <div className="space-y-2">
+              <Label>Lesson Content</Label>
+              <Textarea value={formLessonContent} onChange={(e) => setFormLessonContent(e.target.value)} placeholder="Full lesson content with outline points, teacher emphasis, and application" rows={10} data-testid="input-lesson-content" />
+            </div>
+            <div className="space-y-2">
+              <Label>Discussion Questions (one per line)</Label>
+              <Textarea value={formQuestions} onChange={(e) => setFormQuestions(e.target.value)} placeholder="Enter each question on a new line" rows={4} data-testid="input-lesson-questions" />
+            </div>
+            <div className="space-y-2">
+              <Label>Prayer Focus</Label>
+              <Textarea value={formPrayerFocus} onChange={(e) => setFormPrayerFocus(e.target.value)} placeholder="Prayer focus text" rows={3} data-testid="input-lesson-prayer" />
+            </div>
+            <div className="space-y-2">
+              <Label>Weekly Assignment</Label>
+              <Textarea value={formAssignment} onChange={(e) => setFormAssignment(e.target.value)} placeholder="Weekly assignment text" rows={3} data-testid="input-lesson-assignment" />
+            </div>
+            <div className="flex gap-3">
+              <Button onClick={handleSubmit} disabled={isPending || !formTitle || !formDate} className="gap-2" data-testid="button-submit-lesson">
+                {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                {editingLesson ? "Update Lesson" : "Create Lesson"}
+              </Button>
+              <Button variant="outline" onClick={resetForm} data-testid="button-cancel-lesson">
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading && (
+        <div className="flex justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      )}
+
+      {lessons && lessons.length > 0 && (
+        <div className="space-y-3">
+          {lessons.map((lesson) => (
+            <Card key={lesson.id} data-testid={`card-admin-lesson-${lesson.id}`}>
+              <CardContent className="flex items-center justify-between gap-4 py-4 flex-wrap">
+                <div className="min-w-0">
+                  <p className="font-semibold text-foreground">{lesson.title}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {format(parseISO(lesson.date), "MMMM d, yyyy")} &middot; {lesson.scriptureReferences}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="icon" variant="ghost" onClick={() => openEdit(lesson)} data-testid={`button-edit-lesson-${lesson.id}`}>
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost" onClick={() => setDeleteId(lesson.id)} data-testid={`button-delete-lesson-${lesson.id}`}>
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete this lesson?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteId !== null && deleteMutation.mutate(deleteId)}
+              disabled={deleteMutation.isPending}
+              data-testid="button-confirm-delete-lesson"
+            >
+              {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 function formatDevotionalForCopy(d: Devotional): string {
   const declarations = d.faithDeclarations || [];
   const len = declarations.length;
@@ -1232,7 +1467,7 @@ export default function Admin() {
       </div>
 
       <Tabs defaultValue="inbox" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+        <TabsList className="grid w-full grid-cols-5 max-w-3xl">
           <TabsTrigger value="inbox" data-testid="tab-inbox">
             <Inbox className="w-4 h-4 mr-2" />
             Prayer Inbox
@@ -1244,6 +1479,10 @@ export default function Admin() {
           <TabsTrigger value="preview" data-testid="tab-preview">
             <Telescope className="w-4 h-4 mr-2" />
             Preview
+          </TabsTrigger>
+          <TabsTrigger value="sunday-school" data-testid="tab-sunday-school">
+            <GraduationCap className="w-4 h-4 mr-2" />
+            Sunday School
           </TabsTrigger>
           <TabsTrigger value="devotionals" data-testid="tab-devotionals">
             <ShieldCheck className="w-4 h-4 mr-2" />
@@ -1298,6 +1537,23 @@ export default function Admin() {
             </CardHeader>
             <CardContent className="p-6">
               <DevotionalPreviewTools />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="sunday-school">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+                <GraduationCap className="w-6 h-6" />
+                Sunday School Management
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Create, edit, and delete Sunday School lessons.
+              </p>
+            </CardHeader>
+            <CardContent className="p-6">
+              <SundaySchoolAdmin />
             </CardContent>
           </Card>
         </TabsContent>
