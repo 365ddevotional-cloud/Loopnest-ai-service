@@ -1,0 +1,119 @@
+GOAL:
+Insert the next 10 Sunday School lessons chronologically after December 20, 2026.
+Use UPSERT (INSERT ... ON CONFLICT (date) DO UPDATE).
+Match EXACT existing Sunday School structure.
+Use KJV only.
+Do NOT modify previous entries.
+
+LESSONS:
+
+1) TITLE: The Light Has Come (Christmas Celebration)
+DATE: 2026-12-27
+SCRIPTURES: John 1:4–9; Luke 2:29–32 (KJV)
+
+SCRIPTURE TEXT (KJV):
+John 1:9 — That was the true Light, which lighteth every man that cometh into the world.
+Luke 2:30–32 — For mine eyes have seen thy salvation...
+
+LESSON CONTENT:
+OUTLINE POINT 1: Christ the True Light
+Jesus did not come merely to inspire but to save.
+
+OUTLINE POINT 2: Salvation Revealed to All Nations
+The birth of Christ fulfilled prophecy.
+
+OUTLINE POINT 3: Responding to the Light
+Light demands response.
+
+TEACHER EMPHASIS:
+Call for gratitude.
+Invite salvation response.
+Encourage renewed devotion.
+
+APPLICATION:
+Reflect on what Christ’s coming means personally.
+
+DISCUSSION QUESTIONS:
+1. What does it mean that Christ is Light?
+2. Why is Christmas more than tradition?
+3. How should believers respond?
+4. How can we share this message?
+
+PRAYER FOCUS:
+Lord Jesus, thank You for coming.
+Let Your light shine through me.
+
+WEEKLY ASSIGNMENT:
+Share the gospel with one person.
+
+---
+
+2) TITLE: Finishing the Year Strong
+DATE: 2027-01-03
+SCRIPTURES: 2 Timothy 4:7; Psalm 90:12 (KJV)
+
+[Full structured lesson]
+
+---
+
+3) TITLE: A Fresh Start with God
+DATE: 2027-01-10
+SCRIPTURES: Lamentations 3:22–23; Isaiah 43:18–19 (KJV)
+
+[Full structured lesson]
+
+---
+
+4) TITLE: Consecration and Commitment
+DATE: 2027-01-17
+SCRIPTURES: Joshua 24:15; Romans 12:1 (KJV)
+
+[Full structured lesson]
+
+---
+
+5) TITLE: Establishing Spiritual Disciplines
+DATE: 2027-01-24
+SCRIPTURES: Acts 2:42; 1 Timothy 4:7–8 (KJV)
+
+[Full structured lesson]
+
+---
+
+6) TITLE: The Power of Fasting
+DATE: 2027-01-31
+SCRIPTURES: Matthew 6:16–18; Isaiah 58:6 (KJV)
+
+[Full structured lesson]
+
+---
+
+7) TITLE: Walking in Obedience
+DATE: 2027-02-07
+SCRIPTURES: John 14:15; 1 Samuel 15:22 (KJV)
+
+[Full structured lesson]
+
+---
+
+8) TITLE: Faith That Endures
+DATE: 2027-02-14
+SCRIPTURES: Hebrews 10:35–36; James 1:12 (KJV)
+
+[Full structured lesson]
+
+---
+
+9) TITLE: Love in Action
+DATE: 2027-02-21
+SCRIPTURES: 1 John 3:18; John 13:34–35 (KJV)
+
+[Full structured lesson]
+
+---
+
+10) TITLE: Preparing for Resurrection Hope (Easter Build-Up Week 1)
+DATE: 2027-02-28
+SCRIPTURES: Isaiah 53:5–6; John 1:29 (KJV)
+
+[Full structured lesson preparing toward Easter emphasis]
