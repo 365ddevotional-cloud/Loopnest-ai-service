@@ -3,18 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, BookOpen, Calendar, ChevronRight, GraduationCap } from "lucide-react";
-import { format, parseISO, isAfter, startOfDay, isBefore, addDays } from "date-fns";
+import { format, parseISO, startOfDay, isBefore } from "date-fns";
 import { Link } from "wouter";
 import type { SundaySchoolLesson } from "@shared/schema";
 import { Helmet } from "react-helmet-async";
-
-function getNextSunday(from: Date): Date {
-  const d = new Date(from);
-  const day = d.getDay();
-  if (day === 0) return d;
-  d.setDate(d.getDate() + (7 - day));
-  return d;
-}
 
 export default function SundaySchool() {
   const { data: lessons, isLoading } = useQuery<SundaySchoolLesson[]>({
@@ -22,19 +14,17 @@ export default function SundaySchool() {
   });
 
   const today = startOfDay(new Date());
-  const nextSunday = getNextSunday(today);
-  const fourWeeksOut = addDays(nextSunday, 28);
 
   const upcomingLessons = (lessons || [])
     .filter((l) => {
-      const d = parseISO(l.date);
-      return !isBefore(d, today) && isBefore(d, fourWeeksOut);
+      const d = startOfDay(parseISO(l.date));
+      return !isBefore(d, today);
     })
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 4);
 
   const pastLessons = (lessons || [])
-    .filter((l) => isBefore(parseISO(l.date), today))
+    .filter((l) => isBefore(startOfDay(parseISO(l.date)), today))
     .sort((a, b) => b.date.localeCompare(a.date));
 
   if (isLoading) {
@@ -75,9 +65,9 @@ export default function SundaySchool() {
               Upcoming Lessons
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
-              {upcomingLessons.map((lesson) => {
-                const lessonDate = parseISO(lesson.date);
-                const isThisSunday = !isAfter(today, lessonDate) && !isBefore(lessonDate, today);
+              {upcomingLessons.map((lesson, index) => {
+                const lessonDate = startOfDay(parseISO(lesson.date));
+                const isThisSunday = index === 0;
                 return (
                   <Card key={lesson.id} className="hover-elevate transition-all" data-testid={`card-lesson-upcoming-${lesson.id}`}>
                     <CardHeader className="pb-2">
@@ -85,8 +75,10 @@ export default function SundaySchool() {
                         <CardTitle className="font-serif text-lg leading-tight">
                           {lesson.title}
                         </CardTitle>
-                        {isThisSunday && (
-                          <Badge variant="default" className="shrink-0">This Sunday</Badge>
+                        {isThisSunday ? (
+                          <Badge variant="default" className="shrink-0" data-testid={`badge-this-sunday-${lesson.id}`}>This Sunday</Badge>
+                        ) : (
+                          <Badge variant="secondary" className="shrink-0" data-testid={`badge-upcoming-${lesson.id}`}>Upcoming</Badge>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground">
@@ -98,7 +90,10 @@ export default function SundaySchool() {
                         {lesson.scriptureReferences}
                       </p>
                       <p className="text-sm text-foreground/80 line-clamp-2">
-                        {lesson.lessonContent.substring(0, 150)}...
+                        {lesson.lessonContent
+                          .replace(/OUTLINE POINT \d+:\s*/g, "")
+                          .replace(/TEACHER EMPHASIS:\s*/g, "")
+                          .substring(0, 150)}...
                       </p>
                       <Link href={`/sunday-school/${lesson.id}`}>
                         <Button variant="outline" className="w-full gap-2" data-testid={`button-open-lesson-${lesson.id}`}>

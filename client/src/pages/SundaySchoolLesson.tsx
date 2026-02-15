@@ -9,6 +9,19 @@ import { useToast } from "@/hooks/use-toast";
 import type { SundaySchoolLesson } from "@shared/schema";
 import { Helmet } from "react-helmet-async";
 
+const numberEmojis = ["1\uFE0F\u20E3", "2\uFE0F\u20E3", "3\uFE0F\u20E3", "4\uFE0F\u20E3", "5\uFE0F\u20E3", "6\uFE0F\u20E3", "7\uFE0F\u20E3", "8\uFE0F\u20E3", "9\uFE0F\u20E3"];
+
+function formatLessonContent(content: string): string {
+  let formatted = content;
+  formatted = formatted.replace(/OUTLINE POINT (\d+):\s*/g, (_match, num) => {
+    const idx = parseInt(num, 10) - 1;
+    const emoji = idx < numberEmojis.length ? numberEmojis[idx] : `${num}.`;
+    return `${emoji} `;
+  });
+  formatted = formatted.replace(/TEACHER EMPHASIS:/g, "\uD83D\uDDE3 Teacher Emphasis:");
+  return formatted;
+}
+
 function formatLessonForCopy(lesson: SundaySchoolLesson): string {
   const lines: string[] = [];
   lines.push(`*SUNDAY SCHOOL LESSON*`);
@@ -20,7 +33,7 @@ function formatLessonForCopy(lesson: SundaySchoolLesson): string {
   lines.push(`"${lesson.scriptureText}"`);
   lines.push(``);
   lines.push(`*Lesson:*`);
-  lines.push(lesson.lessonContent);
+  lines.push(formatLessonContent(lesson.lessonContent));
   lines.push(``);
   lines.push(`*Discussion Questions:*`);
   lesson.discussionQuestions.forEach((q, i) => lines.push(`${i + 1}. ${q}`));
@@ -144,7 +157,7 @@ export default function SundaySchoolLessonPage() {
               Lesson Content
             </div>
             <div className="whitespace-pre-wrap text-foreground/90 leading-relaxed">
-              {lesson.lessonContent}
+              {formatLessonContent(lesson.lessonContent)}
             </div>
           </CardContent>
         </Card>

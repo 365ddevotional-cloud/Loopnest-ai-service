@@ -1,0 +1,101 @@
+We are refining the Sunday School feature only.
+
+STRICT RULES:
+- Do NOT modify devotional database schema
+- Do NOT alter daily devotional logic
+- Do NOT change admin authentication
+- Only refine Sunday School display logic and formatting
+- Maintain production stability
+
+==================================================
+FIX 1 — CORRECT "THIS SUNDAY" LABEL LOGIC
+==================================================
+
+Current issue:
+Multiple lessons show "This Sunday".
+
+Correct behavior:
+
+1) Identify the nearest upcoming Sunday relative to current date.
+2) Only that lesson should display badge:
+   "This Sunday"
+
+3) The next 3 upcoming Sundays should display badge:
+   "Upcoming"
+
+4) Past Sundays should display:
+   No badge OR "Completed"
+
+Implement conditional badge logic based on:
+- Current date
+- Lesson date
+
+==================================================
+FIX 2 — ENSURE 4-WEEK PREVIEW WORKS
+==================================================
+
+Current issue:
+Only 3 upcoming lessons visible.
+
+Correct behavior:
+
+1) Compute next Sunday from current date.
+2) Fetch exactly 4 Sunday lessons:
+   - Next Sunday
+   - +7 days
+   - +14 days
+   - +21 days
+
+3) If fewer than 4 exist, fetch next available until 4 total.
+4) Display all 4 in Upcoming Lessons section.
+
+Ensure sorting ascending by date.
+
+==================================================
+FIX 3 — OUTLINE STYLE ADJUSTMENT
+==================================================
+
+Current display:
+"OUTLINE POINT 1: The Nature of Grace"
+
+Change to cleaner pastoral formatting:
+
+Instead of:
+OUTLINE POINT 1: The Nature of Grace
+
+Display as:
+1️⃣ The Nature of Grace
+
+Remove the words:
+"OUTLINE POINT"
+
+Apply formatting for all outline sections.
+
+==================================================
+FIX 4 — TEACHER EMPHASIS STYLE
+==================================================
+
+Current display:
+TEACHER EMPHASIS:
+
+Change to:
+
+🗣 Teacher Emphasis
+
+Remove all caps formatting.
+
+==================================================
+VALIDATION CHECKLIST
+==================================================
+
+Confirm:
+
+- Only 1 lesson shows "This Sunday"
+- Next 3 show "Upcoming"
+- Exactly 4 upcoming lessons visible
+- Outline numbering clean (1️⃣ 2️⃣ 3️⃣ etc.)
+- Teacher Emphasis formatting updated
+- No devotional logic affected
+- Production build compiles cleanly
+
+Return summary of changes implemented.
