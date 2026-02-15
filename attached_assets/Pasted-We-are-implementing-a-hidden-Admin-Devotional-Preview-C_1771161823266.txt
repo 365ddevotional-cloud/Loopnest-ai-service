@@ -1,0 +1,115 @@
+We are implementing a hidden Admin Devotional Preview & Copy system.
+
+STRICT RULES:
+- Do NOT modify database schema
+- Do NOT expose preview tools to public users
+- Do NOT alter devotional lifecycle logic for normal users
+- Do NOT change authentication logic
+- Do NOT remove existing admin capabilities
+- Only extend admin functionality
+- Keep feature invisible to non-admin users
+
+GOAL:
+1) Add hidden Admin Preview Date selector
+2) Add Admin-only "Copy Devotional" button
+3) Ensure public users cannot access these tools
+4) Preserve normal devotional behavior for all users
+
+==================================================
+STEP 1 — ADMIN-ONLY PREVIEW DATE SYSTEM
+==================================================
+
+Inside Admin Dashboard ONLY:
+
+Add new section:
+
+"Devotional Preview Tools"
+
+Add:
+
+- Date Picker input
+- Default value: today’s date
+- When admin selects a date:
+   Temporarily load devotional for selected date
+   Without changing actual live date logic
+   Without affecting public users
+
+Implementation logic:
+
+If user.role === "admin":
+   Allow overrideDate state
+Else:
+   overrideDate = null
+
+When rendering devotional:
+
+If overrideDate exists AND user is admin:
+   Load devotional for overrideDate
+Else:
+   Load devotional for real current date
+
+Ensure:
+- overrideDate is session-based only
+- Not stored in database
+- Clears when admin logs out
+
+==================================================
+STEP 2 — ADMIN-ONLY COPY BUTTON
+==================================================
+
+Within Admin Dashboard devotional preview:
+
+Add button:
+
+"Copy This Devotional"
+
+Function:
+
+- Extract full devotional content:
+   Title
+   Date
+   Scripture
+   Devotional body
+   Prayer Points
+   Faith Declarations
+   Christian Quotes
+   Prophetic Declaration
+   Footer
+
+- Format clean plain text (WhatsApp-ready)
+- Preserve spacing
+- Remove unnecessary UI symbols
+- Copy to clipboard
+- Show confirmation toast:
+   "Devotional copied successfully."
+
+Ensure:
+Button visible ONLY to admin.
+
+==================================================
+STEP 3 — HIDE FROM PUBLIC USERS
+==================================================
+
+Verify:
+
+- No preview tools appear on public devotional page
+- No preview parameters in URL
+- No exposed route like /preview?date=
+- No console-accessible override for non-admin
+- Role check strictly enforced server-side
+
+==================================================
+STEP 4 — VALIDATION
+==================================================
+
+Confirm:
+
+- Admin can preview future dates
+- Admin can preview past dates
+- Public users still see real current devotional
+- Admin can copy devotional cleanly
+- No UI leakage
+- No broken routes
+- Production build compiles successfully
+
+Return summary of implementation.

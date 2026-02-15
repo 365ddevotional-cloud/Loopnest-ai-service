@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
@@ -950,6 +950,257 @@ function PrayerInbox() {
   );
 }
 
+function formatDevotionalForCopy(d: Devotional): string {
+  const declarations = d.faithDeclarations || [];
+  const len = declarations.length;
+  const baseSize = Math.floor(len / 3);
+  const remainder = len % 3;
+  const s1 = baseSize + (remainder > 0 ? 1 : 0);
+  const s2 = baseSize + (remainder > 1 ? 1 : 0);
+  const faithItems = declarations.slice(0, s1);
+  const quoteItems = declarations.slice(s1, s1 + s2);
+  const propheticItems = declarations.slice(s1 + s2);
+
+  const lines: string[] = [];
+  lines.push(`*365 DAILY DEVOTIONAL*`);
+  lines.push(``);
+  lines.push(`*${d.title}*`);
+  lines.push(`${format(parseISO(d.date), "MMMM d, yyyy")}`);
+  lines.push(``);
+  lines.push(`*Scripture:*`);
+  lines.push(`"${d.scriptureText.replace(/\[\[RED\]\]/g, '').replace(/\[\[\/RED\]\]/g, '')}"`);
+  lines.push(`-- ${d.scriptureReference}`);
+  lines.push(``);
+  lines.push(`*Devotional:*`);
+  lines.push(d.content);
+  lines.push(``);
+  lines.push(`*Prayer Points:*`);
+  d.prayerPoints.forEach(p => lines.push(`- ${p}`));
+
+  if (faithItems.length > 0) {
+    lines.push(``);
+    lines.push(`*Faith Declaration:*`);
+    faithItems.forEach(f => lines.push(`- ${f}`));
+  }
+
+  if (quoteItems.length > 0) {
+    lines.push(``);
+    lines.push(`*Christian Quotes:*`);
+    quoteItems.forEach(q => lines.push(`- ${q}`));
+  }
+
+  if (propheticItems.length > 0) {
+    lines.push(``);
+    lines.push(`*Prophetic Declaration:*`);
+    propheticItems.forEach(p => lines.push(`- ${p}`));
+  }
+
+  lines.push(``);
+  lines.push(`Written by ${d.author || "Moses Afolabi"}`);
+  lines.push(``);
+  lines.push(`-- Shared from 365 Daily Devotional App`);
+
+  return lines.join('\n');
+}
+
+function DevotionalPreviewTools() {
+  const { toast } = useToast();
+  const today = format(new Date(), "yyyy-MM-dd");
+  const [previewDate, setPreviewDate] = useState(today);
+
+  const { data: previewDevotional, isLoading, error } = useQuery<Devotional | null>({
+    queryKey: ["/api/devotionals/date", previewDate],
+    queryFn: async () => {
+      const res = await fetch(`/api/devotionals/date/${previewDate}?clientDate=${today}`, {
+        credentials: "include",
+        cache: "no-store",
+      });
+      if (res.status === 404) return null;
+      if (!res.ok) throw new Error("Failed to fetch devotional");
+      return res.json();
+    },
+    enabled: !!previewDate,
+  });
+
+  const handleCopy = async () => {
+    if (!previewDevotional) return;
+    const text = formatDevotionalForCopy(previewDevotional);
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "Devotional copied successfully." });
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      toast({ title: "Devotional copied successfully." });
+    }
+  };
+
+  const declarations = previewDevotional?.faithDeclarations || [];
+  const len = declarations.length;
+  const baseSize = Math.floor(len / 3);
+  const remainder = len % 3;
+  const s1 = baseSize + (remainder > 0 ? 1 : 0);
+  const s2 = baseSize + (remainder > 1 ? 1 : 0);
+  const faithItems = declarations.slice(0, s1);
+  const quoteItems = declarations.slice(s1, s1 + s2);
+  const propheticItems = declarations.slice(s1 + s2);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+        <div className="space-y-2">
+          <Label htmlFor="preview-date">Preview Date</Label>
+          <Input
+            id="preview-date"
+            type="date"
+            value={previewDate}
+            onChange={(e) => setPreviewDate(e.target.value)}
+            className="w-full sm:w-56"
+            data-testid="input-preview-date"
+          />
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setPreviewDate(today)}
+          data-testid="button-preview-today"
+        >
+          <Calendar className="w-4 h-4 mr-1" />
+          Today
+        </Button>
+        {previewDevotional && (
+          <Button
+            onClick={handleCopy}
+            className="gap-2"
+            data-testid="button-copy-devotional"
+          >
+            <Copy className="w-4 h-4" />
+            Copy This Devotional
+          </Button>
+        )}
+      </div>
+
+      {isLoading && (
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      )}
+
+      {error && (
+        <div className="text-center py-8 text-destructive">
+          Failed to load devotional for this date.
+        </div>
+      )}
+
+      {!isLoading && !error && !previewDevotional && (
+        <div className="text-center py-8 text-muted-foreground">
+          No devotional found for {format(parseISO(previewDate), "MMMM d, yyyy")}.
+        </div>
+      )}
+
+      {previewDevotional && (
+        <div className="border rounded-lg overflow-hidden" data-testid="preview-devotional-content">
+          <div className="bg-primary/5 p-6 border-b">
+            <h2 className="font-serif text-2xl font-bold text-foreground mb-2" data-testid="text-preview-title">
+              {previewDevotional.title}
+            </h2>
+            <p className="text-sm text-muted-foreground" data-testid="text-preview-date">
+              {format(parseISO(previewDevotional.date), "MMMM d, yyyy")}
+            </p>
+            {previewDevotional.seasonalOverride && (
+              <Badge className="mt-2 text-xs">Seasonal Override</Badge>
+            )}
+          </div>
+
+          <div className="p-6 space-y-6">
+            <div>
+              <Label className="text-muted-foreground text-xs uppercase tracking-wider">Scripture</Label>
+              <p className="font-medium mt-1">{previewDevotional.scriptureReference}</p>
+              <p className="italic text-muted-foreground mt-1">
+                <RedLetterScripture
+                  text={previewDevotional.scriptureText}
+                  enabled={previewDevotional.redLetterEnabled !== false}
+                />
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-muted-foreground text-xs uppercase tracking-wider">Devotional</Label>
+              <div className="mt-1 whitespace-pre-wrap text-foreground/90 leading-relaxed">
+                {previewDevotional.content}
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-muted-foreground text-xs uppercase tracking-wider">Prayer Points</Label>
+              <ul className="mt-1 space-y-2">
+                {previewDevotional.prayerPoints.map((point, i) => (
+                  <li key={i} className="flex gap-2 text-sm">
+                    <span className="text-primary font-bold mt-0.5">{'\u2022'}</span>
+                    <span>{point}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {faithItems.length > 0 && (
+              <div>
+                <Label className="text-muted-foreground text-xs uppercase tracking-wider">Faith Declaration</Label>
+                <ul className="mt-1 space-y-2">
+                  {faithItems.map((d, i) => (
+                    <li key={i} className="flex gap-2 text-sm italic">
+                      <span className="text-sky-600 font-bold mt-0.5">{'\u2022'}</span>
+                      <span>{d}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {quoteItems.length > 0 && (
+              <div>
+                <Label className="text-muted-foreground text-xs uppercase tracking-wider">Christian Quotes</Label>
+                <ul className="mt-1 space-y-2">
+                  {quoteItems.map((q, i) => (
+                    <li key={i} className="flex gap-2 text-sm italic">
+                      <span className="text-green-600 font-bold mt-0.5">{'\u2022'}</span>
+                      <span>{q}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {propheticItems.length > 0 && (
+              <div>
+                <Label className="text-muted-foreground text-xs uppercase tracking-wider">Prophetic Declaration</Label>
+                <ul className="mt-1 space-y-2">
+                  {propheticItems.map((p, i) => (
+                    <li key={i} className="flex gap-2 text-sm italic">
+                      <span className="text-amber-600 font-bold mt-0.5">{'\u2022'}</span>
+                      <span>{p}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {previewDevotional.author && (
+              <div className="pt-4 text-sm text-muted-foreground text-center">
+                Written by {previewDevotional.author}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Admin() {
   const { isAdmin, isLoading } = useAuth();
   const [, setLocation] = useLocation();
@@ -981,7 +1232,7 @@ export default function Admin() {
       </div>
 
       <Tabs defaultValue="inbox" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 max-w-xl">
+        <TabsList className="grid w-full grid-cols-4 max-w-2xl">
           <TabsTrigger value="inbox" data-testid="tab-inbox">
             <Inbox className="w-4 h-4 mr-2" />
             Prayer Inbox
@@ -989,6 +1240,10 @@ export default function Admin() {
           <TabsTrigger value="archive" data-testid="tab-archive">
             <Archive className="w-4 h-4 mr-2" />
             Archive
+          </TabsTrigger>
+          <TabsTrigger value="preview" data-testid="tab-preview">
+            <Telescope className="w-4 h-4 mr-2" />
+            Preview
           </TabsTrigger>
           <TabsTrigger value="devotionals" data-testid="tab-devotionals">
             <ShieldCheck className="w-4 h-4 mr-2" />
@@ -1026,6 +1281,23 @@ export default function Admin() {
             </CardHeader>
             <CardContent className="p-6">
               <AdminArchive />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="preview">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+                <Telescope className="w-6 h-6" />
+                Devotional Preview Tools
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Preview any date's devotional and copy for sharing.
+              </p>
+            </CardHeader>
+            <CardContent className="p-6">
+              <DevotionalPreviewTools />
             </CardContent>
           </Card>
         </TabsContent>
