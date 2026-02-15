@@ -1,0 +1,118 @@
+GOAL:
+Insert the next 10 Sunday School lessons chronologically after September 10, 2028.
+Use UPSERT (INSERT ... ON CONFLICT (date) DO UPDATE).
+Match EXACT existing Sunday School structure.
+Use KJV only.
+Do NOT modify previous entries.
+
+LESSONS:
+
+1) TITLE: The Blessing of Thanksgiving  
+DATE: 2028-09-17  
+SCRIPTURES: Psalm 103:1–5; 1 Thessalonians 5:18 (KJV)
+
+SCRIPTURE TEXT (KJV):
+Psalm 103:1 — Bless the Lord, O my soul: and all that is within me, bless his holy name.
+1 Thessalonians 5:18 — In every thing give thanks: for this is the will of God in Christ Jesus concerning you.
+
+LESSON CONTENT:
+OUTLINE POINT 1: Gratitude Awakens the Soul  
+Thanksgiving shifts focus from lack to blessing.
+
+OUTLINE POINT 2: Thankfulness as Obedience  
+Giving thanks is commanded, not optional.
+
+OUTLINE POINT 3: Thanksgiving as Worship  
+Gratitude glorifies God publicly.
+
+TEACHER EMPHASIS:
+Encourage reflection.
+Remove complaining.
+Promote joyful gratitude.
+
+APPLICATION:
+List ten blessings.
+
+DISCUSSION QUESTIONS:
+1. Why is thanksgiving commanded?
+2. How does gratitude strengthen faith?
+3. What blocks thankfulness?
+4. How can we practice daily gratitude?
+
+PRAYER FOCUS:
+Lord, teach us to be thankful.
+
+WEEKLY ASSIGNMENT:
+Write daily thanksgiving prayer.
+
+---
+
+2) TITLE: Giving Thanks as a Testimony  
+DATE: 2028-09-24  
+SCRIPTURES: Psalm 107:1–2; Hebrews 13:15 (KJV)
+
+[Full structured lesson]
+
+---
+
+3) TITLE: Preparing the Heart for the Messiah (Christmas Preparation Week 1)  
+DATE: 2028-10-01  
+SCRIPTURES: Isaiah 9:6; Micah 5:2 (KJV)
+
+[Full structured lesson emphasizing prophecy]
+
+---
+
+4) TITLE: The Promise Fulfilled (Christmas Preparation Week 2)  
+DATE: 2028-10-08  
+SCRIPTURES: Luke 1:30–33; Matthew 1:21–23 (KJV)
+
+[Full structured lesson]
+
+---
+
+5) TITLE: God With Us (Christmas Preparation Week 3)  
+DATE: 2028-10-15  
+SCRIPTURES: John 1:14; Philippians 2:5–8 (KJV)
+
+[Full structured lesson]
+
+---
+
+6) TITLE: The Savior Is Born (Christmas Celebration 2028)  
+DATE: 2028-10-22  
+SCRIPTURES: Luke 2:10–14; Matthew 2:10–11 (KJV)
+
+[Full structured lesson]
+
+---
+
+7) TITLE: Finishing the Year Strong  
+DATE: 2028-10-29  
+SCRIPTURES: 2 Timothy 4:7; Psalm 90:12 (KJV)
+
+[Full structured lesson]
+
+---
+
+8) TITLE: Counting Our Blessings  
+DATE: 2028-11-05  
+SCRIPTURES: Lamentations 3:22–23; Psalm 136:1 (KJV)
+
+[Full structured lesson]
+
+---
+
+9) TITLE: Preparing for a New Beginning  
+DATE: 2028-11-12  
+SCRIPTURES: Isaiah 43:18–19; Revelation 21:5 (KJV)
+
+[Full structured lesson]
+
+---
+
+10) TITLE: A Fresh Commitment to Christ  
+DATE: 2028-11-19  
+SCRIPTURES: Joshua 24:15; Romans 12:1 (KJV)
+
+[Full structured lesson]
