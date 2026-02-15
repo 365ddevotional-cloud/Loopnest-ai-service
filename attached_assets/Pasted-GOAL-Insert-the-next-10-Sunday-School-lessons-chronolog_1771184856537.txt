@@ -1,0 +1,122 @@
+GOAL:
+Insert the next 10 Sunday School lessons chronologically after May 9, 2027.
+Use UPSERT (INSERT ... ON CONFLICT (date) DO UPDATE).
+Match EXACT existing Sunday School structure.
+Use KJV only.
+Do NOT modify previous entries.
+
+LESSONS:
+
+1) TITLE: The Strength of a Godly Father (Father’s Day Focus)
+DATE: 2027-05-16
+SCRIPTURES: Joshua 24:15; Psalm 103:13; Proverbs 22:6 (KJV)
+
+SCRIPTURE TEXT (KJV):
+Joshua 24:15 — As for me and my house, we will serve the Lord.
+Psalm 103:13 — Like as a father pitieth his children...
+Proverbs 22:6 — Train up a child in the way he should go...
+
+LESSON CONTENT:
+OUTLINE POINT 1: Spiritual Leadership Begins at Home
+God calls fathers to lead by example.
+
+OUTLINE POINT 2: Compassion Reflects the Father’s Heart
+Strength must be balanced with mercy.
+
+OUTLINE POINT 3: Legacy Beyond Provision
+Provision is not only financial but spiritual.
+
+TEACHER EMPHASIS:
+Encourage men to lead.
+Call for restoration where needed.
+Promote forgiveness and unity.
+
+APPLICATION:
+Pray for fathers.
+Encourage one father this week.
+
+DISCUSSION QUESTIONS:
+1. What does spiritual leadership look like?
+2. How can fathers reflect God’s compassion?
+3. What legacy are we building?
+4. How can we support fathers in the church?
+
+PRAYER FOCUS:
+Lord, strengthen fathers.
+Heal broken families.
+Raise godly leaders.
+
+WEEKLY ASSIGNMENT:
+Write a prayer for your father or a father figure.
+
+---
+
+2) TITLE: Blessing the Next Generation
+DATE: 2027-05-23
+SCRIPTURES: Psalm 127:3–5; Mark 10:14 (KJV)
+
+[Full structured lesson on valuing children, raising them in faith]
+
+---
+
+3) TITLE: Growing in Spiritual Maturity
+DATE: 2027-05-30
+SCRIPTURES: Hebrews 5:12–14; Colossians 1:9–10 (KJV)
+
+[Full structured lesson]
+
+---
+
+4) TITLE: Living as Salt and Light
+DATE: 2027-06-06
+SCRIPTURES: Matthew 5:13–16 (KJV)
+
+[Full structured lesson]
+
+---
+
+5) TITLE: The Discipline of Obedience
+DATE: 2027-06-13
+SCRIPTURES: 1 Samuel 15:22; John 14:15 (KJV)
+
+[Full structured lesson]
+
+---
+
+6) TITLE: Walking in Humility
+DATE: 2027-06-20
+SCRIPTURES: Philippians 2:3–8 (KJV)
+
+[Full structured lesson]
+
+---
+
+7) TITLE: Faith That Moves Mountains
+DATE: 2027-06-27
+SCRIPTURES: Mark 11:22–24; Hebrews 11:6 (KJV)
+
+[Full structured lesson]
+
+---
+
+8) TITLE: The Ministry of Reconciliation
+DATE: 2027-07-04
+SCRIPTURES: 2 Corinthians 5:17–20 (KJV)
+
+[Full structured lesson]
+
+---
+
+9) TITLE: The Joy of the Lord
+DATE: 2027-07-11
+SCRIPTURES: Nehemiah 8:10; Philippians 4:4 (KJV)
+
+[Full structured lesson]
+
+---
+
+10) TITLE: Standing Firm in Trials
+DATE: 2027-07-18
+SCRIPTURES: James 1:2–4; 1 Peter 1:6–7 (KJV)
+
+[Full structured lesson]
