@@ -2,7 +2,7 @@ import { db } from "./db";
 import { devotionals } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
-interface DevotionalData {
+export interface DevotionalData {
   date: string;
   title: string;
   scriptureReference: string;
@@ -11,6 +11,7 @@ interface DevotionalData {
   prayerPoints: string[];
   faithDeclarations: string[];
   author: string;
+  seasonalOverride?: boolean;
 }
 
 // Generate all devotionals for 2026 (Jan 4 - Dec 31)
@@ -1244,23 +1245,33 @@ function generateRemainingDevotionals(): DevotionalData[] {
 }
 
 export async function seedAllDevotionals() {
-  console.log("Starting to seed devotionals for the entire year...");
+  console.log("Starting to seed devotionals for the entire year (regular + seasonal)...");
 
-  // First, combine the manually written devotionals with generated ones
-  const allData = [...allDevotionals, ...generateRemainingDevotionals()];
+  // Import seasonal devotionals and extra regular devotionals
+  const { seasonalDevotionals } = await import("./seasonal-devotionals-data");
+  const { extraRegularDevotionals } = await import("./extra-regular-devotionals-data");
+
+  // Combine regular devotionals with generated ones and extra regular ones
+  const regularData = [...allDevotionals, ...generateRemainingDevotionals(), ...extraRegularDevotionals];
+
+  // Combine all sources: regular + seasonal
+  const allData = [...regularData, ...seasonalDevotionals];
 
   // Sort by date
   allData.sort((a, b) => a.date.localeCompare(b.date));
 
-  // Remove duplicates based on date
-  const uniqueDevotionals = allData.reduce((acc, curr) => {
-    if (!acc.find(d => d.date === curr.date)) {
-      acc.push(curr);
+  // Remove duplicates based on date - seasonal overrides take priority
+  const dateMap = new Map<string, DevotionalData>();
+  for (const d of allData) {
+    const existing = dateMap.get(d.date);
+    if (!existing || d.seasonalOverride) {
+      dateMap.set(d.date, d);
     }
-    return acc;
-  }, [] as DevotionalData[]);
+  }
+  const uniqueDevotionals = Array.from(dateMap.values());
+  uniqueDevotionals.sort((a, b) => a.date.localeCompare(b.date));
 
-  console.log(`Total devotionals to seed: ${uniqueDevotionals.length}`);
+  console.log(`Total devotionals to seed: ${uniqueDevotionals.length} (regular: ${regularData.length}, seasonal: ${seasonalDevotionals.length})`);
 
   let inserted = 0;
   let skipped = 0;
@@ -1277,7 +1288,7 @@ export async function seedAllDevotionals() {
     }
   }
 
-  console.log(`Seeding complete. Inserted: ${inserted}, Skipped (already existed): ${skipped}`);
+  console.log(`Seeding complete. Total: ${uniqueDevotionals.length}, Inserted: ${inserted}, Skipped (already existed): ${skipped}`);
 }
 
 // Note: When imported as a module, seedAllDevotionals is called from server/index.ts
