@@ -1,0 +1,118 @@
+GOAL:
+Insert the final 10 Sunday School lessons chronologically after January 28, 2029.
+Use UPSERT (INSERT ... ON CONFLICT (date) DO UPDATE).
+Match EXACT existing Sunday School structure.
+Use KJV only.
+Do NOT modify previous entries.
+
+LESSONS:
+
+1) TITLE: The Lamb of God (Easter Preparation Week 1)  
+DATE: 2029-02-04  
+SCRIPTURES: John 1:29; Exodus 12:5–7 (KJV)
+
+SCRIPTURE TEXT (KJV):
+John 1:29 — Behold the Lamb of God, which taketh away the sin of the world.
+Exodus 12:5 — Your lamb shall be without blemish...
+
+LESSON CONTENT:
+OUTLINE POINT 1: The Passover Pattern  
+The Old Testament sacrifice pointed to Christ.
+
+OUTLINE POINT 2: The Spotless Lamb  
+Jesus fulfilled prophecy perfectly.
+
+OUTLINE POINT 3: Redemption Through Blood  
+Salvation required substitution.
+
+TEACHER EMPHASIS:
+Highlight fulfillment of prophecy.
+Invite repentance.
+Emphasize grace.
+
+APPLICATION:
+Reflect on the cost of redemption.
+
+DISCUSSION QUESTIONS:
+1. How does Passover point to Christ?
+2. Why was a spotless lamb required?
+3. What does redemption mean personally?
+4. How should believers respond?
+
+PRAYER FOCUS:
+Lord, thank You for the blood of Jesus.
+
+WEEKLY ASSIGNMENT:
+Read Isaiah 53.
+
+---
+
+2) TITLE: The Cross of Divine Love  
+DATE: 2029-02-11  
+SCRIPTURES: John 3:16; Romans 5:8 (KJV)
+
+[Full structured lesson]
+
+---
+
+3) TITLE: The Suffering Servant  
+DATE: 2029-02-18  
+SCRIPTURES: Isaiah 53:4–6; 1 Peter 2:24 (KJV)
+
+[Full structured lesson]
+
+---
+
+4) TITLE: The Triumphal Entry  
+DATE: 2029-02-25  
+SCRIPTURES: Matthew 21:8–11; Zechariah 9:9 (KJV)
+
+[Full structured lesson]
+
+---
+
+5) TITLE: The Resurrection and Living Hope (Resurrection Sunday 2029)  
+DATE: 2029-03-04  
+SCRIPTURES: Matthew 28:5–6; 1 Corinthians 15:20–22 (KJV)
+
+[Full structured lesson emphasizing victory, salvation invitation]
+
+---
+
+6) TITLE: Walking in Resurrection Power  
+DATE: 2029-03-11  
+SCRIPTURES: Romans 8:11; Philippians 3:10 (KJV)
+
+[Full structured lesson]
+
+---
+
+7) TITLE: Honoring Our Mothers (Mother’s Day 2029 Preparation)  
+DATE: 2029-03-18  
+SCRIPTURES: Exodus 20:12; Proverbs 31:28–29 (KJV)
+
+[Full structured lesson, universal tone]
+
+---
+
+8) TITLE: The Virtue of a Godly Woman (Mother’s Day 2029 Focus)  
+DATE: 2029-03-25  
+SCRIPTURES: Proverbs 31:10–31; 2 Timothy 1:5 (KJV)
+
+[Full structured lesson]
+
+---
+
+9) TITLE: Preparing Godly Fathers (Father’s Day Preparation 2029)  
+DATE: 2029-04-01  
+SCRIPTURES: Joshua 24:15; Ephesians 6:4 (KJV)
+
+[Full structured lesson]
+
+---
+
+10) TITLE: The Strength of a Godly Father (Father’s Day 2029 Focus)  
+DATE: 2029-04-08  
+SCRIPTURES: Proverbs 20:7; Psalm 127:3–4 (KJV)
+
+[Full structured lesson encouraging honor, responsibility, restoration]
