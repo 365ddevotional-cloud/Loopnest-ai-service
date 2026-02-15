@@ -1,0 +1,119 @@
+GOAL:
+Insert the next 10 Sunday School lessons chronologically after April 23, 2028.
+Use UPSERT (INSERT ... ON CONFLICT (date) DO UPDATE).
+Match EXACT existing Sunday School structure.
+Use KJV only.
+Do NOT modify previous entries.
+
+LESSONS:
+
+1) TITLE: Gratitude for Godly Mothers
+DATE: 2028-04-30
+SCRIPTURES: Proverbs 31:28–29; Psalm 113:9 (KJV)
+
+SCRIPTURE TEXT (KJV):
+Proverbs 31:28 — Her children arise up, and call her blessed...
+Psalm 113:9 — He maketh the barren woman to keep house, and to be a joyful mother of children.
+
+LESSON CONTENT:
+OUTLINE POINT 1: Recognizing Sacrifice
+A mother’s influence often works quietly but powerfully.
+
+OUTLINE POINT 2: Biblical Honor
+Honor is commanded, not optional.
+
+OUTLINE POINT 3: Healing Broken Relationships
+Forgiveness restores families.
+
+TEACHER EMPHASIS:
+Encourage appreciation.
+Promote forgiveness.
+Strengthen family unity.
+
+APPLICATION:
+Call or bless a mother this week.
+
+DISCUSSION QUESTIONS:
+1. Why is honoring mothers important?
+2. How can we show gratitude practically?
+3. How does forgiveness restore relationships?
+4. What spiritual legacy can mothers leave?
+
+PRAYER FOCUS:
+Lord, bless our mothers.
+Heal strained relationships.
+
+WEEKLY ASSIGNMENT:
+Write a note of appreciation.
+
+---
+
+2) TITLE: Preparing Godly Fathers (Father’s Day Preparation Week 1)
+DATE: 2028-05-07
+SCRIPTURES: Joshua 24:15; Psalm 103:13 (KJV)
+
+[Full structured lesson emphasizing leadership, compassion, responsibility]
+
+---
+
+3) TITLE: A Father’s Spiritual Responsibility (Father’s Day Preparation Week 2)
+DATE: 2028-05-14
+SCRIPTURES: Proverbs 22:6; Ephesians 6:4 (KJV)
+
+[Full structured lesson]
+
+---
+
+4) TITLE: The Strength of a Godly Father (Father’s Day Focus 2028)
+DATE: 2028-05-21
+SCRIPTURES: Proverbs 20:7; Psalm 127:3–4 (KJV)
+
+[Full structured lesson encouraging honor and restoration]
+
+---
+
+5) TITLE: Blessing the Next Generation
+DATE: 2028-05-28
+SCRIPTURES: Psalm 127:3; Mark 10:14 (KJV)
+
+[Full structured lesson focusing on children]
+
+---
+
+6) TITLE: Spiritual Growth and Maturity
+DATE: 2028-06-04
+SCRIPTURES: Hebrews 5:12–14; Colossians 1:10 (KJV)
+
+[Full structured lesson]
+
+---
+
+7) TITLE: The Discipline of Obedience
+DATE: 2028-06-11
+SCRIPTURES: 1 Samuel 15:22; John 14:15 (KJV)
+
+[Full structured lesson]
+
+---
+
+8) TITLE: Living as Salt and Light
+DATE: 2028-06-18
+SCRIPTURES: Matthew 5:13–16 (KJV)
+
+[Full structured lesson]
+
+---
+
+9) TITLE: Faith That Endures Trials
+DATE: 2028-06-25
+SCRIPTURES: James 1:2–4; Hebrews 10:35–36 (KJV)
+
+[Full structured lesson]
+
+---
+
+10) TITLE: Walking in Humility
+DATE: 2028-07-02
+SCRIPTURES: Philippians 2:3–8 (KJV)
+
+[Full structured lesson]
