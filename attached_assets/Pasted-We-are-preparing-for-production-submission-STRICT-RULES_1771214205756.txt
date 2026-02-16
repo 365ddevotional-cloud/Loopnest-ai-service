@@ -1,0 +1,143 @@
+We are preparing for production submission.
+
+STRICT RULES:
+- Do NOT modify routing logic
+- Do NOT modify Bible data logic
+- Do NOT modify devotional content logic
+- Do NOT touch audio system
+- Do NOT change authentication
+- Only modify the Share system UI and rendering
+- Maintain backward compatibility
+- Do NOT introduce new external APIs
+- Keep everything stable and production safe
+
+========================================
+STEP 1: REMOVE WEAK SHARE FEATURES
+========================================
+
+Remove the following share options completely from UI and logic:
+
+- Animated Verse
+- Story (9:16)
+- Wallpaper
+- Prayer Version
+
+Remove:
+- Menu entries
+- Related components
+- Related conditional render blocks
+- Related unused state variables
+- Related unused utility functions
+
+Ensure:
+- No console errors
+- No dead imports
+- No broken UI spacing
+
+The Share menu must now contain ONLY:
+
+- Share as Text
+- Share as Image
+- Greeting Card
+
+========================================
+STEP 2: POLISH SHARE MENU UI
+========================================
+
+Upgrade share dropdown styling:
+
+- Smooth fade + scale animation (150ms)
+- Slight shadow elevation
+- Rounded corners (12px)
+- Elegant spacing between items
+- Icon + label alignment clean and centered
+- Subtle hover highlight
+
+Keep app theme colors.
+
+========================================
+STEP 3: UPGRADE "SHARE AS IMAGE"
+========================================
+
+Make Share as Image look premium and production-level:
+
+Design requirements:
+
+- Beautiful typography hierarchy:
+   Verse text large and readable
+   Reference smaller and subtle
+- Balanced padding
+- Rounded corners
+- Soft shadow
+- Proper margin
+- No text overflow
+- Auto-wrap long verses
+- Proper line height
+
+Add 4 selectable background themes:
+
+1. Light parchment (cream + soft texture feel)
+2. Deep royal blue gradient
+3. Warm sunrise gradient
+4. Elegant dark charcoal with subtle glow text
+
+Add small branding footer:
+
+“365 Daily Devotional”
+Small and centered at bottom
+Subtle opacity (not loud)
+
+Ensure:
+- Export still works
+- No layout glitches
+- Mobile safe
+- High resolution output
+
+========================================
+STEP 4: UPGRADE GREETING CARD
+========================================
+
+Transform Greeting Card into a premium experience:
+
+- Add background selection (same 4 themes)
+- Add optional title at top:
+   “Be Encouraged”
+   “God’s Word for You”
+   “Daily Promise”
+   (User can select or leave blank)
+
+Layout:
+
+Top:
+Optional title
+
+Center:
+Verse text
+
+Bottom:
+Reference
+
+Footer:
+“Shared from 365 Daily Devotional”
+
+Add:
+- Elegant fade-in animation
+- Slight card shadow
+- Centered layout
+- Balanced padding
+
+No AI rewriting.
+Only design upgrade.
+
+========================================
+STEP 5: FINAL CLEANUP
+========================================
+
+- Remove all unused imports
+- Remove console logs
+- Ensure no warnings
+- Ensure share works offline
+- Ensure no broken UI on mobile
+
+After completion:
+Summarize exactly what was changed.

@@ -1,4 +1,6 @@
-export type CardTheme = "light" | "gold" | "blue" | "floral";
+export type CardTheme = "parchment" | "royal" | "sunrise" | "charcoal";
+
+export type CardTitle = "" | "Be Encouraged" | "God's Word for You" | "Daily Promise";
 
 export interface ShareCardOptions {
   verseText: string;
@@ -6,13 +8,86 @@ export interface ShareCardOptions {
   translation: string;
   theme: CardTheme;
   recipientName?: string;
+  title?: CardTitle;
 }
 
-const THEMES: Record<CardTheme, { bg1: string; bg2: string; textColor: string; accentColor: string; borderColor: string }> = {
-  light: { bg1: "#faf8f5", bg2: "#f0ece4", textColor: "#3d2c1e", accentColor: "#8b6f47", borderColor: "#d4c5a9" },
-  gold: { bg1: "#f5e6c8", bg2: "#e8d5a3", textColor: "#4a3520", accentColor: "#b8860b", borderColor: "#c9a94e" },
-  blue: { bg1: "#e8f0f8", bg2: "#d0e0f0", textColor: "#1a3050", accentColor: "#4682b4", borderColor: "#8ab0d4" },
-  floral: { bg1: "#fdf2f8", bg2: "#fce7f3", textColor: "#4a1942", accentColor: "#a0527a", borderColor: "#d4a0c0" },
+const THEMES: Record<CardTheme, {
+  bg: (ctx: CanvasRenderingContext2D, w: number, h: number) => void;
+  textColor: string;
+  accentColor: string;
+  borderColor: string;
+  titleColor: string;
+  brandColor: string;
+}> = {
+  parchment: {
+    bg: (ctx, w, h) => {
+      const g = ctx.createLinearGradient(0, 0, w, h);
+      g.addColorStop(0, "#faf6ee");
+      g.addColorStop(0.5, "#f3ead8");
+      g.addColorStop(1, "#ede2cc");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(139, 119, 80, 0.03)";
+      for (let i = 0; i < 60; i++) {
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        ctx.beginPath();
+        ctx.arc(x, y, Math.random() * 2 + 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    },
+    textColor: "#3d2c1e",
+    accentColor: "#8b6f47",
+    borderColor: "#d4c5a9",
+    titleColor: "#6b5530",
+    brandColor: "rgba(139, 111, 71, 0.4)",
+  },
+  royal: {
+    bg: (ctx, w, h) => {
+      const g = ctx.createLinearGradient(0, 0, w * 0.3, h);
+      g.addColorStop(0, "#0a1628");
+      g.addColorStop(0.4, "#142952");
+      g.addColorStop(0.7, "#1a3a6e");
+      g.addColorStop(1, "#0f2040");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    },
+    textColor: "#e8edf5",
+    accentColor: "#a8c4e8",
+    borderColor: "rgba(168, 196, 232, 0.3)",
+    titleColor: "#c4d8f0",
+    brandColor: "rgba(168, 196, 232, 0.35)",
+  },
+  sunrise: {
+    bg: (ctx, w, h) => {
+      const g = ctx.createLinearGradient(0, 0, w, h);
+      g.addColorStop(0, "#ffecd2");
+      g.addColorStop(0.35, "#fcb69f");
+      g.addColorStop(0.65, "#f7a084");
+      g.addColorStop(1, "#f09070");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    },
+    textColor: "#3e1f0d",
+    accentColor: "#6b3521",
+    borderColor: "rgba(107, 53, 33, 0.25)",
+    titleColor: "#4a2010",
+    brandColor: "rgba(62, 31, 13, 0.35)",
+  },
+  charcoal: {
+    bg: (ctx, w, h) => {
+      const g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w * 0.7);
+      g.addColorStop(0, "#2a2a2a");
+      g.addColorStop(1, "#1a1a1a");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    },
+    textColor: "#e8e0d8",
+    accentColor: "#c9b896",
+    borderColor: "rgba(201, 184, 150, 0.25)",
+    titleColor: "#d4c8a8",
+    brandColor: "rgba(201, 184, 150, 0.35)",
+  },
 };
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
@@ -32,16 +107,17 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
   return lines;
 }
 
-function drawFloralCorners(ctx: CanvasRenderingContext2D, w: number, h: number, color: string) {
+function drawCornerAccents(ctx: CanvasRenderingContext2D, w: number, h: number, color: string) {
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
-  const s = 60;
+  const s = 50;
+  const m = 30;
 
   const corners = [
-    { x: 30, y: 30, sx: 1, sy: 1 },
-    { x: w - 30, y: 30, sx: -1, sy: 1 },
-    { x: 30, y: h - 30, sx: 1, sy: -1 },
-    { x: w - 30, y: h - 30, sx: -1, sy: -1 },
+    { x: m, y: m, sx: 1, sy: 1 },
+    { x: w - m, y: m, sx: -1, sy: 1 },
+    { x: m, y: h - m, sx: 1, sy: -1 },
+    { x: w - m, y: h - m, sx: -1, sy: -1 },
   ];
 
   for (const c of corners) {
@@ -53,72 +129,73 @@ function drawFloralCorners(ctx: CanvasRenderingContext2D, w: number, h: number, 
     ctx.quadraticCurveTo(0, 0, s, 0);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(8, s - 15);
-    ctx.quadraticCurveTo(8, 8, s - 15, 8);
+    ctx.moveTo(6, s - 12);
+    ctx.quadraticCurveTo(6, 6, s - 12, 6);
     ctx.stroke();
     ctx.restore();
   }
 }
 
-export async function generateGreetingCard({ verseText, reference, translation, theme, recipientName }: ShareCardOptions): Promise<Blob | null> {
+export async function generateGreetingCard({ verseText, reference, translation, theme, recipientName, title }: ShareCardOptions): Promise<Blob | null> {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
-  canvas.width = 800;
-  canvas.height = 600;
+  canvas.width = 1080;
+  canvas.height = 1080;
+  const w = canvas.width;
+  const h = canvas.height;
   const t = THEMES[theme];
 
-  const bg = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-  bg.addColorStop(0, t.bg1);
-  bg.addColorStop(1, t.bg2);
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  t.bg(ctx, w, h);
 
   ctx.strokeStyle = t.borderColor;
   ctx.lineWidth = 3;
-  ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+  const bm = 40;
+  ctx.strokeRect(bm, bm, w - bm * 2, h - bm * 2);
 
-  drawFloralCorners(ctx, canvas.width, canvas.height, t.borderColor);
+  drawCornerAccents(ctx, w, h, t.borderColor);
 
-  let yOffset = 80;
+  ctx.textAlign = "center";
+  let yPos = 160;
 
-  if (recipientName) {
-    ctx.font = "italic 20px Georgia, serif";
-    ctx.fillStyle = t.accentColor;
-    ctx.textAlign = "center";
-    ctx.fillText(`To: ${recipientName}`, canvas.width / 2, yOffset);
-    yOffset += 40;
+  if (title) {
+    ctx.font = "bold 34px Georgia, serif";
+    ctx.fillStyle = t.titleColor;
+    ctx.fillText(title, w / 2, yPos);
+    yPos += 55;
   }
 
-  ctx.fillStyle = t.accentColor;
-  ctx.font = "28px Georgia, serif";
-  ctx.textAlign = "center";
-  ctx.fillText("\u201C", canvas.width / 2 - 280, yOffset + 15);
+  if (recipientName) {
+    ctx.font = "italic 24px Georgia, serif";
+    ctx.fillStyle = t.accentColor;
+    ctx.fillText(`To: ${recipientName}`, w / 2, yPos);
+    yPos += 50;
+  }
 
+  const maxTextWidth = w - 180;
+  ctx.font = "italic 30px Georgia, serif";
   ctx.fillStyle = t.textColor;
-  ctx.font = "italic 22px Georgia, serif";
 
-  const lines = wrapText(ctx, verseText, canvas.width - 140);
-  const lineHeight = 34;
+  const lines = wrapText(ctx, verseText, maxTextWidth);
+  const lineHeight = 46;
+  const totalTextHeight = lines.length * lineHeight;
+
+  const availableSpace = h - yPos - 180;
+  const textStartY = yPos + Math.max(0, (availableSpace - totalTextHeight) / 2);
 
   lines.forEach((line, i) => {
-    ctx.fillText(line, canvas.width / 2, yOffset + i * lineHeight);
+    ctx.fillText(line, w / 2, textStartY + i * lineHeight);
   });
 
-  const afterVerse = yOffset + lines.length * lineHeight + 10;
-
+  const refY = textStartY + totalTextHeight + 45;
+  ctx.font = "bold 22px Georgia, serif";
   ctx.fillStyle = t.accentColor;
-  ctx.font = "28px Georgia, serif";
-  ctx.fillText("\u201D", canvas.width / 2 + 280, afterVerse - 20);
+  ctx.fillText(`\u2014 ${reference} (${translation})`, w / 2, refY);
 
-  ctx.font = "bold 18px Georgia, serif";
-  ctx.fillStyle = t.accentColor;
-  ctx.fillText(`\u2014 ${reference} (${translation})`, canvas.width / 2, afterVerse + 20);
-
-  ctx.font = "13px sans-serif";
-  ctx.fillStyle = t.accentColor + "99";
-  ctx.fillText("Shared via 365 Daily Devotional", canvas.width / 2, canvas.height - 40);
+  ctx.font = "16px sans-serif";
+  ctx.fillStyle = t.brandColor;
+  ctx.fillText("Shared from 365 Daily Devotional", w / 2, h - 55);
 
   return new Promise((resolve) => {
     canvas.toBlob((blob) => resolve(blob), "image/png", 0.95);

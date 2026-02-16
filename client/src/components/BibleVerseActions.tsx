@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Star, Highlighter, MessageSquare, Share2, X, Check, Type, Image, CreditCard, Smartphone, Film, HandHeart, Wallpaper, Loader2, Volume2 } from "lucide-react";
+import { Star, Highlighter, MessageSquare, Share2, X, Check, Type, Image, CreditCard, Loader2, Volume2 } from "lucide-react";
 import { useAudioReader } from "@/hooks/useAudioReader";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,7 +34,8 @@ import {
   removeNote,
 } from "@/lib/bible-storage";
 import { getBookById } from "@/lib/bible-data";
-import type { CardTheme } from "@/share/shareCard";
+import type { CardTheme, CardTitle } from "@/share/shareCard";
+import type { ImageTheme } from "@/share/shareImage";
 
 interface BibleVerseActionsProps {
   bookId: string;
@@ -52,6 +53,21 @@ const HIGHLIGHT_COLORS: { color: HighlightColor; bg: string; label: string }[] =
   { color: "green", bg: "bg-green-200 dark:bg-green-900/50", label: "Green" },
   { color: "pink", bg: "bg-pink-200 dark:bg-pink-900/50", label: "Pink" },
 ];
+
+const SHARE_FORMATS = [
+  { id: "text", label: "Share as Text", icon: Type },
+  { id: "image", label: "Share as Image", icon: Image },
+  { id: "card", label: "Greeting Card", icon: CreditCard },
+];
+
+const THEME_OPTIONS: { id: CardTheme; label: string; preview: string }[] = [
+  { id: "parchment", label: "Parchment", preview: "bg-amber-50 dark:bg-amber-100 border-amber-200" },
+  { id: "royal", label: "Royal Blue", preview: "bg-blue-900 dark:bg-blue-900 border-blue-700" },
+  { id: "sunrise", label: "Sunrise", preview: "bg-gradient-to-r from-orange-200 to-rose-300 border-orange-300" },
+  { id: "charcoal", label: "Charcoal", preview: "bg-neutral-800 dark:bg-neutral-800 border-neutral-600" },
+];
+
+const CARD_TITLES: CardTitle[] = ["", "Be Encouraged", "God's Word for You", "Daily Promise"];
 
 export function BibleVerseActions({
   bookId,
@@ -143,11 +159,12 @@ export function BibleVerseActions({
 
   const [shareOpen, setShareOpen] = useState(false);
   const [cardDialogOpen, setCardDialogOpen] = useState(false);
-  const [cardTheme, setCardTheme] = useState<CardTheme>("gold");
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [cardTheme, setCardTheme] = useState<CardTheme>("parchment");
+  const [imageTheme, setImageTheme] = useState<ImageTheme>("parchment");
   const [cardRecipient, setCardRecipient] = useState("");
+  const [cardTitle, setCardTitle] = useState<CardTitle>("");
   const [shareLoading, setShareLoading] = useState<string | null>(null);
-  const [prayerDialogOpen, setPrayerDialogOpen] = useState(false);
-  const [prayerText, setPrayerText] = useState("");
 
   const shareOpts = { verseText, reference, translation };
 
@@ -166,58 +183,38 @@ export function BibleVerseActions({
           break;
         }
         case "image": {
-          const { shareAsImage } = await import("@/share/shareImage");
-          const result = await shareAsImage(shareOpts);
-          if (result.success && result.method === "download") {
-            toast({ title: "Image downloaded", description: "Verse card saved" });
-          }
-          break;
+          setShareLoading(null);
+          setImageDialogOpen(true);
+          return;
         }
         case "card": {
           setShareLoading(null);
           setCardDialogOpen(true);
           return;
         }
-        case "story": {
-          const { shareAsStory } = await import("@/share/shareStory");
-          const result = await shareAsStory(shareOpts);
-          if (result.success && result.method === "download") {
-            toast({ title: "Story downloaded", description: "Ready for Instagram/TikTok" });
-          }
-          break;
-        }
-        case "gif": {
-          const { shareAsGif } = await import("@/share/shareGif");
-          toast({ title: "Generating animation...", description: "This may take a moment" });
-          const result = await shareAsGif(shareOpts);
-          if (result.success && result.method === "download") {
-            toast({ title: "Animation downloaded", description: "Animated verse saved" });
-          }
-          break;
-        }
-        case "prayer": {
-          const { generatePrayerVersion } = await import("@/share/sharePrayer");
-          const text = generatePrayerVersion(shareOpts);
-          setPrayerText(text);
-          setShareLoading(null);
-          setPrayerDialogOpen(true);
-          return;
-        }
-        case "wallpaper": {
-          const { shareAsWallpaper } = await import("@/share/shareWallpaper");
-          const result = await shareAsWallpaper(shareOpts);
-          if (result.success && result.method === "download") {
-            toast({ title: "Wallpaper downloaded", description: "Phone wallpaper saved" });
-          }
-          break;
-        }
       }
-    } catch (err) {
+    } catch {
       toast({ title: "Share failed", description: "Something went wrong. Please try again.", variant: "destructive" });
     } finally {
       setShareLoading(null);
     }
   }, [shareOpts, toast]);
+
+  const handleImageShare = useCallback(async () => {
+    setShareLoading("image");
+    try {
+      const { shareAsImage } = await import("@/share/shareImage");
+      const result = await shareAsImage({ ...shareOpts, theme: imageTheme });
+      if (result.success && result.method === "download") {
+        toast({ title: "Image downloaded", description: "Verse image saved" });
+      }
+      setImageDialogOpen(false);
+    } catch {
+      toast({ title: "Image creation failed", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setShareLoading(null);
+    }
+  }, [shareOpts, imageTheme, toast]);
 
   const handleCardShare = useCallback(async () => {
     setShareLoading("card");
@@ -227,6 +224,7 @@ export function BibleVerseActions({
         ...shareOpts,
         theme: cardTheme,
         recipientName: cardRecipient.trim() || undefined,
+        title: cardTitle || undefined,
       });
       if (result.success && result.method === "download") {
         toast({ title: "Card downloaded", description: "Greeting card saved" });
@@ -238,39 +236,7 @@ export function BibleVerseActions({
     } finally {
       setShareLoading(null);
     }
-  }, [shareOpts, cardTheme, cardRecipient, toast]);
-
-  const handlePrayerShare = useCallback(async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: `Prayer from ${reference}`, text: prayerText });
-        setPrayerDialogOpen(false);
-        return;
-      } catch (err) {
-        if ((err as Error).name === "AbortError") return;
-      }
-    }
-    await navigator.clipboard.writeText(prayerText);
-    toast({ title: "Copied to clipboard", description: "Prayer text copied" });
-    setPrayerDialogOpen(false);
-  }, [prayerText, reference, toast]);
-
-  const SHARE_FORMATS = [
-    { id: "text", label: "Share as Text", icon: Type },
-    { id: "image", label: "Share as Image", icon: Image },
-    { id: "card", label: "Greeting Card", icon: CreditCard },
-    { id: "story", label: "Story (9:16)", icon: Smartphone },
-    { id: "gif", label: "Animated Verse", icon: Film },
-    { id: "prayer", label: "Prayer Version", icon: HandHeart },
-    { id: "wallpaper", label: "Wallpaper", icon: Wallpaper },
-  ];
-
-  const CARD_THEMES: { id: CardTheme; label: string; colors: string }[] = [
-    { id: "light", label: "Light", colors: "bg-amber-50 dark:bg-amber-50 border-amber-200" },
-    { id: "gold", label: "Gold", colors: "bg-yellow-100 dark:bg-yellow-100 border-yellow-400" },
-    { id: "blue", label: "Blue", colors: "bg-blue-100 dark:bg-blue-100 border-blue-300" },
-    { id: "floral", label: "Floral", colors: "bg-pink-100 dark:bg-pink-100 border-pink-300" },
-  ];
+  }, [shareOpts, cardTheme, cardRecipient, cardTitle, toast]);
 
   return (
     <>
@@ -371,22 +337,25 @@ export function BibleVerseActions({
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-52 p-1.5" align="start">
+          <PopoverContent
+            className="w-48 p-1.5 rounded-xl shadow-lg animate-in fade-in-0 zoom-in-95 duration-150"
+            align="start"
+          >
             <div className="flex flex-col gap-0.5">
               {SHARE_FORMATS.map(({ id, label, icon: Icon }) => (
                 <Button
                   key={id}
                   variant="ghost"
                   size="sm"
-                  className="justify-start gap-2"
+                  className="justify-start gap-2.5 rounded-lg"
                   onClick={() => handleShareFormat(id)}
                   disabled={!!shareLoading}
                   data-testid={`share-${id}-${verse}`}
                 >
                   {shareLoading === id ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Icon className="h-3.5 w-3.5" />
+                    <Icon className="h-4 w-4" />
                   )}
                   {label}
                 </Button>
@@ -445,6 +414,61 @@ export function BibleVerseActions({
         </DialogContent>
       </Dialog>
 
+      <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Share as Image</DialogTitle>
+            <DialogDescription>Choose a theme for your verse image.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground italic" data-testid="text-image-verse">"{verseText}"</p>
+            <p className="text-xs text-muted-foreground">{reference} ({translation})</p>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Background</label>
+              <div className="grid grid-cols-2 gap-2">
+                {THEME_OPTIONS.map(({ id, label, preview }) => (
+                  <button
+                    key={id}
+                    onClick={() => setImageTheme(id)}
+                    className={`rounded-lg border-2 px-3 py-2.5 text-xs font-medium transition-all ${preview} ${
+                      imageTheme === id ? 'ring-2 ring-primary ring-offset-2' : ''
+                    }`}
+                    data-testid={`image-theme-${id}`}
+                  >
+                    <span className={id === "royal" || id === "charcoal" ? "text-gray-200" : "text-gray-800"}>{label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setImageDialogOpen(false)}
+                data-testid="button-cancel-image"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleImageShare}
+                disabled={!!shareLoading}
+                data-testid="button-create-image"
+              >
+                {shareLoading === "image" ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Image className="h-4 w-4 mr-1" />
+                )}
+                Create Image
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={cardDialogOpen} onOpenChange={setCardDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -456,18 +480,38 @@ export function BibleVerseActions({
             <p className="text-xs text-muted-foreground">{reference} ({translation})</p>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Theme</label>
-              <div className="flex items-center gap-2 flex-wrap">
-                {CARD_THEMES.map(({ id, label, colors }) => (
+              <label className="text-sm font-medium">Background</label>
+              <div className="grid grid-cols-2 gap-2">
+                {THEME_OPTIONS.map(({ id, label, preview }) => (
                   <button
                     key={id}
                     onClick={() => setCardTheme(id)}
-                    className={`rounded-md border-2 px-3 py-1.5 text-xs font-medium transition-all ${colors} ${
-                      cardTheme === id ? 'ring-2 ring-primary ring-offset-1' : ''
+                    className={`rounded-lg border-2 px-3 py-2.5 text-xs font-medium transition-all ${preview} ${
+                      cardTheme === id ? 'ring-2 ring-primary ring-offset-2' : ''
                     }`}
                     data-testid={`card-theme-${id}`}
                   >
-                    <span className="text-gray-800">{label}</span>
+                    <span className={id === "royal" || id === "charcoal" ? "text-gray-200" : "text-gray-800"}>{label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Title (optional)</label>
+              <div className="flex flex-wrap gap-1.5">
+                {CARD_TITLES.map((t) => (
+                  <button
+                    key={t || "none"}
+                    onClick={() => setCardTitle(t)}
+                    className={`rounded-md border px-2.5 py-1 text-xs font-medium transition-all ${
+                      cardTitle === t
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-muted/30 text-muted-foreground border-border hover:bg-muted/50'
+                    }`}
+                    data-testid={`card-title-${t || "none"}`}
+                  >
+                    {t || "None"}
                   </button>
                 ))}
               </div>
@@ -504,38 +548,6 @@ export function BibleVerseActions({
                   <CreditCard className="h-4 w-4 mr-1" />
                 )}
                 Create Card
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={prayerDialogOpen} onOpenChange={setPrayerDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-serif">Prayer Version</DialogTitle>
-            <DialogDescription>Your verse transformed into a personal prayer.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="rounded-md bg-muted p-4">
-              <p className="text-sm leading-relaxed whitespace-pre-line" data-testid="text-prayer-content">{prayerText}</p>
-            </div>
-            <div className="flex items-center justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPrayerDialogOpen(false)}
-                data-testid="button-close-prayer"
-              >
-                Close
-              </Button>
-              <Button
-                size="sm"
-                onClick={handlePrayerShare}
-                data-testid="button-share-prayer"
-              >
-                <Share2 className="h-4 w-4 mr-1" />
-                Share Prayer
               </Button>
             </div>
           </div>
