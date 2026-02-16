@@ -1,0 +1,146 @@
+We are upgrading the Share functionality inside the Bible section of the 365 Daily Devotional app.
+
+STRICT RULES:
+- Do NOT modify core devotional logic
+- Do NOT modify authentication
+- Do NOT modify admin editing
+- Do NOT modify database models
+- Only extend the Share module
+- Keep everything frontend-based (no heavy backend)
+- Must work inside PWA/TWA environment
+- Use HTML Canvas and CSS animations only
+- No external paid APIs
+
+========================================
+GOAL:
+Expand Share Modal with multiple creative share formats.
+========================================
+
+STEP 1 — Extend Share Modal UI
+
+Modify the existing Share dropdown so it includes:
+
+- Share as Text
+- Share as Image
+- Share as Greeting Card
+- Share as Story (9:16)
+- Share as GIF (Animated)
+- Share as Prayer Version
+- Share as Wallpaper
+
+Do NOT remove existing options.
+
+========================================
+STEP 2 — Create Modular Share Structure
+
+Create new folder:
+
+/src/share/
+
+Inside it create:
+
+shareText.ts
+shareImage.ts
+shareCard.ts
+shareStory.ts
+shareGif.ts
+sharePrayer.ts
+shareWallpaper.ts
+
+Each file must export a single function.
+
+========================================
+STEP 3 — Greeting Card Generator
+
+Use HTML Canvas to:
+
+- Allow background theme selection (light, gold, soft blue, floral)
+- Render:
+   Verse text
+   Reference
+   “Shared via 365 Daily Devotional”
+- Allow optional “To: Name” input
+
+Export as PNG.
+
+========================================
+STEP 4 — Story Format Generator
+
+Generate 1080x1920 vertical canvas.
+
+- Large bold verse
+- Soft gradient background
+- Small app branding footer
+- Optimized for Instagram/TikTok
+
+Export as PNG.
+
+========================================
+STEP 5 — GIF Generator (Lightweight)
+
+Do NOT use heavy GIF libraries.
+
+Instead:
+- Create animated verse container using CSS keyframes
+- Animate fade-in or typewriter effect
+- Export as short MP4 using MediaRecorder API if supported
+- Fallback: Export as animated canvas sequence
+
+Keep file under 2MB.
+
+========================================
+STEP 6 — Prayer Version Generator
+
+Create simple transformation logic:
+
+Input:
+Verse text
+
+Output:
+Convert to:
+
+"Lord, I thank You because..."
+Rewrite verse into prayer format.
+Keep simple rule-based logic.
+Do NOT call AI.
+
+Example:
+"Let the dry land appear"
+→
+"Lord, bring order and stability into my life."
+
+Return formatted text ready to share.
+
+========================================
+STEP 7 — Wallpaper Generator
+
+Generate:
+- 1080x1920
+- Minimalist design
+- Big verse text centered
+- Clean aesthetic
+- No clutter
+
+Export PNG.
+
+========================================
+STEP 8 — Hook into Share Action
+
+Modify share handler so when user selects a format:
+
+It calls appropriate function from /share/
+
+========================================
+STEP 9 — Performance Rules
+
+- Lazy load share modules
+- Do not increase initial bundle size heavily
+- No backend calls
+- All generation client-side
+
+========================================
+
+At the end, summarize:
+- What files were created
+- How each share mode works
+- Any browser compatibility considerations
