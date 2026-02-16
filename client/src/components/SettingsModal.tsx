@@ -1,4 +1,4 @@
-import { Settings, Type, Moon, Sun, Monitor, Bell, Globe } from "lucide-react";
+import { Settings, Type, Moon, Sun, Monitor, Volume2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -9,10 +9,22 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useFontSize, type FontSizeLevel } from "@/contexts/FontSizeContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+  getAvailableEnglishVoices,
+  saveVoicePreference,
+  clearVoicePreference,
+} from "@/hooks/useAudioReader";
 
 const fontSizeLevels: FontSizeLevel[] = ["small", "medium", "large", "extra-large"];
 const fontSizeLabels: Record<FontSizeLevel, string> = {
@@ -27,6 +39,8 @@ const themeOptions = [
   { value: "dark" as const, label: "Dark", icon: Moon },
   { value: "system" as const, label: "System", icon: Monitor },
 ];
+
+const VOICE_STORAGE_KEY = "audio-reader-voice";
 
 export function MobileSettingsSection() {
   const { fontSize, setFontSize } = useFontSize();
@@ -101,14 +115,66 @@ export function SettingsModal() {
   const { fontSize, setFontSize } = useFontSize();
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<string>("auto");
 
   const currentIndex = fontSizeLevels.indexOf(fontSize);
+
+  useEffect(() => {
+    if (!open) return;
+    const loadVoiceList = () => {
+      const available = getAvailableEnglishVoices();
+      setVoices(available);
+      try {
+        const saved = localStorage.getItem(VOICE_STORAGE_KEY);
+        if (saved && available.some((v) => v.voiceURI === saved)) {
+          setSelectedVoice(saved);
+        } else {
+          setSelectedVoice("auto");
+        }
+      } catch {
+        setSelectedVoice("auto");
+      }
+    };
+    loadVoiceList();
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.addEventListener("voiceschanged", loadVoiceList);
+      return () => {
+        window.speechSynthesis.removeEventListener("voiceschanged", loadVoiceList);
+      };
+    }
+  }, [open]);
+
+  const handleVoiceChange = (value: string) => {
+    setSelectedVoice(value);
+    if (value === "auto") {
+      clearVoicePreference();
+    } else {
+      saveVoicePreference(value);
+    }
+  };
 
   const handleSliderChange = (value: number[]) => {
     const newIndex = value[0];
     if (newIndex >= 0 && newIndex < fontSizeLevels.length) {
       setFontSize(fontSizeLevels[newIndex]);
     }
+  };
+
+  const previewVoice = () => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(
+      "The Lord is my shepherd, I shall not want."
+    );
+    utterance.rate = 0.92;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    if (selectedVoice !== "auto") {
+      const voice = voices.find((v) => v.voiceURI === selectedVoice);
+      if (voice) utterance.voice = voice;
+    }
+    window.speechSynthesis.speak(utterance);
   };
 
   return (
@@ -136,7 +202,6 @@ export function SettingsModal() {
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Text Size Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Type className="w-4 h-4 text-primary" />
@@ -166,7 +231,6 @@ export function SettingsModal() {
               </div>
             </div>
 
-            {/* Preview */}
             <div className="p-4 bg-muted/30 rounded-lg border">
               <p className="text-muted-foreground text-xs mb-2">Preview:</p>
               <p className={`leading-relaxed ${
@@ -203,6 +267,42 @@ export function SettingsModal() {
                   {opt.label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          <div className="border-t pt-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <Volume2 className="w-4 h-4 text-primary" />
+              <h3 className="font-medium">Audio Voice</h3>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Choose a voice for the Listen feature. Available voices depend on your browser and device.
+            </p>
+
+            <div className="flex items-center gap-2">
+              <Select value={selectedVoice} onValueChange={handleVoiceChange}>
+                <SelectTrigger className="flex-1" data-testid="select-voice">
+                  <SelectValue placeholder="Auto (Best Available)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto" data-testid="voice-option-auto">
+                    Auto (Best Available)
+                  </SelectItem>
+                  {voices.map((v, idx) => (
+                    <SelectItem key={v.voiceURI} value={v.voiceURI} data-testid={`voice-option-${idx}`}>
+                      {v.name} ({v.lang})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={previewVoice}
+                data-testid="button-preview-voice"
+              >
+                Test
+              </Button>
             </div>
           </div>
         </div>

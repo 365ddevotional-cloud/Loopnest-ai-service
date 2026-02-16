@@ -10,6 +10,8 @@ import { useAudioReader } from "@/hooks/useAudioReader";
 
 const SPEED_OPTIONS = [
   { label: "0.75x", value: 0.75 },
+  { label: "0.88x", value: 0.88 },
+  { label: "0.92x", value: 0.92 },
   { label: "1x", value: 1 },
   { label: "1.25x", value: 1.25 },
   { label: "1.5x", value: 1.5 },

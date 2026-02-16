@@ -120,7 +120,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
                   ...(quoteItems.length > 0 ? [`Christian Quotes:`, ...quoteItems.map(d => d + ".")] : []),
                   ...(propheticItems.length > 0 ? [`Prophetic Declaration:`, ...propheticItems.map(d => d + ".")] : []),
                 ].join(" ");
-                audio.play(listenText, devotional.title);
+                audio.play(listenText, devotional.title, { devotional: true });
               }}
               className="rounded-full text-xs font-bold tracking-wide uppercase shadow-md gap-1"
               data-testid="button-listen-devotional"
