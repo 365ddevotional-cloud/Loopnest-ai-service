@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -17,6 +18,8 @@ import { NotificationTrigger } from "@/components/NotificationTrigger";
 import { MenuTransitionOverlay } from "@/components/MenuTransitionOverlay";
 import { WalkthroughModal } from "@/components/WalkthroughModal";
 import { FloatingFeedbackButton } from "@/components/FloatingFeedbackButton";
+import { AudioMiniPlayer } from "@/components/AudioMiniPlayer";
+import { stopAudioOnNavigate } from "@/hooks/useAudioReader";
 import { useOfflineSync } from "@/hooks/use-offline-sync";
 import Home from "@/pages/Home";
 import Archive from "@/pages/Archive";
@@ -81,6 +84,11 @@ function AppContent() {
   useOfflineSync();
   const { isTransitioning, completeTransition } = useMenuTransition();
   const [location] = useLocation();
+
+  useEffect(() => {
+    stopAudioOnNavigate();
+  }, [location]);
+
   const isPublicRoute =
     location.startsWith("/devotional") || location.startsWith("/public");
 
@@ -101,6 +109,7 @@ function AppContent() {
         <NotificationTrigger />
         <WalkthroughModal />
         <FloatingFeedbackButton />
+        <AudioMiniPlayer />
       </div>
       <MenuTransitionOverlay isVisible={isTransitioning} onComplete={completeTransition} />
     </>

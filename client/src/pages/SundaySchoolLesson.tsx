@@ -3,7 +3,8 @@ import { useParams, Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowLeft, Copy, BookOpen, MessageCircle, Target, ClipboardList, Calendar, GraduationCap } from "lucide-react";
+import { Loader2, ArrowLeft, Copy, BookOpen, MessageCircle, Target, ClipboardList, Calendar, GraduationCap, Volume2 } from "lucide-react";
+import { useAudioReader } from "@/hooks/useAudioReader";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { SundaySchoolLesson } from "@shared/schema";
@@ -52,6 +53,7 @@ function formatLessonForCopy(lesson: SundaySchoolLesson): string {
 export default function SundaySchoolLessonPage() {
   const params = useParams<{ id: string }>();
   const { toast } = useToast();
+  const audio = useAudioReader();
 
   const { data: lesson, isLoading, error } = useQuery<SundaySchoolLesson>({
     queryKey: ["/api/sunday-school", params.id],
@@ -158,10 +160,35 @@ export default function SundaySchoolLessonPage() {
               Back
             </Button>
           </Link>
-          <Button onClick={handleCopy} className="gap-2" data-testid="button-copy-lesson">
-            <Copy className="w-4 h-4" />
-            Copy Lesson
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              onClick={() => {
+                if (!lesson) return;
+                const listenText = [
+                  `${lesson.title}.`,
+                  `Scripture: ${lesson.scriptureReferences}.`,
+                  lesson.scriptureText + ".",
+                  `Lesson Content:`,
+                  lesson.lessonContent,
+                  `Discussion Questions:`,
+                  ...lesson.discussionQuestions.map((q, i) => `Question ${i + 1}: ${q}.`),
+                  `Prayer Focus: ${lesson.prayerFocus}.`,
+                  `Weekly Assignment: ${lesson.weeklyAssignment}.`,
+                ].join(" ");
+                audio.play(listenText, lesson.title);
+              }}
+              variant="outline"
+              className="gap-2"
+              data-testid="button-listen-lesson"
+            >
+              <Volume2 className="w-4 h-4" />
+              Listen
+            </Button>
+            <Button onClick={handleCopy} className="gap-2" data-testid="button-copy-lesson">
+              <Copy className="w-4 h-4" />
+              Copy Lesson
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-2">

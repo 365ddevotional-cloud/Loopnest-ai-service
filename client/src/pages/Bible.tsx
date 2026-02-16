@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Loader2, Book, BookOpen, Hash, Search, Star, Menu } from "lucide-react";
+import { Loader2, Book, BookOpen, Hash, Search, Star, Menu, Volume2 } from "lucide-react";
+import { useAudioReader } from "@/hooks/useAudioReader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -57,6 +58,7 @@ import { getHighlight, type HighlightColor } from "@/lib/bible-storage";
 export default function Bible() {
   const { translation, setTranslation } = useTranslation();
   const { fontSize } = useFontSize();
+  const audio = useAudioReader();
   const [position, setPosition] = useState<BiblePosition>(() => {
     const saved = loadReadingPosition();
     if (saved) {
@@ -209,6 +211,19 @@ export default function Bible() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (chapterData?.verses) {
+                      const text = chapterData.verses.map((v) => v.text).join(". ");
+                      audio.play(text, `${currentBook?.name} ${position.chapter}`);
+                    }
+                  }}
+                  disabled={!chapterData?.verses}
+                  data-testid="menu-listen-chapter"
+                >
+                  <Volume2 className="h-4 w-4 mr-2 text-primary" />
+                  Listen to Chapter
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setBookmarksOpen(true)} data-testid="menu-bookmarks">
                   <Star className="h-4 w-4 mr-2 text-amber-400" />
                   Bookmarked Verses

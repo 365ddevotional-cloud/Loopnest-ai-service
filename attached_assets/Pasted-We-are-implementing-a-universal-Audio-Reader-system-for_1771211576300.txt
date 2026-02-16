@@ -1,0 +1,151 @@
+We are implementing a universal Audio Reader system for the 365 Daily Devotional app.
+
+STRICT RULES:
+- Do NOT modify database schema
+- Do NOT modify routing
+- Do NOT modify admin editing logic
+- Do NOT modify offline caching logic
+- Only ADD a universal Audio Reader system
+- Must work offline
+- Must work inside PWA / TWA
+- Must use browser SpeechSynthesis API only
+- No external libraries
+- No backend calls
+
+========================================
+GOAL:
+Create one reusable Audio Reader system usable in:
+- Bible section
+- Daily Devotional
+- Sunday School
+========================================
+
+STEP 1 — Create Audio Hook
+
+Create file:
+
+/src/hooks/useAudioReader.ts
+
+Implement:
+
+- play(text: string)
+- pause()
+- resume()
+- stop()
+- setSpeed(rate: number)
+
+Use:
+window.speechSynthesis
+SpeechSynthesisUtterance
+
+Ensure:
+- Stop any current speech before playing new text
+- Track speaking state
+- Track paused state
+- Track current rate (default 1)
+
+Ensure:
+- On component unmount, speechSynthesis.cancel()
+
+========================================
+
+STEP 2 — Create Floating Mini Player Component
+
+Create:
+
+/src/components/AudioMiniPlayer.tsx
+
+Features:
+- Shows only when speaking
+- Displays:
+   ▶ Play
+   ⏸ Pause
+   ⏹ Stop
+   Speed dropdown (1x, 1.25x, 1.5x)
+- Fixed bottom position
+- Clean minimal design
+- Dark mode compatible
+
+Must:
+- Use hook from Step 1
+- Not block scrolling
+- Be lightweight
+
+========================================
+
+STEP 3 — Integrate Into Bible
+
+Add:
+
+Speaker icon button:
+"Listen to Chapter"
+
+When clicked:
+- Combine all verse text into one string
+- Pass to play()
+
+Add speaker icon next to individual verses:
+- Pass single verse text
+
+========================================
+
+STEP 4 — Integrate Into Devotional
+
+Add button at top:
+"🔊 Listen to Devotional"
+
+Combine:
+- Scripture
+- Message
+- Prayer Points
+- Faith Declarations
+- Christian Quotes
+- Prophetic Declaration
+
+Into one readable text block.
+
+Pass to play()
+
+========================================
+
+STEP 5 — Integrate Into Sunday School
+
+Add:
+"🔊 Listen to Lesson"
+
+Combine:
+- Title
+- Scripture references
+- Lesson body
+- Reflection questions
+- Prayer
+
+Pass to play()
+
+========================================
+
+STEP 6 — Safety Handling
+
+Ensure:
+- speechSynthesis.cancel() runs when navigating away
+- Only one utterance active at a time
+- Speed change updates current speech
+- If user presses Play again while speaking, restart
+
+========================================
+
+STEP 7 — Performance
+
+- No heavy styling
+- No animation libraries
+- No backend changes
+- No bundle size explosion
+- Lazy load MiniPlayer if possible
+
+========================================
+
+At the end:
+Provide summary of:
+- Files created
+- Where integrated
+- Any mobile compatibility notes

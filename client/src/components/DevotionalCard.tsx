@@ -10,7 +10,8 @@ import { useScriptureText } from "@/hooks/use-scripture";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useFontSize } from "@/contexts/FontSizeContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { Loader2, Sun, Moon, Share2, Shield, Quote, Flame } from "lucide-react";
+import { Loader2, Sun, Moon, Share2, Shield, Quote, Flame, Volume2 } from "lucide-react";
+import { useAudioReader } from "@/hooks/useAudioReader";
 
 const fontSizeClasses = {
   "small": {
@@ -43,6 +44,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
   const { translation } = useTranslation();
   const { fontSize } = useFontSize();
   const { resolvedTheme, setTheme } = useTheme();
+  const audio = useAudioReader();
   const sizeClasses = fontSizeClasses[fontSize];
   const { text: scriptureText, isLoading, isFallback } = useScriptureText(
     devotional.scriptureReference,
@@ -103,6 +105,28 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
               ) : (
                 <><Moon className="w-3.5 h-3.5" /> Dark</>
               )}
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                const listenText = [
+                  `Title: ${devotional.title}.`,
+                  `Scripture: ${stripRedLetterMarkers(scriptureText)}.`,
+                  `${devotional.scriptureReference}.`,
+                  devotional.content,
+                  `Prayer Points:`,
+                  ...devotional.prayerPoints.map(p => p + "."),
+                  ...(faithItems.length > 0 ? [`Faith Declaration:`, ...faithItems.map(d => d + ".")] : []),
+                  ...(quoteItems.length > 0 ? [`Christian Quotes:`, ...quoteItems.map(d => d + ".")] : []),
+                  ...(propheticItems.length > 0 ? [`Prophetic Declaration:`, ...propheticItems.map(d => d + ".")] : []),
+                ].join(" ");
+                audio.play(listenText, devotional.title);
+              }}
+              className="rounded-full text-xs font-bold tracking-wide uppercase shadow-md gap-1"
+              data-testid="button-listen-devotional"
+            >
+              <Volume2 className="w-3.5 h-3.5" />
+              Listen
             </Button>
             <ShareButton
               title={devotional.title}

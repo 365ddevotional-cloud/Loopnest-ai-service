@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { Star, Highlighter, MessageSquare, Share2, X, Check, Type, Image, CreditCard, Smartphone, Film, HandHeart, Wallpaper, Loader2 } from "lucide-react";
+import { Star, Highlighter, MessageSquare, Share2, X, Check, Type, Image, CreditCard, Smartphone, Film, HandHeart, Wallpaper, Loader2, Volume2 } from "lucide-react";
+import { useAudioReader } from "@/hooks/useAudioReader";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -62,6 +63,7 @@ export function BibleVerseActions({
   currentHighlight,
 }: BibleVerseActionsProps) {
   const { toast } = useToast();
+  const audio = useAudioReader();
   const [isBookmarkedState, setIsBookmarkedState] = useState(() => 
     isBookmarked({ bookId, chapter, verse })
   );
@@ -273,6 +275,17 @@ export function BibleVerseActions({
   return (
     <>
       <span className="inline-flex items-center gap-0.5 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={() => audio.play(verseText, `${reference}`)}
+          aria-label="Listen to verse"
+          data-testid={`button-listen-${verse}`}
+        >
+          <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
+        </Button>
+
         <Button
           variant="ghost"
           size="icon"
