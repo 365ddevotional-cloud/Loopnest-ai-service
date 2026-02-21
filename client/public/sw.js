@@ -1,4 +1,4 @@
-const CACHE_NAME = 'devotional-v3';
+const CACHE_NAME = 'devotional-v4';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -6,7 +6,6 @@ const STATIC_ASSETS = [
   '/icon-512.png'
 ];
 
-// Install event - cache static assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -16,7 +15,6 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -30,18 +28,13 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - network first, fall back to cache
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
   if (event.request.method !== 'GET') return;
-
-  // Skip API requests - always fetch from network
   if (event.request.url.includes('/api/')) return;
 
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Clone the response for caching
         const responseClone = response.clone();
         caches.open(CACHE_NAME).then((cache) => {
           cache.put(event.request, responseClone);
@@ -49,12 +42,10 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => {
-        // Network failed, try cache
         return caches.match(event.request).then((cachedResponse) => {
           if (cachedResponse) {
             return cachedResponse;
           }
-          // Return offline page for navigation requests
           if (event.request.mode === 'navigate') {
             return caches.match('/');
           }
@@ -62,4 +53,10 @@ self.addEventListener('fetch', (event) => {
         });
       })
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });

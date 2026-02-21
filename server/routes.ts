@@ -112,6 +112,37 @@ export async function registerRoutes(
     }
   });
 
+  const BUILD_TIMESTAMP = new Date().toISOString();
+
+  app.get("/api/_health", async (req, res) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    try {
+      const allDevotionals = await storage.getDevotionals();
+      const activeCount = allDevotionals.filter(d => !d.isDeleted).length;
+      const sample = allDevotionals[0];
+      res.json({
+        status: "ok",
+        environment: process.env.NODE_ENV || "development",
+        buildTimestamp: BUILD_TIMESTAMP,
+        devotionalCount: activeCount,
+        schemaVersion: "2.0",
+        hasChristianQuotes: sample ? sample.christianQuotes !== null && sample.christianQuotes !== undefined : false,
+        hasPropheticDeclaration: sample ? sample.propheticDeclaration !== null && sample.propheticDeclaration !== undefined : false,
+        serviceWorkerVersion: "v6",
+        serverTime: new Date().toISOString(),
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        environment: process.env.NODE_ENV || "development",
+        buildTimestamp: BUILD_TIMESTAMP,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
   // Digital Asset Links for Google Play TWA verification
   // Configure ANDROID_PACKAGE_NAME and ANDROID_SHA256_FINGERPRINT env vars before publishing
   app.get("/.well-known/assetlinks.json", (req, res) => {

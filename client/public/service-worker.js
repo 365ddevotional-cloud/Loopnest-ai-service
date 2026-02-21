@@ -1,5 +1,5 @@
-const CACHE_NAME = '365dd-v5';
-const API_CACHE_NAME = '365dd-api-v2';
+const CACHE_NAME = '365dd-v6';
+const API_CACHE_NAME = '365dd-api-v3';
 
 const STATIC_ASSETS = [
   '/',
@@ -36,10 +36,6 @@ function isApiRequest(url) {
   return url.pathname.startsWith('/api/');
 }
 
-function isNavigationRequest(request) {
-  return request.mode === 'navigate';
-}
-
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
@@ -47,34 +43,34 @@ self.addEventListener('fetch', (event) => {
 
   if (isApiRequest(url)) {
     event.respondWith(
-      caches.open(API_CACHE_NAME).then((cache) => {
-        return cache.match(event.request).then((cached) => {
-          var fetchPromise = fetch(event.request).then((response) => {
-            if (response.ok) {
-              var contentType = response.headers.get('content-type') || '';
-              if (contentType.includes('application/json')) {
-                var cloned = response.clone();
-                cloned.text().then((body) => {
-                  if (body && body.length > 2 && body !== '[]' && body !== 'null') {
-                    cache.put(event.request, new Response(body, {
-                      status: response.status,
-                      statusText: response.statusText,
-                      headers: { 'Content-Type': 'application/json' }
-                    }));
-                  }
-                }).catch(() => {});
+      fetch(event.request).then((response) => {
+        if (response.ok) {
+          var contentType = response.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            var cloned = response.clone();
+            cloned.text().then((body) => {
+              if (body && body.length > 2 && body !== '[]' && body !== 'null') {
+                caches.open(API_CACHE_NAME).then((cache) => {
+                  cache.put(event.request, new Response(body, {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: { 'Content-Type': 'application/json' }
+                  }));
+                });
               }
-            }
-            return response;
-          }).catch(() => {
+            }).catch(() => {});
+          }
+        }
+        return response;
+      }).catch(() => {
+        return caches.open(API_CACHE_NAME).then((cache) => {
+          return cache.match(event.request).then((cached) => {
             if (cached) return cached;
             return new Response(JSON.stringify({ error: 'offline' }), {
               status: 503,
               headers: { 'Content-Type': 'application/json' }
             });
           });
-
-          return cached || fetchPromise;
         });
       })
     );
@@ -83,23 +79,37 @@ self.addEventListener('fetch', (event) => {
 
   if (isStaticAsset(url)) {
     event.respondWith(
-      caches.match(event.request).then((cached) => {
-        if (cached) {
-          fetch(event.request).then((response) => {
-            if (response.ok) {
-              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response));
-            }
-          }).catch(() => {});
-          return cached;
+      fetch(event.request).then((response) => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
-        return fetch(event.request).then((response) => {
+        return response;
+      }).catch(() => {
+        return caches.match(event.request).then((cached) => {
+          if (cached) return cached;
+          return caches.match('/offline.html');
+        });
+      })
+    );
+    return;
+  }
+
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
           if (response.ok) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           }
           return response;
-        }).catch(() => caches.match('/offline.html'));
-      })
+        })
+        .catch(() => {
+          return caches.match(event.request)
+            .then((cached) => cached || caches.match('/'))
+            .then((res) => res || caches.match('/offline.html'));
+        })
     );
     return;
   }
@@ -117,4 +127,13 @@ self.addEventListener('fetch', (event) => {
         caches.match(event.request).then((res) => res || caches.match('/offline.html'))
       )
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  if (event.data && event.data.type === 'CLEAR_CACHE') {
+    caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))));
+  }
 });

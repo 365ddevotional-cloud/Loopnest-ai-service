@@ -134,7 +134,12 @@ httpServer.listen(
     host: "0.0.0.0",
   },
   () => {
+    const dbHost = process.env.PGHOST || "unknown";
+    const dbHash = dbHost.split("").reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0).toString(16);
     log(`serving on port ${port}`);
+    log(`NODE_ENV: ${process.env.NODE_ENV || "development"}`);
+    log(`Database host hash: ${dbHash}`);
+    log(`Build time: ${new Date().toISOString()}`);
 
     import("./seed-devotionals").then(({ seedAllDevotionals }) => {
       import("./storage").then(({ storage }) => {
