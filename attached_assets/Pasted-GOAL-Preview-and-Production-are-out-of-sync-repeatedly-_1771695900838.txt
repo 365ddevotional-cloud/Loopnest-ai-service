@@ -1,0 +1,110 @@
+GOAL:
+Preview and Production are out of sync repeatedly.
+Fix permanently so this deployment mismatch never happens again.
+
+STRICT RULES:
+- Do NOT reseed devotionals.
+- Do NOT regenerate devotional content.
+- Do NOT delete any data.
+- Do NOT overwrite good data with empty values.
+- Preserve titles, scripture references, and dates.
+- Maintain backward compatibility.
+
+------------------------------------------------------
+PART 1 — ENVIRONMENT DIAGNOSTIC
+------------------------------------------------------
+
+1. Detect if Preview and Production use different DATABASE_URL values.
+2. Output both database connection strings (masked for security).
+3. Confirm whether Production DB differs from Preview DB.
+
+If different:
+Proceed to controlled synchronization.
+
+------------------------------------------------------
+PART 2 — SAFE DATA SYNCHRONIZATION
+------------------------------------------------------
+
+For every devotional record in Preview database:
+
+- Match production record by ID or date.
+- Update ONLY these fields in Production:
+  - content
+  - prayerPoints
+  - faithDeclarations
+  - christianQuotes
+  - propheticDeclaration
+
+ONLY update if:
+- Production field is null
+- Production field is empty
+- Production field differs from Preview
+
+DO NOT:
+- Delete records
+- Duplicate records
+- Change title
+- Change scripture reference
+- Change date
+
+After sync:
+- Output total records scanned
+- Output total records updated
+- Confirm format compliance
+
+------------------------------------------------------
+PART 3 — SCHEMA LOCK PROTECTION
+------------------------------------------------------
+
+1. Ensure production runs same Prisma schema as preview.
+2. Run production migration if needed.
+3. Add migration check on deployment start.
+4. If schema mismatch detected, log error before app starts.
+
+------------------------------------------------------
+PART 4 — CACHE & BUILD HARD RESET
+------------------------------------------------------
+
+1. Remove old build artifacts.
+2. Clear service worker cache if present.
+3. Remove aggressive cache headers.
+4. Ensure deployment serves fresh bundle.
+
+------------------------------------------------------
+PART 5 — DEPLOYMENT STABILITY FIX
+------------------------------------------------------
+
+Implement the following:
+
+1. Add startup check:
+   On server start, log:
+   - NODE_ENV
+   - Database connection hash
+   - Total devotional count
+
+2. Add automatic migration check on startup.
+
+3. Add deployment verification endpoint:
+   /api/_health
+   Returns:
+   - environment
+   - devotional count
+   - schema version
+   - build timestamp
+
+4. Ensure Preview and Production cannot silently diverge again.
+
+------------------------------------------------------
+PART 6 — FINAL REDEPLOY
+------------------------------------------------------
+
+After synchronization and stabilization:
+Trigger fresh production redeploy.
+
+Output final confirmation:
+
+- Production DB synced
+- Schema matched
+- Cache cleared
+- Environment verified
+- Public now matches Preview
