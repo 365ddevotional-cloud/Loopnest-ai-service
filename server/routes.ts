@@ -580,6 +580,8 @@ export async function registerRoutes(
         content: input.content ?? devotional.content,
         prayerPoints: input.prayerPoints ?? devotional.prayerPoints,
         faithDeclarations: input.faithDeclarations ?? devotional.faithDeclarations,
+        christianQuotes: input.christianQuotes !== undefined ? input.christianQuotes : devotional.christianQuotes,
+        propheticDeclaration: input.propheticDeclaration !== undefined ? input.propheticDeclaration : devotional.propheticDeclaration,
         author: input.author ?? devotional.author,
         date: input.date ?? devotional.date,
       };

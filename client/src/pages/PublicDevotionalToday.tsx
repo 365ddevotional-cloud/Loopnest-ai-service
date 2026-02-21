@@ -131,16 +131,13 @@ export default function PublicDevotionalToday() {
       ? devotional.content.substring(0, 150) + "..."
       : devotional.content;
 
-  const regularDeclarations = (devotional.faithDeclarations || []).filter(
-    (d: string) =>
-      !d.startsWith("QUOTE:") && !d.startsWith("PROPHETIC:")
-  );
-  const quotes = (devotional.faithDeclarations || []).filter((d: string) =>
-    d.startsWith("QUOTE:")
-  );
-  const prophetic = (devotional.faithDeclarations || []).filter((d: string) =>
-    d.startsWith("PROPHETIC:")
-  );
+  const regularDeclarations = devotional.faithDeclarations || [];
+  const quotes = devotional.christianQuotes
+    ? devotional.christianQuotes.split("\n").map((q: string) => q.trim()).filter(Boolean)
+    : [];
+  const prophetic = devotional.propheticDeclaration
+    ? devotional.propheticDeclaration.split("\n").map((p: string) => p.trim()).filter(Boolean)
+    : [];
 
   return (
     <div
@@ -230,6 +227,11 @@ export default function PublicDevotionalToday() {
             fontSize: "1.05rem",
             lineHeight: 1.85,
             color: "#333",
+            whiteSpace: "pre-wrap",
+            overflowWrap: "anywhere",
+            wordBreak: "break-word",
+            height: "auto",
+            overflow: "hidden",
           }}
           data-testid="text-public-content"
         >
@@ -263,6 +265,9 @@ export default function PublicDevotionalToday() {
                 fontSize: "1rem",
                 lineHeight: 1.8,
                 color: "#444",
+                whiteSpace: "pre-wrap",
+                overflowWrap: "anywhere",
+                wordBreak: "break-word",
               }}
             >
               {devotional.prayerPoints.map((point: string, i: number) => (
@@ -297,6 +302,9 @@ export default function PublicDevotionalToday() {
                 fontSize: "1rem",
                 lineHeight: 1.8,
                 color: "#444",
+                whiteSpace: "pre-wrap",
+                overflowWrap: "anywhere",
+                wordBreak: "break-word",
               }}
             >
               {regularDeclarations.map((d: string, i: number) => (
@@ -336,9 +344,12 @@ export default function PublicDevotionalToday() {
                   paddingLeft: "1rem",
                   marginBottom: "1rem",
                   fontStyle: "italic",
+                  whiteSpace: "pre-wrap",
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word",
                 }}
               >
-                {q.replace("QUOTE: ", "").replace("QUOTE:", "")}
+                {q}
               </blockquote>
             ))}
           </section>
@@ -371,9 +382,12 @@ export default function PublicDevotionalToday() {
                   backgroundColor: "#f3f0e8",
                   padding: "1.25rem",
                   borderRadius: "6px",
+                  whiteSpace: "pre-wrap",
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word",
                 }}
               >
-                {p.replace("PROPHETIC: ", "").replace("PROPHETIC:", "")}
+                {p}
               </p>
             ))}
           </section>

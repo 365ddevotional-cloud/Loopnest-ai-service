@@ -44,6 +44,10 @@ export const devotionals = pgTable("devotionals", {
   redLetterEnabled: boolean("red_letter_enabled").default(true),
   // Seasonal Override: When true, marks devotional as a seasonal entry (Easter, Christmas, etc.)
   seasonalOverride: boolean("seasonal_override").default(false),
+  // Christian Quotes: newline-separated quotes
+  christianQuotes: text("christian_quotes"),
+  // Prophetic Declaration: paragraph text
+  propheticDeclaration: text("prophetic_declaration"),
 });
 
 export const insertDevotionalSchema = createInsertSchema(devotionals).omit({

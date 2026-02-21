@@ -140,6 +140,8 @@ function AdminArchive() {
     content: "",
     prayerPoints: "",
     faithDeclarations: "",
+    christianQuotes: "",
+    propheticDeclaration: "",
     author: "",
   });
 
@@ -203,6 +205,8 @@ function AdminArchive() {
       content: devotional.content,
       prayerPoints: devotional.prayerPoints.join("\n"),
       faithDeclarations: devotional.faithDeclarations.join("\n"),
+      christianQuotes: devotional.christianQuotes || "",
+      propheticDeclaration: devotional.propheticDeclaration || "",
       author: devotional.author || "",
     });
     setIsEditDialogOpen(true);
@@ -235,6 +239,8 @@ function AdminArchive() {
         content: editForm.content.trim(),
         prayerPoints: prayerPointsArray.length > 0 ? prayerPointsArray : selectedDevotional.prayerPoints,
         faithDeclarations: faithDeclarationsArray.length > 0 ? faithDeclarationsArray : selectedDevotional.faithDeclarations,
+        christianQuotes: editForm.christianQuotes.trim() || null,
+        propheticDeclaration: editForm.propheticDeclaration.trim() || null,
         author: editForm.author.trim() || selectedDevotional.author || undefined,
       },
     });
@@ -450,6 +456,18 @@ function AdminArchive() {
                   ))}
                 </ul>
               </div>
+              {selectedDevotional.christianQuotes && (
+                <div>
+                  <Label className="text-muted-foreground">Christian Quotes</Label>
+                  <p className="whitespace-pre-wrap" style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}>{selectedDevotional.christianQuotes}</p>
+                </div>
+              )}
+              {selectedDevotional.propheticDeclaration && (
+                <div>
+                  <Label className="text-muted-foreground">Prophetic Declaration</Label>
+                  <p className="whitespace-pre-wrap" style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}>{selectedDevotional.propheticDeclaration}</p>
+                </div>
+              )}
               {selectedDevotional.author && (
                 <div>
                   <Label className="text-muted-foreground">Author</Label>
@@ -523,6 +541,28 @@ function AdminArchive() {
                 onChange={(e) => setEditForm({ ...editForm, faithDeclarations: e.target.value })}
                 rows={4}
                 data-testid="textarea-edit-declarations"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-christian-quotes">Christian Quotes (one per line)</Label>
+              <Textarea
+                id="edit-christian-quotes"
+                value={editForm.christianQuotes}
+                onChange={(e) => setEditForm({ ...editForm, christianQuotes: e.target.value })}
+                rows={4}
+                className="whitespace-pre-wrap"
+                data-testid="textarea-edit-christian-quotes"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-prophetic-declaration">Prophetic Declaration</Label>
+              <Textarea
+                id="edit-prophetic-declaration"
+                value={editForm.propheticDeclaration}
+                onChange={(e) => setEditForm({ ...editForm, propheticDeclaration: e.target.value })}
+                rows={4}
+                className="whitespace-pre-wrap"
+                data-testid="textarea-edit-prophetic-declaration"
               />
             </div>
             <div>
@@ -1219,15 +1259,13 @@ function SundaySchoolAdmin() {
 }
 
 function formatDevotionalForCopy(d: Devotional): string {
-  const declarations = d.faithDeclarations || [];
-  const len = declarations.length;
-  const baseSize = Math.floor(len / 3);
-  const remainder = len % 3;
-  const s1 = baseSize + (remainder > 0 ? 1 : 0);
-  const s2 = baseSize + (remainder > 1 ? 1 : 0);
-  const faithItems = declarations.slice(0, s1);
-  const quoteItems = declarations.slice(s1, s1 + s2);
-  const propheticItems = declarations.slice(s1 + s2);
+  const faithItems = d.faithDeclarations || [];
+  const quoteItems = d.christianQuotes
+    ? d.christianQuotes.split("\n").map(q => q.trim()).filter(Boolean)
+    : [];
+  const propheticItems = d.propheticDeclaration
+    ? d.propheticDeclaration.split("\n").map(p => p.trim()).filter(Boolean)
+    : [];
 
   const lines: string[] = [];
   lines.push(`*365 DAILY DEVOTIONAL*`);
@@ -1307,15 +1345,13 @@ function DevotionalPreviewTools() {
     }
   };
 
-  const declarations = previewDevotional?.faithDeclarations || [];
-  const len = declarations.length;
-  const baseSize = Math.floor(len / 3);
-  const remainder = len % 3;
-  const s1 = baseSize + (remainder > 0 ? 1 : 0);
-  const s2 = baseSize + (remainder > 1 ? 1 : 0);
-  const faithItems = declarations.slice(0, s1);
-  const quoteItems = declarations.slice(s1, s1 + s2);
-  const propheticItems = declarations.slice(s1 + s2);
+  const faithItems = previewDevotional?.faithDeclarations || [];
+  const quoteItems = previewDevotional?.christianQuotes
+    ? previewDevotional.christianQuotes.split("\n").map(q => q.trim()).filter(Boolean)
+    : [];
+  const propheticItems = previewDevotional?.propheticDeclaration
+    ? previewDevotional.propheticDeclaration.split("\n").map(p => p.trim()).filter(Boolean)
+    : [];
 
   return (
     <div className="space-y-6">

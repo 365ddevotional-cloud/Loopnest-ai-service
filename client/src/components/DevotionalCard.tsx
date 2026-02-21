@@ -51,15 +51,13 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
     devotional.scriptureText
   );
 
-  const declarations = devotional.faithDeclarations || [];
-  const len = declarations.length;
-  const baseSize = Math.floor(len / 3);
-  const remainder = len % 3;
-  const s1 = baseSize + (remainder > 0 ? 1 : 0);
-  const s2 = baseSize + (remainder > 1 ? 1 : 0);
-  const faithItems = declarations.slice(0, s1);
-  const quoteItems = declarations.slice(s1, s1 + s2);
-  const propheticItems = declarations.slice(s1 + s2);
+  const faithItems = devotional.faithDeclarations || [];
+  const quoteItems = devotional.christianQuotes
+    ? devotional.christianQuotes.split("\n").map(q => q.trim()).filter(Boolean)
+    : [];
+  const propheticItems = devotional.propheticDeclaration
+    ? devotional.propheticDeclaration.split("\n").map(p => p.trim()).filter(Boolean)
+    : [];
 
   const fullShareText = [
     `Title: ${devotional.title}`,
