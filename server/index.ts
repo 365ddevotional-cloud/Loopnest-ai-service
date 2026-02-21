@@ -151,6 +151,14 @@ httpServer.listen(
               storage.getDevotionals().then((after) => {
                 const afterCount = after.length;
                 log(`Devotional auto-sync complete (beforeCount: ${beforeCount}, afterCount: ${afterCount}, inserted: ${afterCount - beforeCount})`);
+
+                import("./sync-production-data").then(({ syncProductionData }) => {
+                  syncProductionData()
+                    .then((result) => {
+                      log(`Data standardization complete (scanned: ${result.scanned}, updated: ${result.updated})`);
+                    })
+                    .catch((err) => console.error("Data standardization failed:", err));
+                });
               });
             })
             .catch((err) => console.error("Devotional auto-sync failed:", err));
