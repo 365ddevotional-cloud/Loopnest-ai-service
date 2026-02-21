@@ -1,0 +1,93 @@
+GOAL:
+Standardize and populate ALL devotionals in the database (past, present, and future).
+
+This includes:
+- Past devotionals
+- Today’s devotional
+- All future devotionals through Feb 28, 2027 and beyond
+
+STRICT RULES:
+- DO NOT change devotional titles.
+- DO NOT change scripture references.
+- DO NOT change dates.
+- DO NOT reseed database.
+- DO NOT delete any devotional.
+- DO NOT duplicate topics.
+- ONLY populate missing or incomplete sections.
+- Preserve existing good content.
+
+--------------------------------------------------
+STRUCTURE REQUIREMENTS (MANDATORY FORMAT)
+--------------------------------------------------
+
+Each devotional must contain:
+
+1. Devotional Message
+   - Minimum 3 meaningful paragraphs
+   - Theologically sound
+   - Practical and encouraging
+   - Paragraph spacing preserved
+
+2. Prayer Points
+   - Exactly 7
+   - One per line
+   - Spirit-filled and actionable
+
+3. Faith Declarations
+   - Exactly 5
+   - One per line
+   - Bold, identity-based
+
+4. Christian Quotes
+   - Exactly 2
+   - One per line
+   - Short and powerful
+
+5. Prophetic Declaration
+   - 1 strong paragraph
+   - Confident, forward-looking
+   - Maximum 6 sentences
+
+--------------------------------------------------
+PROCESSING LOGIC
+--------------------------------------------------
+
+For EVERY devotional in the database:
+
+IF:
+- devotional message has fewer than 3 paragraphs
+- prayerPoints count is less than 7
+- faithDeclarations count is less than 5
+- christianQuotes is null or empty
+- propheticDeclaration is null or empty
+
+THEN:
+Regenerate ONLY the missing or incomplete sections.
+
+IMPORTANT:
+- If a section already meets the format standard, DO NOT overwrite it.
+- Preserve tone and topic alignment with the existing title and scripture.
+- Maintain devotional theme integrity.
+
+--------------------------------------------------
+IMPLEMENTATION NOTES
+--------------------------------------------------
+
+- Process in safe batches to avoid timeouts.
+- Maintain backward compatibility.
+- Ensure line breaks are preserved.
+- Do NOT modify schema.
+- Do NOT modify UI.
+
+--------------------------------------------------
+OUTPUT REQUIRED
+--------------------------------------------------
+
+After completion, output:
+
+- Total devotionals scanned
+- Total devotionals updated
+- Confirmation no titles were changed
+- Confirmation no scripture references were changed
+- Confirmation no dates were changed
+- Confirmation format compliance achieved across all records
