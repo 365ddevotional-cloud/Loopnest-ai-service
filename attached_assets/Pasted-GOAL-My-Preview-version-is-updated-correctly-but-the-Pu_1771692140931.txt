@@ -1,0 +1,64 @@
+GOAL:
+My Preview version is updated correctly, but the Public deployed link is still showing old behavior.
+Fix production so it matches Preview exactly.
+
+STRICT RULES:
+- Do NOT modify devotional logic.
+- Do NOT change UI layout.
+- Do NOT remove any fields.
+- Only fix deployment + production sync issues.
+- Ensure production database and build are fully updated.
+
+--------------------------------------------
+STEP 1 — FORCE CLEAN PRODUCTION BUILD
+--------------------------------------------
+
+1. Clear any production build cache.
+2. Delete old build artifacts.
+3. Regenerate a fresh production build.
+4. Ensure environment variables are correctly loaded.
+5. Ensure no stale service worker is being served.
+
+--------------------------------------------
+STEP 2 — DATABASE SCHEMA SYNC
+--------------------------------------------
+
+1. Confirm production database includes:
+   - christianQuotes
+   - propheticDeclaration
+
+2. If missing:
+   - Run safe migration in production.
+   - Do NOT drop existing data.
+   - Maintain backward compatibility.
+
+--------------------------------------------
+STEP 3 — PRODUCTION DATABASE SYNC CHECK
+--------------------------------------------
+
+1. Confirm production is not using a different database than preview.
+2. If separate, sync schema only (not delete data).
+3. Ensure production reflects the latest schema.
+
+--------------------------------------------
+STEP 4 — DISABLE PRODUCTION CACHING
+--------------------------------------------
+
+1. Ensure no aggressive HTTP caching headers.
+2. Remove any service worker caching old bundles.
+3. Force fresh content load on deployment.
+
+--------------------------------------------
+STEP 5 — REDEPLOY
+--------------------------------------------
+
+1. Trigger full redeploy.
+2. Verify build logs show updated files.
+3. Confirm public URL now matches Preview behavior.
+
+After completion:
+Output a summary of:
+- Whether schema matched
+- Whether caching was cleared
+- Whether production DB was updated
+- Confirmation public link matches Preview

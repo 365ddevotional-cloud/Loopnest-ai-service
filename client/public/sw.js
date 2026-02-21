@@ -1,4 +1,4 @@
-const CACHE_NAME = 'devotional-v2';
+const CACHE_NAME = 'devotional-v3';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',

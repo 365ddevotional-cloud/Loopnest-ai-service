@@ -1,5 +1,5 @@
-const CACHE_NAME = '365dd-v4';
-const API_CACHE_NAME = '365dd-api-v1';
+const CACHE_NAME = '365dd-v5';
+const API_CACHE_NAME = '365dd-api-v2';
 
 const STATIC_ASSETS = [
   '/',
