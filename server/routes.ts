@@ -8,8 +8,68 @@ import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { getTodayDateString, isFutureDate, isPastDate, getDayOfYear } from "./date-utils";
 import { seedAllDevotionals } from "./seed-devotionals";
+import { devotionalTranslations } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
+import { db } from "./db";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+async function applyTranslation(devotional: any, lang: string | undefined) {
+  if (!lang || lang === "en") return devotional;
+  try {
+    const [translation] = await db
+      .select()
+      .from(devotionalTranslations)
+      .where(
+        and(
+          eq(devotionalTranslations.devotionalId, devotional.id),
+          eq(devotionalTranslations.languageCode, lang)
+        )
+      )
+      .limit(1);
+    if (!translation) return devotional;
+    return {
+      ...devotional,
+      content: translation.devotionalMessage,
+      prayerPoints: translation.prayerPoints,
+      faithDeclarations: translation.faithDeclarations,
+      christianQuotes: translation.christianQuotes ?? devotional.christianQuotes,
+      propheticDeclaration: translation.propheticDeclaration ?? devotional.propheticDeclaration,
+      scriptureText: translation.scriptureTextTranslated ?? devotional.scriptureText,
+      _translatedTo: lang,
+    };
+  } catch {
+    return devotional;
+  }
+}
+
+async function applyTranslationToList(devotionals: any[], lang: string | undefined) {
+  if (!lang || lang === "en") return devotionals;
+  try {
+    const translations = await db
+      .select()
+      .from(devotionalTranslations)
+      .where(eq(devotionalTranslations.languageCode, lang));
+    if (translations.length === 0) return devotionals;
+    const translationMap = new Map(translations.map(t => [t.devotionalId, t]));
+    return devotionals.map(d => {
+      const t = translationMap.get(d.id);
+      if (!t) return d;
+      return {
+        ...d,
+        content: t.devotionalMessage,
+        prayerPoints: t.prayerPoints,
+        faithDeclarations: t.faithDeclarations,
+        christianQuotes: t.christianQuotes ?? d.christianQuotes,
+        propheticDeclaration: t.propheticDeclaration ?? d.propheticDeclaration,
+        scriptureText: t.scriptureTextTranslated ?? d.scriptureText,
+        _translatedTo: lang,
+      };
+    });
+  } catch {
+    return devotionals;
+  }
+}
 
 if (!ADMIN_PASSWORD) {
   console.warn("WARNING: ADMIN_PASSWORD not set. Admin login will be disabled.");
@@ -202,7 +262,9 @@ export async function registerRoutes(
       return res.status(404).json({ message: "No devotionals found." });
     }
     
-    res.json(devotional);
+    const lang = typeof req.query.lang === 'string' ? req.query.lang : undefined;
+    const result = await applyTranslation(devotional, lang);
+    res.json(result);
   });
 
   // GET Devotional by specific Date
@@ -233,7 +295,9 @@ export async function registerRoutes(
     if (!devotional) {
       return res.status(404).json({ message: "Devotional not found for this date" });
     }
-    res.json(devotional);
+    const lang = typeof req.query.lang === 'string' ? req.query.lang : undefined;
+    const result = await applyTranslation(devotional, lang);
+    res.json(result);
   });
 
   // GET All Devotionals (Archive)
@@ -251,12 +315,14 @@ export async function registerRoutes(
     const today = clientDate && /^\d{4}-\d{2}-\d{2}$/.test(clientDate) ? clientDate : getTodayDateString();
     const isAdmin = !!req.session?.isAdmin;
     
+    const lang = typeof req.query.lang === 'string' ? req.query.lang : undefined;
     if (isAdmin) {
-      res.json(list);
+      const translated = await applyTranslationToList(list, lang);
+      res.json(translated);
     } else {
-      // Filter out future devotionals for non-admin users based on client's date
       const filteredList = list.filter(d => d.date <= today);
-      res.json(filteredList);
+      const translated = await applyTranslationToList(filteredList, lang);
+      res.json(translated);
     }
   });
 
