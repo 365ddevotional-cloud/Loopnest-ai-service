@@ -60,6 +60,32 @@ export const insertDevotionalSchema = createInsertSchema(devotionals).omit({
 export type Devotional = typeof devotionals.$inferSelect;
 export type InsertDevotional = z.infer<typeof insertDevotionalSchema>;
 
+export const devotionalTranslations = pgTable("devotional_translations", {
+  id: serial("id").primaryKey(),
+  devotionalId: integer("devotional_id").notNull().references(() => devotionals.id, { onDelete: "cascade" }),
+  languageCode: text("language_code").notNull(),
+  devotionalMessage: text("devotional_message").notNull(),
+  prayerPoints: text("prayer_points").array().notNull(),
+  faithDeclarations: text("faith_declarations").array().notNull(),
+  christianQuotes: text("christian_quotes"),
+  propheticDeclaration: text("prophetic_declaration"),
+  scriptureTextTranslated: text("scripture_text_translated"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  uniqueDevotionalLang: unique().on(table.devotionalId, table.languageCode),
+}));
+
+export const insertDevotionalTranslationSchema = createInsertSchema(devotionalTranslations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type DevotionalTranslation = typeof devotionalTranslations.$inferSelect;
+export type InsertDevotionalTranslation = z.infer<typeof insertDevotionalTranslationSchema>;
+
+export const SUPPORTED_LANGUAGES = ["en", "es", "fr", "pt", "yo", "ig", "ha", "sw", "zh", "hi"] as const;
+export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number];
+
 // Request Types
 export type CreateDevotionalRequest = InsertDevotional;
 export type UpdateDevotionalRequest = Partial<InsertDevotional>;
