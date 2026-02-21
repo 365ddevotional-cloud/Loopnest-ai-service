@@ -1,0 +1,150 @@
+GOAL:
+Implement on-demand translation with permanent caching for 365 Daily Devotional 2.0.
+
+Translate ONLY when:
+- ?lang=xx is requested
+- No translation exists yet for that devotional + language
+
+Then:
+- Generate translation
+- Save to devotional_translations
+- Return translated content
+
+Future requests for same devotional + language:
+- Serve from DB (NO new OpenAI call)
+
+This must work for ALL devotionals (past + future).
+
+------------------------------------------------
+STRICT RULES
+------------------------------------------------
+
+- Do NOT modify devotional table
+- Do NOT break English default behavior
+- Do NOT auto-translate all devotionals
+- Only translate when requested
+- Must cache permanently
+- Must NOT require redeployment to function
+- Must NOT break preview or production builds
+
+------------------------------------------------
+SUPPORTED LANGUAGES (ONLY THESE)
+------------------------------------------------
+
+Allowed language codes:
+
+en   (English - default)
+es   (Spanish)
+fr   (French)
+yo   (Yoruba)
+pcm  (Nigerian Pidgin)
+ha   (Hausa)
+
+If any other language is requested:
+- Return English fallback
+- Do NOT call OpenAI
+
+------------------------------------------------
+STEP 1 — Add OpenAI SDK (Server Only)
+------------------------------------------------
+
+- Install official OpenAI SDK
+- Use environment variable:
+  OPENAI_API_KEY
+- Do NOT hardcode key
+- Do NOT expose key to frontend
+
+------------------------------------------------
+STEP 2 — Create Translation Service
+------------------------------------------------
+
+Create file:
+server/translationService.ts
+
+Function:
+async function translateDevotional(devotional, targetLang)
+
+It must translate:
+
+- devotionalMessage
+- prayerPoints
+- faithDeclarations
+- christianQuotes
+- propheticDeclaration
+- scriptureText
+
+FORMAT REQUIREMENTS (VERY IMPORTANT):
+
+- devotionalMessage: minimum 3 full paragraphs
+- prayerPoints: EXACTLY 7 (one per line)
+- faithDeclarations: EXACTLY 5 (one per line)
+- christianQuotes: EXACTLY 2 (one per line)
+- propheticDeclaration: 1 strong full paragraph
+- Keep original topic unchanged
+- Do NOT shorten content
+- Do NOT change theology
+- Maintain same structure as English
+
+Return structured object matching devotional_translations columns.
+
+------------------------------------------------
+STEP 3 — Integrate with Existing Overlay
+------------------------------------------------
+
+Update translation overlay logic:
+
+IF:
+- ?lang=xx is provided
+AND
+- lang is in allowed list
+AND
+- No translation row exists
+
+THEN:
+- Call translateDevotional()
+- Save result into devotional_translations
+- Return translated result
+
+IF translation exists:
+- Return cached version
+- DO NOT call OpenAI
+
+IF ?lang is missing:
+- Return English devotional unchanged
+
+------------------------------------------------
+STEP 4 — COST PROTECTION
+------------------------------------------------
+
+Add safeguards:
+
+- Max 3 new translation generations per minute
+- Prevent duplicate generation race conditions
+- If translation is in progress, wait and reuse result
+- Log when OpenAI call is made
+- Log when cached version is served
+
+------------------------------------------------
+STEP 5 — CONFIRMATION TESTS
+------------------------------------------------
+
+Confirm:
+
+1. English works unchanged
+2. First visit with ?lang=es generates translation + saves it
+3. Second visit with ?lang=es serves from DB (no new OpenAI call)
+4. Unsupported language returns English
+5. No existing features broken
+6. Works for today, by-date, and archive routes
+7. No mass translation triggered
+
+------------------------------------------------
+FINAL OUTPUT REQUIRED
+------------------------------------------------
+
+Print:
+
+- “Translation engine active”
+- “Caching working”
+- “English untouched”
+- “System safe”
