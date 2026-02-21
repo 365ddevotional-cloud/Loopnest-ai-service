@@ -8,63 +8,45 @@ import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { getTodayDateString, isFutureDate, isPastDate, getDayOfYear } from "./date-utils";
 import { seedAllDevotionals } from "./seed-devotionals";
-import { devotionalTranslations } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
-import { db } from "./db";
+import { getOrCreateTranslation, isAllowedLanguage, getCachedTranslationsForLanguage } from "./translationService";
+
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
+function overlayTranslation(devotional: any, translation: any, lang: string) {
+  return {
+    ...devotional,
+    content: translation.devotionalMessage,
+    prayerPoints: translation.prayerPoints,
+    faithDeclarations: translation.faithDeclarations,
+    christianQuotes: translation.christianQuotes ?? devotional.christianQuotes,
+    propheticDeclaration: translation.propheticDeclaration ?? devotional.propheticDeclaration,
+    scriptureText: translation.scriptureTextTranslated ?? devotional.scriptureText,
+    _translatedTo: lang,
+  };
+}
+
 async function applyTranslation(devotional: any, lang: string | undefined) {
-  if (!lang || lang === "en") return devotional;
+  if (!lang || lang === "en" || !isAllowedLanguage(lang)) return devotional;
   try {
-    const [translation] = await db
-      .select()
-      .from(devotionalTranslations)
-      .where(
-        and(
-          eq(devotionalTranslations.devotionalId, devotional.id),
-          eq(devotionalTranslations.languageCode, lang)
-        )
-      )
-      .limit(1);
+    const translation = await getOrCreateTranslation(devotional, lang);
     if (!translation) return devotional;
-    return {
-      ...devotional,
-      content: translation.devotionalMessage,
-      prayerPoints: translation.prayerPoints,
-      faithDeclarations: translation.faithDeclarations,
-      christianQuotes: translation.christianQuotes ?? devotional.christianQuotes,
-      propheticDeclaration: translation.propheticDeclaration ?? devotional.propheticDeclaration,
-      scriptureText: translation.scriptureTextTranslated ?? devotional.scriptureText,
-      _translatedTo: lang,
-    };
+    return overlayTranslation(devotional, translation, lang);
   } catch {
     return devotional;
   }
 }
 
 async function applyTranslationToList(devotionals: any[], lang: string | undefined) {
-  if (!lang || lang === "en") return devotionals;
+  if (!lang || lang === "en" || !isAllowedLanguage(lang)) return devotionals;
   try {
-    const translations = await db
-      .select()
-      .from(devotionalTranslations)
-      .where(eq(devotionalTranslations.languageCode, lang));
+    const translations = await getCachedTranslationsForLanguage(lang);
     if (translations.length === 0) return devotionals;
     const translationMap = new Map(translations.map(t => [t.devotionalId, t]));
     return devotionals.map(d => {
       const t = translationMap.get(d.id);
       if (!t) return d;
-      return {
-        ...d,
-        content: t.devotionalMessage,
-        prayerPoints: t.prayerPoints,
-        faithDeclarations: t.faithDeclarations,
-        christianQuotes: t.christianQuotes ?? d.christianQuotes,
-        propheticDeclaration: t.propheticDeclaration ?? d.propheticDeclaration,
-        scriptureText: t.scriptureTextTranslated ?? d.scriptureText,
-        _translatedTo: lang,
-      };
+      return overlayTranslation(d, t, lang);
     });
   } catch {
     return devotionals;
