@@ -21,6 +21,7 @@ import { FloatingFeedbackButton } from "@/components/FloatingFeedbackButton";
 import { AudioMiniPlayer } from "@/components/AudioMiniPlayer";
 import { stopAudioOnNavigate } from "@/hooks/useAudioReader";
 import { useOfflineSync } from "@/hooks/use-offline-sync";
+import { useLanguageAutoApply } from "@/components/LanguageSwitcher";
 import Home from "@/pages/Home";
 import Archive from "@/pages/Archive";
 import Admin from "@/pages/Admin";
@@ -82,6 +83,7 @@ function Router() {
 
 function AppContent() {
   useOfflineSync();
+  useLanguageAutoApply();
   const { isTransitioning, completeTransition } = useMenuTransition();
   const [location] = useLocation();
 

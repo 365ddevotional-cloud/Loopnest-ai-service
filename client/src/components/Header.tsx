@@ -20,6 +20,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { TranslationSelector } from "@/components/TranslationSelector";
 import { SettingsModal, MobileSettingsSection } from "@/components/SettingsModal";
+import { LanguageSwitcher, MobileLanguageSwitcher } from "@/components/LanguageSwitcher";
 
 function MobileTranslationSelector() {
   const { translation, setTranslation } = useTranslation();
@@ -195,6 +196,7 @@ export function Header() {
             </button>
           )}
           <TranslationSelector />
+          <LanguageSwitcher />
           <SettingsModal />
           {notificationsSupported && (
             <Button
@@ -287,6 +289,8 @@ export function Header() {
                   </button>
                 );
               })}
+              
+              <MobileLanguageSwitcher />
               
               <MobileTranslationSelector />
               
