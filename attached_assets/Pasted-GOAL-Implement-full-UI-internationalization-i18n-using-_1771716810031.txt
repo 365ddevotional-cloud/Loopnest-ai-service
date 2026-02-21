@@ -1,0 +1,117 @@
+GOAL:
+Implement full UI internationalization (i18n) using static JSON files.
+No AI calls.
+No backend changes.
+No breaking existing features.
+
+STRICT RULES:
+- Do NOT modify translation engine.
+- Do NOT modify Devotional table.
+- Do NOT break language switcher.
+- English must remain default.
+- Must support: en, es, fr, yo, pcm, ha.
+- Must work with existing ?lang=xx system.
+- Must NOT increase server load significantly.
+
+------------------------------------------------
+STEP 1 — Create Translation Files
+------------------------------------------------
+
+Create folder: /locales
+
+Create files:
+
+/locales/en.json
+/locales/es.json
+/locales/fr.json
+/locales/yo.json
+/locales/pcm.json
+/locales/ha.json
+
+Each file should contain UI strings only.
+
+Base keys:
+
+{
+  "dailyDevotional": "",
+  "listen": "",
+  "share": "",
+  "darkMode": "",
+  "lightMode": "",
+  "prayerPoints": "",
+  "faithDeclarations": "",
+  "christianQuotes": "",
+  "propheticDeclaration": "",
+  "privacyPolicy": "",
+  "backToTop": ""
+}
+
+Fill each language properly.
+
+English = current wording.
+Other languages = accurate translations.
+
+------------------------------------------------
+STEP 2 — Create UI Translation Utility
+------------------------------------------------
+
+Create utility: /utils/i18n.ts
+
+Function:
+getUIText(key, lang)
+
+Logic:
+1. If lang not provided → default "en"
+2. Load corresponding JSON file
+3. If key missing → fallback to English
+4. Return string
+
+------------------------------------------------
+STEP 3 — Integrate Into Frontend
+------------------------------------------------
+
+Replace hardcoded UI text:
+
+Instead of:
+"Prayer Points"
+
+Use:
+getUIText("prayerPoints", currentLang)
+
+Do this for:
+- Section headers
+- Buttons
+- Navigation
+- Footer labels
+
+Do NOT modify devotional content rendering.
+
+------------------------------------------------
+STEP 4 — Language Detection
+------------------------------------------------
+
+Use same logic as devotional:
+
+1. Check URL ?lang
+2. If missing, check localStorage devotionalLang
+3. If none → default English
+
+Use same currentLang variable everywhere.
+
+------------------------------------------------
+STEP 5 — Safety
+------------------------------------------------
+
+Confirm:
+
+- English works unchanged
+- Switching language updates:
+  - Section headers
+  - Buttons
+  - Footer
+- Devotional content translation still works
+- No layout break on mobile
+- No console errors
+
+OUTPUT:
+“UI internationalization active”

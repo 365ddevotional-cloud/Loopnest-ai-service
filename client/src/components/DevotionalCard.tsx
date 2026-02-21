@@ -12,6 +12,7 @@ import { useFontSize } from "@/contexts/FontSizeContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Loader2, Sun, Moon, Share2, Shield, Quote, Flame, Volume2 } from "lucide-react";
 import { useAudioReader } from "@/hooks/useAudioReader";
+import { useI18n } from "@/hooks/useI18n";
 
 const fontSizeClasses = {
   "small": {
@@ -45,6 +46,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
   const { fontSize } = useFontSize();
   const { resolvedTheme, setTheme } = useTheme();
   const audio = useAudioReader();
+  const { t } = useI18n();
   const sizeClasses = fontSizeClasses[fontSize];
   const { text: scriptureText, isLoading, isFallback } = useScriptureText(
     devotional.scriptureReference,
@@ -60,25 +62,25 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
     : [];
 
   const fullShareText = [
-    `Title: ${devotional.title}`,
-    `Date: ${format(parseISO(devotional.date), "MMMM d, yyyy")}`,
+    `${t("title")}: ${devotional.title}`,
+    `${t("date")}: ${format(parseISO(devotional.date), "MMMM d, yyyy")}`,
     ``,
-    `Scripture:`,
+    `${t("scripture")}:`,
     `"${stripRedLetterMarkers(scriptureText)}"`,
     `— ${devotional.scriptureReference}`,
     ``,
-    `Devotional:`,
+    `${t("devotional")}:`,
     devotional.content,
     ``,
-    `Prayer Points:`,
+    `${t("prayerPoints")}:`,
     ...devotional.prayerPoints.map(p => `• ${p}`),
     ``,
-    ...(faithItems.length > 0 ? [`Faith Declaration:`, ...faithItems.map(d => `• ${d}`), ``] : []),
-    ...(quoteItems.length > 0 ? [`Christian Quotes:`, ...quoteItems.map(d => `• ${d}`), ``] : []),
-    ...(propheticItems.length > 0 ? [`Prophetic Declaration:`, ...propheticItems.map(d => `• ${d}`), ``] : []),
-    `Written by ${devotional.author}`,
+    ...(faithItems.length > 0 ? [`${t("faithDeclaration")}:`, ...faithItems.map(d => `• ${d}`), ``] : []),
+    ...(quoteItems.length > 0 ? [`${t("christianQuotes")}:`, ...quoteItems.map(d => `• ${d}`), ``] : []),
+    ...(propheticItems.length > 0 ? [`${t("propheticDeclaration")}:`, ...propheticItems.map(d => `• ${d}`), ``] : []),
+    `${t("writtenBy")} ${devotional.author}`,
     ``,
-    `— Shared from 365 Daily Devotional App`,
+    `— ${t("sharedFrom")}`,
   ].join('\n');
 
   return (
@@ -99,24 +101,24 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
               title={resolvedTheme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {resolvedTheme === "dark" ? (
-                <><Sun className="w-3.5 h-3.5" /> Light</>
+                <><Sun className="w-3.5 h-3.5" /> {t("lightMode")}</>
               ) : (
-                <><Moon className="w-3.5 h-3.5" /> Dark</>
+                <><Moon className="w-3.5 h-3.5" /> {t("darkMode")}</>
               )}
             </Button>
             <Button
               size="sm"
               onClick={() => {
                 const listenText = [
-                  `Title: ${devotional.title}.`,
-                  `Scripture: ${stripRedLetterMarkers(scriptureText)}.`,
+                  `${t("title")}: ${devotional.title}.`,
+                  `${t("scripture")}: ${stripRedLetterMarkers(scriptureText)}.`,
                   `${devotional.scriptureReference}.`,
                   devotional.content,
-                  `Prayer Points:`,
+                  `${t("prayerPoints")}:`,
                   ...devotional.prayerPoints.map(p => p + "."),
-                  ...(faithItems.length > 0 ? [`Faith Declaration:`, ...faithItems.map(d => d + ".")] : []),
-                  ...(quoteItems.length > 0 ? [`Christian Quotes:`, ...quoteItems.map(d => d + ".")] : []),
-                  ...(propheticItems.length > 0 ? [`Prophetic Declaration:`, ...propheticItems.map(d => d + ".")] : []),
+                  ...(faithItems.length > 0 ? [`${t("faithDeclaration")}:`, ...faithItems.map(d => d + ".")] : []),
+                  ...(quoteItems.length > 0 ? [`${t("christianQuotes")}:`, ...quoteItems.map(d => d + ".")] : []),
+                  ...(propheticItems.length > 0 ? [`${t("propheticDeclaration")}:`, ...propheticItems.map(d => d + ".")] : []),
                 ].join(" ");
                 audio.play(listenText, devotional.title, { devotional: true });
               }}
@@ -124,7 +126,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
               data-testid="button-listen-devotional"
             >
               <Volume2 className="w-3.5 h-3.5" />
-              Listen
+              {t("listen")}
             </Button>
             <ShareButton
               title={devotional.title}
@@ -143,7 +145,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Loading scripture...
+                  {t("loadingScripture")}
                 </span>
               ) : (
                 <>
@@ -180,7 +182,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
         <div id="prayer-points" className="bg-gradient-to-br from-secondary/10 to-secondary/5 dark:from-secondary/20 dark:to-card p-6 rounded-xl border border-secondary/20 dark:border-secondary/40 shadow-sm dark:shadow-lg dark:shadow-secondary/10" data-testid="section-prayer-points">
           <h3 className="flex items-center gap-3 font-serif text-xl font-bold text-secondary mb-5">
             <span className="flex items-center justify-center w-9 h-9 rounded-full bg-secondary text-secondary-foreground text-sm font-sans font-bold shadow-sm">P</span>
-            Prayer Points
+            {t("prayerPoints")}
           </h3>
           <ul className="space-y-4">
             {devotional.prayerPoints.map((point, idx) => (
@@ -199,7 +201,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
               <span className="flex items-center justify-center w-9 h-9 rounded-full bg-sky-600 text-white text-sm shadow-sm">
                 <Shield className="w-4 h-4" />
               </span>
-              Faith Declaration
+              {t("faithDeclaration")}
             </h3>
             <ul className="space-y-4">
               {faithItems.map((decl, idx) => (
@@ -219,7 +221,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
               <span className="flex items-center justify-center w-9 h-9 rounded-full bg-green-600 text-white text-sm shadow-sm">
                 <Quote className="w-4 h-4" />
               </span>
-              Christian Quotes
+              {t("christianQuotes")}
             </h3>
             <ul className="space-y-4">
               {quoteItems.map((quote, idx) => (
@@ -239,7 +241,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
               <span className="flex items-center justify-center w-9 h-9 rounded-full bg-amber-500 text-white text-sm shadow-sm">
                 <Flame className="w-4 h-4" />
               </span>
-              Prophetic Declaration
+              {t("propheticDeclaration")}
             </h3>
             <ul className="space-y-4">
               {propheticItems.map((decl, idx) => (
@@ -254,7 +256,7 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
 
         <div className="flex items-center justify-center pt-8">
           <span className="text-sm text-muted-foreground font-medium tracking-wide">
-            Written by {devotional.author}
+            {t("writtenBy")} {devotional.author}
           </span>
         </div>
       </div>

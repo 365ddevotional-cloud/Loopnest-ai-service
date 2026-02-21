@@ -9,6 +9,7 @@ import { useNotifications } from "@/hooks/use-notifications";
 import { useTranslation, TRANSLATION_LABELS } from "@/contexts/TranslationContext";
 import { useMenuTransition } from "@/contexts/MenuTransitionContext";
 import { BIBLE_TRANSLATIONS, type BibleTranslation } from "@shared/schema";
+import { useI18n } from "@/hooks/useI18n";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -24,11 +25,12 @@ import { LanguageSwitcher, MobileLanguageSwitcher } from "@/components/LanguageS
 
 function MobileTranslationSelector() {
   const { translation, setTranslation } = useTranslation();
+  const { t: mt } = useI18n();
   
   return (
     <div className="mt-4 border-t border-primary/10 pt-4">
       <div className="px-4 pb-2">
-        <span className="text-sm font-medium text-muted-foreground">Bible Translation</span>
+        <span className="text-sm font-medium text-muted-foreground">{mt("bibleTranslation")}</span>
       </div>
       <div className="flex flex-col gap-1 px-2">
         {BIBLE_TRANSLATIONS.map((t) => (
@@ -60,6 +62,7 @@ export function Header() {
   const { isAdmin, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { triggerTransition } = useMenuTransition();
+  const { t } = useI18n();
   const { 
     isSupported: notificationsSupported, 
     permission: notificationPermission,
@@ -106,20 +109,20 @@ export function Header() {
   };
 
   const navItems = [
-    { href: "/", label: "Today", icon: BookOpen, external: false, adminOnly: false },
-    { href: "/archive", label: "Archive", icon: Calendar, external: false, adminOnly: false },
-    { href: "/bible", label: "Bible", icon: Book, external: false, adminOnly: false },
-    { href: "/sunday-school", label: "Sunday School", icon: GraduationCap, external: false, adminOnly: false },
+    { href: "/", label: t("today"), icon: BookOpen, external: false, adminOnly: false },
+    { href: "/archive", label: t("archive"), icon: Calendar, external: false, adminOnly: false },
+    { href: "/bible", label: t("bible"), icon: Book, external: false, adminOnly: false },
+    { href: "/sunday-school", label: t("sundaySchool"), icon: GraduationCap, external: false, adminOnly: false },
     { href: "https://www.youtube.com/@365DailyDevotional", label: "YouTube", icon: SiYoutube, external: true, adminOnly: false },
     { href: "https://payhip.com/SpiritToneRecords", label: "Shop", icon: ShoppingBag, external: true, adminOnly: false },
-    { href: "/prayer-counseling", label: "Prayer / Counseling", icon: MessageCircleHeart, external: false, adminOnly: false },
-    { href: "/about", label: "About", icon: Info, external: false, adminOnly: false },
-    { href: "/donate", label: "Donate", icon: Heart, external: false, adminOnly: false },
+    { href: "/prayer-counseling", label: t("prayerCounseling"), icon: MessageCircleHeart, external: false, adminOnly: false },
+    { href: "/about", label: t("about"), icon: Info, external: false, adminOnly: false },
+    { href: "/donate", label: t("donate"), icon: Heart, external: false, adminOnly: false },
   ];
 
   const adminNavItem = isAdmin 
-    ? { href: "/admin", label: "Admin Dashboard", icon: Settings, external: false }
-    : { href: "/admin-login", label: "Login", icon: LogIn, external: false };
+    ? { href: "/admin", label: t("adminDashboard"), icon: Settings, external: false }
+    : { href: "/admin-login", label: t("login"), icon: LogIn, external: false };
 
   const visibleNavItems = [...navItems, adminNavItem];
 
@@ -137,7 +140,7 @@ export function Header() {
             className="w-12 h-12 object-contain transition-transform group-hover:scale-105"
           />
           <span className="font-serif text-2xl font-semibold text-primary tracking-wide">
-            Daily Devotional
+            {t("dailyDevotionalShort")}
           </span>
         </button>
 
@@ -149,7 +152,7 @@ export function Header() {
             data-testid="button-how-to-use"
           >
             <HelpCircle className="w-4 h-4" />
-            How to Use
+            {t("howToUse")}
           </button>
           {visibleNavItems.map((item) => {
             const isActive = !item.external && location === item.href;
@@ -192,7 +195,7 @@ export function Header() {
               data-testid="button-logout"
             >
               <LogOut className="w-4 h-4" />
-              Logout
+              {t("logout")}
             </button>
           )}
           <TranslationSelector />
@@ -227,7 +230,7 @@ export function Header() {
           <SheetTrigger asChild className="lg:hidden absolute right-4">
             <Button variant="ghost" size="icon" className="h-12 w-12" data-testid="button-mobile-menu">
               <Menu className="w-8 h-8" strokeWidth={3} />
-              <span className="sr-only">Open menu</span>
+              <span className="sr-only">{t("openMenu")}</span>
             </Button>
           </SheetTrigger>
           <SheetContent side="right" className="w-[300px] sm:w-[350px] overflow-y-auto">
@@ -239,7 +242,7 @@ export function Header() {
                   className="w-10 h-10 object-contain"
                 />
                 <span className="font-serif text-xl font-semibold text-primary tracking-wide">
-                  Daily Devotional
+                  {t("dailyDevotionalShort")}
                 </span>
               </SheetTitle>
             </SheetHeader>
@@ -251,7 +254,7 @@ export function Header() {
                 data-testid="button-how-to-use-mobile"
               >
                 <HelpCircle className="w-5 h-5" />
-                How to Use
+                {t("howToUse")}
               </button>
               
               {visibleNavItems.map((item) => {
@@ -305,7 +308,7 @@ export function Header() {
                       <BellOff className="w-5 h-5 text-muted-foreground" />
                     )}
                     <span className="text-base font-medium text-muted-foreground">
-                      Daily Reminders
+                      {t("dailyReminders")}
                     </span>
                   </div>
                   <Switch
@@ -327,7 +330,7 @@ export function Header() {
                   data-testid="button-logout-mobile"
                 >
                   <LogOut className="w-5 h-5" />
-                  Logout
+                  {t("logout")}
                 </button>
               )}
             </nav>
