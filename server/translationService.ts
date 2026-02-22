@@ -113,7 +113,6 @@ async function generateAndSaveTranslation(devotional: any, lang: string, _key: s
     const raw = response.choices[0]?.message?.content || "{}";
     const parsed = JSON.parse(raw);
 
-    const titleTranslated = parsed.title || null;
     const prayerPoints = ensureArray(parsed.prayerPoints, 7);
     const faithDeclarations = ensureArray(parsed.faithDeclarations, 5);
     const christianQuotes = parsed.christianQuotes || devotional.christianQuotes;
@@ -126,7 +125,6 @@ async function generateAndSaveTranslation(devotional: any, lang: string, _key: s
       .values({
         devotionalId: devotional.id,
         languageCode: lang,
-        titleTranslated,
         devotionalMessage,
         prayerPoints,
         faithDeclarations,
@@ -168,36 +166,33 @@ function buildTranslationPrompt(devotional: any, langName: string): string {
     ? devotional.faithDeclarations.join("\n")
     : devotional.faithDeclarations || "";
 
-  return `Translate ALL of the following Christian devotional content into ${langName}, including the Topic/title.
+  return `Translate the following Christian devotional content into ${langName}.
 
+TITLE (for context only, do NOT translate): "${devotional.title}"
 SCRIPTURE REFERENCE: "${devotional.scriptureReference}"
 
 CONTENT TO TRANSLATE:
 
-1. TOPIC/TITLE (translate this title):
-${devotional.title}
-
-2. DEVOTIONAL MESSAGE (translate into minimum 3 full paragraphs):
+1. DEVOTIONAL MESSAGE (translate into minimum 3 full paragraphs):
 ${devotional.content}
 
-3. PRAYER POINTS (translate EXACTLY 7, one per line):
+2. PRAYER POINTS (translate EXACTLY 7, one per line):
 ${prayerPointsText}
 
-4. FAITH DECLARATIONS (translate EXACTLY 5, one per line):
+3. FAITH DECLARATIONS (translate EXACTLY 5, one per line):
 ${faithDeclarationsText}
 
-5. CHRISTIAN QUOTES (translate EXACTLY 2, one per line):
+4. CHRISTIAN QUOTES (translate EXACTLY 2, one per line):
 ${devotional.christianQuotes || "N/A"}
 
-6. PROPHETIC DECLARATION (translate as 1 strong full paragraph):
+5. PROPHETIC DECLARATION (translate as 1 strong full paragraph):
 ${devotional.propheticDeclaration || "N/A"}
 
-7. SCRIPTURE TEXT (translate the scripture verse):
+6. SCRIPTURE TEXT (translate the scripture verse):
 ${devotional.scriptureText}
 
 Return a JSON object with these exact keys:
 {
-  "title": "translated topic/title",
   "devotionalMessage": "translated message (min 3 paragraphs)",
   "prayerPoints": ["point1", "point2", "point3", "point4", "point5", "point6", "point7"],
   "faithDeclarations": ["decl1", "decl2", "decl3", "decl4", "decl5"],

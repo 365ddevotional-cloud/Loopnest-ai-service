@@ -68,7 +68,6 @@ export const devotionalTranslations = pgTable("devotional_translations", {
   prayerPoints: text("prayer_points").array().notNull(),
   faithDeclarations: text("faith_declarations").array().notNull(),
   christianQuotes: text("christian_quotes"),
-  titleTranslated: text("title_translated"),
   propheticDeclaration: text("prophetic_declaration"),
   scriptureTextTranslated: text("scripture_text_translated"),
   createdAt: timestamp("created_at").defaultNow(),
