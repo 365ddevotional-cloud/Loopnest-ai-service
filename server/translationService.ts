@@ -3,9 +3,15 @@ import { db } from "./db";
 import { devotionalTranslations } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let _openai: OpenAI | null = null;
+function getOpenAI(): OpenAI {
+  if (!_openai) {
+    _openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return _openai;
+}
 
 const ALLOWED_LANGUAGES: Record<string, string> = {
   en: "English",
@@ -92,7 +98,7 @@ async function generateAndSaveTranslation(devotional: any, lang: string, _key: s
   try {
     const prompt = buildTranslationPrompt(devotional, langName);
 
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
       model: "gpt-5-mini",
       messages: [
         {
