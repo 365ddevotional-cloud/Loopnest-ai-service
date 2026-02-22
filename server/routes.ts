@@ -16,6 +16,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 function overlayTranslation(devotional: any, translation: any, lang: string) {
   return {
     ...devotional,
+    title: translation.titleTranslated ?? devotional.title,
     content: translation.devotionalMessage,
     prayerPoints: translation.prayerPoints,
     faithDeclarations: translation.faithDeclarations,
