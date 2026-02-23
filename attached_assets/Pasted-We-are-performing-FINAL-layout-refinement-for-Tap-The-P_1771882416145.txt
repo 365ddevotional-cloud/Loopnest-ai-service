@@ -1,0 +1,110 @@
+We are performing FINAL layout refinement for Tap The Promise results page.
+
+STRICT RULES:
+- Do NOT modify devotional logic.
+- Do NOT modify routing.
+- Only adjust results page layout structure.
+- Keep encouragement text under each claimed promise.
+- Ensure build success.
+
+==================================================
+GOAL
+==================================================
+
+Make the results screen behave like this:
+
+• Claimed promises scroll
+• PLAY AGAIN scrolls with the list
+• Only a slim mission bar stays fixed at bottom
+• Mission bar must be compact (like Loopit)
+• Reduce vertical space usage
+
+==================================================
+PART 1 — MOVE PLAY AGAIN INTO SCROLL AREA
+==================================================
+
+Move:
+
+PLAY AGAIN button
+"Grow your faith through repetition."
+365 DAILY DEVOTIONAL label
+
+Into the scrollable section.
+
+They should appear AFTER the claimed promises list.
+
+They should NOT be fixed.
+
+Reduce button height slightly (more elegant, less bulky).
+
+==================================================
+PART 2 — COMPACT FIXED MISSION BAR
+==================================================
+
+Create a small fixed footer at bottom:
+
+Structure:
+
+--------------------------------
+Support Our Mission   DONATE
+--------------------------------
+
+Layout:
+- Horizontal layout (text left, donate button right)
+- Compact height
+- Reduced padding
+- Slim appearance
+- Semi-transparent glass style
+- Light border top
+- Subtle blur background
+
+Button:
+- Smaller height
+- Rounded
+- Gold tone
+- Not oversized
+
+The mission section must:
+- Take minimal vertical space
+- Not cover too much content
+- Feel lightweight
+- Similar proportion to Loopit screenshot
+
+==================================================
+PART 3 — SCROLL BEHAVIOR
+==================================================
+
+Ensure:
+
+- Claimed promises area scrolls freely
+- PLAY AGAIN scrolls with them
+- Mission bar remains fixed
+- No overlap issues
+- Proper bottom padding so last promise is visible above mission bar
+
+==================================================
+PART 4 — VISUAL PROPORTION
+==================================================
+
+Reduce excessive spacing:
+- Less padding between elements
+- Tighter vertical rhythm
+- More visible promises on screen
+
+Make layout feel:
+- Airy
+- Elegant
+- Not bulky
+
+==================================================
+CONFIRM
+==================================================
+
+✔ PLAY AGAIN scrolls
+✔ Mission bar fixed
+✔ Mission bar slim
+✔ Donate compact
+✔ More visible promise cards
+✔ No overlap
+✔ No TypeScript errors
+✔ Mobile layout clean

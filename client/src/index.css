@@ -686,20 +686,17 @@
 .ttp-dark .ttp-no-claims { color: rgba(255,255,255,0.5); }
 .ttp-light .ttp-no-claims { color: rgba(42,24,16,0.5); }
 
-.ttp-results-footer {
-  flex-shrink: 0;
+.ttp-scroll-actions {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px 20px 14px;
-  text-align: center;
+  padding: 16px 0 8px;
+  gap: 6px;
 }
-.ttp-dark .ttp-results-footer { border-top: 1px solid rgba(255,255,255,0.06); }
-.ttp-light .ttp-results-footer { border-top: 1px solid rgba(0,0,0,0.06); }
 
 .ttp-result-motto {
   font-size: 11px;
-  margin: 6px 0 8px;
+  margin: 0;
   font-style: italic;
 }
 .ttp-dark .ttp-result-motto { color: rgba(255,255,255,0.35); }
@@ -709,32 +706,49 @@
   font-size: 9px;
   letter-spacing: 3px;
   font-weight: 700;
-  margin-bottom: 8px;
 }
 .ttp-dark .ttp-result-brand { color: rgba(255,215,0,0.3); }
 .ttp-light .ttp-result-brand { color: rgba(139,105,20,0.35); }
 
-.ttp-result-support {
-  padding-top: 8px;
-  width: 100%;
+.ttp-mission-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
-.ttp-dark .ttp-result-support { border-top: 1px solid rgba(255,255,255,0.06); }
-.ttp-light .ttp-result-support { border-top: 1px solid rgba(0,0,0,0.06); }
+.ttp-dark .ttp-mission-bar {
+  background: rgba(4,8,20,0.7);
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.ttp-light .ttp-mission-bar {
+  background: rgba(255,255,255,0.6);
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
 
-.ttp-support-title {
-  font-family: 'Playfair Display', serif;
-  font-size: 13px;
+.ttp-mission-label {
+  font-size: 12px;
   font-weight: 600;
-  margin: 0 0 2px;
 }
-.ttp-light .ttp-support-title { color: #2a1810; }
+.ttp-dark .ttp-mission-label { color: rgba(255,255,255,0.55); }
+.ttp-light .ttp-mission-label { color: rgba(42,24,16,0.6); }
 
-.ttp-support-text {
+.ttp-btn-mission-donate {
+  border: none;
+  border-radius: 8px;
+  padding: 6px 18px;
   font-size: 11px;
-  margin: 0 0 8px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #FFD700, #e8b830, #d4a020);
+  color: #051030;
+  transition: transform 0.15s ease;
+  font-family: 'DM Sans', sans-serif;
 }
-.ttp-dark .ttp-support-text { color: rgba(255,255,255,0.45); }
-.ttp-light .ttp-support-text { color: rgba(42,24,16,0.5); }
+.ttp-btn-mission-donate:active { transform: scale(0.95); }
 
 /* Buttons */
 .ttp-btn {
@@ -783,12 +797,3 @@
 
 .ttp-btn-ghost:active { opacity: 0.7; transform: none; }
 
-.ttp-btn-donate {
-  background: linear-gradient(135deg, #FFD700, #e8b830, #d4a020);
-  color: #051030;
-  font-weight: 700;
-  padding: 10px 28px;
-  font-size: 13px;
-}
-.ttp-dark .ttp-btn-donate { box-shadow: 0 4px 24px rgba(255,215,0,0.25); }
-.ttp-light .ttp-btn-donate { box-shadow: 0 4px 20px rgba(180,140,50,0.2); }

@@ -249,29 +249,29 @@ export default function TapThePromise() {
             {claimed.length === 0 && (
               <p className="ttp-no-claims">Tap faster next time! Every promise is within reach.</p>
             )}
+
+            <div className="ttp-scroll-actions">
+              <button
+                className="ttp-btn ttp-btn-primary"
+                onClick={startGame}
+                data-testid="button-play-again"
+              >
+                PLAY AGAIN
+              </button>
+              <p className="ttp-result-motto">Grow your faith through repetition.</p>
+              <div className="ttp-result-brand">365 DAILY DEVOTIONAL</div>
+            </div>
           </div>
 
-          <div className="ttp-results-footer">
+          <div className="ttp-mission-bar">
+            <span className="ttp-mission-label">Support Our Mission</span>
             <button
-              className="ttp-btn ttp-btn-primary ttp-btn-lg"
-              onClick={startGame}
-              data-testid="button-play-again"
+              className="ttp-btn-mission-donate"
+              onClick={() => navigate("/donate")}
+              data-testid="button-donate"
             >
-              PLAY AGAIN
+              DONATE
             </button>
-            <p className="ttp-result-motto">Grow your faith through repetition.</p>
-            <div className="ttp-result-brand">365 DAILY DEVOTIONAL</div>
-            <div className="ttp-result-support">
-              <p className="ttp-support-title">Support Our Mission</p>
-              <p className="ttp-support-text">Help us spread God's Word to the world.</p>
-              <button
-                className="ttp-btn ttp-btn-donate"
-                onClick={() => navigate("/donate")}
-                data-testid="button-donate"
-              >
-                DONATE
-              </button>
-            </div>
           </div>
         </div>
       </div>
