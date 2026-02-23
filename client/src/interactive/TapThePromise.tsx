@@ -93,19 +93,11 @@ interface ClaimedPromise {
   affirmation: string;
 }
 
-function unlockAudio(el: HTMLAudioElement): Promise<void> {
-  const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-  const source = ctx.createMediaElementSource(el);
-  source.connect(ctx.destination);
-  return ctx.resume().then(() => {
-    el.volume = 0.3;
-    return el.play();
-  });
-}
+let sharedAudioCtx: AudioContext | null = null;
+let sharedSourceConnected = false;
 
 function MusicToggle({ audioRef }: { audioRef: React.RefObject<HTMLAudioElement | null> }) {
   const [musicOn, setMusicOn] = useState(false);
-  const unlockedRef = useRef(false);
 
   const toggle = useCallback(() => {
     const el = audioRef.current;
@@ -114,29 +106,36 @@ function MusicToggle({ audioRef }: { audioRef: React.RefObject<HTMLAudioElement 
     if (musicOn) {
       el.pause();
       setMusicOn(false);
-    } else if (!unlockedRef.current) {
-      unlockedRef.current = true;
-      unlockAudio(el)
+      return;
+    }
+
+    el.volume = 0.3;
+
+    const tryPlay = () => {
+      el.play()
         .then(() => {
           console.log("Audio started successfully");
           setMusicOn(true);
         })
-        .catch((err) => {
-          console.log("Audio unlock failed, trying direct play", err);
-          unlockedRef.current = false;
-          el.volume = 0.3;
-          el.play()
-            .then(() => { setMusicOn(true); })
-            .catch((e) => console.log("Audio blocked", e));
-        });
+        .catch((err) => console.log("Audio play failed", err));
+    };
+
+    if (!sharedAudioCtx) {
+      sharedAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+
+    if (!sharedSourceConnected) {
+      try {
+        const source = sharedAudioCtx.createMediaElementSource(el);
+        source.connect(sharedAudioCtx.destination);
+        sharedSourceConnected = true;
+      } catch (_) {}
+    }
+
+    if (sharedAudioCtx.state === "suspended") {
+      sharedAudioCtx.resume().then(tryPlay).catch(tryPlay);
     } else {
-      el.volume = 0.3;
-      el.play()
-        .then(() => {
-          console.log("Audio resumed successfully");
-          setMusicOn(true);
-        })
-        .catch((err) => console.log("Audio blocked", err));
+      tryPlay();
     }
   }, [musicOn, audioRef]);
 
@@ -271,7 +270,6 @@ export default function TapThePromise() {
       loop
       preload="auto"
       playsInline
-      crossOrigin="anonymous"
     />
   );
 
