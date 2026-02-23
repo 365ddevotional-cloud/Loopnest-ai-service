@@ -1,0 +1,171 @@
+We are adding a new feature to the 365 Daily Devotional app.
+
+STRICT RULES:
+- Do NOT modify any existing devotional logic.
+- Do NOT modify authentication.
+- Do NOT modify database schema.
+- Do NOT refactor existing routes.
+- Do NOT delete or rename any files.
+- Only ADD new files and a new route.
+- The feature must be isolated and safe.
+
+GOAL:
+Create a new interactive devotional feature called "Tap The Promise" as a separate route.
+
+==================================
+STEP 1 — CREATE NEW FOLDER
+==================================
+Inside client/src create a new folder:
+
+interactive
+
+==================================
+STEP 2 — CREATE NEW FILE
+==================================
+Inside client/src/interactive create:
+
+TapThePromise.tsx
+
+Paste this code inside it:
+
+--------------------------------------------------
+(import React, { useState, useEffect } from "react";
+
+const promises = [
+  { text: "Trust in the Lord with all your heart", ref: "Proverbs 3:5" },
+  { text: "By grace you have been saved", ref: "Ephesians 2:8" },
+  { text: "I can do all things through Christ", ref: "Philippians 4:13" },
+  { text: "The Lord is my shepherd", ref: "Psalm 23:1" },
+  { text: "Walk by the Spirit", ref: "Galatians 5:16" },
+  { text: "Do not fear, for I am with you", ref: "Isaiah 41:10" },
+  { text: "Come to me, all who are weary", ref: "Matthew 11:28" },
+];
+
+const animations = ["from-right","from-left","from-top"];
+
+export default function TapThePromise() {
+  const [index, setIndex] = useState(0);
+  const [activated, setActivated] = useState(0);
+  const [animation, setAnimation] = useState("from-right");
+
+  useEffect(() => {
+    if (index >= promises.length) return;
+
+    const anim = animations[Math.floor(Math.random() * animations.length)];
+    setAnimation(anim);
+
+    const timer = setTimeout(() => {
+      setActivated(index + 1);
+      setIndex((prev) => prev + 1);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [index]);
+
+  if (index >= promises.length) {
+    return (
+      <div className="tap-container">
+        <h2>All Promises Activated 🎉</h2>
+      </div>
+    );
+  }
+
+  const current = promises[index];
+
+  return (
+    <div className="tap-container">
+      <div className="counter">
+        Promises Activated: {activated} / {promises.length}
+      </div>
+
+      <div className={`card ${animation}`}>
+        <h1>{current.text}</h1>
+        <p>({current.ref})</p>
+      </div>
+    </div>
+  );
+})
+--------------------------------------------------
+
+==================================
+STEP 3 — ADD STYLES
+==================================
+Open client/src/index.css and append:
+
+--------------------------------------------------
+.tap-container {
+  height: 100vh;
+  background: radial-gradient(circle at top, #1b2a49, #0d1424);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  overflow: hidden;
+}
+
+.counter {
+  position: absolute;
+  top: 30px;
+  font-size: 18px;
+  background: rgba(255,255,255,0.1);
+  padding: 10px 20px;
+  border-radius: 20px;
+}
+
+.card {
+  background: rgba(255,255,255,0.08);
+  padding: 40px;
+  border-radius: 20px;
+  text-align: center;
+  width: 80%;
+  max-width: 500px;
+  transition: all 1s ease;
+}
+
+.card h1 { font-size: 28px; margin-bottom: 10px; }
+.card p { font-size: 18px; opacity: 0.8; }
+
+.from-right { animation: slideRight 3s ease forwards; }
+.from-left { animation: slideLeft 3s ease forwards; }
+.from-top { animation: slideTop 3s ease forwards; }
+
+@keyframes slideRight {
+  0% { transform: translateX(100%); opacity: 0; }
+  40% { transform: translateX(0); opacity: 1; }
+  80% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(-100%); opacity: 0; }
+}
+
+@keyframes slideLeft {
+  0% { transform: translateX(-100%); opacity: 0; }
+  40% { transform: translateX(0); opacity: 1; }
+  80% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+
+@keyframes slideTop {
+  0% { transform: translateY(-100%); opacity: 0; }
+  40% { transform: translateY(0); opacity: 1; }
+  80% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+--------------------------------------------------
+
+==================================
+STEP 4 — ADD ROUTE
+==================================
+Open client/src/App.tsx
+
+Add:
+import TapThePromise from "./interactive/TapThePromise";
+
+Inside the Routes component add:
+<Route path="/interactive/tap-the-promise" element={<TapThePromise />} />
+
+==================================
+FINAL CHECK
+==================================
+- Ensure no existing logic was changed.
+- Ensure app compiles without errors.
+- Do not modify anything else.

@@ -46,6 +46,7 @@ import PublicDevotionalToday from "@/pages/PublicDevotionalToday";
 import PublicArchive from "@/pages/PublicArchive";
 import SundaySchool from "@/pages/SundaySchool";
 import SundaySchoolLessonPage from "@/pages/SundaySchoolLesson";
+import TapThePromise from "./interactive/TapThePromise";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -76,6 +77,7 @@ function Router() {
       <Route path="/sunday-school/:id" component={SundaySchoolLessonPage} />
       <Route path="/sunday-school" component={SundaySchool} />
       <Route path="/admin-login" component={AdminLogin} />
+      <Route path="/interactive/tap-the-promise" component={TapThePromise} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -92,7 +94,7 @@ function AppContent() {
   }, [location]);
 
   const isPublicRoute =
-    location.startsWith("/devotional") || location.startsWith("/public");
+    location.startsWith("/devotional") || location.startsWith("/public") || location.startsWith("/interactive");
 
   if (isPublicRoute) {
     return <Router />;
