@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useTheme } from "@/contexts/ThemeContext";
+import { startNextTheme, stopAmbient } from "./ambientAudio";
 
 const ALL_PROMISES = [
   { text: "Trust in the Lord with all your heart", ref: "Proverbs 3:5" },
@@ -125,6 +126,7 @@ export default function TapThePromise() {
     setColorTheme(pickRandom(COLOR_THEMES));
     tappedRef.current = false;
     setScreen("playing");
+    startNextTheme(0.3);
   }, []);
 
   const advanceToNext = useCallback(() => {
@@ -181,7 +183,10 @@ export default function TapThePromise() {
   }, [phase, screen, index, sessionPromises, clearTimer, advanceToNext]);
 
   useEffect(() => {
-    return clearTimer;
+    return () => {
+      clearTimer();
+      stopAmbient();
+    };
   }, [clearTimer]);
 
   if (screen === "landing") {
