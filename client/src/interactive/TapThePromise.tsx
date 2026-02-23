@@ -93,11 +93,21 @@ interface ClaimedPromise {
   affirmation: string;
 }
 
-let sharedAudioCtx: AudioContext | null = null;
-let sharedSourceConnected = false;
-
 function MusicToggle({ audioRef }: { audioRef: React.RefObject<HTMLAudioElement | null> }) {
   const [musicOn, setMusicOn] = useState(false);
+
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    const onPause = () => setMusicOn(false);
+    const onPlay = () => setMusicOn(true);
+    el.addEventListener("pause", onPause);
+    el.addEventListener("play", onPlay);
+    return () => {
+      el.removeEventListener("pause", onPause);
+      el.removeEventListener("play", onPlay);
+    };
+  }, [audioRef]);
 
   const toggle = useCallback(() => {
     const el = audioRef.current;
@@ -105,37 +115,9 @@ function MusicToggle({ audioRef }: { audioRef: React.RefObject<HTMLAudioElement 
 
     if (musicOn) {
       el.pause();
-      setMusicOn(false);
-      return;
-    }
-
-    el.volume = 0.3;
-
-    const tryPlay = () => {
-      el.play()
-        .then(() => {
-          console.log("Audio started successfully");
-          setMusicOn(true);
-        })
-        .catch((err) => console.log("Audio play failed", err));
-    };
-
-    if (!sharedAudioCtx) {
-      sharedAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    }
-
-    if (!sharedSourceConnected) {
-      try {
-        const source = sharedAudioCtx.createMediaElementSource(el);
-        source.connect(sharedAudioCtx.destination);
-        sharedSourceConnected = true;
-      } catch (_) {}
-    }
-
-    if (sharedAudioCtx.state === "suspended") {
-      sharedAudioCtx.resume().then(tryPlay).catch(tryPlay);
     } else {
-      tryPlay();
+      el.volume = 0.3;
+      el.play().catch((err) => console.log("Audio play failed", err));
     }
   }, [musicOn, audioRef]);
 
