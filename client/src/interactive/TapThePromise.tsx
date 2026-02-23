@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useTheme } from "@/contexts/ThemeContext";
-import { startNextTheme, stopAmbient } from "./ambientAudio";
+import { createAndPlayAudio, stopAudio } from "./ambientAudio";
 
 const ALL_PROMISES = [
   { text: "Trust in the Lord with all your heart", ref: "Proverbs 3:5" },
@@ -109,6 +109,7 @@ export default function TapThePromise() {
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tappedRef = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -126,7 +127,7 @@ export default function TapThePromise() {
     setColorTheme(pickRandom(COLOR_THEMES));
     tappedRef.current = false;
     setScreen("playing");
-    startNextTheme(0.3);
+    audioRef.current = createAndPlayAudio(audioRef.current);
   }, []);
 
   const advanceToNext = useCallback(() => {
@@ -185,7 +186,8 @@ export default function TapThePromise() {
   useEffect(() => {
     return () => {
       clearTimer();
-      stopAmbient();
+      stopAudio(audioRef.current);
+      audioRef.current = null;
     };
   }, [clearTimer]);
 
