@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useTheme } from "@/contexts/ThemeContext";
-import { createAndPlayAudio, stopAudio } from "./ambientAudio";
 
 const ALL_PROMISES = [
   { text: "Trust in the Lord with all your heart", ref: "Proverbs 3:5" },
@@ -94,6 +93,65 @@ interface ClaimedPromise {
   affirmation: string;
 }
 
+function MusicToggle({ audioRef }: { audioRef: React.RefObject<HTMLAudioElement | null> }) {
+  const [musicOn, setMusicOn] = useState(false);
+
+  const toggle = useCallback(() => {
+    const el = audioRef.current;
+    if (!el) return;
+
+    if (musicOn) {
+      el.pause();
+      setMusicOn(false);
+    } else {
+      el.volume = 0.3;
+      el.play()
+        .then(() => {
+          console.log("Audio started successfully");
+          setMusicOn(true);
+        })
+        .catch((err) => console.log("Audio blocked", err));
+    }
+  }, [musicOn, audioRef]);
+
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    const onPause = () => setMusicOn(false);
+    const onPlay = () => setMusicOn(true);
+    el.addEventListener("pause", onPause);
+    el.addEventListener("play", onPlay);
+    return () => {
+      el.removeEventListener("pause", onPause);
+      el.removeEventListener("play", onPlay);
+    };
+  }, [audioRef]);
+
+  return (
+    <button
+      onClick={toggle}
+      className="ttp-music-toggle"
+      data-testid="button-music-toggle"
+      aria-label={musicOn ? "Mute music" : "Play music"}
+    >
+      {musicOn ? (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 18V5l12-2v13" />
+          <circle cx="6" cy="18" r="3" />
+          <circle cx="18" cy="16" r="3" />
+        </svg>
+      ) : (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 18V5l12-2v13" />
+          <circle cx="6" cy="18" r="3" />
+          <circle cx="18" cy="16" r="3" />
+          <line x1="1" y1="1" x2="23" y2="23" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
 export default function TapThePromise() {
   const [, navigate] = useLocation();
   const { resolvedTheme } = useTheme();
@@ -127,7 +185,6 @@ export default function TapThePromise() {
     setColorTheme(pickRandom(COLOR_THEMES));
     tappedRef.current = false;
     setScreen("playing");
-    audioRef.current = createAndPlayAudio(audioRef.current);
   }, []);
 
   const advanceToNext = useCallback(() => {
@@ -186,14 +243,26 @@ export default function TapThePromise() {
   useEffect(() => {
     return () => {
       clearTimer();
-      stopAudio(audioRef.current);
-      audioRef.current = null;
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
     };
   }, [clearTimer]);
+
+  const audioElement = (
+    <audio
+      ref={audioRef}
+      src="/audio/tap-theme.mp3"
+      loop
+      preload="auto"
+    />
+  );
 
   if (screen === "landing") {
     return (
       <div className={`ttp-bg ${isDark ? "ttp-dark" : "ttp-light"}`} data-testid="tap-promise-landing">
+        {audioElement}
         <div className="ttp-rays" />
         <div className="ttp-shimmer" />
         <div className="ttp-landing-card">
@@ -231,6 +300,8 @@ export default function TapThePromise() {
   if (screen === "results") {
     return (
       <div className={`ttp-bg ${isDark ? "ttp-dark" : "ttp-light"}`} data-testid="tap-promise-complete">
+        {audioElement}
+        <MusicToggle audioRef={audioRef} />
         <div className="ttp-rays" />
         <div className="ttp-shimmer" />
         <div className="ttp-results-layout">
@@ -298,6 +369,8 @@ export default function TapThePromise() {
 
   return (
     <div className={`ttp-bg ${isDark ? "ttp-dark" : "ttp-light"}`} data-testid="tap-promise-container">
+      {audioElement}
+      <MusicToggle audioRef={audioRef} />
       <div className="ttp-rays" />
       <div className="ttp-shimmer" />
       <div className="ttp-counter" data-testid="tap-promise-counter">

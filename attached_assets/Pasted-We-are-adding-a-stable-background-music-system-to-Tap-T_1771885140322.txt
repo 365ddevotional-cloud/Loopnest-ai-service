@@ -1,0 +1,91 @@
+We are adding a stable background music system to Tap The Promise.
+
+I am attaching an instrumental MP3 file with this request.
+
+STRICT RULES:
+- Do NOT modify devotional logic.
+- Do NOT modify theme logic.
+- Do NOT modify routing.
+- Only implement stable background music.
+- Ensure build success.
+
+==================================================
+STEP 1 — PLACE AUDIO FILE
+==================================================
+
+Take the attached MP3 file and:
+
+1. Create folder if not exists:
+   /public/audio/
+
+2. Save the file as:
+   tap-theme.mp3
+
+Final path must be:
+   /public/audio/tap-theme.mp3
+
+==================================================
+STEP 2 — ADD AUDIO ELEMENT
+==================================================
+
+Inside TapThePromise component:
+
+Add a hidden <audio> element:
+
+<audio
+  ref={audioRef}
+  src="/audio/tap-theme.mp3"
+  loop
+  preload="auto"
+/>
+
+==================================================
+STEP 3 — ADD MUSIC TOGGLE BUTTON
+==================================================
+
+Add a small circular music toggle button
+in the top-right corner of the game screen.
+
+Design:
+- Minimal
+- Semi-transparent background
+- Elegant
+- Not bulky
+- Icon only (music note or speaker)
+
+==================================================
+STEP 4 — MUSIC CONTROL LOGIC
+==================================================
+
+Use state:
+
+const [musicOn, setMusicOn] = useState(false);
+
+On toggle:
+
+If musicOn is false:
+   audioRef.current.volume = 0.3
+   audioRef.current.play()
+Else:
+   audioRef.current.pause()
+
+Then toggle state.
+
+==================================================
+STEP 5 — CLEANUP
+==================================================
+
+When leaving the page:
+Pause audio automatically.
+
+==================================================
+CONFIRM
+==================================================
+
+✔ File saved in /public/audio/
+✔ Music toggle visible
+✔ Music plays when turned on
+✔ Music pauses when turned off
+✔ Works in Replit preview
+✔ No console errors
+✔ Build successful
