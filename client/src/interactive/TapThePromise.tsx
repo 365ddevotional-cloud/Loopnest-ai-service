@@ -93,53 +93,58 @@ interface ClaimedPromise {
   affirmation: string;
 }
 
+function unlockAudio(el: HTMLAudioElement): Promise<void> {
+  const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  const source = ctx.createMediaElementSource(el);
+  source.connect(ctx.destination);
+  return ctx.resume().then(() => {
+    el.volume = 0.3;
+    return el.play();
+  });
+}
+
 function MusicToggle({ audioRef }: { audioRef: React.RefObject<HTMLAudioElement | null> }) {
   const [musicOn, setMusicOn] = useState(false);
-  const togglingRef = useRef(false);
+  const unlockedRef = useRef(false);
 
-  const toggle = useCallback((e?: React.TouchEvent | React.MouseEvent) => {
-    if (e) e.preventDefault();
-    if (togglingRef.current) return;
-    togglingRef.current = true;
-    setTimeout(() => { togglingRef.current = false; }, 300);
-
+  const toggle = useCallback(() => {
     const el = audioRef.current;
     if (!el) return;
 
     if (musicOn) {
       el.pause();
       setMusicOn(false);
+    } else if (!unlockedRef.current) {
+      unlockedRef.current = true;
+      unlockAudio(el)
+        .then(() => {
+          console.log("Audio started successfully");
+          setMusicOn(true);
+        })
+        .catch((err) => {
+          console.log("Audio unlock failed, trying direct play", err);
+          unlockedRef.current = false;
+          el.volume = 0.3;
+          el.play()
+            .then(() => { setMusicOn(true); })
+            .catch((e) => console.log("Audio blocked", e));
+        });
     } else {
       el.volume = 0.3;
       el.play()
         .then(() => {
-          console.log("Audio started successfully");
+          console.log("Audio resumed successfully");
           setMusicOn(true);
         })
         .catch((err) => console.log("Audio blocked", err));
     }
   }, [musicOn, audioRef]);
 
-  useEffect(() => {
-    const el = audioRef.current;
-    if (!el) return;
-    const onPause = () => setMusicOn(false);
-    const onPlay = () => setMusicOn(true);
-    el.addEventListener("pause", onPause);
-    el.addEventListener("play", onPlay);
-    return () => {
-      el.removeEventListener("pause", onPause);
-      el.removeEventListener("play", onPlay);
-    };
-  }, [audioRef]);
-
   return (
-    <div
-      onTouchEnd={toggle}
+    <button
+      type="button"
       onClick={toggle}
       className="ttp-music-toggle"
-      role="button"
-      tabIndex={0}
       data-testid="button-music-toggle"
       aria-label={musicOn ? "Mute music" : "Play music"}
     >
@@ -157,7 +162,7 @@ function MusicToggle({ audioRef }: { audioRef: React.RefObject<HTMLAudioElement 
           <line x1="1" y1="1" x2="23" y2="23" />
         </svg>
       )}
-    </div>
+    </button>
   );
 }
 
@@ -265,6 +270,8 @@ export default function TapThePromise() {
       src="/audio/tap-theme.mp3"
       loop
       preload="auto"
+      playsInline
+      crossOrigin="anonymous"
     />
   );
 
