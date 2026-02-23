@@ -1,0 +1,85 @@
+We are updating the Tap The Promise feature again.
+
+STRICT RULES:
+- Do NOT modify any devotional logic.
+- Keep route exactly: /interactive/tap-the-promise
+- Only modify files inside client/src/interactive/
+- Keep it mobile responsive.
+- Do NOT break build.
+- Do NOT change other parts of the app.
+
+GAMEPLAY CORRECTION:
+
+Each promise should:
+
+1. Enter from a random direction (right, left, top, bottom)
+2. Slide into the center
+3. Stay visible for about 1.5 seconds
+4. If NOT tapped within that time → exit automatically
+5. If tapped within that time:
+   - Immediately freeze the card
+   - Show a short WORD OF AFFIRMATION feedback
+   - Increment counter
+   - Store promise in claimed list
+   - Then animate out and move to next promise
+
+IMPORTANT:
+After tap, instead of generic text like "Promise Claimed",
+show a short affirmation message randomly chosen from a list such as:
+
+- "Received by Faith 🙏"
+- "This Promise is Yours ✨"
+- "Claimed in Jesus’ Name 🔥"
+- "Grace Activated 💛"
+- "Word Received 📖"
+- "Faith Applied 💫"
+
+The affirmation should:
+- Appear centered on the card
+- Stay visible for about 800ms
+- Then fade out before next promise loads
+
+SESSION RULES:
+
+- Use a pool of at least 40 promises.
+- Shuffle pool.
+- Select 7 promises per session.
+- No repeats within a session.
+- Game ends after 7 promises have been SHOWN (not 7 claimed).
+
+RESULT SCREEN:
+
+After 7 promises:
+- Show: "You Claimed X / 7 Promises"
+- Show list of claimed promises
+- Button: PLAY AGAIN
+- Button: Back
+
+DESIGN UPGRADES:
+
+- Bright heavenly gradient background (deep blue fading to warm gold glow)
+- Subtle animated glow/light rays in background
+- Glass/embossed premium card (blur + glow + shadow)
+- Smooth easing animations
+- Large readable text with strong contrast
+- Soft floating animation when centered
+
+TIMING:
+
+Total lifecycle per promise ~3 seconds:
+- 0–0.7s enter
+- 0.7–2.2s center visible
+- 2.2–3s exit
+If tapped:
+- Freeze immediately
+- Show affirmation ~800ms
+- Then exit quickly
+
+Make sure:
+- setTimeouts are cleared properly
+- No double increments
+- No memory leaks
+- Smooth on mobile
+
+After implementation:
+Confirm compile success and confirm route works.

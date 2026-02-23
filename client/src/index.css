@@ -228,60 +228,276 @@
   color: hsl(0 60% 58%);
 }
 
-.tap-container {
+/* Tap The Promise - Interactive Feature */
+.ttp-bg {
+  position: relative;
   height: 100vh;
-  background: radial-gradient(circle at top, #1b2a49, #0d1424);
+  background: linear-gradient(160deg, #0a1628 0%, #1b2a49 30%, #2c3e6b 55%, #c9944a 85%, #e8b960 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   color: white;
   overflow: hidden;
+  font-family: 'DM Sans', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
-.counter {
+.ttp-rays {
   position: absolute;
-  top: 30px;
-  font-size: 18px;
-  background: rgba(255,255,255,0.1);
-  padding: 10px 20px;
-  border-radius: 20px;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 20%, rgba(232,185,96,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse at 30% 80%, rgba(201,148,74,0.10) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 70%, rgba(255,255,255,0.04) 0%, transparent 40%);
+  animation: ttpRayPulse 6s ease-in-out infinite alternate;
+  pointer-events: none;
 }
 
-.card {
+@keyframes ttpRayPulse {
+  0% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.ttp-counter {
+  position: absolute;
+  top: 24px;
+  font-size: 15px;
+  font-weight: 500;
+  background: rgba(255,255,255,0.10);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 10px 24px;
+  border-radius: 24px;
+  border: 1px solid rgba(255,255,255,0.15);
+  z-index: 10;
+  letter-spacing: 0.3px;
+}
+
+.ttp-card {
+  position: relative;
   background: rgba(255,255,255,0.08);
-  padding: 40px;
-  border-radius: 20px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 44px 32px 36px;
+  border-radius: 24px;
   text-align: center;
-  width: 80%;
-  max-width: 500px;
-  transition: all 1s ease;
+  width: 85%;
+  max-width: 460px;
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.3),
+    0 0 60px rgba(232,185,96,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.12);
+  cursor: pointer;
+  z-index: 5;
 }
 
-.card h1 { font-size: 28px; margin-bottom: 10px; }
-.card p { font-size: 18px; opacity: 0.8; }
-
-.from-right { animation: slideRight 3s ease forwards; }
-.from-left { animation: slideLeft 3s ease forwards; }
-.from-top { animation: slideTop 3s ease forwards; }
-
-@keyframes slideRight {
-  0% { transform: translateX(100%); opacity: 0; }
-  40% { transform: translateX(0); opacity: 1; }
-  80% { transform: translateX(0); opacity: 1; }
-  100% { transform: translateX(-100%); opacity: 0; }
+.ttp-promise-text {
+  font-family: 'Playfair Display', serif;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0 0 12px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
-@keyframes slideLeft {
-  0% { transform: translateX(-100%); opacity: 0; }
-  40% { transform: translateX(0); opacity: 1; }
-  80% { transform: translateX(0); opacity: 1; }
-  100% { transform: translateX(100%); opacity: 0; }
+.ttp-promise-ref {
+  font-size: 16px;
+  opacity: 0.7;
+  margin: 0 0 18px;
 }
 
-@keyframes slideTop {
-  0% { transform: translateY(-100%); opacity: 0; }
-  40% { transform: translateY(0); opacity: 1; }
-  80% { transform: translateY(0); opacity: 1; }
-  100% { transform: translateY(100%); opacity: 0; }
+.ttp-tap-hint {
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.45;
+  margin: 0;
+  animation: ttpHintPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes ttpHintPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.65; }
+}
+
+.ttp-affirmation {
+  font-family: 'Playfair Display', serif;
+  font-size: 24px;
+  font-weight: 600;
+  padding: 20px 0;
+  animation: ttpAffirmFade 800ms ease-out forwards;
+  text-shadow: 0 0 20px rgba(232,185,96,0.5);
+}
+
+@keyframes ttpAffirmFade {
+  0% { opacity: 0; transform: scale(0.85); }
+  30% { opacity: 1; transform: scale(1.05); }
+  60% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0.9; transform: scale(1); }
+}
+
+/* Card center + float */
+.ttp-center {
+  transform: translate(0, 0);
+  opacity: 1;
+  animation: ttpFloat 2s ease-in-out infinite;
+}
+
+@keyframes ttpFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.ttp-frozen {
+  transform: translate(0, 0) !important;
+  opacity: 1 !important;
+  animation: none !important;
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.3),
+    0 0 80px rgba(232,185,96,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.15);
+  border-color: rgba(232,185,96,0.4);
+}
+
+/* Enter animations */
+.ttp-enter-right  { animation: ttpEnterRight 700ms cubic-bezier(0.22,1,0.36,1) forwards; }
+.ttp-enter-left   { animation: ttpEnterLeft 700ms cubic-bezier(0.22,1,0.36,1) forwards; }
+.ttp-enter-top    { animation: ttpEnterTop 700ms cubic-bezier(0.22,1,0.36,1) forwards; }
+.ttp-enter-bottom { animation: ttpEnterBottom 700ms cubic-bezier(0.22,1,0.36,1) forwards; }
+
+@keyframes ttpEnterRight {
+  0% { transform: translateX(120%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+@keyframes ttpEnterLeft {
+  0% { transform: translateX(-120%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+@keyframes ttpEnterTop {
+  0% { transform: translateY(-120%); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes ttpEnterBottom {
+  0% { transform: translateY(120%); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* Exit animations */
+.ttp-exit-right  { animation: ttpExitLeft 800ms cubic-bezier(0.55,0,1,0.45) forwards; }
+.ttp-exit-left   { animation: ttpExitRight 800ms cubic-bezier(0.55,0,1,0.45) forwards; }
+.ttp-exit-top    { animation: ttpExitBottom 800ms cubic-bezier(0.55,0,1,0.45) forwards; }
+.ttp-exit-bottom { animation: ttpExitTop 800ms cubic-bezier(0.55,0,1,0.45) forwards; }
+
+@keyframes ttpExitRight {
+  0% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(120%); opacity: 0; }
+}
+@keyframes ttpExitLeft {
+  0% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(-120%); opacity: 0; }
+}
+@keyframes ttpExitTop {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-120%); opacity: 0; }
+}
+@keyframes ttpExitBottom {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(120%); opacity: 0; }
+}
+
+/* Result screen */
+.ttp-result-card {
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 40px 28px;
+  border-radius: 24px;
+  text-align: center;
+  width: 88%;
+  max-width: 480px;
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 60px rgba(232,185,96,0.08);
+  z-index: 5;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.ttp-result-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 24px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.ttp-claimed-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 28px;
+  text-align: left;
+}
+
+.ttp-claimed-item {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ttp-claimed-item:last-child { border-bottom: none; }
+
+.ttp-claimed-text {
+  font-size: 15px;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.ttp-claimed-ref {
+  font-size: 13px;
+  opacity: 0.55;
+}
+
+.ttp-no-claims {
+  font-size: 16px;
+  opacity: 0.7;
+  margin: 0 0 28px;
+  line-height: 1.5;
+}
+
+.ttp-result-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.ttp-btn {
+  border: none;
+  border-radius: 14px;
+  padding: 14px 36px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  cursor: pointer;
+  width: 100%;
+  max-width: 260px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ttp-btn:active { transform: scale(0.96); }
+
+.ttp-btn-primary {
+  background: linear-gradient(135deg, #e8b960, #c9944a);
+  color: #1b2a49;
+  box-shadow: 0 4px 20px rgba(232,185,96,0.3);
+}
+
+.ttp-btn-secondary {
+  background: rgba(255,255,255,0.10);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.2);
 }
