@@ -1,11 +1,10 @@
-const AUDIO_SRC = "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=healing-ambient-11038.mp3";
+const AUDIO_SRC = "/audio/ambient-worship.wav";
 
 export function createAndPlayAudio(existingAudio: HTMLAudioElement | null): HTMLAudioElement {
   if (existingAudio) {
     try {
       existingAudio.pause();
       existingAudio.currentTime = 0;
-      existingAudio.src = "";
     } catch {}
   }
 
@@ -29,6 +28,5 @@ export function stopAudio(audio: HTMLAudioElement | null) {
   try {
     audio.pause();
     audio.currentTime = 0;
-    audio.src = "";
   } catch {}
 }
