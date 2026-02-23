@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff, Book, GraduationCap } from "lucide-react";
+import { GameConsoleIcon } from "@/interactive/GameConsoleIcon";
 import { SiYoutube } from "react-icons/si";
 import { cn } from "@/lib/utils";
 import logoImage from "@assets/IMG_202512182225101_-_Copy_1767468127874.PNG";
@@ -292,6 +293,23 @@ export function Header() {
                   </button>
                 );
               })}
+              
+              <button
+                onClick={() => handleNavClick("/interactive/tap-the-promise", false)}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 cursor-pointer text-left hover:scale-[1.03] active:scale-[0.98]",
+                  location === "/interactive/tap-the-promise"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                )}
+                data-testid="link-tap-the-promise-nav-mobile"
+              >
+                <GameConsoleIcon size={20} />
+                <div className="flex flex-col">
+                  <span>Tap The Promise</span>
+                  <span className="text-xs opacity-60 font-normal">Interactive Faith Game</span>
+                </div>
+              </button>
               
               <MobileLanguageSwitcher />
               

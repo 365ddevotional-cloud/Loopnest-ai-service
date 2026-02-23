@@ -1,7 +1,8 @@
 import { useTodayDevotional } from "@/hooks/use-devotionals";
 import { DevotionalCard } from "@/components/DevotionalCard";
 import { DailyBibleVerse } from "@/components/DailyBibleVerse";
-import { Loader2, BookX, WifiOff, Gamepad2 } from "lucide-react";
+import { Loader2, BookX, WifiOff } from "lucide-react";
+import { GameConsoleIcon } from "@/interactive/GameConsoleIcon";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
@@ -88,11 +89,11 @@ export default function Home() {
       >
         <Link href="/interactive/tap-the-promise">
           <div
-            className="group cursor-pointer rounded-xl border border-border bg-card p-5 shadow-sm hover:shadow-md transition-shadow flex items-center gap-4"
+            className="group cursor-pointer rounded-xl border border-border bg-card p-5 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] flex items-center gap-4"
             data-testid="link-tap-the-promise"
           >
-            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Gamepad2 className="w-6 h-6 text-primary" />
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))" }}>
+              <GameConsoleIcon size={26} />
             </div>
             <div>
               <h3 className="font-serif text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
