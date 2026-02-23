@@ -57,6 +57,14 @@ const AFFIRMATIONS = [
   "This Word is working for you.",
 ];
 
+const COLOR_THEMES: readonly { text: string; glow: string }[] = [
+  { text: "#FFD700", glow: "rgba(255,215,0,0.3)" },
+  { text: "#E8D0AA", glow: "rgba(232,208,170,0.25)" },
+  { text: "#FF6B6B", glow: "rgba(255,107,107,0.25)" },
+  { text: "#7B9CFF", glow: "rgba(123,156,255,0.25)" },
+  { text: "#5DCEA0", glow: "rgba(93,206,160,0.25)" },
+];
+
 const DIRECTIONS = ["right", "left", "top", "bottom"] as const;
 type Direction = (typeof DIRECTIONS)[number];
 
@@ -78,15 +86,22 @@ function pickRandom<T>(arr: readonly T[]): T {
 type Phase = "enter" | "visible" | "tapped" | "exit" | "done";
 type Screen = "landing" | "playing" | "results";
 
+interface ClaimedPromise {
+  text: string;
+  ref: string;
+  affirmation: string;
+}
+
 export default function TapThePromise() {
   const [, navigate] = useLocation();
   const [screen, setScreen] = useState<Screen>("landing");
   const [sessionPromises, setSessionPromises] = useState<typeof ALL_PROMISES>([]);
   const [index, setIndex] = useState(0);
-  const [claimed, setClaimed] = useState<typeof ALL_PROMISES>([]);
+  const [claimed, setClaimed] = useState<ClaimedPromise[]>([]);
   const [phase, setPhase] = useState<Phase>("enter");
   const [direction, setDirection] = useState<Direction>("right");
   const [affirmation, setAffirmation] = useState("");
+  const [colorTheme, setColorTheme] = useState(COLOR_THEMES[0]);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tappedRef = useRef(false);
@@ -104,6 +119,7 @@ export default function TapThePromise() {
     setIndex(0);
     setClaimed([]);
     setPhase("enter");
+    setColorTheme(pickRandom(COLOR_THEMES));
     tappedRef.current = false;
     setScreen("playing");
   }, []);
@@ -114,6 +130,7 @@ export default function TapThePromise() {
       setScreen("results");
     } else {
       setDirection(pickRandom(DIRECTIONS));
+      setColorTheme(pickRandom(COLOR_THEMES));
       setIndex((prev) => prev + 1);
       setPhase("enter");
       tappedRef.current = false;
@@ -135,7 +152,7 @@ export default function TapThePromise() {
         timerRef.current = setTimeout(() => {
           advanceToNext();
         }, 800);
-      }, 1500);
+      }, 2500);
     }, 700);
 
     return clearTimer;
@@ -147,8 +164,9 @@ export default function TapThePromise() {
     clearTimer();
 
     const current = sessionPromises[index];
-    setClaimed((prev) => [...prev, current]);
-    setAffirmation(pickRandom(AFFIRMATIONS));
+    const aff = pickRandom(AFFIRMATIONS);
+    setClaimed((prev) => [...prev, { text: current.text, ref: current.ref, affirmation: aff }]);
+    setAffirmation(aff);
     setPhase("tapped");
 
     timerRef.current = setTimeout(() => {
@@ -156,7 +174,7 @@ export default function TapThePromise() {
       timerRef.current = setTimeout(() => {
         advanceToNext();
       }, 600);
-    }, 800);
+    }, 1500);
   }, [phase, screen, index, sessionPromises, clearTimer, advanceToNext]);
 
   useEffect(() => {
@@ -167,6 +185,7 @@ export default function TapThePromise() {
     return (
       <div className="ttp-bg" data-testid="tap-promise-landing">
         <div className="ttp-rays" />
+        <div className="ttp-shimmer" />
         <div className="ttp-landing-card">
           <div className="ttp-landing-icon">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -203,48 +222,53 @@ export default function TapThePromise() {
     return (
       <div className="ttp-bg" data-testid="tap-promise-complete">
         <div className="ttp-rays" />
-        <div className="ttp-result-card">
-          <h2 className="ttp-result-headline">Today's Promises Activated</h2>
-          <p className="ttp-result-subheading">
-            You claimed {claimed.length} / {SESSION_SIZE} promises
-          </p>
+        <div className="ttp-shimmer" />
+        <div className="ttp-results-layout">
+          <div className="ttp-results-header">
+            <h2 className="ttp-result-headline">Today's Promises Activated</h2>
+            <p className="ttp-result-subheading">
+              You claimed {claimed.length} / {SESSION_SIZE} promises
+            </p>
+          </div>
 
-          {claimed.length > 0 && (
-            <div className="ttp-claimed-list">
-              {claimed.map((p, i) => (
-                <div key={i} className="ttp-claimed-card" data-testid={`claimed-promise-${i}`}>
-                  <span className="ttp-claimed-text">"{p.text}"</span>
-                  <span className="ttp-claimed-ref">{p.ref}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="ttp-results-scroll">
+            {claimed.length > 0 && (
+              <div className="ttp-claimed-list">
+                {claimed.map((p, i) => (
+                  <div key={i} className="ttp-claimed-card" data-testid={`claimed-promise-${i}`}>
+                    <span className="ttp-claimed-text">"{p.text}"</span>
+                    <span className="ttp-claimed-ref">{p.ref}</span>
+                    <span className="ttp-claimed-affirm">{p.affirmation}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {claimed.length === 0 && (
+              <p className="ttp-no-claims">Tap faster next time! Every promise is within reach.</p>
+            )}
+          </div>
 
-          {claimed.length === 0 && (
-            <p className="ttp-no-claims">Tap faster next time! Every promise is within reach.</p>
-          )}
-
-          <button
-            className="ttp-btn ttp-btn-primary ttp-btn-lg"
-            onClick={startGame}
-            data-testid="button-play-again"
-          >
-            PLAY AGAIN
-          </button>
-          <p className="ttp-result-motto">Grow your faith through repetition.</p>
-
-          <div className="ttp-result-brand">365 DAILY DEVOTIONAL</div>
-
-          <div className="ttp-result-support">
-            <p className="ttp-support-title">Support Our Mission</p>
-            <p className="ttp-support-text">Help us spread God's Word to the world.</p>
+          <div className="ttp-results-footer">
             <button
-              className="ttp-btn ttp-btn-donate"
-              onClick={() => navigate("/donate")}
-              data-testid="button-donate"
+              className="ttp-btn ttp-btn-primary ttp-btn-lg"
+              onClick={startGame}
+              data-testid="button-play-again"
             >
-              DONATE
+              PLAY AGAIN
             </button>
+            <p className="ttp-result-motto">Grow your faith through repetition.</p>
+            <div className="ttp-result-brand">365 DAILY DEVOTIONAL</div>
+            <div className="ttp-result-support">
+              <p className="ttp-support-title">Support Our Mission</p>
+              <p className="ttp-support-text">Help us spread God's Word to the world.</p>
+              <button
+                className="ttp-btn ttp-btn-donate"
+                onClick={() => navigate("/donate")}
+                data-testid="button-donate"
+              >
+                DONATE
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -265,11 +289,17 @@ export default function TapThePromise() {
   return (
     <div className="ttp-bg" data-testid="tap-promise-container">
       <div className="ttp-rays" />
+      <div className="ttp-shimmer" />
       <div className="ttp-counter" data-testid="tap-promise-counter">
         {index + 1} / {SESSION_SIZE} &nbsp;&bull;&nbsp; Claimed: {claimed.length}
       </div>
 
-      <div className={cardClass} onClick={handleTap} data-testid="tap-promise-card">
+      <div
+        className={cardClass}
+        onClick={handleTap}
+        data-testid="tap-promise-card"
+        style={{ "--ttp-text-color": colorTheme.text, "--ttp-glow-color": colorTheme.glow } as React.CSSProperties}
+      >
         {phase === "tapped" ? (
           <div className="ttp-affirmation" data-testid="tap-promise-affirmation">
             {affirmation}

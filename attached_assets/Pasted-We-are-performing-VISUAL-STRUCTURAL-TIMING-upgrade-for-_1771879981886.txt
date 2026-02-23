@@ -1,0 +1,88 @@
+We are performing VISUAL + STRUCTURAL + TIMING upgrade for Tap The Promise.
+
+STRICT RULES:
+- Do NOT modify devotional system.
+- Only modify:
+    client/src/interactive/TapThePromise.tsx
+    client/src/index.css (if needed)
+- Do NOT break routing.
+- No refactors outside interactive folder.
+
+==================================================
+PART 1 — VISUAL UPGRADE
+==================================================
+
+1. Upgrade background:
+- Add animated radiant gradient (deep navy → royal blue → subtle gold glow)
+- Add soft animated light rays or subtle particle shimmer
+- Improve depth
+
+2. Card upgrade:
+- Darker glass background (strong contrast)
+- Add subtle gold border glow
+- Increase shadow depth
+
+3. Typography:
+- Increase promise font size 20–25%
+- Make promise bold
+- Add subtle luminous glow
+- Scripture text in bright gold (#FFD700 or similar)
+- Remove dull brown tones
+
+4. Add color variety:
+Each promise randomly uses one of:
+- Gold
+- Burgundy
+- Deep red
+- Royal blue
+- Emerald
+Keep text readable.
+
+==================================================
+PART 2 — TIMING ADJUSTMENT
+==================================================
+
+Promise display:
+- 2.5 seconds at center before fade out
+
+Affirmation display:
+- 1.5 seconds
+
+Smooth ease-in / ease-out animation.
+
+==================================================
+PART 3 — FINAL PAGE STRUCTURE FIX
+==================================================
+
+Restructure final page layout:
+
+TOP (fixed):
+Title
+Claimed count
+
+MIDDLE (scrollable area):
+List of claimed promises
+Under each promise display:
+- Scripture
+- The exact encouragement phrase shown during game
+
+BOTTOM (fixed — not scrollable):
+PLAY AGAIN button
+"Grow your faith through repetition."
+365 DAILY DEVOTIONAL
+Support Our Mission
+DONATE button
+
+Bottom section must remain visible without scrolling.
+
+==================================================
+CONFIRM:
+==================================================
+
+✔ Timing updated
+✔ Typography stronger
+✔ Background improved
+✔ Footer fixed
+✔ Encouragement attached to each promise
+✔ No build errors
+✔ Preview working
