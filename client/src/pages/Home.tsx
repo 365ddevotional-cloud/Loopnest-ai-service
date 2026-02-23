@@ -68,41 +68,41 @@ export default function Home() {
 
   return (
     <div className="pb-12 space-y-8">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+      >
+        <Link href="/interactive/tap-the-promise">
+          <div
+            className="group cursor-pointer rounded-lg border border-border/60 bg-card px-4 py-2.5 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center gap-3"
+            data-testid="link-tap-the-promise"
+          >
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <GameConsoleIcon size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="font-serif text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                Tap The Promise
+              </span>
+              <span className="text-xs text-muted-foreground ml-2">Interactive Faith Game</span>
+            </div>
+          </div>
+        </Link>
+      </motion.div>
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
+        transition={{ duration: 0.4, ease: "easeOut", delay: 0.05 }}
       >
         <DailyBibleVerse />
       </motion.div>
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
+        transition={{ duration: 0.5, ease: "easeOut", delay: 0.15 }}
       >
         <DevotionalCard devotional={devotional} />
-      </motion.div>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
-      >
-        <Link href="/interactive/tap-the-promise">
-          <div
-            className="group cursor-pointer rounded-xl border border-border bg-card p-5 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] flex items-center gap-4"
-            data-testid="link-tap-the-promise"
-          >
-            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))" }}>
-              <GameConsoleIcon size={26} />
-            </div>
-            <div>
-              <h3 className="font-serif text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-                Tap The Promise
-              </h3>
-              <p className="text-sm text-muted-foreground">Interactive Faith Game</p>
-            </div>
-          </div>
-        </Link>
       </motion.div>
     </div>
   );

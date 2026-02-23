@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const ALL_PROMISES = [
   { text: "Trust in the Lord with all your heart", ref: "Proverbs 3:5" },
@@ -94,6 +95,8 @@ interface ClaimedPromise {
 
 export default function TapThePromise() {
   const [, navigate] = useLocation();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   const [screen, setScreen] = useState<Screen>("landing");
   const [sessionPromises, setSessionPromises] = useState<typeof ALL_PROMISES>([]);
   const [index, setIndex] = useState(0);
@@ -183,7 +186,7 @@ export default function TapThePromise() {
 
   if (screen === "landing") {
     return (
-      <div className="ttp-bg" data-testid="tap-promise-landing">
+      <div className={`ttp-bg ${isDark ? "ttp-dark" : "ttp-light"}`} data-testid="tap-promise-landing">
         <div className="ttp-rays" />
         <div className="ttp-shimmer" />
         <div className="ttp-landing-card">
@@ -220,7 +223,7 @@ export default function TapThePromise() {
 
   if (screen === "results") {
     return (
-      <div className="ttp-bg" data-testid="tap-promise-complete">
+      <div className={`ttp-bg ${isDark ? "ttp-dark" : "ttp-light"}`} data-testid="tap-promise-complete">
         <div className="ttp-rays" />
         <div className="ttp-shimmer" />
         <div className="ttp-results-layout">
@@ -287,7 +290,7 @@ export default function TapThePromise() {
     .join(" ");
 
   return (
-    <div className="ttp-bg" data-testid="tap-promise-container">
+    <div className={`ttp-bg ${isDark ? "ttp-dark" : "ttp-light"}`} data-testid="tap-promise-container">
       <div className="ttp-rays" />
       <div className="ttp-shimmer" />
       <div className="ttp-counter" data-testid="tap-promise-counter">

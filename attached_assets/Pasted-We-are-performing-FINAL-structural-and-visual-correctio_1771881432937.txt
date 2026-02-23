@@ -1,0 +1,178 @@
+We are performing FINAL structural and visual corrections for Tap The Promise.
+
+STRICT RULES:
+- Do NOT modify devotional logic.
+- Do NOT modify authentication.
+- Do NOT break routing.
+- Only adjust navigation order, layout, background, and styling.
+- Keep route: /interactive/tap-the-promise
+- Ensure build success.
+
+==================================================
+PART 1 — BURGER MENU ORDER FIX
+==================================================
+
+Move:
+
+🎮 Tap The Promise
+
+To appear IMMEDIATELY after:
+
+Bible
+
+New order:
+
+Bible
+Tap The Promise
+Sunday School
+YouTube
+Shop
+Prayer / Counseling
+About
+Donate
+Login
+
+Ensure:
+- Proper spacing
+- Drawer closes on click
+- No visual glitch
+
+==================================================
+PART 2 — TODAY PAGE POSITION FIX
+==================================================
+
+Move the Tap The Promise button:
+
+Place it ABOVE the Today’s devotional content.
+It should appear immediately after the page header.
+
+Reduce size:
+- Smaller height
+- Not oversized
+- Clearly clickable
+- Keep icon left + text right
+- Clean rounded corners
+- Subtle shadow
+- Elegant, not bulky
+
+Remove oversized padding.
+
+==================================================
+PART 3 — LIGHT / DARK MODE SUPPORT
+==================================================
+
+The game must:
+
+- Respect global app theme.
+- Default to LIGHT mode if no theme is set.
+- If user switches app to dark mode, game follows automatically.
+
+Implement:
+
+Use existing theme context (if available).
+If none exists, detect prefers-color-scheme.
+
+LIGHT MODE:
+- Bright radiant sky background
+- Gold light rays
+- White or cream card base
+- Dark readable text
+
+DARK MODE:
+- Deep blue gradient
+- Gold glow accents
+- Dark glass cards
+
+DO NOT force dark mode.
+
+==================================================
+PART 4 — BACKGROUND UPGRADE (IMPORTANT)
+==================================================
+
+Current background is dull.
+
+Replace with:
+
+Animated radiant sky background.
+
+LIGHT MODE:
+- Soft golden light rays from top
+- Subtle glowing particles
+- Bright gradient (cream → soft blue → warm gold)
+
+DARK MODE:
+- Deep navy → royal blue
+- Subtle animated gold shimmer
+
+If image required:
+Generate CSS gradient + animated overlay.
+Do NOT use low quality image.
+Use layered CSS for performance.
+
+Must look brighter and more premium than current version.
+
+==================================================
+PART 5 — FINAL PAGE LAYOUT RESTRUCTURE
+==================================================
+
+Current issue:
+Mission + Donate section too large.
+Taking too much space.
+
+Fix layout:
+
+STRUCTURE:
+
+TOP (fixed)
+Title + claimed count
+
+MIDDLE (scrollable)
+List of claimed promises
+Encouragement phrase under each promise
+
+BOTTOM (compact fixed footer)
+Small divider line
+365 DAILY DEVOTIONAL (small elegant text)
+Support Our Mission (small)
+Compact DONATE button (smaller height)
+
+Footer must:
+- Not take excessive vertical space
+- Not block viewing of claimed promises
+- Be elegant and compact
+- Follow Loopit visual proportion
+
+Reduce:
+- Padding
+- Margin
+- Button height
+
+Make donate button shorter but still clickable.
+
+==================================================
+PART 6 — SPACING OPTIMIZATION
+==================================================
+
+Ensure:
+
+- Claimed promise list has enough vertical space
+- User can see multiple promises at once
+- Footer does NOT dominate screen
+- Proper scroll behavior
+- No overlapping
+
+==================================================
+FINAL CONFIRMATION CHECKLIST
+==================================================
+
+✔ Tap The Promise moved below Bible in burger menu
+✔ Tap The Promise button moved above Today message
+✔ Button size reduced and elegant
+✔ Background brightened significantly
+✔ Light mode default
+✔ Dark mode supported
+✔ Footer compact
+✔ Donate not oversized
+✔ Claimed promises clearly visible
+✔ No build errors
+✔ Mobile layout clean

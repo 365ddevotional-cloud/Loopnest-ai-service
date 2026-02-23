@@ -121,6 +121,18 @@ export function Header() {
     { href: "/donate", label: t("donate"), icon: Heart, external: false, adminOnly: false },
   ];
 
+  const mobileNavItems = [
+    { href: "/", label: t("today"), icon: BookOpen, external: false },
+    { href: "/archive", label: t("archive"), icon: Calendar, external: false },
+    { href: "/bible", label: t("bible"), icon: Book, external: false },
+    { href: "/sunday-school", label: t("sundaySchool"), icon: GraduationCap, external: false },
+    { href: "https://www.youtube.com/@365DailyDevotional", label: "YouTube", icon: SiYoutube, external: true },
+    { href: "https://payhip.com/SpiritToneRecords", label: "Shop", icon: ShoppingBag, external: true },
+    { href: "/prayer-counseling", label: t("prayerCounseling"), icon: MessageCircleHeart, external: false },
+    { href: "/about", label: t("about"), icon: Info, external: false },
+    { href: "/donate", label: t("donate"), icon: Heart, external: false },
+  ];
+
   const adminNavItem = isAdmin 
     ? { href: "/admin", label: t("adminDashboard"), icon: Settings, external: false }
     : { href: "/admin-login", label: t("login"), icon: LogIn, external: false };
@@ -258,25 +270,22 @@ export function Header() {
                 {t("howToUse")}
               </button>
               
-              {visibleNavItems.map((item) => {
+              {mobileNavItems.map((item, idx) => {
                 const isActive = !item.external && location === item.href;
-                if (item.external) {
-                  return (
-                    <a
-                      key={item.href}
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 cursor-pointer text-muted-foreground hover:bg-primary/5 hover:text-primary"
-                      data-testid={`link-${item.label.toLowerCase().replace(/\s+/g, '-')}-nav-mobile`}
-                    >
-                      <item.icon className="w-5 h-5" />
-                      {item.label}
-                    </a>
-                  );
-                }
-                return (
+                const rendered = item.external ? (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 cursor-pointer text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                    data-testid={`link-${item.label.toLowerCase().replace(/\s+/g, '-')}-nav-mobile`}
+                  >
+                    <item.icon className="w-5 h-5" />
+                    {item.label}
+                  </a>
+                ) : (
                   <button
                     key={item.href}
                     onClick={() => handleNavClick(item.href, item.external)}
@@ -292,23 +301,43 @@ export function Header() {
                     {item.label}
                   </button>
                 );
+
+                if (idx === 2) {
+                  return (
+                    <div key={`${item.href}-group`} className="contents">
+                      {rendered}
+                      <button
+                        onClick={() => handleNavClick("/interactive/tap-the-promise", false)}
+                        className={cn(
+                          "flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 cursor-pointer text-left",
+                          location === "/interactive/tap-the-promise"
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                        )}
+                        data-testid="link-tap-the-promise-nav-mobile"
+                      >
+                        <GameConsoleIcon size={20} />
+                        <span>Tap The Promise</span>
+                      </button>
+                    </div>
+                  );
+                }
+
+                return rendered;
               })}
               
               <button
-                onClick={() => handleNavClick("/interactive/tap-the-promise", false)}
+                onClick={() => handleNavClick(isAdmin ? "/admin" : "/admin-login", false)}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 cursor-pointer text-left hover:scale-[1.03] active:scale-[0.98]",
-                  location === "/interactive/tap-the-promise"
+                  "flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 cursor-pointer text-left",
+                  location === "/admin" || location === "/admin-login"
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
                 )}
-                data-testid="link-tap-the-promise-nav-mobile"
+                data-testid="link-admin-nav-mobile"
               >
-                <GameConsoleIcon size={20} />
-                <div className="flex flex-col">
-                  <span>Tap The Promise</span>
-                  <span className="text-xs opacity-60 font-normal">Interactive Faith Game</span>
-                </div>
+                {isAdmin ? <Settings className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
+                {isAdmin ? t("adminDashboard") : t("login")}
               </button>
               
               <MobileLanguageSwitcher />
