@@ -1,7 +1,7 @@
 import { useTodayDevotional } from "@/hooks/use-devotionals";
 import { DevotionalCard } from "@/components/DevotionalCard";
 import { DailyBibleVerse } from "@/components/DailyBibleVerse";
-import { Loader2, BookX, WifiOff } from "lucide-react";
+import { Loader2, BookX, WifiOff, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
@@ -80,6 +80,28 @@ export default function Home() {
         transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
       >
         <DevotionalCard devotional={devotional} />
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
+      >
+        <Link href="/interactive/tap-the-promise">
+          <div
+            className="group cursor-pointer rounded-xl border border-border bg-card p-5 shadow-sm hover:shadow-md transition-shadow flex items-center gap-4"
+            data-testid="link-tap-the-promise"
+          >
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Gamepad2 className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-serif text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+                Tap The Promise
+              </h3>
+              <p className="text-sm text-muted-foreground">Interactive Faith Game</p>
+            </div>
+          </div>
+        </Link>
       </motion.div>
     </div>
   );

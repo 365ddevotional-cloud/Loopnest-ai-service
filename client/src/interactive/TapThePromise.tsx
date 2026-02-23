@@ -48,16 +48,17 @@ const ALL_PROMISES = [
 ];
 
 const AFFIRMATIONS = [
-  "Received by Faith 🙏",
-  "This Promise is Yours ✨",
-  "Claimed in Jesus' Name 🔥",
-  "Grace Activated 💛",
-  "Word Received 📖",
-  "Faith Applied 💫",
+  "Hold on to this Word.",
+  "Stand on this Truth.",
+  "This Promise is Alive in You.",
+  "Let this Word strengthen you.",
+  "Faith Activated.",
+  "Carry this Promise with you.",
+  "This Word is working for you.",
 ];
 
 const DIRECTIONS = ["right", "left", "top", "bottom"] as const;
-type Direction = typeof DIRECTIONS[number];
+type Direction = (typeof DIRECTIONS)[number];
 
 const SESSION_SIZE = 7;
 
@@ -75,18 +76,17 @@ function pickRandom<T>(arr: readonly T[]): T {
 }
 
 type Phase = "enter" | "visible" | "tapped" | "exit" | "done";
+type Screen = "landing" | "playing" | "results";
 
 export default function TapThePromise() {
   const [, navigate] = useLocation();
-  const [sessionPromises, setSessionPromises] = useState(() =>
-    shuffle(ALL_PROMISES).slice(0, SESSION_SIZE)
-  );
+  const [screen, setScreen] = useState<Screen>("landing");
+  const [sessionPromises, setSessionPromises] = useState<typeof ALL_PROMISES>([]);
   const [index, setIndex] = useState(0);
   const [claimed, setClaimed] = useState<typeof ALL_PROMISES>([]);
   const [phase, setPhase] = useState<Phase>("enter");
   const [direction, setDirection] = useState<Direction>("right");
   const [affirmation, setAffirmation] = useState("");
-  const [gameOver, setGameOver] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tappedRef = useRef(false);
@@ -98,13 +98,22 @@ export default function TapThePromise() {
     }
   }, []);
 
+  const startGame = useCallback(() => {
+    const shuffled = shuffle(ALL_PROMISES).slice(0, SESSION_SIZE);
+    setSessionPromises(shuffled);
+    setIndex(0);
+    setClaimed([]);
+    setPhase("enter");
+    tappedRef.current = false;
+    setScreen("playing");
+  }, []);
+
   const advanceToNext = useCallback(() => {
     clearTimer();
     if (index + 1 >= SESSION_SIZE) {
-      setGameOver(true);
+      setScreen("results");
     } else {
-      const nextDir = pickRandom(DIRECTIONS);
-      setDirection(nextDir);
+      setDirection(pickRandom(DIRECTIONS));
       setIndex((prev) => prev + 1);
       setPhase("enter");
       tappedRef.current = false;
@@ -112,12 +121,11 @@ export default function TapThePromise() {
   }, [index, clearTimer]);
 
   useEffect(() => {
-    if (gameOver) return;
+    if (screen !== "playing") return;
 
     clearTimer();
     tappedRef.current = false;
-    const dir = pickRandom(DIRECTIONS);
-    setDirection(dir);
+    setDirection(pickRandom(DIRECTIONS));
     setPhase("enter");
 
     timerRef.current = setTimeout(() => {
@@ -131,10 +139,10 @@ export default function TapThePromise() {
     }, 700);
 
     return clearTimer;
-  }, [index, gameOver]);
+  }, [index, screen]);
 
   const handleTap = useCallback(() => {
-    if (tappedRef.current || phase === "exit" || phase === "done" || gameOver) return;
+    if (tappedRef.current || phase === "exit" || phase === "done" || screen !== "playing") return;
     tappedRef.current = true;
     clearTimer();
 
@@ -149,56 +157,93 @@ export default function TapThePromise() {
         advanceToNext();
       }, 600);
     }, 800);
-  }, [phase, gameOver, index, sessionPromises, clearTimer, advanceToNext]);
-
-  const playAgain = useCallback(() => {
-    setSessionPromises(shuffle(ALL_PROMISES).slice(0, SESSION_SIZE));
-    setIndex(0);
-    setClaimed([]);
-    setPhase("enter");
-    setGameOver(false);
-    tappedRef.current = false;
-  }, []);
+  }, [phase, screen, index, sessionPromises, clearTimer, advanceToNext]);
 
   useEffect(() => {
     return clearTimer;
   }, [clearTimer]);
 
-  if (gameOver) {
+  if (screen === "landing") {
+    return (
+      <div className="ttp-bg" data-testid="tap-promise-landing">
+        <div className="ttp-rays" />
+        <div className="ttp-landing-card">
+          <div className="ttp-landing-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+            </svg>
+          </div>
+          <h1 className="ttp-landing-title">Tap The Promise</h1>
+          <p className="ttp-landing-sub">Claim God's promises before they pass by</p>
+          <div className="ttp-landing-rules">
+            <p>7 promises will appear</p>
+            <p>Tap quickly to claim each one</p>
+            <p>Miss it and it's gone</p>
+          </div>
+          <button
+            className="ttp-btn ttp-btn-primary ttp-btn-lg"
+            onClick={startGame}
+            data-testid="button-start-game"
+          >
+            BEGIN
+          </button>
+          <button
+            className="ttp-btn ttp-btn-ghost"
+            onClick={() => navigate("/")}
+            data-testid="button-back-landing"
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (screen === "results") {
     return (
       <div className="ttp-bg" data-testid="tap-promise-complete">
         <div className="ttp-rays" />
         <div className="ttp-result-card">
-          <h2 className="ttp-result-title">
-            You Claimed {claimed.length} / {SESSION_SIZE} Promises
-          </h2>
+          <h2 className="ttp-result-headline">Today's Promises Activated</h2>
+          <p className="ttp-result-subheading">
+            You claimed {claimed.length} / {SESSION_SIZE} promises
+          </p>
+
           {claimed.length > 0 && (
-            <ul className="ttp-claimed-list">
+            <div className="ttp-claimed-list">
               {claimed.map((p, i) => (
-                <li key={i} className="ttp-claimed-item">
+                <div key={i} className="ttp-claimed-card" data-testid={`claimed-promise-${i}`}>
                   <span className="ttp-claimed-text">"{p.text}"</span>
-                  <span className="ttp-claimed-ref">— {p.ref}</span>
-                </li>
+                  <span className="ttp-claimed-ref">{p.ref}</span>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
+
           {claimed.length === 0 && (
             <p className="ttp-no-claims">Tap faster next time! Every promise is within reach.</p>
           )}
-          <div className="ttp-result-buttons">
+
+          <button
+            className="ttp-btn ttp-btn-primary ttp-btn-lg"
+            onClick={startGame}
+            data-testid="button-play-again"
+          >
+            PLAY AGAIN
+          </button>
+          <p className="ttp-result-motto">Grow your faith through repetition.</p>
+
+          <div className="ttp-result-brand">365 DAILY DEVOTIONAL</div>
+
+          <div className="ttp-result-support">
+            <p className="ttp-support-title">Support Our Mission</p>
+            <p className="ttp-support-text">Help us spread God's Word to the world.</p>
             <button
-              className="ttp-btn ttp-btn-primary"
-              onClick={playAgain}
-              data-testid="button-play-again"
+              className="ttp-btn ttp-btn-donate"
+              onClick={() => navigate("/donate")}
+              data-testid="button-donate"
             >
-              PLAY AGAIN
-            </button>
-            <button
-              className="ttp-btn ttp-btn-secondary"
-              onClick={() => navigate("/")}
-              data-testid="button-back"
-            >
-              Back
+              DONATE
             </button>
           </div>
         </div>
@@ -221,14 +266,10 @@ export default function TapThePromise() {
     <div className="ttp-bg" data-testid="tap-promise-container">
       <div className="ttp-rays" />
       <div className="ttp-counter" data-testid="tap-promise-counter">
-        Promises: {index + 1} / {SESSION_SIZE} &nbsp;|&nbsp; Claimed: {claimed.length}
+        {index + 1} / {SESSION_SIZE} &nbsp;&bull;&nbsp; Claimed: {claimed.length}
       </div>
 
-      <div
-        className={cardClass}
-        onClick={handleTap}
-        data-testid="tap-promise-card"
-      >
+      <div className={cardClass} onClick={handleTap} data-testid="tap-promise-card">
         {phase === "tapped" ? (
           <div className="ttp-affirmation" data-testid="tap-promise-affirmation">
             {affirmation}
@@ -236,7 +277,7 @@ export default function TapThePromise() {
         ) : (
           <>
             <h1 className="ttp-promise-text">{current.text}</h1>
-            <p className="ttp-promise-ref">({current.ref})</p>
+            <p className="ttp-promise-ref">{current.ref}</p>
             <p className="ttp-tap-hint">TAP TO CLAIM</p>
           </>
         )}

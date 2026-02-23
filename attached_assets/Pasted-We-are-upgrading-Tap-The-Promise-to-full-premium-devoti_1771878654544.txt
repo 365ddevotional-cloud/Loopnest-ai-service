@@ -1,0 +1,127 @@
+We are upgrading Tap The Promise to full premium devotional experience.
+
+STRICT RULES:
+- Do NOT modify devotional system.
+- Keep route: /interactive/tap-the-promise
+- Only edit:
+    - client/src/interactive/TapThePromise.tsx
+    - client/src/index.css (if needed)
+    - Add home entry button safely
+- Do NOT break app.
+- No refactors outside interactive scope.
+
+==================================================
+PART 1 — DYNAMIC AFFIRMATION FEEDBACK
+==================================================
+
+When user taps a promise:
+
+Instead of generic confirmation,
+show contextual encouragement phrases such as:
+
+- "Hold on to this Word."
+- "Stand on this Truth."
+- "This Promise is Alive in You."
+- "Let this Word strengthen you."
+- "Faith Activated."
+- "Carry this Promise with you."
+- "This Word is working for you."
+
+These must:
+- Appear centered on card
+- Smooth fade-in
+- Stay ~800ms
+- Then fade out
+- Then continue animation cycle
+
+Affirmations must rotate randomly.
+
+==================================================
+PART 2 — PREMIUM RESULTS SCREEN
+==================================================
+
+When 7 promises have been SHOWN:
+
+Show new results layout:
+
+Headline:
+"Today's Promises Activated"
+
+Subheading:
+"You claimed X / 7 promises"
+
+Then:
+
+Display list of claimed promises
+Each in styled card format (not plain text)
+
+Below list:
+
+Large PLAY AGAIN button
+Text:
+PLAY AGAIN
+
+Under button in smaller text:
+"Grow your faith through repetition."
+
+Below that:
+
+Brand text:
+365 DAILY DEVOTIONAL
+
+Below that:
+
+Support section:
+
+Title:
+Support Our Mission
+
+Text:
+"Help us spread God's Word to the world."
+
+Button:
+DONATE
+
+Donate button must:
+- Navigate to existing donate route
+- Not break routing
+- Styled gold gradient
+- Premium appearance
+
+==================================================
+PART 3 — VISUAL IMPROVEMENTS
+==================================================
+
+- Cinematic sky background with animated light rays
+- Strong contrast between card and background
+- Card must NOT blend with background
+- Use darker glass card tone
+- Improve typography:
+    Promise text: bold, luminous white or gold
+    Scripture: softer gold
+- Remove dull brown tones
+- Improve glow effects
+- Improve depth and layering
+
+==================================================
+PART 4 — ENTRY BUTTON IN APP
+==================================================
+
+Add on home screen:
+
+🎮 Tap The Promise
+Subtext: Interactive Faith Game
+
+Navigates to /interactive/tap-the-promise
+
+==================================================
+CONFIRM:
+==================================================
+
+✔ Landing screen works
+✔ Game does not auto-start
+✔ Affirmations rotate
+✔ Results screen redesigned
+✔ Donate button works
+✔ No TypeScript errors
+✔ Build success
