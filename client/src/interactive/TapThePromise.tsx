@@ -95,8 +95,14 @@ interface ClaimedPromise {
 
 function MusicToggle({ audioRef }: { audioRef: React.RefObject<HTMLAudioElement | null> }) {
   const [musicOn, setMusicOn] = useState(false);
+  const togglingRef = useRef(false);
 
-  const toggle = useCallback(() => {
+  const toggle = useCallback((e?: React.TouchEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
+    if (togglingRef.current) return;
+    togglingRef.current = true;
+    setTimeout(() => { togglingRef.current = false; }, 300);
+
     const el = audioRef.current;
     if (!el) return;
 
@@ -128,27 +134,30 @@ function MusicToggle({ audioRef }: { audioRef: React.RefObject<HTMLAudioElement 
   }, [audioRef]);
 
   return (
-    <button
+    <div
+      onTouchEnd={toggle}
       onClick={toggle}
       className="ttp-music-toggle"
+      role="button"
+      tabIndex={0}
       data-testid="button-music-toggle"
       aria-label={musicOn ? "Mute music" : "Play music"}
     >
       {musicOn ? (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M9 18V5l12-2v13" />
           <circle cx="6" cy="18" r="3" />
           <circle cx="18" cy="16" r="3" />
         </svg>
       ) : (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M9 18V5l12-2v13" />
           <circle cx="6" cy="18" r="3" />
           <circle cx="18" cy="16" r="3" />
           <line x1="1" y1="1" x2="23" y2="23" />
         </svg>
       )}
-    </button>
+    </div>
   );
 }
 

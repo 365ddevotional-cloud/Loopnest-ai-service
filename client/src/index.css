@@ -799,12 +799,12 @@
 
 .ttp-music-toggle {
   position: fixed;
-  top: 16px;
-  right: 16px;
+  top: 70px;
+  right: 14px;
   z-index: 9999;
   pointer-events: auto;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: none;
   display: flex;
@@ -814,16 +814,18 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   transition: transform 0.15s ease, opacity 0.15s ease;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
 }
 .ttp-music-toggle:active { transform: scale(0.9); }
 .ttp-dark .ttp-music-toggle {
-  background: rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.7);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.8);
+  border: 1.5px solid rgba(255,255,255,0.15);
 }
 .ttp-light .ttp-music-toggle {
-  background: rgba(0,0,0,0.08);
-  color: rgba(42,24,16,0.6);
-  border: 1px solid rgba(0,0,0,0.08);
+  background: rgba(0,0,0,0.1);
+  color: rgba(42,24,16,0.7);
+  border: 1.5px solid rgba(0,0,0,0.1);
 }
 
