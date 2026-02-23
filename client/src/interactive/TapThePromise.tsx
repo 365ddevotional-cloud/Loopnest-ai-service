@@ -261,50 +261,53 @@ export default function TapThePromise() {
 
   if (screen === "landing") {
     return (
-      <div className={`ttp-bg ${isDark ? "ttp-dark" : "ttp-light"}`} data-testid="tap-promise-landing">
+      <>
         {audioElement}
-        <div className="ttp-rays" />
-        <div className="ttp-shimmer" />
-        <div className="ttp-landing-card">
-          <div className="ttp-landing-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-            </svg>
+        <div className={`ttp-bg ${isDark ? "ttp-dark" : "ttp-light"}`} data-testid="tap-promise-landing">
+          <div className="ttp-rays" />
+          <div className="ttp-shimmer" />
+          <div className="ttp-landing-card">
+            <div className="ttp-landing-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+              </svg>
+            </div>
+            <h1 className="ttp-landing-title">Tap The Promise</h1>
+            <p className="ttp-landing-sub">Claim God's promises before they pass by</p>
+            <div className="ttp-landing-rules">
+              <p>7 promises will appear</p>
+              <p>Tap quickly to claim each one</p>
+              <p>Miss it and it's gone</p>
+            </div>
+            <button
+              className="ttp-btn ttp-btn-primary ttp-btn-lg"
+              onClick={startGame}
+              data-testid="button-start-game"
+            >
+              BEGIN
+            </button>
+            <button
+              className="ttp-btn ttp-btn-ghost"
+              onClick={() => navigate("/")}
+              data-testid="button-back-landing"
+            >
+              Back to Home
+            </button>
           </div>
-          <h1 className="ttp-landing-title">Tap The Promise</h1>
-          <p className="ttp-landing-sub">Claim God's promises before they pass by</p>
-          <div className="ttp-landing-rules">
-            <p>7 promises will appear</p>
-            <p>Tap quickly to claim each one</p>
-            <p>Miss it and it's gone</p>
-          </div>
-          <button
-            className="ttp-btn ttp-btn-primary ttp-btn-lg"
-            onClick={startGame}
-            data-testid="button-start-game"
-          >
-            BEGIN
-          </button>
-          <button
-            className="ttp-btn ttp-btn-ghost"
-            onClick={() => navigate("/")}
-            data-testid="button-back-landing"
-          >
-            Back to Home
-          </button>
         </div>
-      </div>
+      </>
     );
   }
 
   if (screen === "results") {
     return (
-      <div className={`ttp-bg ${isDark ? "ttp-dark" : "ttp-light"}`} data-testid="tap-promise-complete">
+      <>
         {audioElement}
         <MusicToggle audioRef={audioRef} />
-        <div className="ttp-rays" />
-        <div className="ttp-shimmer" />
-        <div className="ttp-results-layout">
+        <div className={`ttp-bg ${isDark ? "ttp-dark" : "ttp-light"}`} data-testid="tap-promise-complete">
+          <div className="ttp-rays" />
+          <div className="ttp-shimmer" />
+          <div className="ttp-results-layout">
           <div className="ttp-results-header">
             <h2 className="ttp-result-headline">Today's Promises Activated</h2>
             <p className="ttp-result-subheading">
@@ -352,7 +355,8 @@ export default function TapThePromise() {
             </button>
           </div>
         </div>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -368,33 +372,35 @@ export default function TapThePromise() {
     .join(" ");
 
   return (
-    <div className={`ttp-bg ${isDark ? "ttp-dark" : "ttp-light"}`} data-testid="tap-promise-container">
+    <>
       {audioElement}
       <MusicToggle audioRef={audioRef} />
-      <div className="ttp-rays" />
-      <div className="ttp-shimmer" />
-      <div className="ttp-counter" data-testid="tap-promise-counter">
-        {index + 1} / {SESSION_SIZE} &nbsp;&bull;&nbsp; Claimed: {claimed.length}
-      </div>
+      <div className={`ttp-bg ${isDark ? "ttp-dark" : "ttp-light"}`} data-testid="tap-promise-container">
+        <div className="ttp-rays" />
+        <div className="ttp-shimmer" />
+        <div className="ttp-counter" data-testid="tap-promise-counter">
+          {index + 1} / {SESSION_SIZE} &nbsp;&bull;&nbsp; Claimed: {claimed.length}
+        </div>
 
-      <div
-        className={cardClass}
-        onClick={handleTap}
-        data-testid="tap-promise-card"
-        style={{ "--ttp-text-color": colorTheme.text, "--ttp-glow-color": colorTheme.glow } as React.CSSProperties}
-      >
-        {phase === "tapped" ? (
-          <div className="ttp-affirmation" data-testid="tap-promise-affirmation">
-            {affirmation}
-          </div>
-        ) : (
-          <>
-            <h1 className="ttp-promise-text">{current.text}</h1>
-            <p className="ttp-promise-ref">{current.ref}</p>
-            <p className="ttp-tap-hint">TAP TO CLAIM</p>
-          </>
-        )}
+        <div
+          className={cardClass}
+          onClick={handleTap}
+          data-testid="tap-promise-card"
+          style={{ "--ttp-text-color": colorTheme.text, "--ttp-glow-color": colorTheme.glow } as React.CSSProperties}
+        >
+          {phase === "tapped" ? (
+            <div className="ttp-affirmation" data-testid="tap-promise-affirmation">
+              {affirmation}
+            </div>
+          ) : (
+            <>
+              <h1 className="ttp-promise-text">{current.text}</h1>
+              <p className="ttp-promise-ref">{current.ref}</p>
+              <p className="ttp-tap-hint">TAP TO CLAIM</p>
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
