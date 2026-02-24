@@ -66,17 +66,17 @@ function PlanBadge({ tier }: { tier: PlanTier }) {
 
 export default function DashboardPage() {
   const [, navigate] = useLocation();
-  const { user, logout, loading, emailVerified } = useLoopNestAuth();
+  const { user, logout, loading, emailVerified, refreshUser } = useLoopNestAuth();
   const [currentPlan, setCurrentPlan] = useState<PlanTier>(() => {
     return (localStorage.getItem("loopnest_plan") as PlanTier) || "FREE";
   });
 
   useEffect(() => {
     if (loading) return;
-    if (!user) {
-      navigate("/loopnest/login");
+    if (!user || !emailVerified) {
+      if (!user) navigate("/loopnest/login");
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, emailVerified, navigate]);
 
   if (loading) {
     return (
@@ -100,7 +100,9 @@ export default function DashboardPage() {
             Please verify your email to continue. Check your inbox for a verification link.
           </p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={async () => {
+              await refreshUser();
+            }}
             style={{ padding: "0.6rem 1.5rem", borderRadius: "8px", border: "1px solid #ddd", background: "#fff", color: "#555", fontWeight: 600, cursor: "pointer", marginRight: "0.5rem" }}
             data-testid="button-refresh-verification"
           >
