@@ -4,6 +4,7 @@ export interface GameConfig {
   id: string;
   title: string;
   route: string;
+  type: "internal" | "user";
   contentData: ContentItem[];
   audioTrack: string;
   themeMode: "auto" | "light" | "dark";
@@ -84,6 +85,7 @@ export const GAME_REGISTRY: GameConfig[] = [
     id: "tap-the-promise",
     title: "Tap The Promise",
     route: "/interactive/tap-the-promise",
+    type: "internal",
     contentData: TAP_THE_PROMISE_DATA,
     audioTrack: "/audio/tap-theme.mp3",
     themeMode: "auto",
@@ -92,6 +94,7 @@ export const GAME_REGISTRY: GameConfig[] = [
     id: "memory-verse-sprint",
     title: "Memory Verse Sprint",
     route: "/interactive/memory-verse-sprint",
+    type: "internal",
     contentData: MEMORY_VERSE_SPRINT_DATA,
     audioTrack: "/audio/tap-theme.mp3",
     themeMode: "auto",
