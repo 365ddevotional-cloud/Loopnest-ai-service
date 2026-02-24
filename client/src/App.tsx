@@ -46,7 +46,7 @@ import PublicDevotionalToday from "@/pages/PublicDevotionalToday";
 import PublicArchive from "@/pages/PublicArchive";
 import SundaySchool from "@/pages/SundaySchool";
 import SundaySchoolLessonPage from "@/pages/SundaySchoolLesson";
-import { GamePage } from "@/game-engine";
+import { GamePage, GamesHub } from "@/game-engine";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -77,6 +77,7 @@ function Router() {
       <Route path="/sunday-school/:id" component={SundaySchoolLessonPage} />
       <Route path="/sunday-school" component={SundaySchool} />
       <Route path="/admin-login" component={AdminLogin} />
+      <Route path="/interactive" component={GamesHub} />
       <Route path="/interactive/:gameSlug" component={GamePage} />
       <Route component={NotFound} />
     </Switch>
