@@ -1,11 +1,22 @@
-import { useState, useCallback } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect, useCallback } from "react";
+import { useLocation, useSearch } from "wouter";
 import { useTheme } from "@/contexts/ThemeContext";
 import GameEngine from "./GameEngine";
 import type { ContentItem } from "./GameTypes";
 
+const DRAFT_KEY = "gameBuilderDraft";
+
+interface DraftData {
+  title: string;
+  verseText: string;
+  reference: string;
+  themeMode: "auto" | "light" | "dark";
+  musicEnabled: boolean;
+}
+
 export default function CreateGamePage() {
   const [, navigate] = useLocation();
+  const searchString = useSearch();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
@@ -16,6 +27,48 @@ export default function CreateGamePage() {
   const [useMusic, setUseMusic] = useState(true);
   const [previewing, setPreviewing] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
+  const [shareLink, setShareLink] = useState("");
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    if (initialized) return;
+
+    const params = new URLSearchParams(searchString);
+    const encoded = params.get("data");
+    if (encoded) {
+      try {
+        const decoded = JSON.parse(atob(encoded));
+        if (decoded.title) setTitle(decoded.title);
+        if (decoded.verseText) setVerseText(decoded.verseText);
+        if (decoded.reference) setReference(decoded.reference);
+        if (decoded.themeMode) setThemePref(decoded.themeMode);
+        setInitialized(true);
+        setTimeout(() => {
+          setPreviewing(true);
+          setPreviewKey((k) => k + 1);
+        }, 100);
+        return;
+      } catch {
+        // ignore bad data
+      }
+    }
+
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const draft: DraftData = JSON.parse(saved);
+        if (draft.title) setTitle(draft.title);
+        if (draft.verseText) setVerseText(draft.verseText);
+        if (draft.reference) setReference(draft.reference);
+        if (draft.themeMode) setThemePref(draft.themeMode);
+        if (typeof draft.musicEnabled === "boolean") setUseMusic(draft.musicEnabled);
+      }
+    } catch {
+      // ignore bad data
+    }
+    setInitialized(true);
+  }, [initialized, searchString]);
 
   const canPreview = title.trim() && verseText.trim() && reference.trim();
 
@@ -24,6 +77,26 @@ export default function CreateGamePage() {
     setPreviewKey((k) => k + 1);
     setPreviewing(true);
   }, [canPreview]);
+
+  const handleSaveDraft = useCallback(() => {
+    const draft: DraftData = {
+      title,
+      verseText,
+      reference,
+      themeMode: themePref,
+      musicEnabled: useMusic,
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    setDraftSaved(true);
+    setTimeout(() => setDraftSaved(false), 2000);
+  }, [title, verseText, reference, themePref, useMusic]);
+
+  const handleShareLink = useCallback(() => {
+    const obj = { title, verseText, reference, themeMode: themePref };
+    const encoded = btoa(JSON.stringify(obj));
+    const link = window.location.origin + "/interactive/create?data=" + encoded;
+    setShareLink(link);
+  }, [title, verseText, reference, themePref]);
 
   const resolvedThemeMode: "light" | "dark" =
     themePref === "auto"
@@ -52,6 +125,18 @@ export default function CreateGamePage() {
     fontSize: "0.85rem",
     fontWeight: 600,
     marginBottom: "0.35rem",
+  };
+
+  const secondaryBtnStyle: React.CSSProperties = {
+    padding: "0.5rem 1rem",
+    borderRadius: "8px",
+    border: `1px solid ${isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)"}`,
+    background: "transparent",
+    color: isDark ? "#ccc" : "#555",
+    fontWeight: 500,
+    fontSize: "0.85rem",
+    cursor: "pointer",
+    flex: 1,
   };
 
   return (
@@ -177,6 +262,42 @@ export default function CreateGamePage() {
           >
             Preview Game
           </button>
+
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button
+              onClick={handleSaveDraft}
+              style={secondaryBtnStyle}
+              data-testid="button-save-draft"
+            >
+              {draftSaved ? "Draft Saved!" : "Save Draft"}
+            </button>
+            <button
+              onClick={handleShareLink}
+              disabled={!canPreview}
+              style={{
+                ...secondaryBtnStyle,
+                cursor: canPreview ? "pointer" : "not-allowed",
+                opacity: canPreview ? 1 : 0.5,
+              }}
+              data-testid="button-share-link"
+            >
+              Generate Share Link
+            </button>
+          </div>
+
+          {shareLink && (
+            <div data-testid="share-link-container">
+              <label style={{ ...labelStyle, fontSize: "0.8rem" }}>Share Link</label>
+              <input
+                type="text"
+                readOnly
+                value={shareLink}
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+                style={inputStyle}
+                data-testid="input-share-link"
+              />
+            </div>
+          )}
         </div>
 
         <div style={{ textAlign: "center", marginTop: "1rem" }}>
