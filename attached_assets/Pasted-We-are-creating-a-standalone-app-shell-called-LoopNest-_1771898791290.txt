@@ -1,0 +1,120 @@
+We are creating a standalone app shell called "LoopNest".
+
+STRICT RULES:
+- DO NOT break 365 Daily Devotional
+- DO NOT modify existing routes
+- DO NOT touch devotional logic
+- This must live separately under /loopnest
+- Frontend only for now
+- No backend integration yet
+
+GOAL:
+Create authentication-first shell structure.
+
+====================================
+STEP 1 — CREATE ROUTE GROUP
+====================================
+
+Create new route folder:
+
+/app/loopnest/
+
+Inside it create:
+
+- page.tsx
+- login/page.tsx
+- dashboard/page.tsx
+- builder/page.tsx
+
+====================================
+STEP 2 — AUTH STATE (TEMP MOCK)
+====================================
+
+Create simple auth context:
+
+/app/loopnest/AuthContext.tsx
+
+Use:
+
+const [user, setUser] = useState(null);
+
+Provide:
+login(email)
+logout()
+
+Persist session using localStorage under key:
+"loopnest_user"
+
+On mount:
+Load from localStorage if exists.
+
+====================================
+STEP 3 — ROOT PAGE
+====================================
+
+/loopnest/page.tsx
+
+If user exists:
+Redirect to /loopnest/dashboard
+
+If no user:
+Redirect to /loopnest/login
+
+====================================
+STEP 4 — LOGIN PAGE
+====================================
+
+Simple UI:
+
+Title: LoopNest
+Subtitle: Create Interactive Games
+
+Fields:
+- Email
+- Password
+
+Buttons:
+- Sign In
+- Create Account
+
+On submit:
+Call login(email)
+Redirect to dashboard
+
+Clean modern UI.
+Bright.
+Professional.
+
+====================================
+STEP 5 — DASHBOARD PAGE
+====================================
+
+Header:
+LoopNest Dashboard
+
+Buttons:
+- Create New Game
+- My Games (placeholder)
+- Upgrade Plan (placeholder)
+- Logout
+
+====================================
+STEP 6 — BUILDER PAGE
+====================================
+
+Reuse existing interactive builder component.
+
+Do NOT duplicate engine.
+Import existing builder component.
+
+This proves architecture.
+
+====================================
+VERIFY
+====================================
+
+- Visiting /loopnest
+- If not logged in → login page
+- After login → dashboard
+- After logout → login
+- Builder loads correctly

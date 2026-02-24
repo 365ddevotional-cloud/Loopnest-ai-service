@@ -47,6 +47,11 @@ import PublicArchive from "@/pages/PublicArchive";
 import SundaySchool from "@/pages/SundaySchool";
 import SundaySchoolLessonPage from "@/pages/SundaySchoolLesson";
 import { GamePage, GamesHub, CreateGamePage } from "@/game-engine";
+import { LoopNestAuthProvider } from "@/loopnest/AuthContext";
+import LoopNestRoot from "@/loopnest/LoopNestRoot";
+import LoopNestLogin from "@/loopnest/LoginPage";
+import LoopNestDashboard from "@/loopnest/DashboardPage";
+import LoopNestBuilder from "@/loopnest/BuilderPage";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -80,6 +85,10 @@ function Router() {
       <Route path="/interactive" component={GamesHub} />
       <Route path="/interactive/create" component={CreateGamePage} />
       <Route path="/interactive/:gameSlug" component={GamePage} />
+      <Route path="/loopnest" component={LoopNestRoot} />
+      <Route path="/loopnest/login" component={LoopNestLogin} />
+      <Route path="/loopnest/dashboard" component={LoopNestDashboard} />
+      <Route path="/loopnest/builder" component={LoopNestBuilder} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -96,7 +105,15 @@ function AppContent() {
   }, [location]);
 
   const isPublicRoute =
-    location.startsWith("/devotional") || location.startsWith("/public") || location.startsWith("/interactive");
+    location.startsWith("/devotional") || location.startsWith("/public") || location.startsWith("/interactive") || location.startsWith("/loopnest");
+
+  if (location.startsWith("/loopnest")) {
+    return (
+      <LoopNestAuthProvider>
+        <Router />
+      </LoopNestAuthProvider>
+    );
+  }
 
   if (isPublicRoute) {
     return <Router />;
