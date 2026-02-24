@@ -66,18 +66,57 @@ function PlanBadge({ tier }: { tier: PlanTier }) {
 
 export default function DashboardPage() {
   const [, navigate] = useLocation();
-  const { user, logout } = useLoopNestAuth();
+  const { user, logout, loading, emailVerified } = useLoopNestAuth();
   const [currentPlan, setCurrentPlan] = useState<PlanTier>(() => {
     return (localStorage.getItem("loopnest_plan") as PlanTier) || "FREE";
   });
 
   useEffect(() => {
+    if (loading) return;
     if (!user) {
       navigate("/loopnest/login");
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f5f3ff" }}>
+        <p style={{ color: "#888" }}>Loading...</p>
+      </div>
+    );
+  }
 
   if (!user) return null;
+
+  if (!emailVerified) {
+    return (
+      <div
+        style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f5f3ff", padding: "1rem" }}
+        data-testid="loopnest-verify-email"
+      >
+        <div style={{ background: "#fff", borderRadius: "16px", padding: "2.5rem 2rem", maxWidth: "400px", textAlign: "center", boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#333", marginBottom: "0.75rem" }}>Verify Your Email</h2>
+          <p style={{ color: "#666", fontSize: "0.9rem", marginBottom: "1.5rem", lineHeight: 1.5 }}>
+            Please verify your email to continue. Check your inbox for a verification link.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ padding: "0.6rem 1.5rem", borderRadius: "8px", border: "1px solid #ddd", background: "#fff", color: "#555", fontWeight: 600, cursor: "pointer", marginRight: "0.5rem" }}
+            data-testid="button-refresh-verification"
+          >
+            I've Verified
+          </button>
+          <button
+            onClick={async () => { await logout(); navigate("/loopnest/login"); }}
+            style={{ padding: "0.6rem 1.5rem", borderRadius: "8px", border: "none", background: "#667eea", color: "#fff", fontWeight: 600, cursor: "pointer" }}
+            data-testid="button-back-login"
+          >
+            Back to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const switchPlan = (tier: PlanTier) => {
     localStorage.setItem("loopnest_plan", tier);
@@ -112,7 +151,7 @@ export default function DashboardPage() {
           LoopNest Dashboard
         </h1>
         <p style={{ color: "#888", fontSize: "0.85rem", marginBottom: "2rem" }}>
-          Welcome, {user.email}
+          Welcome, {user.email || "User"}
         </p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "2.5rem" }}>
@@ -157,8 +196,8 @@ export default function DashboardPage() {
           </button>
 
           <button
-            onClick={() => {
-              logout();
+            onClick={async () => {
+              await logout();
               navigate("/loopnest/login");
             }}
             style={{

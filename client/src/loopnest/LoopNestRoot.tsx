@@ -4,15 +4,16 @@ import { useLoopNestAuth } from "./AuthContext";
 
 export default function LoopNestRoot() {
   const [, navigate] = useLocation();
-  const { user } = useLoopNestAuth();
+  const { user, loading, emailVerified } = useLoopNestAuth();
 
   useEffect(() => {
-    if (user) {
+    if (loading) return;
+    if (user && emailVerified) {
       navigate("/loopnest/dashboard");
     } else {
       navigate("/loopnest/login");
     }
-  }, [user, navigate]);
+  }, [user, loading, emailVerified, navigate]);
 
   return null;
 }

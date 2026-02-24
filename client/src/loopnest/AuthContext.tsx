@@ -1,50 +1,46 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
-
-interface LoopNestUser {
-  email: string;
-}
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { onAuthStateChanged, signOut, type User } from "firebase/auth";
+import { auth } from "./firebase";
 
 interface AuthContextType {
-  user: LoopNestUser | null;
-  login: (email: string) => void;
-  logout: () => void;
+  user: User | null;
+  loading: boolean;
+  emailVerified: boolean;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  login: () => {},
-  logout: () => {},
+  loading: true,
+  emailVerified: false,
+  logout: async () => {},
 });
 
-const STORAGE_KEY = "loopnest_user";
-
 export function LoopNestAuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<LoopNestUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        setUser(JSON.parse(saved));
-      }
-    } catch {
-      // ignore
-    }
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setLoading(false);
+    });
+    return unsubscribe;
   }, []);
 
-  const login = useCallback((email: string) => {
-    const u = { email };
-    setUser(u);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
-  }, []);
-
-  const logout = useCallback(() => {
-    setUser(null);
-    localStorage.removeItem(STORAGE_KEY);
-  }, []);
+  const logout = async () => {
+    await signOut(auth);
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        emailVerified: user?.emailVerified ?? false,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

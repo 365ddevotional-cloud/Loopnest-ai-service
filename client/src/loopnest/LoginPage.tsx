@@ -1,20 +1,101 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+} from "firebase/auth";
+import { auth } from "./firebase";
 import { useLoopNestAuth } from "./AuthContext";
 
 export default function LoginPage() {
   const [, navigate] = useLocation();
-  const { login } = useLoopNestAuth();
+  const { user, emailVerified } = useLoopNestAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
 
-  const canSubmit = email.trim() && password.trim();
+  if (user && emailVerified) {
+    navigate("/loopnest/dashboard");
+    return null;
+  }
+
+  const canSubmit = email.trim() && password.trim() && !busy;
+
+  const friendlyError = (code: string) => {
+    switch (code) {
+      case "auth/invalid-email":
+        return "Invalid email address.";
+      case "auth/user-not-found":
+      case "auth/wrong-password":
+      case "auth/invalid-credential":
+        return "Invalid email or password.";
+      case "auth/email-already-in-use":
+        return "An account with this email already exists.";
+      case "auth/weak-password":
+        return "Password must be at least 6 characters.";
+      case "auth/too-many-requests":
+        return "Too many attempts. Please try again later.";
+      default:
+        return "Something went wrong. Please try again.";
+    }
+  };
+
+  const handleSignIn = async () => {
+    setError("");
+    setInfo("");
+    setBusy(true);
+    try {
+      const result = await signInWithEmailAndPassword(auth, email.trim(), password);
+      if (!result.user.emailVerified) {
+        setInfo("Please verify your email before logging in. Check your inbox.");
+      } else {
+        navigate("/loopnest/dashboard");
+      }
+    } catch (err: any) {
+      setError(friendlyError(err.code));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSignUp = async () => {
+    setError("");
+    setInfo("");
+    setBusy(true);
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      await sendEmailVerification(result.user);
+      setInfo("Account created! Check your email to verify before logging in.");
+      setMode("signin");
+    } catch (err: any) {
+      setError(friendlyError(err.code));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
-    login(email.trim());
-    navigate("/loopnest/dashboard");
+    if (mode === "signin") {
+      handleSignIn();
+    } else {
+      handleSignUp();
+    }
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "0.65rem 0.75rem",
+    borderRadius: "8px",
+    border: "1px solid #ddd",
+    fontSize: "0.9rem",
+    boxSizing: "border-box",
+    outline: "none",
   };
 
   return (
@@ -59,8 +140,42 @@ export default function LoginPage() {
             marginBottom: "2rem",
           }}
         >
-          Create Interactive Games
+          {mode === "signin" ? "Sign in to continue" : "Create your account"}
         </p>
+
+        {error && (
+          <div
+            style={{
+              background: "#fef2f2",
+              color: "#dc2626",
+              padding: "0.6rem 0.75rem",
+              borderRadius: "8px",
+              fontSize: "0.8rem",
+              marginBottom: "1rem",
+              border: "1px solid #fecaca",
+            }}
+            data-testid="login-error"
+          >
+            {error}
+          </div>
+        )}
+
+        {info && (
+          <div
+            style={{
+              background: "#eff6ff",
+              color: "#2563eb",
+              padding: "0.6rem 0.75rem",
+              borderRadius: "8px",
+              fontSize: "0.8rem",
+              marginBottom: "1rem",
+              border: "1px solid #bfdbfe",
+            }}
+            data-testid="login-info"
+          >
+            {info}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           <div>
@@ -76,15 +191,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              style={{
-                width: "100%",
-                padding: "0.65rem 0.75rem",
-                borderRadius: "8px",
-                border: "1px solid #ddd",
-                fontSize: "0.9rem",
-                boxSizing: "border-box",
-                outline: "none",
-              }}
+              style={inputStyle}
               data-testid="input-loopnest-email"
             />
           </div>
@@ -101,16 +208,8 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password"
-              style={{
-                width: "100%",
-                padding: "0.65rem 0.75rem",
-                borderRadius: "8px",
-                border: "1px solid #ddd",
-                fontSize: "0.9rem",
-                boxSizing: "border-box",
-                outline: "none",
-              }}
+              placeholder={mode === "signup" ? "At least 6 characters" : "Enter password"}
+              style={inputStyle}
               data-testid="input-loopnest-password"
             />
           </div>
@@ -130,11 +229,16 @@ export default function LoginPage() {
             }}
             data-testid="button-loopnest-signin"
           >
-            Sign In
+            {busy ? "Please wait..." : mode === "signin" ? "Sign In" : "Create Account"}
           </button>
 
           <button
             type="button"
+            onClick={() => {
+              setMode(mode === "signin" ? "signup" : "signin");
+              setError("");
+              setInfo("");
+            }}
             style={{
               padding: "0.6rem",
               borderRadius: "8px",
@@ -145,9 +249,9 @@ export default function LoginPage() {
               fontSize: "0.85rem",
               cursor: "pointer",
             }}
-            data-testid="button-loopnest-create-account"
+            data-testid="button-loopnest-toggle-mode"
           >
-            Create Account
+            {mode === "signin" ? "Create Account" : "Back to Sign In"}
           </button>
         </form>
       </div>

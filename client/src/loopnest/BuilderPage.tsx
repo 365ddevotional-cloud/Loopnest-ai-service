@@ -5,15 +5,16 @@ import CreateGamePage from "@/game-engine/CreateGamePage";
 
 export default function BuilderPage() {
   const [, navigate] = useLocation();
-  const { user } = useLoopNestAuth();
+  const { user, loading, emailVerified } = useLoopNestAuth();
 
   useEffect(() => {
-    if (!user) {
+    if (loading) return;
+    if (!user || !emailVerified) {
       navigate("/loopnest/login");
     }
-  }, [user, navigate]);
+  }, [user, loading, emailVerified, navigate]);
 
-  if (!user) return null;
+  if (loading || !user || !emailVerified) return null;
 
   return (
     <div data-testid="loopnest-builder">
