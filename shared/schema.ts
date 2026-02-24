@@ -1,4 +1,4 @@
-import { pgTable, text, serial, date, timestamp, boolean, integer, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, date, timestamp, boolean, integer, unique, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -340,3 +340,24 @@ export const insertSundaySchoolLessonSchema = createInsertSchema(sundaySchoolLes
 
 export type SundaySchoolLesson = typeof sundaySchoolLessons.$inferSelect;
 export type InsertSundaySchoolLesson = z.infer<typeof insertSundaySchoolLessonSchema>;
+
+export const games = pgTable("games", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description"),
+  type: text("type").notNull(),
+  isActive: boolean("is_active").default(true),
+  themeConfig: jsonb("theme_config").$type<Record<string, any>>(),
+  musicFile: text("music_file"),
+  settings: jsonb("settings").$type<Record<string, any>>(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertGameSchema = createInsertSchema(games).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type Game = typeof games.$inferSelect;
+export type InsertGame = z.infer<typeof insertGameSchema>;
