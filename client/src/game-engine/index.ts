@@ -1,4 +1,5 @@
 export { default as GameEngine } from "./GameEngine";
+export { default as GamePage } from "./GamePage";
 export { GameAudioManager } from "./GameAudioManager";
 export { GameThemeManager } from "./GameThemeManager";
 export { GAME_REGISTRY, getGameConfig, getGameByRoute } from "./GameRegistry";
