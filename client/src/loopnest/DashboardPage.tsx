@@ -1,10 +1,75 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useLoopNestAuth } from "./AuthContext";
+
+type PlanTier = "FREE" | "PRO" | "STUDIO";
+
+const plans: {
+  tier: PlanTier;
+  label: string;
+  color: string;
+  bg: string;
+  border: string;
+  features: string[];
+}[] = [
+  {
+    tier: "FREE",
+    label: "Free",
+    color: "#6b7280",
+    bg: "#f9fafb",
+    border: "#e5e7eb",
+    features: ["3 Saved Games", "Watermark on games", "No export"],
+  },
+  {
+    tier: "PRO",
+    label: "Pro",
+    color: "#2563eb",
+    bg: "#eff6ff",
+    border: "#bfdbfe",
+    features: ["Unlimited Saves", "No Watermark", "Export JSON"],
+  },
+  {
+    tier: "STUDIO",
+    label: "Studio",
+    color: "#b45309",
+    bg: "#fffbeb",
+    border: "#fde68a",
+    features: [
+      "Everything in Pro",
+      "Standalone Export",
+      "Public Publish",
+      "Analytics (Coming Soon)",
+    ],
+  },
+];
+
+function PlanBadge({ tier }: { tier: PlanTier }) {
+  const plan = plans.find((p) => p.tier === tier)!;
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        padding: "0.2rem 0.75rem",
+        borderRadius: "999px",
+        fontSize: "0.75rem",
+        fontWeight: 700,
+        letterSpacing: "0.04em",
+        color: "#fff",
+        background: plan.color,
+      }}
+      data-testid="badge-current-plan"
+    >
+      {plan.label.toUpperCase()}
+    </span>
+  );
+}
 
 export default function DashboardPage() {
   const [, navigate] = useLocation();
   const { user, logout } = useLoopNestAuth();
+  const [currentPlan, setCurrentPlan] = useState<PlanTier>(() => {
+    return (localStorage.getItem("loopnest_plan") as PlanTier) || "FREE";
+  });
 
   useEffect(() => {
     if (!user) {
@@ -13,6 +78,11 @@ export default function DashboardPage() {
   }, [user, navigate]);
 
   if (!user) return null;
+
+  const switchPlan = (tier: PlanTier) => {
+    localStorage.setItem("loopnest_plan", tier);
+    window.location.reload();
+  };
 
   const btnStyle: React.CSSProperties = {
     width: "100%",
@@ -34,7 +104,7 @@ export default function DashboardPage() {
       }}
       data-testid="loopnest-dashboard"
     >
-      <div style={{ maxWidth: "500px", margin: "0 auto" }}>
+      <div style={{ maxWidth: "600px", margin: "0 auto" }}>
         <h1
           style={{ fontSize: "1.5rem", fontWeight: 800, color: "#333", marginBottom: "0.25rem" }}
           data-testid="loopnest-dashboard-title"
@@ -45,7 +115,7 @@ export default function DashboardPage() {
           Welcome, {user.email}
         </p>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "2.5rem" }}>
           <button
             onClick={() => navigate("/loopnest/builder")}
             style={{
@@ -71,6 +141,10 @@ export default function DashboardPage() {
           </button>
 
           <button
+            onClick={() => {
+              const el = document.getElementById("plan-section");
+              if (el) el.scrollIntoView({ behavior: "smooth" });
+            }}
             style={{
               ...btnStyle,
               background: "#fff",
@@ -99,6 +173,115 @@ export default function DashboardPage() {
           >
             Logout
           </button>
+        </div>
+
+        <div id="plan-section">
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem" }}>
+            <h2 style={{ fontSize: "1.15rem", fontWeight: 700, color: "#333", margin: 0 }}>
+              Your Plan
+            </h2>
+            <PlanBadge tier={currentPlan} />
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+              gap: "1rem",
+            }}
+            data-testid="plan-cards-grid"
+          >
+            {plans.map((plan) => {
+              const isCurrent = currentPlan === plan.tier;
+              return (
+                <div
+                  key={plan.tier}
+                  style={{
+                    background: "#fff",
+                    border: isCurrent ? `2px solid ${plan.color}` : `1px solid ${plan.border}`,
+                    borderRadius: "14px",
+                    padding: "1.25rem 1rem",
+                    boxShadow: isCurrent
+                      ? `0 0 0 3px ${plan.color}22`
+                      : "0 1px 4px rgba(0,0,0,0.06)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.75rem",
+                    transition: "box-shadow 0.2s, border-color 0.2s",
+                  }}
+                  data-testid={`plan-card-${plan.tier.toLowerCase()}`}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        fontSize: "1rem",
+                        color: plan.color,
+                      }}
+                    >
+                      {plan.label}
+                    </span>
+                    {isCurrent && (
+                      <span
+                        style={{
+                          fontSize: "0.65rem",
+                          padding: "0.1rem 0.4rem",
+                          borderRadius: "999px",
+                          background: plan.bg,
+                          color: plan.color,
+                          fontWeight: 600,
+                        }}
+                      >
+                        Active
+                      </span>
+                    )}
+                  </div>
+
+                  <ul
+                    style={{
+                      margin: 0,
+                      padding: "0 0 0 1.1rem",
+                      fontSize: "0.8rem",
+                      color: "#555",
+                      lineHeight: "1.6",
+                      flex: 1,
+                    }}
+                  >
+                    {plan.features.map((f, i) => (
+                      <li key={i}>{f}</li>
+                    ))}
+                  </ul>
+
+                  <button
+                    disabled={isCurrent}
+                    onClick={() => switchPlan(plan.tier)}
+                    style={{
+                      width: "100%",
+                      padding: "0.55rem",
+                      borderRadius: "8px",
+                      border: isCurrent ? "1px solid #d1d5db" : "none",
+                      background: isCurrent ? "#f3f4f6" : plan.color,
+                      color: isCurrent ? "#9ca3af" : "#fff",
+                      fontWeight: 600,
+                      fontSize: "0.8rem",
+                      cursor: isCurrent ? "default" : "pointer",
+                      opacity: isCurrent ? 0.7 : 1,
+                      transition: "opacity 0.2s",
+                    }}
+                    data-testid={`button-plan-${plan.tier.toLowerCase()}`}
+                  >
+                    {isCurrent
+                      ? "Current Plan"
+                      : plans.indexOf(plan) < plans.findIndex((p) => p.tier === currentPlan)
+                        ? "Downgrade"
+                        : plan.tier === "PRO"
+                          ? "Upgrade to Pro"
+                          : "Upgrade to Studio"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

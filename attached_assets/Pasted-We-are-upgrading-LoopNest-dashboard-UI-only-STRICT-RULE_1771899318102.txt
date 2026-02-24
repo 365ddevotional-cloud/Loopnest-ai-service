@@ -1,0 +1,107 @@
+We are upgrading LoopNest dashboard UI only.
+
+STRICT RULES:
+- Do NOT modify auth logic
+- Do NOT modify routing
+- Do NOT add Stripe
+- Do NOT change builder logic
+- UI only enhancement
+- Keep it lightweight and mobile responsive
+
+GOAL:
+Add Plan Tier UI to /loopnest/dashboard
+
+====================================
+1. ADD MOCK PLAN STATE
+====================================
+
+Inside dashboard component, define:
+
+const currentPlan = localStorage.getItem("loopnest_plan") || "FREE";
+
+====================================
+2. ADD PLAN CARD SECTION
+====================================
+
+Below existing dashboard buttons, add a new section:
+
+Title: "Your Plan"
+
+Display current plan badge:
+- FREE (gray)
+- PRO (blue)
+- STUDIO (gold)
+
+Then render 3 plan cards:
+
+------------------------------------
+FREE
+------------------------------------
+• 3 Saved Games
+• Watermark
+• No Export
+Button:
+If currentPlan === "FREE":
+   disabled button "Current Plan"
+Else:
+   button "Downgrade"
+
+------------------------------------
+PRO
+------------------------------------
+• Unlimited Saves
+• No Watermark
+• Export JSON
+Button:
+If currentPlan === "PRO":
+   disabled button "Current Plan"
+Else:
+   button "Upgrade to Pro"
+
+------------------------------------
+STUDIO
+------------------------------------
+• Everything in Pro
+• Standalone Export
+• Public Publish
+• Analytics (Coming Soon)
+Button:
+If currentPlan === "STUDIO":
+   disabled button "Current Plan"
+Else:
+   button "Upgrade to Studio"
+
+====================================
+3. MOCK PLAN SWITCH
+====================================
+
+Each upgrade/downgrade button should:
+
+localStorage.setItem("loopnest_plan", "FREE" | "PRO" | "STUDIO");
+window.location.reload();
+
+No billing.
+No backend.
+
+====================================
+4. STYLING
+====================================
+
+- Use simple card div
+- Light shadow
+- Padding
+- Rounded corners
+- Responsive grid
+- No heavy CSS frameworks
+- Keep clean and modern
+
+====================================
+5. VERIFY
+====================================
+
+Confirm:
+- Login still works
+- Dashboard loads
+- Plan changes persist after refresh
+- Builder still accessible
+- No regression to devotional or interactive games
