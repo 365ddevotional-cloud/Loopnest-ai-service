@@ -591,6 +591,7 @@ function AdminArchive() {
 }
 
 function PrayerInbox() {
+  const { toast } = useToast();
   const [selectedRequest, setSelectedRequest] = useState<PrayerRequest | null>(null);
   const [replyMessage, setReplyMessage] = useState("");
   const [filter, setFilter] = useState("all");
@@ -619,15 +620,20 @@ function PrayerInbox() {
 
   const sendReplyMutation = useMutation({
     mutationFn: async ({ requestId, message }: { requestId: number; message: string }) => {
-      return apiRequest("POST", `/api/prayer-requests/${requestId}/thread`, {
+      const res = await apiRequest("POST", `/api/prayer-requests/${requestId}/thread`, {
         message,
         senderType: "admin",
       });
+      return await res.json();
     },
     onSuccess: () => {
       setReplyMessage("");
       queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests"] });
       queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests", selectedRequest?.id, "thread"] });
+      toast({ title: "Reply sent successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to send reply", description: error.message, variant: "destructive" });
     },
   });
 
@@ -932,6 +938,7 @@ function PrayerInbox() {
                 />
                 <div className="flex items-center gap-2 flex-wrap">
                   <Button
+                    type="button"
                     onClick={handleSendReply}
                     disabled={sendReplyMutation.isPending || !replyMessage.trim()}
                     data-testid="button-send-reply"
