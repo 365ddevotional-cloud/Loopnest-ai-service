@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LoopNest Technical Audit Report</title>
+<style>
+@media print {
+  body { margin: 0; padding: 20px; }
+  .no-print { display: none !important; }
+  .page-break { page-break-before: always; }
+  table { page-break-inside: avoid; }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; color: #1a1a1a; line-height: 1.6; background: #fff; max-width: 900px; margin: 0 auto; padding: 40px 32px; }
+.no-print { position: fixed; top: 20px; right: 20px; z-index: 100; }
+.no-print button { padding: 12px 28px; background: #4a3c8a; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+.no-print button:hover { background: #3a2d6e; }
+.cover { text-align: center; padding: 60px 0 40px; border-bottom: 3px solid #4a3c8a; margin-bottom: 40px; }
+.cover h1 { font-size: 32px; font-weight: 800; color: #4a3c8a; margin-bottom: 8px; }
+.cover .subtitle { font-size: 18px; color: #666; margin-bottom: 24px; }
+.cover .meta { font-size: 14px; color: #999; }
+.cover .meta span { display: inline-block; margin: 0 12px; }
+h2 { font-size: 22px; font-weight: 700; color: #4a3c8a; margin: 36px 0 16px; padding-bottom: 8px; border-bottom: 2px solid #eee; }
+h3 { font-size: 16px; font-weight: 700; color: #333; margin: 20px 0 10px; }
+p, li { font-size: 14px; color: #333; }
+p { margin-bottom: 10px; }
+ul, ol { margin: 8px 0 16px 24px; }
+li { margin-bottom: 4px; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+th { background: #f5f3ff; color: #4a3c8a; font-weight: 700; text-align: left; padding: 10px 12px; border: 1px solid #e0dce8; }
+td { padding: 8px 12px; border: 1px solid #e8e8e8; vertical-align: top; }
+tr:nth-child(even) { background: #fafafa; }
+code { background: #f4f1fb; color: #4a3c8a; padding: 2px 6px; border-radius: 4px; font-size: 12.5px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; }
+pre { background: #1e1e2e; color: #cdd6f4; padding: 16px 20px; border-radius: 8px; overflow-x: auto; margin: 12px 0 20px; font-size: 12.5px; line-height: 1.5; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+.badge-none { background: #dcfce7; color: #166534; }
+.badge-easy { background: #dbeafe; color: #1e40af; }
+.badge-yes { background: #dcfce7; color: #166534; }
+.badge-no { background: #fee2e2; color: #991b1b; }
+.badge-partial { background: #fef3c7; color: #92400e; }
+.verdict { background: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; padding: 20px 24px; margin: 24px 0; }
+.verdict h3 { color: #166534; margin-top: 0; }
+.section-num { color: #4a3c8a; font-weight: 800; margin-right: 6px; }
+.file-tree { background: #1e1e2e; color: #cdd6f4; padding: 16px 20px; border-radius: 8px; margin: 12px 0 20px; font-size: 12.5px; line-height: 1.7; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; white-space: pre; overflow-x: auto; }
+.file-tree .folder { color: #89b4fa; }
+.file-tree .file { color: #a6e3a1; }
+.file-tree .comment { color: #6c7086; }
+.toc { background: #f8f6ff; border-radius: 12px; padding: 24px 28px; margin: 24px 0 36px; }
+.toc h3 { color: #4a3c8a; margin: 0 0 12px; font-size: 16px; }
+.toc ol { margin: 0; padding-left: 20px; }
+.toc li { margin-bottom: 6px; font-size: 14px; }
+.toc a { color: #4a3c8a; text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="no-print">
+  <button onclick="window.print()">Download as PDF</button>
+</div>
+
+<div class="cover">
+  <h1>LoopNest Game Module</h1>
+  <div class="subtitle">Full Technical Audit Report</div>
+  <div class="meta">
+    <span>Project: 365 Daily Devotional</span>
+    <span>|</span>
+    <span>Date: February 25, 2026</span>
+    <span>|</span>
+    <span>Classification: Internal</span>
+  </div>
+</div>
+
+<div class="toc">
+  <h3>Table of Contents</h3>
+  <ol>
+    <li><a href="#s1">All Files Related to LoopNest / Tap The Promise</a></li>
+    <li><a href="#s2">Folder Structure</a></li>
+    <li><a href="#s3">React Components, Routes, and Pages</a></li>
+    <li><a href="#s4">Backend Logic</a></li>
+    <li><a href="#s5">Firebase / Database Connections</a></li>
+    <li><a href="#s6">Authentication Dependencies</a></li>
+    <li><a href="#s7">Environment Variables</a></li>
+    <li><a href="#s8">Music / Audio Files</a></li>
+    <li><a href="#s9">Admin-Only Controls</a></li>
+    <li><a href="#s10">Standalone Extraction Feasibility</a></li>
+  </ol>
+</div>
+
+<h2 id="s1"><span class="section-num">1.</span> All Files Related to LoopNest / Tap The Promise</h2>
+
+<h3>LoopNest App Shell (6 files)</h3>
+<pre>client/src/loopnest/firebase.ts
+client/src/loopnest/AuthContext.tsx
+client/src/loopnest/LoginPage.tsx
+client/src/loopnest/DashboardPage.tsx
+client/src/loopnest/BuilderPage.tsx
+client/src/loopnest/LoopNestRoot.tsx</pre>
+
+<h3>Game Engine (9 files)</h3>
+<pre>client/src/game-engine/GameTypes.ts
+client/src/game-engine/GameRegistry.ts
+client/src/game-engine/GameEngine.tsx
+client/src/game-engine/GamePage.tsx
+client/src/game-engine/GamesHub.tsx
+client/src/game-engine/CreateGamePage.tsx
+client/src/game-engine/GameAudioManager.ts
+client/src/game-engine/GameThemeManager.ts
+client/src/game-engine/index.ts</pre>
+
+<h3>Interactive Wrappers (2 files)</h3>
+<pre>client/src/interactive/TapThePromise.tsx
+client/src/interactive/GameConsoleIcon.tsx</pre>
+
+<h3>Audio Asset</h3>
+<pre>client/public/audio/tap-theme.mp3   (4.5 MB — primary, served at /audio/tap-theme.mp3)
+public/audio/tap-theme.mp3          (duplicate copy)</pre>
+
+<h3>CSS</h3>
+<pre>client/src/index.css — 113 lines of .ttp-* CSS rules (starting at line 232)</pre>
+
+<p><strong>Total: 18 source files + 1 audio asset + 113 lines of shared CSS</strong></p>
+
+<h2 id="s2" class="page-break"><span class="section-num">2.</span> Folder Structure</h2>
+
+<div class="file-tree"><span class="folder">client/src/</span>
+├── <span class="folder">loopnest/</span>                     <span class="comment">← LoopNest app shell (auth, dashboard, builder)</span>
+│   ├── <span class="file">firebase.ts</span>               <span class="comment">← Firebase SDK config</span>
+│   ├── <span class="file">AuthContext.tsx</span>            <span class="comment">← Auth provider + hook (useLoopNestAuth)</span>
+│   ├── <span class="file">LoginPage.tsx</span>             <span class="comment">← Email/password login + signup</span>
+│   ├── <span class="file">DashboardPage.tsx</span>         <span class="comment">← Plan tiers (FREE/PRO/STUDIO) + navigation</span>
+│   ├── <span class="file">BuilderPage.tsx</span>           <span class="comment">← Wraps CreateGamePage with auth guard</span>
+│   └── <span class="file">LoopNestRoot.tsx</span>          <span class="comment">← Auto-redirect based on auth state</span>
+│
+├── <span class="folder">game-engine/</span>                  <span class="comment">← Reusable game engine framework</span>
+│   ├── <span class="file">GameTypes.ts</span>              <span class="comment">← Interfaces, constants, utility functions</span>
+│   ├── <span class="file">GameRegistry.ts</span>           <span class="comment">← Hardcoded game configs (2 games registered)</span>
+│   ├── <span class="file">GameEngine.tsx</span>            <span class="comment">← Core gameplay: landing → playing → results</span>
+│   ├── <span class="file">GamePage.tsx</span>              <span class="comment">← Route-based game loader (reads from registry)</span>
+│   ├── <span class="file">GamesHub.tsx</span>              <span class="comment">← Game listing page (/interactive)</span>
+│   ├── <span class="file">CreateGamePage.tsx</span>        <span class="comment">← User-facing game builder (preview + share)</span>
+│   ├── <span class="file">GameAudioManager.ts</span>       <span class="comment">← HTMLAudioElement wrapper with subscribe pattern</span>
+│   ├── <span class="file">GameThemeManager.ts</span>       <span class="comment">← Color theme rotation manager</span>
+│   └── <span class="file">index.ts</span>                  <span class="comment">← Barrel exports</span>
+│
+├── <span class="folder">interactive/</span>                  <span class="comment">← Legacy wrapper + icon</span>
+│   ├── <span class="file">TapThePromise.tsx</span>         <span class="comment">← Standalone wrapper (DEAD CODE — unused)</span>
+│   └── <span class="file">GameConsoleIcon.tsx</span>       <span class="comment">← SVG game controller icon used in Header</span>
+│
+<span class="folder">client/public/audio/</span>
+    └── <span class="file">tap-theme.mp3</span>             <span class="comment">← 4.5 MB background music file</span></div>
+
+<h2 id="s3"><span class="section-num">3.</span> React Components, Routes, and Pages</h2>
+
+<h3>Routes registered in App.tsx (lines 85–91)</h3>
+<table>
+  <tr><th>Route</th><th>Component</th><th>Auth Required?</th></tr>
+  <tr><td><code>/interactive</code></td><td><code>GamesHub</code></td><td><span class="badge badge-no">NO</span></td></tr>
+  <tr><td><code>/interactive/create</code></td><td><code>CreateGamePage</code></td><td><span class="badge badge-no">NO</span></td></tr>
+  <tr><td><code>/interactive/:gameSlug</code></td><td><code>GamePage</code></td><td><span class="badge badge-no">NO</span></td></tr>
+  <tr><td><code>/loopnest</code></td><td><code>LoopNestRoot</code></td><td><span class="badge badge-partial">REDIRECT</span></td></tr>
+  <tr><td><code>/loopnest/login</code></td><td><code>LoopNestLogin</code></td><td><span class="badge badge-no">NO</span></td></tr>
+  <tr><td><code>/loopnest/dashboard</code></td><td><code>LoopNestDashboard</code></td><td><span class="badge badge-yes">YES (Firebase)</span></td></tr>
+  <tr><td><code>/loopnest/builder</code></td><td><code>LoopNestBuilder</code></td><td><span class="badge badge-yes">YES (Firebase)</span></td></tr>
+</table>
+
+<h3>Route Wrapping Logic (App.tsx lines 107–116)</h3>
+<ul>
+  <li>All <code>/loopnest/*</code> routes are wrapped in <code>&lt;LoopNestAuthProvider&gt;</code> providing Firebase auth context.</li>
+  <li>All <code>/interactive/*</code> and <code>/loopnest/*</code> routes render <strong>without</strong> the main app Header/Footer (classified as "public routes").</li>
+</ul>
+
+<h3>Components Referenced from the Main 365 App</h3>
+<table>
+  <tr><th>File</th><th>Line</th><th>What It References</th></tr>
+  <tr><td><code>Header.tsx</code></td><td>4</td><td>Imports <code>GameConsoleIcon</code> from <code>@/interactive/GameConsoleIcon</code></td></tr>
+  <tr><td><code>Header.tsx</code></td><td>310</td><td>Sidebar nav link to <code>/interactive/tap-the-promise</code></td></tr>
+  <tr><td><code>Home.tsx</code></td><td>76</td><td>Homepage link to <code>/interactive/tap-the-promise</code> with <code>GameConsoleIcon</code></td></tr>
+</table>
+
+<h3>Dead Code</h3>
+<p><code>client/src/interactive/TapThePromise.tsx</code> is a standalone wrapper that duplicates what <code>GamePage.tsx</code> already handles via the registry. It is not referenced by any route. This is dead code.</p>
+
+<h2 id="s4" class="page-break"><span class="section-num">4.</span> Backend Logic</h2>
+
+<p><strong>None.</strong> The entire game system is 100% client-side.</p>
+
+<ul>
+  <li>Zero API endpoints in <code>server/routes.ts</code> for games, LoopNest, or interactive features.</li>
+  <li>Zero database tables in <code>shared/schema.ts</code> for game data.</li>
+  <li>No server-side game state, scores, or user-game associations.</li>
+</ul>
+
+<p>All game content is hardcoded in <code>GameRegistry.ts</code>. Draft saving uses <code>localStorage</code> key <code>"gameBuilderDraft"</code>. Plan tier uses <code>localStorage</code> key <code>"loopnest_plan"</code>.</p>
+
+<h2 id="s5"><span class="section-num">5.</span> Firebase / Database Connections</h2>
+
+<h3>Firebase (LoopNest only)</h3>
+<ul>
+  <li><code>client/src/loopnest/firebase.ts</code> initializes a Firebase app using 4 environment variables.</li>
+  <li>Uses <strong>Firebase Authentication only</strong> — specifically <code>getAuth()</code>.</li>
+  <li>Auth methods used: <code>signInWithEmailAndPassword</code>, <code>createUserWithEmailAndPassword</code>, <code>sendEmailVerification</code>, <code>onAuthStateChanged</code>, <code>signOut</code>.</li>
+  <li>No Firestore, no Realtime Database, no Firebase Storage, no Cloud Functions.</li>
+</ul>
+
+<h3>PostgreSQL</h3>
+<p>The game module has <strong>zero connection</strong> to the project's PostgreSQL database. No schema tables, no queries, no ORM usage.</p>
+
+<h2 id="s6"><span class="section-num">6.</span> Authentication Dependencies</h2>
+
+<table>
+  <tr><th>Component</th><th>Auth System</th><th>Details</th></tr>
+  <tr><td><code>/interactive/*</code> routes</td><td><span class="badge badge-none">NONE</span></td><td>Fully public, no auth check</td></tr>
+  <tr><td><code>/loopnest/login</code></td><td>Firebase Email/Password</td><td>Sign in + sign up + email verification</td></tr>
+  <tr><td><code>/loopnest/dashboard</code></td><td>Firebase via <code>useLoopNestAuth()</code></td><td>Redirects to login if no user or unverified email</td></tr>
+  <tr><td><code>/loopnest/builder</code></td><td>Firebase via <code>useLoopNestAuth()</code></td><td>Same auth guard as dashboard</td></tr>
+  <tr><td><code>/loopnest</code> (root)</td><td>Firebase via <code>useLoopNestAuth()</code></td><td>Auto-redirects: verified → dashboard, else → login</td></tr>
+</table>
+
+<p>The LoopNest auth system is <strong>completely independent</strong> from the main 365 app's admin auth (which uses session cookies via Express). They share zero code.</p>
+
+<h2 id="s7" class="page-break"><span class="section-num">7.</span> Environment Variables</h2>
+
+<p>Used exclusively by <code>client/src/loopnest/firebase.ts</code>:</p>
+
+<table>
+  <tr><th>Variable</th><th>Purpose</th></tr>
+  <tr><td><code>VITE_FIREBASE_API_KEY</code></td><td>Firebase API key</td></tr>
+  <tr><td><code>VITE_FIREBASE_AUTH_DOMAIN</code></td><td>Firebase auth domain (fallback: <code>{projectId}.firebaseapp.com</code>)</td></tr>
+  <tr><td><code>VITE_FIREBASE_PROJECT_ID</code></td><td>Firebase project ID</td></tr>
+  <tr><td><code>VITE_FIREBASE_APP_ID</code></td><td>Firebase app ID</td></tr>
+</table>
+
+<p>All are <code>VITE_</code>-prefixed (client-side only). No server-side env vars are used by the game module.</p>
+
+<h2 id="s8"><span class="section-num">8.</span> Music / Audio Files</h2>
+
+<table>
+  <tr><th>File</th><th>Size</th><th>Usage</th></tr>
+  <tr><td><code>client/public/audio/tap-theme.mp3</code></td><td>4.5 MB</td><td>Background music for all games</td></tr>
+  <tr><td><code>public/audio/tap-theme.mp3</code></td><td>4.5 MB</td><td>Duplicate (likely from build/copy)</td></tr>
+</table>
+
+<p>Referenced by:</p>
+<ul>
+  <li><code>GameRegistry.ts</code> lines 90, 99: <code>audioTrack: "/audio/tap-theme.mp3"</code> for both registered games</li>
+  <li><code>CreateGamePage.tsx</code> line 328: used in user-created game previews</li>
+  <li><code>GameAudioManager.ts</code>: manages playback via <code>HTMLAudioElement</code> with <code>playsinline</code> attribute, loop enabled, volume 0.3</li>
+</ul>
+
+<h2 id="s9"><span class="section-num">9.</span> Admin-Only Controls</h2>
+
+<p><strong>None exist for game creation.</strong> The admin dashboard (<code>/admin</code>) has zero references to games, LoopNest, or interactive content.</p>
+
+<ul>
+  <li>The <code>CreateGamePage</code> at <code>/interactive/create</code> is <strong>publicly accessible</strong> — anyone can use it without authentication. It creates temporary in-browser games using localStorage drafts and base64-encoded share links. No server persistence.</li>
+  <li>The LoopNest builder at <code>/loopnest/builder</code> requires Firebase authentication but simply wraps the same <code>CreateGamePage</code> component with an auth guard and a "Back to Dashboard" button.</li>
+</ul>
+
+<h2 id="s10" class="page-break"><span class="section-num">10.</span> Standalone Extraction Feasibility</h2>
+
+<div class="verdict">
+  <h3>Verdict: Safe to Extract</h3>
+  <p>The LoopNest/game module can be cleanly separated from the 365 Daily Devotional app with minimal effort and <strong>zero functional breakage</strong> to the devotional app.</p>
+</div>
+
+<h3>Dependencies on the 365 App (things to sever)</h3>
+
+<table>
+  <tr><th>Dependency</th><th>File</th><th>What It Imports</th><th>Severity</th></tr>
+  <tr>
+    <td>ThemeContext</td>
+    <td><code>GamePage.tsx</code>, <code>GamesHub.tsx</code>, <code>CreateGamePage.tsx</code></td>
+    <td><code>useTheme()</code> → <code>resolvedTheme</code></td>
+    <td><span class="badge badge-easy">EASY</span></td>
+  </tr>
+  <tr>
+    <td>Wouter routing</td>
+    <td>All pages</td>
+    <td><code>useLocation</code>, <code>useRoute</code>, <code>Link</code></td>
+    <td><span class="badge badge-easy">EASY</span></td>
+  </tr>
+  <tr>
+    <td>CSS in index.css</td>
+    <td><code>GameEngine.tsx</code></td>
+    <td>113 <code>.ttp-*</code> class rules</td>
+    <td><span class="badge badge-easy">EASY</span></td>
+  </tr>
+  <tr>
+    <td>Header link</td>
+    <td><code>Header.tsx</code> line 310</td>
+    <td>Link to <code>/interactive/tap-the-promise</code></td>
+    <td><span class="badge badge-easy">EASY</span></td>
+  </tr>
+  <tr>
+    <td>Home page link</td>
+    <td><code>Home.tsx</code> line 76</td>
+    <td>Link to <code>/interactive/tap-the-promise</code></td>
+    <td><span class="badge badge-easy">EASY</span></td>
+  </tr>
+  <tr>
+    <td>GameConsoleIcon</td>
+    <td><code>Header.tsx</code> line 4</td>
+    <td>SVG icon import</td>
+    <td><span class="badge badge-easy">EASY</span></td>
+  </tr>
+</table>
+
+<h3>What LoopNest/Games Do NOT Depend On</h3>
+<ul>
+  <li>No PostgreSQL / Drizzle ORM</li>
+  <li>No Express server / API routes</li>
+  <li>No TanStack Query</li>
+  <li>No shared schema types</li>
+  <li>No devotional data, Bible data, or Sunday School data</li>
+  <li>No offlineDb / IndexedDB sync</li>
+  <li>No notification system</li>
+  <li>No service worker logic</li>
+  <li>No admin auth system</li>
+</ul>
+
+<h3>Extraction Steps</h3>
+<ol>
+  <li>Copy <code>client/src/loopnest/</code>, <code>client/src/game-engine/</code>, <code>client/src/interactive/</code> into a new project</li>
+  <li>Copy <code>client/public/audio/tap-theme.mp3</code></li>
+  <li>Extract the 113 <code>.ttp-*</code> CSS lines from <code>index.css</code> into a standalone file</li>
+  <li>Replace <code>useTheme()</code> with a local theme provider or hardcoded theme</li>
+  <li>Remove 2 links from <code>Header.tsx</code> and 1 from <code>Home.tsx</code> in the 365 app</li>
+  <li>Remove LoopNest route registrations (lines 85–91) and imports (lines 49–54) from <code>App.tsx</code></li>
+  <li>Remove the <code>LoopNestAuthProvider</code> wrapper logic (lines 110–115) from <code>App.tsx</code></li>
+</ol>
+
+<h3>Impact on 365 App After Extraction</h3>
+<p><strong>Zero functional breakage.</strong> The devotional app, Bible reader, Sunday School, prayer system, offline sync, and admin dashboard have zero code dependencies on the game module. The only visible change would be the removal of the game controller icon in the sidebar nav and the game link on the homepage.</p>
+
+<div style="margin-top: 60px; padding-top: 20px; border-top: 2px solid #eee; text-align: center; color: #999; font-size: 12px;">
+  <p>LoopNest Technical Audit Report &mdash; 365 Daily Devotional Project &mdash; February 25, 2026</p>
+  <p>Generated for internal use. All file paths and line numbers reference the project codebase at time of audit.</p>
+</div>
+
+</body>
+</html>
