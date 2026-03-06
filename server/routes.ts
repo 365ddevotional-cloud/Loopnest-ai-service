@@ -1277,6 +1277,56 @@ export async function registerRoutes(
     res.json(inquiries);
   });
 
+  app.post("/api/create-donation-session", async (req, res) => {
+    try {
+      const stripeKey = process.env.STRIPE_SECRET_KEY;
+      if (!stripeKey) {
+        return res.status(503).json({ message: "Card payments are not currently available. Please use PayPal or Cash App." });
+      }
+
+      const { amount, donorName, note, purpose } = req.body;
+
+      if (!amount || isNaN(Number(amount)) || Number(amount) < 1) {
+        return res.status(400).json({ message: "Please enter a valid donation amount." });
+      }
+
+      const stripe = (await import("stripe")).default;
+      const stripeClient = new stripe(stripeKey);
+
+      const amountCents = Math.round(Number(amount) * 100);
+      const description = `${purpose || "General Ministry Support"}${donorName ? ` - ${donorName}` : ""}${note ? ` - ${note}` : ""}`;
+
+      const protocol = req.headers["x-forwarded-proto"] || "https";
+      const host = req.headers.host;
+      const baseUrl = `${protocol}://${host}`;
+
+      const session = await stripeClient.checkout.sessions.create({
+        payment_method_types: ["card"],
+        mode: "payment",
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: "Ministry Donation",
+                description,
+              },
+              unit_amount: amountCents,
+            },
+            quantity: 1,
+          },
+        ],
+        success_url: `${baseUrl}/donation-success`,
+        cancel_url: `${baseUrl}/donate`,
+      });
+
+      res.json({ checkoutUrl: session.url });
+    } catch (err: any) {
+      console.error("Stripe donation error:", err.message || err);
+      res.status(500).json({ message: "Payment could not be started. Please try again." });
+    }
+  });
+
   // Seed Data if empty
   await seedDatabase();
   await seedAutoReplyTemplates();

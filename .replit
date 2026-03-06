@@ -41,3 +41,11 @@ waitForPort = 5000
 
 [agent]
 integrations = ["sendgrid:1.0.0", "javascript_object_storage:2.0.0", "javascript_openai_ai_integrations:2.0.0"]
+
+[userenv]
+
+[userenv.shared]
+PAYPAL_DONATION_LINK = "https://www.paypal.com/donate/?hosted_button_id=Y9PAZK36FKT8L"
+CASHTAG = "$MuzAfo"
+VITE_PAYPAL_DONATION_LINK = "https://www.paypal.com/donate/?hosted_button_id=Y9PAZK36FKT8L"
+VITE_CASHTAG = "$MuzAfo"

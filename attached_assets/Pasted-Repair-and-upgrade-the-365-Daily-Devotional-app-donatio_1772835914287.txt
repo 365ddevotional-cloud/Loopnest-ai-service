@@ -1,0 +1,297 @@
+Repair and upgrade the 365 Daily Devotional app donation system without breaking existing code.
+
+IMPORTANT RULES
+
+- Do NOT delete existing code  
+- Do NOT modify devotional content modules  
+- Do NOT modify authentication  
+- Do NOT modify navigation outside the donation section  
+- Only repair and enhance the donation system  
+- Ensure compliance with Google Play policies (donations only, not digital purchases)
+
+GOAL
+
+Implement a stable Support the Ministry donation system for the 365 Daily Devotional app with these payment options:
+
+PayPal donation link  
+Cash App donation link ($Cashtag)  
+Optional Stripe card payment  
+
+The donation system must work on both mobile and desktop.
+
+----------------------------------------------------
+
+PART 1 — AUDIT THE CURRENT DONATION SYSTEM
+
+Search the codebase for the following components:
+
+- Donate button handler  
+- donation routes  
+- donation modal component  
+- Stripe checkout logic  
+- PayPal donation link configuration  
+- Cash App payment link configuration  
+- donation API endpoints  
+
+Do NOT remove existing logic.
+
+Only repair broken routing or missing links.
+
+----------------------------------------------------
+
+PART 2 — FIX DONATE BUTTON ROUTING
+
+Current issue:
+
+Clicking Donate opens a blank page.
+
+Correct behavior must be:
+
+User taps Donate  
+→ Donation modal opens  
+→ Donation form appears
+
+The Donate button must NOT redirect to a blank route.
+
+It must open the donation modal component.
+
+----------------------------------------------------
+
+PART 3 — REPAIR CONTINUE TO PAYMENT BUTTON
+
+Current issue:
+
+The Continue to Payment button does nothing.
+
+Expected behavior:
+
+Continue to Payment  
+→ process donation amount  
+→ redirect to selected payment method.
+
+If Stripe exists:
+
+POST /api/create-donation-session
+
+Inputs
+
+amount  
+donorName  
+note  
+purpose
+
+Backend must create a Stripe Checkout session and return:
+
+checkoutUrl
+
+Frontend redirect:
+
+window.location.href = checkoutUrl
+
+If Stripe is not enabled, redirect directly to PayPal or Cash App.
+
+----------------------------------------------------
+
+PART 4 — RESTORE PAYMENT OPTIONS
+
+The donation modal must display the following payment options clearly:
+
+1. Donate with Card (Stripe Checkout if enabled)  
+2. Donate with PayPal  
+3. Donate with Cash App  
+
+Implementation:
+
+Stripe
+
+Redirect to Stripe Checkout session.
+
+PayPal
+
+Open external donation link stored in environment variable:
+
+PAYPAL_DONATION_LINK
+
+Example
+
+https://paypal.me/365dailydevotional
+
+Cash App
+
+Open external payment link
+
+https://cash.app/$CASHTAG
+
+Example
+
+https://cash.app/$365Devotional
+
+Do NOT hardcode payment secrets.
+
+Use environment variables.
+
+----------------------------------------------------
+
+PART 5 — CREATE DONATION MODAL UI
+
+Donation modal must include the following fields:
+
+Amount  
+Donor Name (optional)  
+Note (optional)  
+Donation Purpose (dropdown)
+
+Purpose dropdown options
+
+General Ministry Support  
+Daily Devotional Outreach  
+Youth Fellowship  
+Media Ministry  
+Tithe / Offering
+
+Buttons
+
+Cancel  
+Continue to Payment
+
+----------------------------------------------------
+
+PART 6 — ADD SUGGESTED DONATION BUTTONS
+
+Add quick donation options above the amount input.
+
+Buttons auto-fill the amount.
+
+$5  Help someone read today's devotional  
+$10 Sponsor devotionals for a week  
+$25 Support global outreach  
+$50 Help expand the ministry
+
+----------------------------------------------------
+
+PART 7 — FIX MOBILE RESPONSIVENESS
+
+Donation modal must be mobile friendly.
+
+Requirements
+
+max width 420px  
+width 95%  
+centered modal  
+responsive inputs  
+no horizontal scrolling  
+buttons stacked vertically  
+padding 16px
+
+Example CSS rules
+
+.modal {
+max-width: 420px;
+width: 95%;
+margin: auto;
+}
+
+.form-group {
+display: flex;
+flex-direction: column;
+gap: 8px;
+}
+
+.buttons {
+display: flex;
+flex-direction: column;
+gap: 10px;
+}
+
+----------------------------------------------------
+
+PART 8 — CREATE SUPPORT THE MINISTRY PAGE
+
+Add a new navigation item:
+
+Support the Ministry
+
+Inside this page include:
+
+Donate  
+PayPal Donation  
+Cash App Donation
+
+PayPal button behavior
+
+Open PAYPAL_DONATION_LINK
+
+Cash App button behavior
+
+Open https://cash.app/$CASHTAG
+
+----------------------------------------------------
+
+PART 9 — CREATE DONATION SUCCESS PAGE
+
+After successful Stripe payment redirect user to
+
+/donation-success
+
+Display message
+
+Thank you for supporting this ministry.
+
+Your generosity helps keep the devotional free for people around the world.
+
+God bless you richly.
+
+----------------------------------------------------
+
+PART 10 — ERROR SAFETY
+
+If Stripe or payment redirect fails:
+
+Display message
+
+Payment could not be started. Please try again.
+
+Log errors to server console but do not break the UI.
+
+----------------------------------------------------
+
+PART 11 — SECURITY
+
+Do NOT expose Stripe secret keys in frontend.
+
+Use environment variables for:
+
+PAYPAL_DONATION_LINK  
+CASHTAG  
+STRIPE_SECRET_KEY
+
+----------------------------------------------------
+
+PART 12 — FINAL TEST FLOW
+
+Verify the following flow works:
+
+Open Donations page  
+Tap Donate  
+Donation modal appears  
+Enter amount  
+Select payment method  
+
+PayPal opens PayPal donation page  
+Cash App opens Cash App link  
+Stripe redirects to Stripe checkout  
+
+After payment success redirect to donation-success page.
+
+----------------------------------------------------
+
+FINAL RESULT
+
+The 365 Daily Devotional app will now include a complete ministry support system with
+
+PayPal donation link  
+Cash App donation link  
+Optional Stripe card donations  
+Mobile friendly donation modal  
+Suggested donation buttons  
+Google Play compliant donation system.

@@ -28,6 +28,7 @@ import Admin from "@/pages/Admin";
 import AdminLogin from "@/pages/AdminLogin";
 import About from "@/pages/About";
 import Donate from "@/pages/Donate";
+import DonationSuccess from "@/pages/DonationSuccess";
 import PrayerCounseling from "@/pages/PrayerCounseling";
 import MyPrayerRequests from "@/pages/MyPrayerRequests";
 import SingleDevotional from "@/pages/SingleDevotional";
@@ -62,6 +63,7 @@ function Router() {
       <Route path="/admin" component={Admin} />
       <Route path="/about" component={About} />
       <Route path="/donate" component={Donate} />
+      <Route path="/donation-success" component={DonationSuccess} />
       <Route path="/prayer-counseling" component={PrayerCounseling} />
       <Route path="/my-requests" component={MyPrayerRequests} />
       <Route path="/devotional/today" component={PublicDevotionalToday} />

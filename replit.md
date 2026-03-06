@@ -57,3 +57,12 @@ The architecture emphasizes shared types and type-safe APIs, with schema definit
 - Vite
 - Replit-specific plugins (cartographer, dev-banner, error overlay)
 - esbuild
+
+## Donation System
+- **Donate page** (`client/src/pages/Donate.tsx`): Inspirational landing with "Donate Now" button and direct PayPal/CashApp links.
+- **Donation modal**: Amount selector (suggested $5/$10/$25/$50 + custom), donor name, note, purpose dropdown, payment method (PayPal, CashApp, Card).
+- **PayPal**: Opens external link `https://www.paypal.com/donate/?hosted_button_id=Y9PAZK36FKT8L`.
+- **CashApp**: Opens external link `https://cash.app/$MuzAfo`.
+- **Card (Stripe)**: Backend endpoint `POST /api/create-donation-session` creates Stripe Checkout session. Requires `STRIPE_SECRET_KEY` env var; gracefully returns 503 if not configured.
+- **Success page** (`client/src/pages/DonationSuccess.tsx`): Route `/donation-success`, shown after Stripe checkout completion.
+- **Env vars**: `PAYPAL_DONATION_LINK`, `CASHTAG` (informational), `STRIPE_SECRET_KEY` (optional, for card payments).
