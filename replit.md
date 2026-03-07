@@ -67,3 +67,13 @@ The architecture emphasizes shared types and type-safe APIs, with schema definit
 - **Card (Stripe)**: Backend endpoint `POST /api/create-donation-session` creates Stripe Checkout session. Requires `STRIPE_SECRET_KEY` env var; gracefully returns 503 if not configured.
 - **Success page** (`client/src/pages/DonationSuccess.tsx`): Route `/donation-success`, shown after Stripe checkout completion.
 - **Env vars**: `PAYPAL_DONATION_LINK`, `CASHTAG` (informational), `STRIPE_SECRET_KEY` (optional, for card payments).
+
+## Testimony & Quick Prayer System
+- **Testimony Wall** (`client/src/pages/TestimonyWall.tsx`): Route `/testimonies`. Public page displaying approved testimonies and a submission form (name, country, message). Testimonies require admin approval before appearing publicly. API: `GET /api/testimonies` (approved only), `POST /api/testimonies` (submit new).
+- **Quick Prayer** (`client/src/pages/QuickPrayer.tsx`): Route `/quick-prayer`. Simplified prayer request form (name optional, message required). Creates a prayer request with priority "prayer_normal". API: `POST /api/quick-prayer`.
+- **Admin Testimony Management**: Admin dashboard "Testimonies" tab (`TestimonyManager` component in `Admin.tsx`). Lists pending and approved testimonies. Admin can approve (`PATCH /api/testimonies/:id/approve`) or delete (`DELETE /api/testimonies/:id`). API: `GET /api/testimonies/all` (admin, all testimonies).
+- **Unread Reply Badge**: `GET /api/my-prayer-requests` enriches each request with `unreadAdminReplies` count. MyPrayerRequests list items show a badge with count of unread admin messages. Badge disappears after user opens the conversation (auto mark-read).
+- **Prayer Partner Banner**: When admin has replied to a prayer request, MyPrayerRequests conversation view shows "One of our prayer partners is praying for you right now." banner.
+- **Prayer Follow-Up Scheduler**: Automated Day 2/5/7 follow-up thread messages via `server/prayer-followups.ts`. Runs on startup and every 6 hours.
+- **Navigation Links**: Testimonies and Quick Prayer ("Pray Now") added to Header mobile nav. Quick Prayer and Testimony Wall cards linked from PrayerCounseling page.
+- **Schema Tables**: `testimonies` (id, requestId, name, country, message, photoUrl, isApproved, createdAt), `prayerFollowUps` (id, requestId, dayNumber, message, sentAt).

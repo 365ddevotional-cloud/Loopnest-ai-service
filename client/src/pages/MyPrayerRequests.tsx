@@ -9,7 +9,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Loader2, Send, MessageSquare, Search, AlertTriangle, Paperclip, FileText, Image, Download, CheckCheck, Clock } from "lucide-react";
+import { Loader2, Send, MessageSquare, Search, AlertTriangle, Paperclip, FileText, Image, Download, HandHeart } from "lucide-react";
 import type { PrayerRequest, ThreadMessage, PrayerAttachment } from "@shared/schema";
 
 const PRIORITY_LABELS: Record<string, string> = {
@@ -75,6 +75,8 @@ export default function MyPrayerRequests() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: searchedEmail }),
+        }).then(() => {
+          queryClient.invalidateQueries({ queryKey: ["/api/my-prayer-requests"] });
         }).catch((err) => console.error("Failed to mark messages as read:", err));
       }
     }
@@ -188,6 +190,12 @@ export default function MyPrayerRequests() {
                             URGENT
                           </Badge>
                         )}
+                        {(request as any).unreadAdminReplies > 0 && (
+                          <Badge className="text-xs bg-primary text-primary-foreground" data-testid={`unread-badge-${request.id}`}>
+                            <MessageSquare className="w-3 h-3 mr-1" />
+                            {(request as any).unreadAdminReplies} new
+                          </Badge>
+                        )}
                       </div>
                       <Badge className={`text-xs ${STATUS_LABELS[request.status || "new"]?.color}`}>
                         {STATUS_LABELS[request.status || "new"]?.label}
@@ -252,6 +260,13 @@ export default function MyPrayerRequests() {
                           </a>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {threadMessages.some(m => m.senderType === "admin") && (
+                    <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-3 rounded-lg border border-primary/20 flex items-center gap-3" data-testid="prayer-partner-banner">
+                      <HandHeart className="w-5 h-5 text-primary flex-shrink-0" />
+                      <p className="text-sm text-foreground font-medium">One of our prayer partners is praying for you right now.</p>
                     </div>
                   )}
 

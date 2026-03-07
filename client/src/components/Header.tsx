@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff, Book, GraduationCap } from "lucide-react";
+import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff, Book, GraduationCap, Star, HandHeart } from "lucide-react";
 import { GameConsoleIcon } from "@/interactive/GameConsoleIcon";
 import { SiYoutube } from "react-icons/si";
 import { cn } from "@/lib/utils";
@@ -117,6 +117,7 @@ export function Header() {
     { href: "https://www.youtube.com/@365DailyDevotional", label: "YouTube", icon: SiYoutube, external: true, adminOnly: false },
     { href: "https://payhip.com/SpiritToneRecords", label: "Shop", icon: ShoppingBag, external: true, adminOnly: false },
     { href: "/prayer-counseling", label: t("prayerCounseling"), icon: MessageCircleHeart, external: false, adminOnly: false },
+    { href: "/testimonies", label: "Testimonies", icon: Star, external: false, adminOnly: false },
     { href: "/about", label: t("about"), icon: Info, external: false, adminOnly: false },
     { href: "/donate", label: t("donate"), icon: Heart, external: false, adminOnly: false },
   ];
@@ -129,6 +130,8 @@ export function Header() {
     { href: "https://www.youtube.com/@365DailyDevotional", label: "YouTube", icon: SiYoutube, external: true },
     { href: "https://payhip.com/SpiritToneRecords", label: "Shop", icon: ShoppingBag, external: true },
     { href: "/prayer-counseling", label: t("prayerCounseling"), icon: MessageCircleHeart, external: false },
+    { href: "/quick-prayer", label: "Pray Now", icon: HandHeart, external: false },
+    { href: "/testimonies", label: "Testimonies", icon: Star, external: false },
     { href: "/about", label: t("about"), icon: Info, external: false },
     { href: "/donate", label: t("donate"), icon: Heart, external: false },
   ];

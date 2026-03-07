@@ -53,6 +53,8 @@ import LoopNestRoot from "@/loopnest/LoopNestRoot";
 import LoopNestLogin from "@/loopnest/LoginPage";
 import LoopNestDashboard from "@/loopnest/DashboardPage";
 import LoopNestBuilder from "@/loopnest/BuilderPage";
+import TestimonyWall from "@/pages/TestimonyWall";
+import QuickPrayer from "@/pages/QuickPrayer";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -66,6 +68,8 @@ function Router() {
       <Route path="/donation-success" component={DonationSuccess} />
       <Route path="/prayer-counseling" component={PrayerCounseling} />
       <Route path="/my-requests" component={MyPrayerRequests} />
+      <Route path="/testimonies" component={TestimonyWall} />
+      <Route path="/quick-prayer" component={QuickPrayer} />
       <Route path="/devotional/today" component={PublicDevotionalToday} />
       <Route path="/devotional/:date" component={SingleDevotional} />
       <Route path="/public/archive" component={PublicArchive} />

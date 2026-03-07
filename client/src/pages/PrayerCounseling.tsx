@@ -1,3 +1,4 @@
+import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useState, useRef } from "react";
-import { Loader2, Send, CheckCircle, AlertTriangle, Paperclip, X, FileText, Image } from "lucide-react";
+import { Loader2, Send, CheckCircle, AlertTriangle, Paperclip, X, FileText, Image, Star, HandHeart } from "lucide-react";
 import type { AutoReplyTemplate, PrayerRequest } from "@shared/schema";
 
 const PRIORITY_OPTIONS = [
@@ -545,6 +546,23 @@ export default function PrayerCounseling() {
           </Button>
         </form>
       </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+        <Link href="/quick-prayer" className="block" data-testid="link-quick-prayer">
+          <Card className="p-6 text-center transition-shadow cursor-pointer border-primary/10">
+            <HandHeart className="w-8 h-8 text-primary mx-auto mb-2" />
+            <h3 className="font-serif text-lg font-semibold text-foreground">Quick Prayer</h3>
+            <p className="text-sm text-muted-foreground mt-1">Need a quick word of prayer? Get instant encouragement.</p>
+          </Card>
+        </Link>
+        <Link href="/testimonies" className="block" data-testid="link-testimonies">
+          <Card className="p-6 text-center transition-shadow cursor-pointer border-primary/10">
+            <Star className="w-8 h-8 text-primary mx-auto mb-2" />
+            <h3 className="font-serif text-lg font-semibold text-foreground">Testimony Wall</h3>
+            <p className="text-sm text-muted-foreground mt-1">Share how God answered your prayers and encourage others.</p>
+          </Card>
+        </Link>
+      </div>
     </div>
   );
 }

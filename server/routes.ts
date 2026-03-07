@@ -907,7 +907,16 @@ export async function registerRoutes(
     }
     try {
       const requests = await storage.getPrayerRequestsByEmail(email);
-      res.json(requests);
+      const enriched = await Promise.all(
+        requests.map(async (r) => {
+          const thread = await storage.getThreadMessages(r.id);
+          const unreadAdminReplies = thread.filter(
+            (m) => m.senderType === "admin" && !m.isRead
+          ).length;
+          return { ...r, unreadAdminReplies };
+        })
+      );
+      res.json(enriched);
     } catch (err) {
       console.error("Error fetching prayer requests by email:", err);
       res.status(500).json({ message: "Could not fetch prayer requests" });

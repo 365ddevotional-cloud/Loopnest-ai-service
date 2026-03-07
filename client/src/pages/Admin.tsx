@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
@@ -122,6 +122,133 @@ function SeedDevotionalsButton() {
         </>
       )}
     </Button>
+  );
+}
+
+function TestimonyManager() {
+  const { toast } = useToast();
+  const { data: allTestimonies = [], isLoading } = useQuery<any[]>({
+    queryKey: ["/api/testimonies/all"],
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("PATCH", `/api/testimonies/${id}/approve`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/testimonies/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/testimonies"] });
+      toast({ title: "Testimony approved" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/testimonies/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/testimonies/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/testimonies"] });
+      toast({ title: "Testimony deleted" });
+    },
+  });
+
+  if (isLoading) {
+    return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+  }
+
+  const pending = allTestimonies.filter((t: any) => !t.isApproved);
+  const approved = allTestimonies.filter((t: any) => t.isApproved);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-3">
+          <Flag className="w-5 h-5 text-amber-500" />
+          Pending Review ({pending.length})
+        </h3>
+        {pending.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No testimonies awaiting review.</p>
+        ) : (
+          <div className="space-y-3">
+            {pending.map((testimony: any) => (
+              <div key={testimony.id} className="p-4 border border-amber-200 bg-amber-50/50 dark:bg-amber-900/10 dark:border-amber-800 rounded-lg" data-testid={`testimony-pending-${testimony.id}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">{testimony.name || "Anonymous"}</p>
+                    {testimony.country && <p className="text-xs text-muted-foreground">{testimony.country}</p>}
+                    <p className="text-sm text-foreground mt-2 whitespace-pre-wrap">{testimony.message}</p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {testimony.createdAt ? format(new Date(testimony.createdAt), "MMM d, yyyy h:mm a") : ""}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => approveMutation.mutate(testimony.id)}
+                      disabled={approveMutation.isPending}
+                      data-testid={`approve-testimony-${testimony.id}`}
+                    >
+                      <ThumbsUp className="w-4 h-4 mr-1" />
+                      Approve
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => deleteMutation.mutate(testimony.id)}
+                      disabled={deleteMutation.isPending}
+                      data-testid={`delete-testimony-${testimony.id}`}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-3">
+          <CheckCircle className="w-5 h-5 text-green-500" />
+          Approved ({approved.length})
+        </h3>
+        {approved.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No approved testimonies yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {approved.map((testimony: any) => (
+              <div key={testimony.id} className="p-4 border border-green-200 bg-green-50/50 dark:bg-green-900/10 dark:border-green-800 rounded-lg" data-testid={`testimony-approved-${testimony.id}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">{testimony.name || "Anonymous"}</p>
+                    {testimony.country && <p className="text-xs text-muted-foreground">{testimony.country}</p>}
+                    <p className="text-sm text-foreground mt-2 whitespace-pre-wrap">{testimony.message}</p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {testimony.createdAt ? format(new Date(testimony.createdAt), "MMM d, yyyy h:mm a") : ""}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="flex-shrink-0"
+                    onClick={() => deleteMutation.mutate(testimony.id)}
+                    disabled={deleteMutation.isPending}
+                    data-testid={`delete-approved-testimony-${testimony.id}`}
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -1561,10 +1688,14 @@ export default function Admin() {
       </div>
 
       <Tabs defaultValue="inbox" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 max-w-3xl">
+        <TabsList className="grid w-full grid-cols-6 max-w-4xl">
           <TabsTrigger value="inbox" data-testid="tab-inbox">
             <Inbox className="w-4 h-4 mr-2" />
             Prayer Inbox
+          </TabsTrigger>
+          <TabsTrigger value="testimonies" data-testid="tab-testimonies">
+            <Star className="w-4 h-4 mr-2" />
+            Testimonies
           </TabsTrigger>
           <TabsTrigger value="archive" data-testid="tab-archive">
             <Archive className="w-4 h-4 mr-2" />
@@ -1594,6 +1725,23 @@ export default function Admin() {
             </CardHeader>
             <CardContent className="p-6">
               <PrayerInbox />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="testimonies">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+                <Star className="w-6 h-6" />
+                Testimony Management
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Review and approve testimonies submitted by users.
+              </p>
+            </CardHeader>
+            <CardContent className="p-6">
+              <TestimonyManager />
             </CardContent>
           </Card>
         </TabsContent>
