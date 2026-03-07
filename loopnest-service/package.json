@@ -2,14 +2,22 @@
   "name": "loopnest-service",
   "version": "1.0.0",
   "description": "LoopNest standalone faith game generation service",
-  "main": "server/server.js",
+  "main": "dist/index.cjs",
   "scripts": {
-    "start": "node server/server.js",
+    "build": "tsup src/index.ts --format cjs --out-dir dist",
+    "start": "node dist/index.cjs",
     "dev": "node --watch server/server.js"
   },
   "dependencies": {
     "express": "^4.21.0",
     "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.0"
   },
   "engines": {
     "node": ">=18.0.0"
