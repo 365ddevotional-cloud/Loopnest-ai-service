@@ -42,7 +42,7 @@ import {
   type SundaySchoolLesson,
   type InsertSundaySchoolLesson,
 } from "@shared/schema";
-import { eq, desc, and, isNull, or } from "drizzle-orm";
+import { eq, desc, and, isNull, or, ilike } from "drizzle-orm";
 
 export interface IStorage {
   getDevotionals(): Promise<Devotional[]>;
@@ -67,6 +67,10 @@ export interface IStorage {
   // Thread Messages
   getThreadMessages(requestId: number): Promise<ThreadMessage[]>;
   createThreadMessage(message: InsertThreadMessage): Promise<ThreadMessage>;
+  markAdminMessagesRead(requestId: number): Promise<number>;
+  
+  // Prayer Requests by Email
+  getPrayerRequestsByEmail(email: string): Promise<PrayerRequest[]>;
   
   // Prayer Request Status
   updatePrayerRequestStatus(id: number, status: string): Promise<PrayerRequest>;
@@ -286,6 +290,29 @@ export class DatabaseStorage implements IStorage {
       .values(message)
       .returning();
     return created;
+  }
+
+  async markAdminMessagesRead(requestId: number): Promise<number> {
+    const result = await db
+      .update(threadMessages)
+      .set({ isRead: true, readAt: new Date() })
+      .where(
+        and(
+          eq(threadMessages.requestId, requestId),
+          eq(threadMessages.senderType, "admin"),
+          eq(threadMessages.isRead, false)
+        )
+      )
+      .returning();
+    return result.length;
+  }
+
+  async getPrayerRequestsByEmail(email: string): Promise<PrayerRequest[]> {
+    return await db
+      .select()
+      .from(prayerRequests)
+      .where(ilike(prayerRequests.email, email))
+      .orderBy(desc(prayerRequests.createdAt));
   }
 
   // Prayer Request Status

@@ -151,11 +151,15 @@ export const threadMessages = pgTable("thread_messages", {
   requestId: integer("request_id").notNull(),
   message: text("message").notNull(),
   senderType: text("sender_type").notNull(), // 'user' or 'admin'
+  isRead: boolean("is_read").default(false),
+  readAt: timestamp("read_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const insertThreadMessageSchema = createInsertSchema(threadMessages).omit({
   id: true,
+  isRead: true,
+  readAt: true,
   createdAt: true,
 });
 

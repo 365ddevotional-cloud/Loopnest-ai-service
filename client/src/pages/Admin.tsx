@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
@@ -890,14 +890,32 @@ function PrayerInbox() {
                           ? "bg-primary/10 ml-4"
                           : "bg-muted/30 mr-4"
                       }`}
+                      data-testid={`admin-thread-message-${msg.id}`}
                     >
                       <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
                         <span className="text-xs font-medium text-muted-foreground">
                           {msg.senderType === "admin" ? "Admin" : "User"}
                         </span>
-                        <span className="text-xs text-muted-foreground">
-                          {msg.createdAt ? format(new Date(msg.createdAt), "MMM d, h:mm a") : ""}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {msg.senderType === "admin" && (
+                            <span className={`text-xs flex items-center gap-1 ${msg.isRead ? "text-green-600" : "text-muted-foreground"}`} data-testid={`read-status-${msg.id}`}>
+                              {msg.isRead ? (
+                                <>
+                                  <CheckCheck className="w-3 h-3" />
+                                  Read{msg.readAt ? ` at ${format(new Date(msg.readAt), "MMM d, h:mm a")}` : ""}
+                                </>
+                              ) : (
+                                <>
+                                  <Clock className="w-3 h-3" />
+                                  Delivered
+                                </>
+                              )}
+                            </span>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {msg.createdAt ? format(new Date(msg.createdAt), "MMM d, h:mm a") : ""}
+                          </span>
+                        </div>
                       </div>
                       <p className="text-foreground text-sm">{msg.message}</p>
                     </div>

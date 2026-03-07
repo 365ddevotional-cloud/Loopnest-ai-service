@@ -7,9 +7,9 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Loader2, Send, MessageSquare, Search, AlertTriangle, Paperclip, FileText, Image, Download } from "lucide-react";
+import { Loader2, Send, MessageSquare, Search, AlertTriangle, Paperclip, FileText, Image, Download, CheckCheck, Clock } from "lucide-react";
 import type { PrayerRequest, ThreadMessage, PrayerAttachment } from "@shared/schema";
 
 const PRIORITY_LABELS: Record<string, string> = {
@@ -33,23 +33,52 @@ export default function MyPrayerRequests() {
   const [followUpMessage, setFollowUpMessage] = useState("");
 
   const { data: requests = [], isLoading, refetch } = useQuery<PrayerRequest[]>({
-    queryKey: ["/api/prayer-requests"],
+    queryKey: ["/api/my-prayer-requests", searchedEmail],
+    queryFn: async () => {
+      if (!searchedEmail) return [];
+      const res = await fetch(`/api/my-prayer-requests?email=${encodeURIComponent(searchedEmail)}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
     enabled: !!searchedEmail,
   });
 
-  const filteredRequests = requests.filter(
-    (r) => r.email?.toLowerCase() === searchedEmail.toLowerCase()
-  );
-
   const { data: threadMessages = [] } = useQuery<ThreadMessage[]>({
-    queryKey: ["/api/prayer-requests", selectedRequest?.id, "thread"],
-    enabled: !!selectedRequest,
+    queryKey: ["/api/prayer-requests", selectedRequest?.id, "thread", searchedEmail],
+    queryFn: async () => {
+      if (!selectedRequest || !searchedEmail) return [];
+      const res = await fetch(`/api/prayer-requests/${selectedRequest.id}/thread?email=${encodeURIComponent(searchedEmail)}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!selectedRequest && !!searchedEmail,
   });
 
   const { data: attachments = [] } = useQuery<PrayerAttachment[]>({
-    queryKey: ["/api/prayer-requests", selectedRequest?.id, "attachments"],
-    enabled: !!selectedRequest,
+    queryKey: ["/api/prayer-requests", selectedRequest?.id, "attachments", searchedEmail],
+    queryFn: async () => {
+      if (!selectedRequest || !searchedEmail) return [];
+      const res = await fetch(`/api/prayer-requests/${selectedRequest.id}/attachments?email=${encodeURIComponent(searchedEmail)}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!selectedRequest && !!searchedEmail,
   });
+
+  useEffect(() => {
+    if (selectedRequest && searchedEmail && threadMessages.length > 0) {
+      const hasUnreadAdmin = threadMessages.some(
+        (msg) => msg.senderType === "admin" && !msg.isRead
+      );
+      if (hasUnreadAdmin) {
+        fetch(`/api/prayer-requests/${selectedRequest.id}/mark-read`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: searchedEmail }),
+        }).catch((err) => console.error("Failed to mark messages as read:", err));
+      }
+    }
+  }, [selectedRequest?.id, threadMessages, searchedEmail]);
 
   const getFileIcon = (contentType: string) => {
     if (contentType.startsWith("image/")) {
@@ -67,7 +96,7 @@ export default function MyPrayerRequests() {
     },
     onSuccess: () => {
       setFollowUpMessage("");
-      queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests", selectedRequest?.id, "thread"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests", selectedRequest?.id, "thread", searchedEmail] });
       toast({ title: "Message sent", description: "Your follow-up message has been sent." });
     },
     onError: () => {
@@ -83,7 +112,6 @@ export default function MyPrayerRequests() {
     }
     setSearchedEmail(email);
     setSelectedRequest(null);
-    refetch();
   };
 
   const handleSendFollowUp = () => {
@@ -101,7 +129,7 @@ export default function MyPrayerRequests() {
         </p>
       </div>
 
-      <Card className="bg-white border-primary/10 shadow-xl shadow-primary/5 mb-6">
+      <Card className="bg-white dark:bg-card border-primary/10 shadow-xl shadow-primary/5 mb-6">
         <CardContent className="p-6">
           <form onSubmit={handleSearch} className="flex items-end gap-4 flex-wrap">
             <div className="flex-1 min-w-[200px] space-y-2">
@@ -131,14 +159,14 @@ export default function MyPrayerRequests() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-4">
             <h3 className="font-serif text-lg font-semibold text-foreground">Your Requests</h3>
-            {filteredRequests.length === 0 ? (
+            {requests.length === 0 ? (
               <Card className="p-6 text-center text-muted-foreground">
                 <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>No prayer requests found for this email.</p>
               </Card>
             ) : (
               <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                {filteredRequests.map((request) => (
+                {requests.map((request) => (
                   <div
                     key={request.id}
                     onClick={() => setSelectedRequest(request)}
@@ -238,6 +266,7 @@ export default function MyPrayerRequests() {
                               ? "bg-primary/10 ml-0"
                               : "bg-muted/30 ml-4"
                           }`}
+                          data-testid={`thread-message-${msg.id}`}
                         >
                           <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
                             <span className="text-xs font-medium text-muted-foreground">

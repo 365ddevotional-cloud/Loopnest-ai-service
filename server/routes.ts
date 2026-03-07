@@ -819,12 +819,24 @@ export async function registerRoutes(
     }
   });
 
-  // Get thread messages (Admin only)
-  app.get(api.prayerRequests.getThread.path, requireAdmin, async (req, res) => {
+  // Get thread messages (accessible to admin and users who own the request via email query param)
+  app.get(api.prayerRequests.getThread.path, async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID" });
     }
+
+    if (!req.session?.isAdmin) {
+      const email = req.query.email as string;
+      if (!email) {
+        return res.status(401).json({ message: "Email required to view conversation" });
+      }
+      const request = await storage.getPrayerRequest(id);
+      if (!request || request.email?.toLowerCase() !== email.toLowerCase()) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+    }
+
     const messages = await storage.getThreadMessages(id);
     res.json(messages);
   });
@@ -884,6 +896,44 @@ export async function registerRoutes(
         });
       }
       throw err;
+    }
+  });
+
+  // User-facing: Get prayer requests by email
+  app.get("/api/my-prayer-requests", async (req, res) => {
+    const email = req.query.email as string;
+    if (!email || !email.includes("@")) {
+      return res.status(400).json({ message: "Valid email is required" });
+    }
+    try {
+      const requests = await storage.getPrayerRequestsByEmail(email);
+      res.json(requests);
+    } catch (err) {
+      console.error("Error fetching prayer requests by email:", err);
+      res.status(500).json({ message: "Could not fetch prayer requests" });
+    }
+  });
+
+  // User-facing: Mark admin messages as read when user opens the conversation
+  app.post("/api/prayer-requests/:id/mark-read", async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+    try {
+      const request = await storage.getPrayerRequest(id);
+      if (!request || request.email?.toLowerCase() !== email.toLowerCase()) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      const markedCount = await storage.markAdminMessagesRead(id);
+      res.json({ markedCount });
+    } catch (err) {
+      console.error("Conversation reply could not be saved.", err);
+      res.status(500).json({ message: "Could not mark messages as read" });
     }
   });
 
@@ -1038,12 +1088,24 @@ export async function registerRoutes(
   // Object Storage Routes
   registerObjectStorageRoutes(app);
 
-  // Prayer Attachment Routes (Admin only)
-  app.get("/api/prayer-requests/:id/attachments", requireAdmin, async (req, res) => {
+  // Prayer Attachment Routes (accessible to admin and users who own the request)
+  app.get("/api/prayer-requests/:id/attachments", async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID" });
     }
+
+    if (!req.session?.isAdmin) {
+      const email = req.query.email as string;
+      if (!email) {
+        return res.status(401).json({ message: "Email required to view attachments" });
+      }
+      const request = await storage.getPrayerRequest(id);
+      if (!request || request.email?.toLowerCase() !== email.toLowerCase()) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+    }
+
     const attachments = await storage.getAttachmentsForRequest(id);
     res.json(attachments);
   });

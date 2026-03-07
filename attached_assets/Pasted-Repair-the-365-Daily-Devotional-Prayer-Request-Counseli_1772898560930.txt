@@ -1,0 +1,227 @@
+Repair the 365 Daily Devotional Prayer Request / Counseling Conversation System without breaking existing code.
+
+CRITICAL RULES
+
+• Do NOT refactor the project  
+• Do NOT rename files  
+• Do NOT delete existing logic  
+• Do NOT modify authentication  
+• Do NOT modify devotional content  
+• Do NOT modify donation modules  
+• Do NOT change navigation structure  
+
+Only repair and extend the Prayer Request Conversation / Reply system.
+
+If anything already exists, repair it instead of replacing it.
+
+Goal:  
+Fix the issue where admin replies are not visible to users, and add message read/open tracking so the admin can see when the user reads the reply.
+
+--------------------------------------------------
+
+PART 1 — AUDIT THE CURRENT CONVERSATION SYSTEM
+
+Search the codebase for:
+
+prayer requests  
+conversation  
+reply handler  
+admin reply form  
+message storage  
+API routes for messages  
+
+Look for database tables such as:
+
+prayer_requests  
+messages  
+conversations  
+replies  
+
+Do NOT change database structures unless necessary.
+
+--------------------------------------------------
+
+PART 2 — FIX ADMIN REPLY STORAGE
+
+Current problem:
+
+Admin replies appear in the admin interface but are not visible to the user.
+
+Verify that when the admin submits a reply:
+
+The reply is saved to the database.
+
+Each reply must include:
+
+request_id  
+message_text  
+sender_role  
+created_at  
+
+Example structure:
+
+request_id  
+message  
+sender_role (admin or user)  
+created_at  
+
+If replies are currently stored only in local state, modify the system so replies are written to the database.
+
+--------------------------------------------------
+
+PART 3 — REPAIR THE MESSAGE FETCH API
+
+Ensure the endpoint that loads a prayer request also loads the full conversation.
+
+Example endpoint:
+
+GET /api/prayer-request/:id
+
+Response must include:
+
+request information  
+attachments  
+conversation messages  
+
+Example response structure:
+
+request  
+attachments  
+conversation array
+
+Each message object should include:
+
+message_id  
+request_id  
+sender_role  
+message  
+created_at  
+
+The frontend must display the conversation thread for both admin and user.
+
+--------------------------------------------------
+
+PART 4 — DISPLAY ADMIN REPLIES TO USERS
+
+On the user side:
+
+When a user opens their request page, load the conversation thread.
+
+Display messages in order:
+
+user message  
+admin reply  
+user reply  
+admin reply
+
+Ensure the UI updates automatically when a new reply exists.
+
+--------------------------------------------------
+
+PART 5 — ADD MESSAGE READ / OPEN TRACKING
+
+Add read tracking to each conversation message.
+
+Add a field:
+
+is_read  
+read_at  
+
+Default values when admin sends message:
+
+is_read = false  
+read_at = null  
+
+When the user opens the request page and the message loads:
+
+Update the message record:
+
+is_read = true  
+read_at = current timestamp
+
+--------------------------------------------------
+
+PART 6 — SHOW READ STATUS IN ADMIN PANEL
+
+In the admin conversation view, display read status.
+
+If the message has not been opened:
+
+Status: Delivered
+
+If is_read = true:
+
+Status: Read
+
+Show the timestamp when available.
+
+Example display:
+
+Read at Mar 7, 2026 10:05 AM
+
+--------------------------------------------------
+
+PART 7 — ADMIN NOTIFICATION WHEN MESSAGE IS READ
+
+When a user opens a message that was sent by admin:
+
+Trigger an admin notification.
+
+Options:
+
+show badge in admin dashboard  
+update conversation status  
+mark the reply as "read"
+
+This allows the admin to know the user has opened the reply.
+
+--------------------------------------------------
+
+PART 8 — ENSURE ATTACHMENTS STILL WORK
+
+Do not modify attachment logic.
+
+Attachments must remain linked to the request.
+
+--------------------------------------------------
+
+PART 9 — ADD SAFETY LOGGING
+
+If message saving fails:
+
+Log the error to the server console.
+
+Do not break the UI.
+
+Example message:
+
+"Conversation reply could not be saved."
+
+--------------------------------------------------
+
+PART 10 — TEST FLOW
+
+After repair the system must work like this:
+
+User submits prayer request  
+Admin sees request in dashboard  
+Admin replies  
+Reply is saved in database  
+User opens request page  
+User sees admin reply  
+System marks message as read  
+Admin dashboard shows read status
+
+--------------------------------------------------
+
+FINAL RESULT
+
+The 365 Daily Devotional app will now support:
+
+Working admin replies  
+Full conversation threads  
+Messages visible to both admin and users  
+Read/open tracking  
+Admin notification when message is opened  
+
+All implemented safely without breaking the existing application.
