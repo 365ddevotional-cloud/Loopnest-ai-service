@@ -2,10 +2,10 @@
   "name": "loopnest-service",
   "version": "1.0.0",
   "description": "LoopNest standalone faith game generation service",
-  "main": "server.js",
+  "main": "server/server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js"
   },
   "dependencies": {
     "express": "^4.21.0",
