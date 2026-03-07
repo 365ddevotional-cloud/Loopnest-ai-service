@@ -1,0 +1,296 @@
+Repair and enhance the 365 Daily Devotional Prayer Request and Counseling System safely without breaking existing code.
+
+CRITICAL RULES
+
+Do NOT refactor the application  
+Do NOT rename files  
+Do NOT remove existing features  
+Do NOT modify devotional content modules  
+Do NOT modify authentication system  
+Do NOT modify donation modules  
+Do NOT change navigation structure
+
+Only repair and extend the Prayer Request, Reply, Testimony, and Prayer Engagement system.
+
+If a feature already exists, repair it instead of rebuilding it.
+
+--------------------------------------------------
+
+GOAL
+
+Transform the prayer request system into a full prayer journey platform that includes:
+
+• working admin replies  
+• conversation threads  
+• message read/open tracking  
+• automated follow-up encouragement messages  
+• testimony collection  
+• testimony wall  
+• prayer partner messaging  
+• “Pray With Someone Now” feature to increase prayer requests
+
+--------------------------------------------------
+
+PART 1 — AUDIT THE EXISTING PRAYER REQUEST SYSTEM
+
+Search the codebase for:
+
+prayer requests  
+conversation messages  
+reply handlers  
+admin reply forms  
+attachments  
+API endpoints related to prayer requests
+
+Common structures may include:
+
+prayer_requests  
+messages  
+replies  
+conversations
+
+Do NOT remove existing database structures.
+
+--------------------------------------------------
+
+PART 2 — FIX ADMIN REPLY VISIBILITY
+
+Current issue:
+
+Admin replies appear in the admin interface but are not visible to the user.
+
+Ensure replies are stored in the database.
+
+Each reply record must contain:
+
+request_id  
+message_text  
+sender_role (admin or user)  
+created_at
+
+If replies are currently stored only in local state, update logic to save them in the database.
+
+--------------------------------------------------
+
+PART 3 — FIX CONVERSATION FETCH API
+
+Ensure the request endpoint returns the entire conversation thread.
+
+Example endpoint:
+
+GET /api/prayer-request/:id
+
+Response must include:
+
+request details  
+attachments  
+conversation messages
+
+Each conversation message must contain:
+
+message_id  
+request_id  
+sender_role  
+message  
+created_at
+
+The user interface must display the conversation for both sides.
+
+--------------------------------------------------
+
+PART 4 — ADD MESSAGE READ / OPEN TRACKING
+
+Add read tracking fields to conversation messages:
+
+is_read  
+read_at
+
+Default values when admin sends message:
+
+is_read = false  
+read_at = null
+
+When the user opens the conversation:
+
+Update message status:
+
+is_read = true  
+read_at = timestamp
+
+--------------------------------------------------
+
+PART 5 — DISPLAY READ STATUS IN ADMIN PANEL
+
+In the admin conversation interface display:
+
+Delivered  
+Read
+
+If read show timestamp.
+
+Example:
+
+Read at Mar 7, 2026 10:05 AM
+
+--------------------------------------------------
+
+PART 6 — ADD PRAYER JOURNEY FOLLOW-UP SYSTEM
+
+Create automated encouragement messages after a prayer request is submitted.
+
+Day 0  
+Admin reply and scripture encouragement
+
+Day 2  
+Follow-up message:
+
+Hello, we are still praying for you. How are things going with your request?
+
+Buttons
+
+Things are improving  
+Please keep praying  
+I have a testimony
+
+Day 5  
+Encouragement scripture message.
+
+Example:
+
+“The righteous cry out, and the Lord hears them.”  
+Psalm 34:17
+
+Day 7  
+Testimony request message:
+
+Has God answered your prayer?  
+We would love to celebrate your testimony.
+
+Buttons
+
+I have a testimony  
+Still believing  
+Thank you for praying
+
+--------------------------------------------------
+
+PART 7 — ADD TESTIMONY COLLECTION
+
+Allow users to submit testimony updates.
+
+Fields:
+
+Testimony message  
+Optional name  
+Optional country  
+Optional photo
+
+Store testimony records safely in the database.
+
+--------------------------------------------------
+
+PART 8 — CREATE TESTIMONY WALL
+
+Create a page that displays testimonies.
+
+Example display:
+
+“God healed my mother after we asked for prayer here.”  
+Maria – Brazil
+
+Show testimonies in chronological order.
+
+Ensure testimonies are moderated before public display.
+
+--------------------------------------------------
+
+PART 9 — ADD PRAYER PARTNER MESSAGE INDICATOR
+
+When admin replies, include a message banner:
+
+One of our prayer partners is praying for you right now.
+
+This increases user trust and engagement.
+
+--------------------------------------------------
+
+PART 10 — IMPLEMENT THE SECRET FEATURE  
+PRAY WITH SOMEONE NOW
+
+Create a button:
+
+Pray With Someone Now
+
+When clicked:
+
+User opens quick prayer request form.
+
+Fields:
+
+Name (optional)  
+Prayer request message
+
+When submitted:
+
+Immediately send request to admin dashboard.
+
+Display message to user:
+
+Your request has been received. Someone is praying for you now.
+
+This feature increases prayer requests dramatically because users can submit requests instantly without navigating complex forms.
+
+--------------------------------------------------
+
+PART 11 — ENSURE ATTACHMENTS STILL WORK
+
+Do not modify attachment logic.
+
+Attachments must remain linked to prayer requests.
+
+--------------------------------------------------
+
+PART 12 — ADD SAFETY LOGGING
+
+If message saving fails log error to server console.
+
+Do not break the user interface.
+
+--------------------------------------------------
+
+PART 13 — TEST FLOW
+
+Verify the system works as follows:
+
+User submits prayer request  
+Admin receives request  
+Admin replies  
+Reply saved in database  
+User opens request and sees reply  
+System marks reply as read  
+Admin dashboard shows read status
+
+Automated follow-up messages appear on Day 2, Day 5, and Day 7.
+
+Users can submit testimonies.
+
+Testimonies appear on testimony wall.
+
+Users can also click Pray With Someone Now to submit quick prayer requests.
+
+--------------------------------------------------
+
+FINAL RESULT
+
+The 365 Daily Devotional app will now include:
+
+Working prayer conversations  
+Admin replies visible to users  
+Message read tracking  
+Prayer journey follow-ups  
+Testimony submission system  
+Public testimony wall  
+Prayer partner engagement message  
+Pray With Someone Now feature
+
+All implemented safely without breaking existing functionality.

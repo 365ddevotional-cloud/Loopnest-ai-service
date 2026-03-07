@@ -1339,6 +1339,109 @@ export async function registerRoutes(
     res.json(inquiries);
   });
 
+  // Testimony Routes
+  app.get("/api/testimonies", async (req, res) => {
+    try {
+      const approved = await storage.getApprovedTestimonies();
+      res.json(approved);
+    } catch (err) {
+      console.error("Error fetching testimonies:", err);
+      res.status(500).json({ message: "Could not fetch testimonies" });
+    }
+  });
+
+  app.get("/api/testimonies/all", requireAdmin, async (req, res) => {
+    try {
+      const all = await storage.getAllTestimonies();
+      res.json(all);
+    } catch (err) {
+      console.error("Error fetching all testimonies:", err);
+      res.status(500).json({ message: "Could not fetch testimonies" });
+    }
+  });
+
+  app.post("/api/testimonies", async (req, res) => {
+    try {
+      const { message, name, country, photoUrl, requestId } = req.body;
+      if (!message || typeof message !== "string" || !message.trim()) {
+        return res.status(400).json({ message: "Testimony message is required" });
+      }
+      const testimony = await storage.createTestimony({
+        message: message.trim(),
+        name: name?.trim() || null,
+        country: country?.trim() || null,
+        photoUrl: photoUrl || null,
+        requestId: requestId || null,
+      });
+      res.status(201).json(testimony);
+    } catch (err) {
+      console.error("Conversation reply could not be saved.", err);
+      res.status(500).json({ message: "Could not save testimony" });
+    }
+  });
+
+  app.patch("/api/testimonies/:id/approve", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const testimony = await storage.approveTestimony(id);
+      res.json(testimony);
+    } catch (err) {
+      console.error("Error approving testimony:", err);
+      res.status(500).json({ message: "Could not approve testimony" });
+    }
+  });
+
+  app.delete("/api/testimonies/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      await storage.deleteTestimony(id);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Error deleting testimony:", err);
+      res.status(500).json({ message: "Could not delete testimony" });
+    }
+  });
+
+  // Quick Prayer ("Pray With Someone Now")
+  app.post("/api/quick-prayer", async (req, res) => {
+    try {
+      const { name, message } = req.body;
+      if (!message || typeof message !== "string" || !message.trim()) {
+        return res.status(400).json({ message: "Prayer request message is required" });
+      }
+      const prayerRequest = await storage.createPrayerRequest({
+        fullName: name?.trim() || null,
+        email: null,
+        phoneNumber: null,
+        smsEnabled: false,
+        subject: "Pray With Someone Now",
+        message: message.trim(),
+        isAnonymous: !name?.trim(),
+        priority: "prayer_urgent",
+        category: "other",
+      });
+      res.status(201).json({ success: true, id: prayerRequest.id });
+    } catch (err) {
+      console.error("Conversation reply could not be saved.", err);
+      res.status(500).json({ message: "Could not save prayer request" });
+    }
+  });
+
+  // Prayer Follow-Up Messages
+  app.get("/api/prayer-requests/:id/follow-ups", async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const followUps = await storage.getFollowUpsForRequest(id);
+      res.json(followUps);
+    } catch (err) {
+      console.error("Error fetching follow-ups:", err);
+      res.status(500).json({ message: "Could not fetch follow-ups" });
+    }
+  });
+
   app.post("/api/create-donation-session", async (req, res) => {
     try {
       const stripeKey = process.env.STRIPE_SECRET_KEY;
@@ -1392,6 +1495,14 @@ export async function registerRoutes(
   // Seed Data if empty
   await seedDatabase();
   await seedAutoReplyTemplates();
+
+  // Run prayer follow-ups on startup and every 6 hours
+  import("./prayer-followups").then(({ runPrayerFollowUps }) => {
+    runPrayerFollowUps().catch(err => console.error("[FollowUp] Initial run error:", err));
+    setInterval(() => {
+      runPrayerFollowUps().catch(err => console.error("[FollowUp] Scheduled run error:", err));
+    }, 6 * 60 * 60 * 1000);
+  });
 
   return httpServer;
 }

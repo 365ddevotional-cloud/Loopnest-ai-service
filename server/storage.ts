@@ -13,6 +13,8 @@ import {
   partnershipInquiries,
   biblePassages,
   sundaySchoolLessons,
+  testimonies,
+  prayerFollowUps,
   type Devotional,
   type InsertDevotional,
   type UpdateDevotionalRequest,
@@ -41,8 +43,11 @@ import {
   type BibleTranslation,
   type SundaySchoolLesson,
   type InsertSundaySchoolLesson,
+  type Testimony,
+  type InsertTestimony,
+  type PrayerFollowUp,
 } from "@shared/schema";
-import { eq, desc, and, isNull, or, ilike } from "drizzle-orm";
+import { eq, desc, and, isNull, or, ilike, lte, notInArray, sql } from "drizzle-orm";
 
 export interface IStorage {
   getDevotionals(): Promise<Devotional[]>;
@@ -105,6 +110,18 @@ export interface IStorage {
   getPartnershipInquiries(): Promise<PartnershipInquiry[]>;
   createPartnershipInquiry(inquiry: InsertPartnership): Promise<PartnershipInquiry>;
   
+  // Testimonies
+  getApprovedTestimonies(): Promise<Testimony[]>;
+  getAllTestimonies(): Promise<Testimony[]>;
+  createTestimony(testimony: InsertTestimony): Promise<Testimony>;
+  approveTestimony(id: number): Promise<Testimony>;
+  deleteTestimony(id: number): Promise<void>;
+
+  // Prayer Follow-Ups
+  getFollowUpsForRequest(requestId: number): Promise<PrayerFollowUp[]>;
+  createFollowUp(requestId: number, dayNumber: number, message: string): Promise<PrayerFollowUp>;
+  getRequestsNeedingFollowUp(dayNumber: number): Promise<PrayerRequest[]>;
+
   // Bible Passages
   getBiblePassage(reference: string, translation: BibleTranslation): Promise<BiblePassage | undefined>;
   getBiblePassages(references: string[], translation: BibleTranslation): Promise<BiblePassage[]>;
@@ -532,6 +549,83 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSundaySchoolLesson(id: number): Promise<void> {
     await db.delete(sundaySchoolLessons).where(eq(sundaySchoolLessons.id, id));
+  }
+
+  async getApprovedTestimonies(): Promise<Testimony[]> {
+    return await db
+      .select()
+      .from(testimonies)
+      .where(eq(testimonies.isApproved, true))
+      .orderBy(desc(testimonies.createdAt));
+  }
+
+  async getAllTestimonies(): Promise<Testimony[]> {
+    return await db
+      .select()
+      .from(testimonies)
+      .orderBy(desc(testimonies.createdAt));
+  }
+
+  async createTestimony(testimony: InsertTestimony): Promise<Testimony> {
+    const [created] = await db
+      .insert(testimonies)
+      .values(testimony)
+      .returning();
+    return created;
+  }
+
+  async approveTestimony(id: number): Promise<Testimony> {
+    const [updated] = await db
+      .update(testimonies)
+      .set({ isApproved: true })
+      .where(eq(testimonies.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteTestimony(id: number): Promise<void> {
+    await db.delete(testimonies).where(eq(testimonies.id, id));
+  }
+
+  async getFollowUpsForRequest(requestId: number): Promise<PrayerFollowUp[]> {
+    return await db
+      .select()
+      .from(prayerFollowUps)
+      .where(eq(prayerFollowUps.requestId, requestId))
+      .orderBy(prayerFollowUps.sentAt);
+  }
+
+  async createFollowUp(requestId: number, dayNumber: number, message: string): Promise<PrayerFollowUp> {
+    const [created] = await db
+      .insert(prayerFollowUps)
+      .values({ requestId, dayNumber, message })
+      .returning();
+    return created;
+  }
+
+  async getRequestsNeedingFollowUp(dayNumber: number): Promise<PrayerRequest[]> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - dayNumber);
+    cutoffDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(cutoffDate);
+    endDate.setDate(endDate.getDate() + 1);
+
+    const existingFollowUps = db
+      .select({ requestId: prayerFollowUps.requestId })
+      .from(prayerFollowUps)
+      .where(eq(prayerFollowUps.dayNumber, dayNumber));
+
+    return await db
+      .select()
+      .from(prayerRequests)
+      .where(
+        and(
+          lte(prayerRequests.createdAt, endDate),
+          sql`${prayerRequests.createdAt} >= ${cutoffDate}`,
+          sql`${prayerRequests.id} NOT IN (${existingFollowUps})`
+        )
+      );
   }
 }
 

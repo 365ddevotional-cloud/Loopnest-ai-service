@@ -365,3 +365,35 @@ export const insertGameSchema = createInsertSchema(games).omit({
 
 export type Game = typeof games.$inferSelect;
 export type InsertGame = z.infer<typeof insertGameSchema>;
+
+// Testimonies Table
+export const testimonies = pgTable("testimonies", {
+  id: serial("id").primaryKey(),
+  requestId: integer("request_id"),
+  name: text("name"),
+  country: text("country"),
+  message: text("message").notNull(),
+  photoUrl: text("photo_url"),
+  isApproved: boolean("is_approved").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertTestimonySchema = createInsertSchema(testimonies).omit({
+  id: true,
+  isApproved: true,
+  createdAt: true,
+});
+
+export type Testimony = typeof testimonies.$inferSelect;
+export type InsertTestimony = z.infer<typeof insertTestimonySchema>;
+
+// Prayer Follow-Up Messages Table
+export const prayerFollowUps = pgTable("prayer_follow_ups", {
+  id: serial("id").primaryKey(),
+  requestId: integer("request_id").notNull(),
+  dayNumber: integer("day_number").notNull(),
+  message: text("message").notNull(),
+  sentAt: timestamp("sent_at").defaultNow(),
+});
+
+export type PrayerFollowUp = typeof prayerFollowUps.$inferSelect;
