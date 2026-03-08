@@ -41,7 +41,7 @@ export function loadBackgroundImage(index: number): Promise<HTMLImageElement> {
 export function preloadAhead(currentSeed: number, count: number = 5): void {
   for (let i = 0; i < count; i++) {
     const idx = getRandomBgIndex(currentSeed + i);
-    loadBackgroundImage(idx);
+    loadBackgroundImage(idx).catch(() => {});
   }
 }
 

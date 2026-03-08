@@ -1,0 +1,115 @@
+IMPORTANT SAFETY INSTRUCTION
+
+Do NOT refactor the project.
+Do NOT modify existing application logic.
+Do NOT rename files.
+Do NOT restructure components.
+Do NOT change routing.
+Do NOT modify database code.
+Do NOT modify backend APIs.
+Do NOT change any working feature.
+
+Only apply the minimal styling fixes requested below.
+
+If any change could affect other parts of the app, do NOT change it.
+
+This task is ONLY a UI styling improvement for the devotional greeting card display.
+
+
+CURRENT PROBLEM
+
+The devotional greeting card verse text is barely visible because the font color is white while the background is very light.
+
+Also the card background appears flat and washed out instead of looking like a premium devotional card.
+
+We only want to fix text visibility and improve the card appearance while leaving everything else exactly the same.
+
+
+STEP 1 — Fix Scripture Font Visibility
+
+Locate the component that renders the greeting card scripture.
+
+Apply the following styles ONLY to the scripture text element.
+
+.cardScripture {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-align: center;
+  line-height: 1.6;
+  padding: 20px;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+
+STEP 2 — Fix Verse Reference Styling
+
+.cardReference {
+  font-size: 16px;
+  font-weight: 600;
+  color: #444;
+  margin-top: 14px;
+}
+
+STEP 3 — Improve Card Container Appearance
+
+Without changing the card structure, apply these styles to the card container.
+
+.devotionalCard {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background-size: cover;
+  background-position: center;
+}
+
+STEP 4 — Add Safe Overlay For Text Visibility
+
+.devotionalCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+}
+
+STEP 5 — Ensure Text Appears Above Overlay
+
+.devotionalText {
+  position: relative;
+  z-index: 2;
+  max-width: 90%;
+}
+
+STEP 6 — Mobile Optimization
+
+Add mobile scaling only.
+
+@media (max-width: 600px) {
+
+.cardScripture {
+font-size: 20px;
+}
+
+.cardReference {
+font-size: 15px;
+}
+
+}
+
+STEP 7 — Preserve All Existing App Behavior
+
+Do not change:
+
+navigation
+logic
+state management
+data fetching
+backend APIs
+existing layout
+any other UI components
+
+Only apply the styling improvements above to the greeting card display.

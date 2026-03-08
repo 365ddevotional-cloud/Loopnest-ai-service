@@ -65,11 +65,9 @@ export default function PromiseCard3D({
     }
   };
 
-  const textColor = isLight ? "text-gray-900" : "text-white";
-  const accentColor = isLight ? "text-gray-700" : "text-white/80";
-  const buttonStyle = isLight
-    ? "bg-black/10 hover:bg-black/20 text-gray-900"
-    : "bg-white/20 hover:bg-white/30 text-white";
+  const textColor = "text-white";
+  const accentColor = "text-white/80";
+  const buttonStyle = "bg-white/20 hover:bg-white/30 text-white";
 
   return (
     <div
@@ -77,9 +75,11 @@ export default function PromiseCard3D({
     >
       <div
         data-testid="promise-card-3d"
-        className="relative rounded-3xl overflow-hidden shadow-2xl transform transition-all duration-500 hover:scale-[1.02]"
+        className="relative overflow-hidden shadow-2xl transform transition-all duration-500 hover:scale-[1.02] flex items-center justify-center"
         style={{
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.15)), url(${bgUrl})`,
+          borderRadius: "18px",
+          minHeight: "420px",
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url(${bgUrl})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
@@ -101,7 +101,7 @@ export default function PromiseCard3D({
             <div className="absolute bottom-[15%] right-[15%] w-32 h-32 bg-white/5 rounded-full blur-2xl animate-pulse" style={{ animationDelay: "1.5s" }} />
           </div>
 
-          <div className="relative z-10">
+          <div className="relative z-10" style={{ maxWidth: "90%" }}>
             <div className={`text-xs font-semibold uppercase tracking-[0.2em] mb-5 ${accentColor}`}>
               God's Promise For You
             </div>
@@ -114,7 +114,7 @@ export default function PromiseCard3D({
                 fontSize: "36px",
                 fontWeight: 700,
                 textAlign: "center",
-                textShadow: isLight ? "none" : "0 2px 8px rgba(0,0,0,0.3)",
+                textShadow: "0 2px 8px rgba(0,0,0,0.35)",
               }}
             >
               {heading}
@@ -131,11 +131,12 @@ export default function PromiseCard3D({
                 className={`italic ${textColor}`}
                 style={{
                   fontFamily: "Georgia, 'DM Sans', serif",
-                  fontSize: "28px",
-                  fontWeight: 600,
+                  fontSize: "22px",
+                  fontWeight: 700,
                   lineHeight: 1.6,
                   textAlign: "center",
-                  textShadow: isLight ? "none" : "0 1px 6px rgba(0,0,0,0.25)",
+                  padding: "20px 0",
+                  textShadow: "0 2px 6px rgba(0,0,0,0.35)",
                 }}
               >
                 {scripture}
@@ -151,11 +152,11 @@ export default function PromiseCard3D({
               data-testid="text-promise-reference"
               className={`mb-6 ${accentColor}`}
               style={{
-                fontSize: "22px",
+                fontSize: "16px",
                 fontWeight: 600,
                 opacity: 0.9,
                 textAlign: "center",
-                textShadow: isLight ? "none" : "0 1px 4px rgba(0,0,0,0.2)",
+                textShadow: "0 1px 4px rgba(0,0,0,0.25)",
               }}
             >
               — {reference}
