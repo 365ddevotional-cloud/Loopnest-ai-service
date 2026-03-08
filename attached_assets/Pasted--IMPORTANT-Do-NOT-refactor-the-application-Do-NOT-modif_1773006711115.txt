@@ -1,0 +1,152 @@
+"}
+
+IMPORTANT
+
+Do NOT refactor the application  
+Do NOT modify database, routes, or backend architecture  
+Do NOT remove existing features  
+
+Only fix:
+
+1) Scripture font size so verses fit properly  
+2) Public browser "Card creation failed" error  
+3) Keep branding logo + Play Store badge
+
+
+---------------------------------------------------
+
+STEP 1 — Fix Scripture Font Size (Prevent Overflow)
+
+.cardScripture {
+color: #ffffff;
+font-size: clamp(34px, 5vw, 46px);
+font-weight: 800;
+text-align: center;
+line-height: 1.35;
+padding-left: 28px;
+padding-right: 28px;
+max-width: 90%;
+margin: auto;
+text-shadow: 0 6px 18px rgba(0,0,0,0.9);
+word-wrap: break-word;
+}
+
+Explanation:
+Use clamp() so long verses like John 3:16 shrink automatically.
+
+
+---------------------------------------------------
+
+STEP 2 — Bible Reference Styling
+
+.cardReference {
+color: #ffffff;
+font-size: 24px;
+font-weight: 600;
+margin-top: 20px;
+text-align: center;
+text-shadow: 0 4px 12px rgba(0,0,0,0.85);
+}
+
+
+---------------------------------------------------
+
+STEP 3 — Footer Branding
+
+.footerBranding {
+position: absolute;
+bottom: 20px;
+left: 0;
+right: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 10px;
+font-size: 18px;
+font-weight: 600;
+color: white;
+text-shadow: 0 4px 12px rgba(0,0,0,0.9);
+}
+
+Text should display:
+
+Shared from 365 Daily Devotional App
+
+
+---------------------------------------------------
+
+STEP 4 — Logo
+
+Use the attached logo from this prompt.
+
+.logo365 {
+width: 36px;
+height: auto;
+}
+
+
+---------------------------------------------------
+
+STEP 5 — Google Play Badge
+
+.playBadge {
+width: 80px;
+height: auto;
+}
+
+
+---------------------------------------------------
+
+STEP 6 — Fix Public Browser Error
+
+The "Card creation failed" error happens because the public site cannot generate the image.
+
+Add a safe fallback:
+
+try {
+  generateCard();
+} catch (error) {
+  console.error("Card generation error:", error);
+  alert("Please try again.");
+}
+
+Also ensure the public environment has access to:
+
+• background images  
+• canvas / image rendering library  
+• API endpoint
+
+
+---------------------------------------------------
+
+STEP 7 — Mobile Optimization
+
+@media (max-width: 600px) {
+
+.cardScripture {
+font-size: clamp(28px, 6vw, 38px);
+}
+
+.cardReference {
+font-size: 20px;
+}
+
+.footerBranding {
+font-size: 16px;
+}
+
+.logo365 {
+width: 30px;
+}
+
+.playBadge {
+width: 65px;
+}
+
+}
+
+---------------------------------------------------
+
+STEP 8
+
+Do not change any other cod

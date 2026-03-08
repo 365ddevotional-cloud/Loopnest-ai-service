@@ -131,15 +131,16 @@ export default function PromiseCard3D({
                 className={`italic ${textColor}`}
                 style={{
                   fontFamily: "Georgia, 'DM Sans', serif",
-                  fontSize: "clamp(50px, 8vw, 58px)",
-                  fontWeight: 900,
+                  fontSize: "clamp(34px, 5vw, 46px)",
+                  fontWeight: 800,
                   lineHeight: 1.35,
                   textAlign: "center",
                   paddingLeft: "28px",
                   paddingRight: "28px",
-                  maxWidth: "92%",
+                  maxWidth: "90%",
                   margin: "auto",
-                  textShadow: "0 6px 20px rgba(0,0,0,0.95)",
+                  textShadow: "0 6px 18px rgba(0,0,0,0.9)",
+                  wordWrap: "break-word" as const,
                 }}
               >
                 {scripture}
@@ -155,11 +156,11 @@ export default function PromiseCard3D({
               data-testid="text-promise-reference"
               className={`mb-6 text-white`}
               style={{
-                fontSize: "clamp(26px, 4vw, 30px)",
-                fontWeight: 700,
-                marginTop: "26px",
+                fontSize: "24px",
+                fontWeight: 600,
+                marginTop: "20px",
                 textAlign: "center",
-                textShadow: "0 5px 16px rgba(0,0,0,0.9)",
+                textShadow: "0 4px 12px rgba(0,0,0,0.85)",
               }}
             >
               — {reference}
@@ -207,11 +208,11 @@ export default function PromiseCard3D({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "12px",
-                fontSize: "clamp(20px, 3vw, 22px)",
-                fontWeight: 700,
+                gap: "10px",
+                fontSize: "clamp(16px, 2.5vw, 18px)",
+                fontWeight: 600,
                 color: "white",
-                textShadow: "0 4px 16px rgba(0,0,0,0.95)",
+                textShadow: "0 4px 12px rgba(0,0,0,0.9)",
               }}
             >
               <img
@@ -219,7 +220,7 @@ export default function PromiseCard3D({
                 alt="365 Daily Devotional"
                 data-testid="img-365-logo"
                 className="rounded-md"
-                style={{ width: "clamp(36px, 5vw, 44px)", height: "auto" }}
+                style={{ width: "clamp(30px, 4vw, 36px)", height: "auto" }}
               />
               <span>Shared from 365 Daily Devotional App</span>
               <img
@@ -227,7 +228,7 @@ export default function PromiseCard3D({
                 alt="Get it on Google Play"
                 data-testid="img-play-badge"
                 className="rounded-sm"
-                style={{ width: "clamp(80px, 12vw, 95px)", height: "auto" }}
+                style={{ width: "clamp(65px, 10vw, 80px)", height: "auto" }}
               />
             </div>
           </div>

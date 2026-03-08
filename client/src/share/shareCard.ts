@@ -78,13 +78,20 @@ export async function generateGreetingCard({ verseText, reference, translation, 
 
   const seed = THEME_SEED[theme];
   const bgIndex = getRandomBgIndex(seed);
+  let canvasTainted = false;
   try {
     const img = await loadBackgroundImage(bgIndex);
     drawCanvasBackground(ctx, img, w, h);
+    try { canvas.toDataURL(); } catch { canvasTainted = true; }
   } catch {
+    canvasTainted = true;
+  }
+  if (canvasTainted) {
+    ctx.clearRect(0, 0, w, h);
     const g = ctx.createLinearGradient(0, 0, w, h);
-    g.addColorStop(0, "#faf6ee");
-    g.addColorStop(1, "#ede2cc");
+    g.addColorStop(0, "#2c1810");
+    g.addColorStop(0.5, "#1a0f2e");
+    g.addColorStop(1, "#0d1117");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, w, h);
   }

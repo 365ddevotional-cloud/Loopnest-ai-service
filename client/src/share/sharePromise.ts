@@ -44,10 +44,16 @@ export async function generatePromiseImage(
   const w = 1080, h = 1080;
 
   const bgIndex = getRandomBgIndex(themeIndex);
+  let canvasTainted = false;
   try {
     const img = await loadBackgroundImage(bgIndex);
     drawCanvasBackground(ctx, img, w, h);
+    try { canvas.toDataURL(); } catch { canvasTainted = true; }
   } catch {
+    canvasTainted = true;
+  }
+  if (canvasTainted) {
+    ctx.clearRect(0, 0, w, h);
     const g = ctx.createLinearGradient(0, 0, w, h);
     g.addColorStop(0, "#FF9A56");
     g.addColorStop(0.5, "#C850C0");
