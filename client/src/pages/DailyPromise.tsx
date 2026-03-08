@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Sparkles, RefreshCw } from "lucide-react";
-import PromiseCard3D from "@/components/PromiseCard3D";
+import PromiseCard3D, { getRandomThemeIndex } from "@/components/PromiseCard3D";
 import { sharePromiseAsImage } from "@/share/sharePromise";
 import { queryClient } from "@/lib/queryClient";
 
@@ -55,8 +55,9 @@ export default function DailyPromise() {
           heading={promise.heading}
           scripture={promise.text}
           reference={promise.reference}
-          themeIndex={index}
-          onShare={() => sharePromiseAsImage(promise.heading, promise.text, promise.reference, index)}
+          promiseId={promise.id}
+          themeIndex={getRandomThemeIndex(promise.id)}
+          onShare={() => sharePromiseAsImage(promise.heading, promise.text, promise.reference, getRandomThemeIndex(promise.id))}
         />
 
         {nextData && (
@@ -69,7 +70,7 @@ export default function DailyPromise() {
               heading={nextData.promise.heading}
               scripture={nextData.promise.text}
               reference={nextData.promise.reference}
-              themeIndex={nextData.index}
+              themeIndex={getRandomThemeIndex(nextData.promise.id)}
               showActions={false}
             />
           </div>

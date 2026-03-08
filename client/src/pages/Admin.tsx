@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
@@ -127,6 +127,17 @@ function SeedDevotionalsButton() {
 
 function PromiseAdmin() {
   const { toast } = useToast();
+  const [promiseLookup, setPromiseLookup] = useState<Record<number, { heading: string; reference: string }>>({});
+
+  useEffect(() => {
+    import("@/promises/promises.json").then((mod) => {
+      const map: Record<number, { heading: string; reference: string }> = {};
+      for (const p of mod.default) {
+        map[p.id] = { heading: p.heading, reference: p.reference };
+      }
+      setPromiseLookup(map);
+    });
+  }, []);
 
   const { data: stats, isLoading } = useQuery<{
     total: number;
@@ -136,6 +147,15 @@ function PromiseAdmin() {
     nextPromise: { id: number; heading: string; text: string; reference: string };
   }>({
     queryKey: ["/api/promise/stats"],
+  });
+
+  const { data: analytics } = useQuery<{
+    totalAmens: number;
+    topToday: { promiseId: number; count: number }[];
+    topWeek: { promiseId: number; count: number }[];
+    topAllTime: { promiseId: number; count: number }[];
+  }>({
+    queryKey: ["/api/promise/amen-analytics"],
   });
 
   const toggleMutation = useMutation({
@@ -249,6 +269,109 @@ function PromiseAdmin() {
           <p className="text-sm font-semibold text-sky-700 dark:text-sky-400">— {stats.nextPromise.reference}</p>
         </div>
       </div>
+
+      {analytics && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-primary" />
+            Promises Analytics
+          </h3>
+
+          <div className="p-4 bg-red-50/50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
+            <p className="text-sm text-muted-foreground">Total Amens</p>
+            <p className="text-3xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2" data-testid="text-total-amens">
+              <Heart className="w-6 h-6 fill-current" />
+              {analytics.totalAmens.toLocaleString()}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 border border-border rounded-lg">
+              <h4 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4" />
+                Most Loved Today
+              </h4>
+              {analytics.topToday.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">No amens today yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {analytics.topToday.map((item, i) => {
+                    const info = promiseLookup[item.promiseId];
+                    return (
+                      <div key={item.promiseId} className="flex items-start gap-2 text-sm" data-testid={`amen-today-${i}`}>
+                        <span className="text-muted-foreground font-mono text-xs mt-0.5">{i + 1}.</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{info?.heading || `Promise #${item.promiseId}`}</p>
+                          <p className="text-xs text-muted-foreground">{info?.reference}</p>
+                        </div>
+                        <span className="text-red-500 font-semibold flex items-center gap-1">
+                          <Heart className="w-3 h-3 fill-current" /> {item.count}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border border-border rounded-lg">
+              <h4 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
+                <Calendar className="w-4 h-4" />
+                Most Loved This Week
+              </h4>
+              {analytics.topWeek.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">No amens this week yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {analytics.topWeek.map((item, i) => {
+                    const info = promiseLookup[item.promiseId];
+                    return (
+                      <div key={item.promiseId} className="flex items-start gap-2 text-sm" data-testid={`amen-week-${i}`}>
+                        <span className="text-muted-foreground font-mono text-xs mt-0.5">{i + 1}.</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{info?.heading || `Promise #${item.promiseId}`}</p>
+                          <p className="text-xs text-muted-foreground">{info?.reference}</p>
+                        </div>
+                        <span className="text-red-500 font-semibold flex items-center gap-1">
+                          <Heart className="w-3 h-3 fill-current" /> {item.count}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border border-border rounded-lg">
+              <h4 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
+                <Star className="w-4 h-4" />
+                All Time Top Promises
+              </h4>
+              {analytics.topAllTime.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">No amens recorded yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {analytics.topAllTime.map((item, i) => {
+                    const info = promiseLookup[item.promiseId];
+                    return (
+                      <div key={item.promiseId} className="flex items-start gap-2 text-sm" data-testid={`amen-alltime-${i}`}>
+                        <span className="text-muted-foreground font-mono text-xs mt-0.5">{i + 1}.</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{info?.heading || `Promise #${item.promiseId}`}</p>
+                          <p className="text-xs text-muted-foreground">{info?.reference}</p>
+                        </div>
+                        <span className="text-red-500 font-semibold flex items-center gap-1">
+                          <Heart className="w-3 h-3 fill-current" /> {item.count}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

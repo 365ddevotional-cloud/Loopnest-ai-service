@@ -1,0 +1,201 @@
+id="47392"}
+Upgrade the visual experience and analytics features of the 365 Daily Devotional app.
+
+We are enhancing three areas:
+
+1) Daily Promise popup cards  
+2) Bible verse greeting card generator  
+3) Amen analytics for admin  
+4) Fix Devotional button navigation  
+
+--------------------------------------------
+
+FEATURE 1 — BEAUTIFUL PROMISE CARDS
+
+Upgrade the Daily Promise popup cards to use realistic inspirational backgrounds instead of flat gradients.
+
+Card style requirements:
+
+• Christian inspirational poster style  
+• Soft 3D lighting  
+• Light rays or glow  
+• Elegant typography  
+• Rounded corners  
+• Subtle shadow  
+
+Background themes should rotate randomly from a theme library:
+
+sunrise sky  
+heaven clouds  
+flowers with soft light  
+golden rays  
+soft nature landscapes  
+peaceful sky  
+
+Each promise card must use a different background.
+
+Typography:
+
+Title font: elegant serif  
+Scripture font: devotional readable font  
+Reference: smaller clean font
+
+Footer stamp must remain:
+
+From the 365DailyDevotional
+
+--------------------------------------------
+
+FEATURE 2 — GREETING CARD GENERATOR UPGRADE
+
+The Bible verse greeting card generator must use the same upgraded visual system.
+
+Currently greeting cards look flat.
+
+Replace them with:
+
+realistic background images  
+soft glow lighting  
+Christian inspirational theme  
+3D shadow effects  
+
+When the user taps:
+
+Share → Greeting Card
+
+The generated card should render as a beautiful shareable inspirational poster.
+
+Allow background themes:
+
+Parchment  
+Royal Blue  
+Sunrise  
+Charcoal  
+
+But convert these into realistic textured designs rather than flat colors.
+
+--------------------------------------------
+
+FEATURE 3 — AMEN ANALYTICS
+
+When a user taps the Amen button on a promise card:
+
+Store in database:
+
+amen_id  
+promise_id  
+user_id  
+timestamp  
+
+Create a table:
+
+promise_amens
+
+Columns:
+
+id  
+promise_id  
+user_id  
+created_at  
+
+Increase the Amen count for that promise.
+
+--------------------------------------------
+
+ADMIN DASHBOARD
+
+Add an analytics section:
+
+Promises Analytics
+
+Display:
+
+Most loved promise today  
+Most loved promise this week  
+Total Amens per promise  
+
+Example output:
+
+Promise: Romans 8:28  
+Title: God Is Working Everything For Good  
+
+❤️ 5,214 Amens
+
+--------------------------------------------
+
+FEATURE 4 — FIX DEVOTIONAL BUTTON
+
+On the Promise popup card there are buttons:
+
+Share  
+Amen  
+Devotional  
+
+Currently Devotional is not clickable.
+
+Fix behavior:
+
+When user taps Devotional:
+
+Open today's devotional message inside the app.
+
+Use the existing devotional page route.
+
+Example:
+
+navigate("/devotional/today")
+
+--------------------------------------------
+
+FEATURE 5 — BACKGROUND THEME ENGINE
+
+Create a background theme system.
+
+File:
+
+backgroundThemes.ts
+
+Example themes:
+
+SunriseLight  
+HeavenClouds  
+GoldenRays  
+PeacefulFlowers  
+SoftLandscape  
+RoyalLight  
+
+Randomly apply one to each generated card.
+
+--------------------------------------------
+
+FEATURE 6 — PERFORMANCE
+
+Preload background assets.
+
+Cache the next promise card.
+
+Ensure no UI lag.
+
+--------------------------------------------
+
+TESTING
+
+Verify:
+
+Amen clicks save correctly  
+Devotional button opens today's devotional  
+Greeting cards render beautiful backgrounds  
+Promise cards rotate background themes  
+
+--------------------------------------------
+
+FINAL RESULT
+
+The app should now display:
+
+Beautiful inspirational promise cards  
+Beautiful Bible verse greeting cards  
+Amen analytics dashboard  
+Working devotional navigation
+
+The entire system should feel like a premium Christian inspirati

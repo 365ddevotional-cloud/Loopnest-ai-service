@@ -11,6 +11,37 @@ export interface ShareCardOptions {
   title?: CardTitle;
 }
 
+function drawLightRays(ctx: CanvasRenderingContext2D, w: number, h: number, color: string, count: number) {
+  ctx.save();
+  ctx.globalAlpha = 0.05;
+  const cx = w * 0.3;
+  const cy = h * 0.1;
+  for (let i = 0; i < count; i++) {
+    const angle = (Math.PI * 2 * i) / count;
+    const len = Math.max(w, h) * 1.2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(angle) * len, cy + Math.sin(angle) * len);
+    ctx.lineTo(cx + Math.cos(angle + 0.03) * len, cy + Math.sin(angle + 0.03) * len);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawTexture(ctx: CanvasRenderingContext2D, w: number, h: number, color: string, density: number) {
+  ctx.save();
+  ctx.globalAlpha = 0.03;
+  ctx.fillStyle = color;
+  for (let i = 0; i < density; i++) {
+    ctx.beginPath();
+    ctx.arc(Math.random() * w, Math.random() * h, Math.random() * 2 + 0.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 const THEMES: Record<CardTheme, {
   bg: (ctx: CanvasRenderingContext2D, w: number, h: number) => void;
   textColor: string;
@@ -23,18 +54,21 @@ const THEMES: Record<CardTheme, {
     bg: (ctx, w, h) => {
       const g = ctx.createLinearGradient(0, 0, w, h);
       g.addColorStop(0, "#faf6ee");
-      g.addColorStop(0.5, "#f3ead8");
-      g.addColorStop(1, "#ede2cc");
+      g.addColorStop(0.3, "#f3ead8");
+      g.addColorStop(0.6, "#ede2cc");
+      g.addColorStop(1, "#e8d8b8");
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = "rgba(139, 119, 80, 0.03)";
-      for (let i = 0; i < 60; i++) {
-        const x = Math.random() * w;
-        const y = Math.random() * h;
-        ctx.beginPath();
-        ctx.arc(x, y, Math.random() * 2 + 1, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      drawTexture(ctx, w, h, "#8b7750", 120);
+      drawLightRays(ctx, w, h, "#FFD700", 10);
+      ctx.save();
+      ctx.globalAlpha = 0.06;
+      const rg = ctx.createRadialGradient(w * 0.5, h * 0.3, 0, w * 0.5, h * 0.3, w * 0.5);
+      rg.addColorStop(0, "#FFD700");
+      rg.addColorStop(1, "transparent");
+      ctx.fillStyle = rg;
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
     },
     textColor: "#3d2c1e",
     accentColor: "#8b6f47",
@@ -46,11 +80,20 @@ const THEMES: Record<CardTheme, {
     bg: (ctx, w, h) => {
       const g = ctx.createLinearGradient(0, 0, w * 0.3, h);
       g.addColorStop(0, "#0a1628");
-      g.addColorStop(0.4, "#142952");
-      g.addColorStop(0.7, "#1a3a6e");
+      g.addColorStop(0.3, "#142952");
+      g.addColorStop(0.6, "#1a3a6e");
       g.addColorStop(1, "#0f2040");
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
+      drawLightRays(ctx, w, h, "#B3E5FC", 14);
+      ctx.save();
+      ctx.globalAlpha = 0.08;
+      const rg = ctx.createRadialGradient(w * 0.7, h * 0.3, 0, w * 0.7, h * 0.3, w * 0.4);
+      rg.addColorStop(0, "#64B5F6");
+      rg.addColorStop(1, "transparent");
+      ctx.fillStyle = rg;
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
     },
     textColor: "#e8edf5",
     accentColor: "#a8c4e8",
@@ -61,26 +104,45 @@ const THEMES: Record<CardTheme, {
   sunrise: {
     bg: (ctx, w, h) => {
       const g = ctx.createLinearGradient(0, 0, w, h);
-      g.addColorStop(0, "#ffecd2");
-      g.addColorStop(0.35, "#fcb69f");
-      g.addColorStop(0.65, "#f7a084");
-      g.addColorStop(1, "#f09070");
+      g.addColorStop(0, "#FF9A56");
+      g.addColorStop(0.35, "#FF6B6B");
+      g.addColorStop(0.65, "#C850C0");
+      g.addColorStop(1, "#4158D0");
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
+      drawLightRays(ctx, w, h, "#ffffff", 16);
+      ctx.save();
+      ctx.globalAlpha = 0.1;
+      const rg = ctx.createRadialGradient(w * 0.5, h * 0.2, 0, w * 0.5, h * 0.5, w * 0.6);
+      rg.addColorStop(0, "#FFD700");
+      rg.addColorStop(1, "transparent");
+      ctx.fillStyle = rg;
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
     },
-    textColor: "#3e1f0d",
-    accentColor: "#6b3521",
-    borderColor: "rgba(107, 53, 33, 0.25)",
-    titleColor: "#4a2010",
-    brandColor: "rgba(62, 31, 13, 0.35)",
+    textColor: "#ffffff",
+    accentColor: "#FFE0B2",
+    borderColor: "rgba(255, 255, 255, 0.25)",
+    titleColor: "#FFF3E0",
+    brandColor: "rgba(255, 255, 255, 0.4)",
   },
   charcoal: {
     bg: (ctx, w, h) => {
       const g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w * 0.7);
       g.addColorStop(0, "#2a2a2a");
+      g.addColorStop(0.5, "#222222");
       g.addColorStop(1, "#1a1a1a");
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
+      drawTexture(ctx, w, h, "#ffffff", 80);
+      ctx.save();
+      ctx.globalAlpha = 0.06;
+      const rg = ctx.createRadialGradient(w * 0.4, h * 0.25, 0, w * 0.4, h * 0.25, w * 0.5);
+      rg.addColorStop(0, "#FFD700");
+      rg.addColorStop(1, "transparent");
+      ctx.fillStyle = rg;
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
     },
     textColor: "#e8e0d8",
     accentColor: "#c9b896",

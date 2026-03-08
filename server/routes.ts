@@ -10,6 +10,9 @@ import { getTodayDateString, isFutureDate, isPastDate, getDayOfYear } from "./da
 import { seedAllDevotionals } from "./seed-devotionals";
 import { getOrCreateTranslation, isAllowedLanguage, getCachedTranslationsForLanguage } from "./translationService";
 import { getCurrentPromise, getNextPromise, advancePromise, resetRotation, toggleEnabled, getTotalPromises, startPromiseScheduler } from "./promiseEngine";
+import { promiseAmens } from "@shared/schema";
+import { db } from "./db";
+import { eq, sql, desc, gte } from "drizzle-orm";
 
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
@@ -1576,6 +1579,77 @@ export async function registerRoutes(
     } catch (err) {
       console.error("Error getting promise stats:", err);
       res.status(500).json({ message: "Could not get promise stats" });
+    }
+  });
+
+  app.post("/api/promise/amen", async (req, res) => {
+    try {
+      const { promiseId } = req.body;
+      if (typeof promiseId !== "number") {
+        return res.status(400).json({ message: "promiseId must be a number" });
+      }
+      const sessionId = req.sessionID || null;
+      await db.insert(promiseAmens).values({ promiseId, sessionId });
+      const [countResult] = await db.select({ count: sql<number>`count(*)::int` }).from(promiseAmens).where(eq(promiseAmens.promiseId, promiseId));
+      res.json({ success: true, totalAmens: countResult.count });
+    } catch (err) {
+      console.error("Error recording amen:", err);
+      res.status(500).json({ message: "Could not record amen" });
+    }
+  });
+
+  app.get("/api/promise/amen-count/:promiseId", async (req, res) => {
+    try {
+      const promiseId = parseInt(req.params.promiseId);
+      if (isNaN(promiseId)) return res.status(400).json({ message: "Invalid promiseId" });
+      const [countResult] = await db.select({ count: sql<number>`count(*)::int` }).from(promiseAmens).where(eq(promiseAmens.promiseId, promiseId));
+      res.json({ totalAmens: countResult.count });
+    } catch (err) {
+      res.status(500).json({ message: "Could not get amen count" });
+    }
+  });
+
+  app.get("/api/promise/amen-analytics", requireAdmin, async (_req, res) => {
+    try {
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const weekStart = new Date(todayStart);
+      weekStart.setDate(weekStart.getDate() - 7);
+
+      const totalAmens = await db.select({ count: sql<number>`count(*)::int` }).from(promiseAmens);
+
+      const topToday = await db
+        .select({ promiseId: promiseAmens.promiseId, count: sql<number>`count(*)::int` })
+        .from(promiseAmens)
+        .where(gte(promiseAmens.createdAt, todayStart))
+        .groupBy(promiseAmens.promiseId)
+        .orderBy(desc(sql`count(*)`))
+        .limit(5);
+
+      const topWeek = await db
+        .select({ promiseId: promiseAmens.promiseId, count: sql<number>`count(*)::int` })
+        .from(promiseAmens)
+        .where(gte(promiseAmens.createdAt, weekStart))
+        .groupBy(promiseAmens.promiseId)
+        .orderBy(desc(sql`count(*)`))
+        .limit(5);
+
+      const topAllTime = await db
+        .select({ promiseId: promiseAmens.promiseId, count: sql<number>`count(*)::int` })
+        .from(promiseAmens)
+        .groupBy(promiseAmens.promiseId)
+        .orderBy(desc(sql`count(*)`))
+        .limit(10);
+
+      res.json({
+        totalAmens: totalAmens[0].count,
+        topToday,
+        topWeek,
+        topAllTime,
+      });
+    } catch (err) {
+      console.error("Error getting amen analytics:", err);
+      res.status(500).json({ message: "Could not get amen analytics" });
     }
   });
 

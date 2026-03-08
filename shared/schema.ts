@@ -406,3 +406,12 @@ export const promiseDeliveryState = pgTable("promise_delivery_state", {
 });
 
 export type PromiseDeliveryState = typeof promiseDeliveryState.$inferSelect;
+
+export const promiseAmens = pgTable("promise_amens", {
+  id: serial("id").primaryKey(),
+  promiseId: integer("promise_id").notNull(),
+  sessionId: text("session_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type PromiseAmen = typeof promiseAmens.$inferSelect;

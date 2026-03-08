@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import PromiseCard3D, { getTheme } from "./PromiseCard3D";
+import PromiseCard3D, { getRandomThemeIndex } from "./PromiseCard3D";
 import { sharePromiseAsImage } from "@/share/sharePromise";
 
 const STORAGE_KEY = "promise-popup-state";
@@ -89,8 +89,9 @@ export default function PromisePopup() {
           heading={promise.heading}
           scripture={promise.text}
           reference={promise.reference}
-          themeIndex={index}
-          onShare={() => sharePromiseAsImage(promise.heading, promise.text, promise.reference, index)}
+          promiseId={promise.id}
+          themeIndex={getRandomThemeIndex(promise.id)}
+          onShare={() => sharePromiseAsImage(promise.heading, promise.text, promise.reference, getRandomThemeIndex(promise.id))}
           onClose={handleClose}
         />
       </div>

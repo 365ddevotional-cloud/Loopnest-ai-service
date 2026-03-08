@@ -1,47 +1,49 @@
 # 365 Daily Devotional
 
 ## Overview
-The 365 Daily Devotional is a web application designed to provide believers with daily spiritual content, including scripture readings, reflections, prayer points, and faith declarations. It aims to offer a consistent source of spiritual encouragement and guidance. Key features include a content management system for devotionals, an archive, and a prayer request submission system. The project's vision is to create a perpetual and accessible platform for daily spiritual nourishment, with future ambitions to expand its reach and features.
+The 365 Daily Devotional is a web application providing daily spiritual content like scripture readings, reflections, prayers, and faith declarations. It aims to be a consistent source of spiritual encouragement and guidance, featuring a content management system, archives, and a prayer request system. The project envisions a perpetual, accessible platform for spiritual nourishment, with plans for expanded reach and features.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Frontend Architecture
-The frontend is built with React 18 and TypeScript, utilizing Wouter for routing and TanStack React Query for server state management and caching. Styling is implemented with Tailwind CSS, featuring a custom theme (deep burgundy, sage green, antique gold). UI components are sourced from shadcn/ui, built on Radix UI primitives. Framer Motion handles animations for page transitions and card reveals. Vite is used as the build tool, configured with custom path aliases. The application is designed as a Progressive Web App (PWA) with a manifest and service worker for offline capabilities and Google Play Store publishing via TWA.
+### Frontend
+The frontend uses React 18, TypeScript, Wouter for routing, and TanStack React Query for state management. Styling is with Tailwind CSS (deep burgundy, sage green, antique gold theme) and shadcn/ui components. Framer Motion handles animations. Vite is the build tool. It functions as a Progressive Web App (PWA) for offline capabilities and potential mobile store publishing.
 
-### Backend Architecture
-The backend runs on Node.js with Express and is written in TypeScript using ES modules. It exposes RESTful API endpoints defined in `shared/routes.ts` with Zod validation for type safety. esbuild is used for server bundling.
+### Backend
+The backend is built with Node.js and Express, written in TypeScript using ES modules. It provides RESTful API endpoints with Zod validation. esbuild is used for server bundling.
 
 ### Data Storage
-PostgreSQL serves as the database, managed by Drizzle ORM with `drizzle-zod` for schema validation. The database schema is defined in `shared/schema.ts` and includes tables for `devotionals`, `biblePassages`, `prayerRequests`, `prayerReplies`, and `sundaySchoolLessons`. Drizzle Kit handles database migrations.
+PostgreSQL is the database, managed by Drizzle ORM with `drizzle-zod` for schema validation. The schema includes tables for devotionals, bible passages, prayer requests, prayer replies, sunday school lessons, testimonies, promise delivery states, and promise amens. Drizzle Kit manages migrations.
 
 ### Key Design Patterns
-The architecture emphasizes shared types and type-safe APIs, with schema definitions and API routes shared between client and server via the `/shared` directory. A Repository Pattern (IStorage interface) abstracts database operations. UI components are designed for composition.
+The architecture emphasizes shared types and type-safe APIs using a `/shared` directory. A Repository Pattern abstracts database operations. UI components are designed for composition.
 
-### Feature Specifications
-- **Bible Translation System**: Supports KJV, WEB, ASV, DRB, with user preference storage, a translation selector, and a fallback mechanism to KJV.
-- **Perpetual Devotional Cycle**: Uses days-difference-from-earliest-date modulo logic to cycle through existing devotionals forever, ensuring continuous content availability without redeployment. Both server-side and client-side (offline) implementations share identical modulo formula.
-- **Archive Access Control**: Implements role-based access where non-admin users can only view present and past devotionals, while admins have full access.
-- **Seasonal Override Devotionals**: Incorporates specific devotionals for holidays like Easter, Mother's/Children's/Father's Emphasis Weeks, Thanksgiving, and Christmas, managed via a `seasonal_override` field.
-- **Data Protection**: Includes a soft-delete system for devotionals with `isDeleted` and `deletedAt` fields, requiring explicit confirmation for deletion, and restricting operations on past devotionals. Admin backup and monitoring endpoints are available.
-- **Prayer & Counseling Conversation System**: Full conversation threading between users and admin. Users access requests by email via `GET /api/my-prayer-requests?email=xxx`. Thread messages accessible to users via `GET /api/prayer-requests/:id/thread?email=xxx`. Attachments via `GET /api/prayer-requests/:id/attachments?email=xxx`. Read tracking: `isRead`/`readAt` fields on `thread_messages`, auto-marked when user opens conversation via `POST /api/prayer-requests/:id/mark-read`. Admin panel shows "Delivered" (clock icon) or "Read at [timestamp]" (green checkmark) for each admin message. User follow-ups via `POST /api/prayer-requests/:id/thread` with `senderType: "user"`. Key files: `client/src/pages/MyPrayerRequests.tsx`, `client/src/pages/Admin.tsx` (PrayerInbox), `server/routes.ts`, `server/storage.ts`.
-- **Locked Features**: Stable features like the Bible Reading interface (with verse bookmarking, highlighting, notes, and sharing), Daily Bible Verse, Sharing features, Devotionals System, and Prayer & Counseling system are protected from regression.
-- **Enhanced Bible Share**: 3 share formats: Text (native share/clipboard), Image (4 themes: parchment, royal blue, sunrise, charcoal with 1080x1080 canvas), Greeting Card (4 themes + optional titles "Be Encouraged"/"God's Word for You"/"Daily Promise" + recipient name). All use Canvas API, no external dependencies. Key files: `client/src/share/shareText.ts`, `client/src/share/shareImage.ts`, `client/src/share/shareCard.ts`, `client/src/components/BibleVerseActions.tsx`.
-- **Daily Notification System**: Browser-based web notifications allow users to opt-in for daily reminders when new devotionals are available, managed via `NotificationContext` and localStorage.
-- **Sunday School System**: Free public feature at `/sunday-school` with weekly KJV-only lessons. Shows 4 upcoming Sunday lessons and an archive of past lessons. Each lesson includes scripture, full lesson content, discussion questions, prayer focus, and weekly assignment. Admin can create, edit, and delete lessons via the admin dashboard "Sunday School" tab. Seed data auto-populates 4 initial lessons. Copy button formats lessons for sharing. Schema: `sundaySchoolLessons` table. API: `/api/sunday-school` endpoints. Seed: `server/seed-sunday-school.ts`.
-- **Cyclical Fallback Loop**: Both Daily Devotionals and Sunday School implement perpetual cycling to ensure content availability beyond initial date range using modulo-based indexing from earliest content date.
-- **Offline-First Architecture**: IndexedDB-based offline persistence using native API (no external library). DB name: `devotionalOfflineDB` (v2) with stores for `devotionals`, `sundayLessons` (indexed by id), `bibleKJV`, and `metadata`. On app load when online, `useOfflineSync` hook prefetches all devotionals, Sunday School lessons, and KJV Bible chapters into IndexedDB. When offline, all hooks (`useTodayDevotional`, `useDevotionalsList`, Sunday School queries, Bible `fetchChapter`) fall back to IndexedDB with identical modulo loop logic. When online but API fails, all hooks also fall back to IndexedDB. Bible reader uses IndexedDB-first for KJV (serves cached, revalidates in background). Service worker (v4) uses cache-first for API responses (with empty/failed response guard), stale-while-revalidate for static assets. Key files: `client/src/lib/offlineDb.ts`, `client/src/hooks/use-offline-sync.ts`.
-- **Multilingual Translation System**: On-demand AI-powered translation via OpenAI (Replit AI Integrations). Supported languages: English (en), Spanish (es), French (fr), Yoruba (yo), Nigerian Pidgin (pcm), Hausa (ha). Uses `devotional_translations` DB table for caching. Rate limited to 3/min. Single devotional views trigger on-demand translation; list/archive views use cached-only. Frontend `LanguageSwitcher` component (globe icon in header) saves preference to localStorage (`devotionalLang`) and appends `?lang=xx` URL param. Auto-applies saved language on page load. Key files: `server/translationService.ts`, `client/src/components/LanguageSwitcher.tsx`.
-- **UI Internationalization (i18n)**: Static JSON-based UI translation system (no backend calls). Locale files at `client/src/locales/{en,es,fr,yo,pcm,ha}.json` contain all UI strings. Utility `client/src/utils/i18n.ts` provides `getUIText(key, lang)` with English fallback. React hook `client/src/hooks/useI18n.ts` provides `{ t, lang }` synced with localStorage `devotionalLang` key and URL `?lang=` param. Integrated into Header (nav items, titles, buttons), DevotionalCard (section headers, buttons, share text), and Footer (legal links, copyright). Uses same language detection as devotional translation system.
-- **Universal Audio Reader (Enhanced)**: Browser-based TTS using SpeechSynthesis API with enhanced voice selection (priority: Enhanced > Premium > Google > Natural > Samantha > Daniel > Karen), intelligent pacing (pauses after periods, commas, semicolons), and devotional-specific slower rate (0.88x vs default 0.92x). Voice selector in Settings modal allows choosing from available English voices with localStorage persistence. Sentence-based segmentation for reliable speed-change mid-playback. Floating AudioMiniPlayer with play/pause/stop/speed controls. Key files: `client/src/hooks/useAudioReader.ts`, `client/src/components/AudioMiniPlayer.tsx`, `client/src/components/SettingsModal.tsx`.
+### Core Features and Design Decisions
+- **Bible Translation**: Supports KJV, WEB, ASV, DRB with user preferences and KJV fallback.
+- **Perpetual Content Cycling**: Devotionals and Sunday School lessons cycle perpetually using a modulo-based indexing system from the earliest content date, ensuring continuous availability. This logic is implemented both server-side and client-side for offline consistency.
+- **Access Control**: Role-based access for devotional archives, allowing non-admins to view current/past content only, while admins have full access.
+- **Seasonal Overrides**: Specific devotionals for holidays (e.g., Easter, Christmas) are supported via a `seasonal_override` field.
+- **Data Protection**: Soft-delete system for devotionals with explicit confirmation, restricting operations on past content. Admin backup and monitoring endpoints exist.
+- **Prayer & Counseling System**: Supports full conversation threading, user-specific access via email, attachment handling, and read tracking for messages. Includes automated follow-up messages.
+- **Locked Features**: Core features like the Bible Reading interface (bookmarking, highlighting, notes, sharing), Daily Bible Verse, Sharing, Devotionals, and Prayer & Counseling systems are stable and protected.
+- **Enhanced Bible Share**: Offers three share formats: text, image (with 4 themes), and greeting card (with 4 themes and customizable titles), all generated via Canvas API.
+- **Daily Notification System**: Browser-based web notifications for new devotional availability, managed via `NotificationContext` and localStorage.
+- **Sunday School System**: Provides free public access to weekly KJV-only lessons, including content, questions, prayer focus, and assignments. Admins can manage lessons.
+- **Offline-First Architecture**: Utilizes IndexedDB for offline persistence of devotionals, Sunday School lessons, and KJV Bible chapters. Hooks fall back to IndexedDB when offline or API fails. A service worker provides cache-first for API responses and stale-while-revalidate for static assets.
+- **Multilingual Translation**: On-demand AI-powered translation (via OpenAI) for devotionals into English, Spanish, French, Yoruba, Nigerian Pidgin, and Hausa, with caching in `devotional_translations` table. Rate-limited and applied to single devotional views.
+- **UI Internationalization (i18n)**: Static JSON-based UI translations with locale files. Provides `getUIText` utility and a React hook `useI18n` synced with localStorage and URL parameters.
+- **Universal Audio Reader**: Browser-based TTS using SpeechSynthesis API with enhanced voice selection, intelligent pacing, and a devotional-specific slower rate. Features a voice selector in settings and a floating MiniPlayer.
+- **Donation System**: Integrates PayPal, CashApp, and Stripe for card payments via a dedicated donation page and modal.
+- **Testimony & Quick Prayer System**: Allows public submission of testimonies (requiring admin approval) and quick prayer requests. Admins can manage testimonies.
+- **Daily Promises of God System**: Rotates through 500 Bible promises. Features a 3D Promise Card with realistic themes, a popup notification, a dedicated page, and image sharing. Includes an "Amen" button with analytics and admin controls.
 
 ## External Dependencies
 
 ### Database
 - PostgreSQL (via `DATABASE_URL` environment variable)
-- `connect-pg-simple` for session storage
+- `connect-pg-simple` (for session storage)
 
 ### Frontend Libraries
 - `@tanstack/react-query`
@@ -54,36 +56,12 @@ The architecture emphasizes shared types and type-safe APIs, with schema definit
 - Tailwind CSS
 - Custom fonts: Playfair Display, DM Sans
 
-### Build & Development
+### Build & Development Tools
 - Vite
-- Replit-specific plugins (cartographer, dev-banner, error overlay)
 - esbuild
 
-## Donation System
-- **Donate page** (`client/src/pages/Donate.tsx`): Inspirational landing with "Donate Now" button and direct PayPal/CashApp links.
-- **Donation modal**: Amount selector (suggested $5/$10/$25/$50 + custom), donor name, note, purpose dropdown, payment method (PayPal, CashApp, Card).
-- **PayPal**: Opens external link `https://www.paypal.com/donate/?hosted_button_id=Y9PAZK36FKT8L`.
-- **CashApp**: Opens external link `https://cash.app/$MuzAfo`.
-- **Card (Stripe)**: Backend endpoint `POST /api/create-donation-session` creates Stripe Checkout session. Requires `STRIPE_SECRET_KEY` env var; gracefully returns 503 if not configured.
-- **Success page** (`client/src/pages/DonationSuccess.tsx`): Route `/donation-success`, shown after Stripe checkout completion.
-- **Env vars**: `PAYPAL_DONATION_LINK`, `CASHTAG` (informational), `STRIPE_SECRET_KEY` (optional, for card payments).
-
-## Testimony & Quick Prayer System
-- **Testimony Wall** (`client/src/pages/TestimonyWall.tsx`): Route `/testimonies`. Public page displaying approved testimonies and a submission form (name, country, message). Testimonies require admin approval before appearing publicly. API: `GET /api/testimonies` (approved only), `POST /api/testimonies` (submit new).
-- **Quick Prayer** (`client/src/pages/QuickPrayer.tsx`): Route `/quick-prayer`. Simplified prayer request form (name optional, message required). Creates a prayer request with priority "prayer_normal". API: `POST /api/quick-prayer`.
-- **Admin Testimony Management**: Admin dashboard "Testimonies" tab (`TestimonyManager` component in `Admin.tsx`). Lists pending and approved testimonies. Admin can approve (`PATCH /api/testimonies/:id/approve`) or delete (`DELETE /api/testimonies/:id`). API: `GET /api/testimonies/all` (admin, all testimonies).
-- **Unread Reply Badge**: `GET /api/my-prayer-requests` enriches each request with `unreadAdminReplies` count. MyPrayerRequests list items show a badge with count of unread admin messages. Badge disappears after user opens the conversation (auto mark-read).
-- **Prayer Partner Banner**: When admin has replied to a prayer request, MyPrayerRequests conversation view shows "One of our prayer partners is praying for you right now." banner.
-- **Prayer Follow-Up Scheduler**: Automated Day 2/5/7 follow-up thread messages via `server/prayer-followups.ts`. Runs on startup and every 6 hours.
-- **Navigation Links**: Testimonies and Quick Prayer ("Pray Now") added to Header mobile nav. Quick Prayer and Testimony Wall cards linked from PrayerCounseling page.
-- **Schema Tables**: `testimonies` (id, requestId, name, country, message, photoUrl, isApproved, createdAt), `prayerFollowUps` (id, requestId, dayNumber, message, sentAt).
-
-## Daily Promises of God System
-- **Promise Dataset**: 500 Bible promises stored in `client/src/promises/promises.json` (id, heading, text, reference).
-- **Promise Engine** (`server/promiseEngine.ts`): Sequential rotation through 500 promises with no repeats until all used. Tracks delivery state in `promise_delivery_state` DB table (lastIndex, lastSentTime, isEnabled).
-- **3D Promise Card** (`client/src/components/PromiseCard3D.tsx`): Beautiful gradient cards with 5 rotating themes (gold, purple, blue, sunrise, green), 3D shadow, glow animation, brand stamp. Action buttons: Share, Amen, Read Devotional.
-- **Promise Popup** (`client/src/components/PromisePopup.tsx`): In-app modal notification showing promise card. Shows max 2x per day (morning 8AM, afternoon 5PM) via localStorage tracking. Mounted globally in App.tsx.
-- **Daily Promise Page** (`client/src/pages/DailyPromise.tsx`): Route `/daily-promise`. Full page showing current and next promise with themed cards.
-- **Promise Share** (`client/src/share/sharePromise.ts`): Canvas-based 1080x1080 image generation with 5 matching themes. Uses navigator.share with download fallback.
-- **Admin Controls**: "Promises" tab in Admin dashboard. Toggle enable/disable, advance to next, reset rotation, preview current/next promise. API: `GET /api/promise/current`, `GET /api/promise/next`, `POST /api/promise/advance`, `POST /api/promise/reset`, `PATCH /api/promise/toggle`, `GET /api/promise/stats`.
-- **Navigation**: "God's Promises" link with Sparkles icon added to both desktop and mobile nav in Header.
+### Third-Party Services
+- OpenAI (for AI-powered translations)
+- PayPal (for donations)
+- CashApp (for donations)
+- Stripe (for card donations)
