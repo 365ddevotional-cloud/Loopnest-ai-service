@@ -131,15 +131,15 @@ export default function PromiseCard3D({
                 className={`italic ${textColor}`}
                 style={{
                   fontFamily: "Georgia, 'DM Sans', serif",
-                  fontSize: "40px",
-                  fontWeight: 800,
-                  lineHeight: 1.45,
+                  fontSize: "clamp(50px, 8vw, 58px)",
+                  fontWeight: 900,
+                  lineHeight: 1.35,
                   textAlign: "center",
-                  paddingLeft: "24px",
-                  paddingRight: "24px",
-                  maxWidth: "90%",
+                  paddingLeft: "28px",
+                  paddingRight: "28px",
+                  maxWidth: "92%",
                   margin: "auto",
-                  textShadow: "0 4px 12px rgba(0,0,0,0.9)",
+                  textShadow: "0 6px 20px rgba(0,0,0,0.95)",
                 }}
               >
                 {scripture}
@@ -155,12 +155,11 @@ export default function PromiseCard3D({
               data-testid="text-promise-reference"
               className={`mb-6 text-white`}
               style={{
-                fontSize: "22px",
+                fontSize: "clamp(26px, 4vw, 30px)",
                 fontWeight: 700,
-                opacity: 0.95,
-                marginTop: "18px",
+                marginTop: "26px",
                 textAlign: "center",
-                textShadow: "0 3px 8px rgba(0,0,0,0.85)",
+                textShadow: "0 5px 16px rgba(0,0,0,0.9)",
               }}
             >
               — {reference}
@@ -203,17 +202,33 @@ export default function PromiseCard3D({
 
             <div
               data-testid="text-promise-stamp"
-              className="text-center text-white pt-2 border-t border-white/10"
+              className="pt-3 border-t border-white/10"
               style={{
-                fontSize: "18px",
-                fontWeight: 600,
-                opacity: 0.95,
-                textAlign: "center",
-                letterSpacing: "0.4px",
-                textShadow: "0 3px 8px rgba(0,0,0,0.9)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "12px",
+                fontSize: "clamp(20px, 3vw, 22px)",
+                fontWeight: 700,
+                color: "white",
+                textShadow: "0 4px 16px rgba(0,0,0,0.95)",
               }}
             >
-              Shared from 365 Daily Devotional
+              <img
+                src="/365-logo.jpeg"
+                alt="365 Daily Devotional"
+                data-testid="img-365-logo"
+                className="rounded-md"
+                style={{ width: "clamp(36px, 5vw, 44px)", height: "auto" }}
+              />
+              <span>Shared from 365 Daily Devotional App</span>
+              <img
+                src="/google-play-badge.jpeg"
+                alt="Get it on Google Play"
+                data-testid="img-play-badge"
+                className="rounded-sm"
+                style={{ width: "clamp(80px, 12vw, 95px)", height: "auto" }}
+              />
             </div>
           </div>
         </div>
