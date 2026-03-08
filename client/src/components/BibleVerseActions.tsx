@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Star, Highlighter, MessageSquare, Share2, X, Check, Type, Image, CreditCard, Loader2, Volume2 } from "lucide-react";
+import { Star, Highlighter, MessageSquare, Share2, X, Check, Type, Image, CreditCard, Loader2, Volume2, Bold, Italic } from "lucide-react";
 import { useAudioReader } from "@/hooks/useAudioReader";
 import { Button } from "@/components/ui/button";
 import {
@@ -163,7 +163,13 @@ export function BibleVerseActions({
   const [cardTheme, setCardTheme] = useState<CardTheme>("parchment");
   const [imageTheme, setImageTheme] = useState<ImageTheme>("parchment");
   const [cardRecipient, setCardRecipient] = useState("");
+  const [cardSender, setCardSender] = useState("");
   const [cardTitle, setCardTitle] = useState<CardTitle>("");
+  const [cardFontSize, setCardFontSize] = useState(28);
+  const [cardBold, setCardBold] = useState(false);
+  const [cardItalic, setCardItalic] = useState(false);
+  const [cardTextColor, setCardTextColor] = useState("#ffffff");
+  const [cardTextOutline, setCardTextOutline] = useState(false);
   const [shareLoading, setShareLoading] = useState<string | null>(null);
 
   const shareOpts = { verseText, reference, translation };
@@ -224,7 +230,13 @@ export function BibleVerseActions({
         ...shareOpts,
         theme: cardTheme,
         recipientName: cardRecipient.trim() || undefined,
+        senderName: cardSender.trim() || undefined,
         title: cardTitle || undefined,
+        fontSize: cardFontSize,
+        textColor: cardTextColor,
+        isBold: cardBold,
+        isItalic: cardItalic,
+        textOutline: cardTextOutline,
       });
       if (result.success && result.method === "download") {
         toast({ title: "Card downloaded", description: "Greeting card saved" });
@@ -236,7 +248,7 @@ export function BibleVerseActions({
     } finally {
       setShareLoading(null);
     }
-  }, [shareOpts, cardTheme, cardRecipient, cardTitle, toast]);
+  }, [shareOpts, cardTheme, cardRecipient, cardSender, cardTitle, cardFontSize, cardTextColor, cardBold, cardItalic, cardTextOutline, toast]);
 
   return (
     <>
@@ -470,7 +482,7 @@ export function BibleVerseActions({
       </Dialog>
 
       <Dialog open={cardDialogOpen} onOpenChange={setCardDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-serif">Create Greeting Card</DialogTitle>
             <DialogDescription>Customize your verse greeting card.</DialogDescription>
@@ -525,6 +537,86 @@ export function BibleVerseActions({
                 placeholder="Recipient name"
                 data-testid="input-card-recipient"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">From (optional)</label>
+              <Input
+                value={cardSender}
+                onChange={(e) => setCardSender(e.target.value)}
+                placeholder="Your name"
+                data-testid="input-card-sender"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Text Size</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min={18}
+                  max={44}
+                  step={2}
+                  value={cardFontSize}
+                  onChange={(e) => setCardFontSize(Number(e.target.value))}
+                  className="flex-1 accent-primary"
+                  data-testid="slider-font-size"
+                />
+                <span className="text-sm text-muted-foreground w-12 text-right" data-testid="text-font-size-value">{cardFontSize}px</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Text Style</label>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={cardBold ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCardBold(!cardBold)}
+                  data-testid="button-toggle-bold"
+                >
+                  <Bold className="h-4 w-4 mr-1" />
+                  Bold
+                </Button>
+                <Button
+                  variant={cardItalic ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCardItalic(!cardItalic)}
+                  data-testid="button-toggle-italic"
+                >
+                  <Italic className="h-4 w-4 mr-1" />
+                  Italic
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Text Color</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={cardTextColor}
+                    onChange={(e) => setCardTextColor(e.target.value)}
+                    className="w-8 h-8 rounded border cursor-pointer"
+                    data-testid="input-text-color"
+                  />
+                  <span className="text-xs text-muted-foreground">{cardTextColor}</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Text Border</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={cardTextOutline}
+                    onChange={(e) => setCardTextOutline(e.target.checked)}
+                    className="w-4 h-4 accent-primary"
+                    data-testid="checkbox-text-outline"
+                  />
+                  <span className="text-sm text-muted-foreground">Outline</span>
+                </div>
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-2">

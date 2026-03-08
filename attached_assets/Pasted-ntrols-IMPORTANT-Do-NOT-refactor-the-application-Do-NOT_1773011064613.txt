@@ -1,0 +1,127 @@
+ntrols"}
+
+IMPORTANT
+
+Do NOT refactor the application  
+Do NOT change backend logic, APIs, routes, or database  
+
+Only add text customization controls to the greeting card generator.
+
+
+STEP 1 — Add Text Size Control
+
+Add this below the Background selector.
+
+<label>Text Size</label>
+
+<input type="range" min="18" max="44" step="2" value="28" id="fontSizeSlider">
+
+<span id="fontSizeValue">28px</span>
+
+
+STEP 2 — Bold and Italic Toggle
+
+<label>Text Style</label>
+
+<button id="boldBtn">Bold</button>
+<button id="italicBtn">Italic</button>
+
+
+STEP 3 — Text Color Picker
+
+<label>Text Color</label>
+
+<input type="color" id="textColorPicker" value="#ffffff">
+
+
+STEP 4 — Text Border Toggle
+
+<label>Text Border</label>
+
+<input type="checkbox" id="textOutline">
+
+
+STEP 5 — Apply Customization to Scripture
+
+const verse = document.querySelector(".cardScripture");
+
+const sizeSlider = document.getElementById("fontSizeSlider");
+const colorPicker = document.getElementById("textColorPicker");
+const outlineToggle = document.getElementById("textOutline");
+
+sizeSlider.oninput = () => {
+  verse.style.fontSize = sizeSlider.value + "px";
+  document.getElementById("fontSizeValue").innerText = sizeSlider.value + "px";
+};
+
+colorPicker.oninput = () => {
+  verse.style.color = colorPicker.value;
+};
+
+document.getElementById("boldBtn").onclick = () => {
+  verse.style.fontWeight = "800";
+};
+
+document.getElementById("italicBtn").onclick = () => {
+  verse.style.fontStyle = "italic";
+};
+
+outlineToggle.onchange = () => {
+  if(outlineToggle.checked){
+    verse.style.webkitTextStroke = "1px black";
+  } else {
+    verse.style.webkitTextStroke = "0px";
+  }
+};
+
+
+STEP 6 — Allow “From” and “To”
+
+Under the title fields add:
+
+<label>To (optional)</label>
+<input type="text" id="recipientName">
+
+<label>From (optional)</label>
+<input type="text" id="senderName">
+
+
+STEP 7 — Display Names on Card
+
+.recipientName {
+position:absolute;
+top:20px;
+left:0;
+right:0;
+text-align:center;
+font-size:18px;
+color:white;
+}
+
+.senderName {
+position:absolute;
+bottom:50px;
+left:0;
+right:0;
+text-align:center;
+font-size:18px;
+color:white;
+}
+
+
+STEP 8 — When Card Generates
+
+Add names if provided.
+
+if(recipientName.value){
+  displayRecipient(recipientName.value);
+}
+
+if(senderName.value){
+  displaySender(senderName.value);
+}
+
+
+STEP 9
+
+Do not modify existing greeting card generatio

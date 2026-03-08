@@ -10,7 +10,13 @@ export interface ShareCardOptions {
   translation: string;
   theme: CardTheme;
   recipientName?: string;
+  senderName?: string;
   title?: CardTitle;
+  fontSize?: number;
+  textColor?: string;
+  isBold?: boolean;
+  isItalic?: boolean;
+  textOutline?: boolean;
 }
 
 const THEME_SEED: Record<CardTheme, number> = {
@@ -66,7 +72,7 @@ function drawCornerAccents(ctx: CanvasRenderingContext2D, w: number, h: number, 
   }
 }
 
-export async function generateGreetingCard({ verseText, reference, translation, theme, recipientName, title }: ShareCardOptions): Promise<Blob | null> {
+export async function generateGreetingCard({ verseText, reference, translation, theme, recipientName, senderName, title, fontSize = 28, textColor = "#ffffff", isBold = false, isItalic = false, textOutline = false }: ShareCardOptions): Promise<Blob | null> {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
@@ -123,26 +129,63 @@ export async function generateGreetingCard({ verseText, reference, translation, 
   }
 
   const maxTextWidth = w - 180;
-  ctx.font = "600 28px Georgia, serif";
-  ctx.fillStyle = "#ffffff";
+  const fontWeight = isBold ? "800" : "600";
+  const fontStyle = isItalic ? "italic " : "";
+  const bottomReserve = senderName ? 220 : 180;
+  const availableSpace = h - yPos - bottomReserve;
 
-  const lines = wrapText(ctx, verseText, maxTextWidth);
-  const lineHeight = 46;
-  const totalTextHeight = lines.length * lineHeight;
+  let activeFontSize = fontSize;
+  let lines: string[];
+  let lineHeight: number;
+  let totalTextHeight: number;
 
-  const availableSpace = h - yPos - 180;
+  while (activeFontSize >= 16) {
+    ctx.font = `${fontStyle}${fontWeight} ${activeFontSize}px Georgia, serif`;
+    lines = wrapText(ctx, verseText, maxTextWidth);
+    lineHeight = Math.round(activeFontSize * 1.4);
+    totalTextHeight = lines.length * lineHeight;
+    if (totalTextHeight <= availableSpace) break;
+    activeFontSize -= 2;
+  }
+
+  lines = lines!;
+  lineHeight = lineHeight!;
+  totalTextHeight = totalTextHeight!;
+
+  ctx.font = `${fontStyle}${fontWeight} ${activeFontSize}px Georgia, serif`;
+  ctx.fillStyle = textColor;
+  if (textOutline) {
+    ctx.strokeStyle = "rgba(0,0,0,0.8)";
+    ctx.lineWidth = 2;
+  }
+
   const textStartY = yPos + Math.max(0, (availableSpace - totalTextHeight) / 2);
 
   lines.forEach((line, i) => {
-    ctx.fillText(line, w / 2, textStartY + i * lineHeight);
+    const ly = textStartY + i * lineHeight;
+    if (textOutline) ctx.strokeText(line, w / 2, ly);
+    ctx.fillText(line, w / 2, ly);
   });
 
   const refY = textStartY + totalTextHeight + 45;
   ctx.font = "600 22px Georgia, serif";
   ctx.fillStyle = "rgba(255,255,255,0.9)";
+  if (textOutline) {
+    ctx.strokeStyle = "rgba(0,0,0,0.6)";
+    ctx.lineWidth = 1;
+    ctx.strokeText(`\u2014 ${reference} (${translation})`, w / 2, refY);
+  }
   ctx.fillText(`\u2014 ${reference} (${translation})`, w / 2, refY);
 
+  if (senderName) {
+    ctx.font = "italic 24px Georgia, serif";
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.fillText(`From: ${senderName}`, w / 2, refY + 50);
+  }
+
   ctx.shadowBlur = 0;
+  ctx.strokeStyle = "transparent";
+  ctx.lineWidth = 0;
   ctx.font = "14px sans-serif";
   ctx.fillStyle = "rgba(255,255,255,0.5)";
   ctx.fillText("Shared from 365 Daily Devotional", w / 2, h - 55);
