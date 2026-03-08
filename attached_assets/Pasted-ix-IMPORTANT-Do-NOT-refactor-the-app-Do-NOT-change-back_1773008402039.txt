@@ -1,0 +1,135 @@
+ix"}
+
+IMPORTANT
+
+Do NOT refactor the app  
+Do NOT change backend logic  
+Do NOT change routes, APIs, or database  
+
+Only fix scripture text layout and centering inside the greeting card.
+
+
+------------------------------------------------
+
+STEP 1 — Fix Card Layout (Center Everything)
+
+.cardContent {
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+width: 85%;
+max-width: 720px;
+text-align: center;
+}
+
+
+------------------------------------------------
+
+STEP 2 — Fix Scripture Font Size
+
+.cardScripture {
+color: #ffffff;
+font-size: clamp(28px, 4vw, 34px);
+font-weight: 700;
+line-height: 1.45;
+text-align: center;
+text-shadow: 0 4px 14px rgba(0,0,0,0.9);
+word-break: normal;
+overflow-wrap: break-word;
+}
+
+
+------------------------------------------------
+
+STEP 3 — Prevent Words From Breaking
+
+.cardScripture p {
+word-break: keep-all;
+overflow-wrap: break-word;
+}
+
+
+------------------------------------------------
+
+STEP 4 — Bible Reference
+
+.cardReference {
+font-size: 20px;
+margin-top: 16px;
+font-weight: 600;
+text-shadow: 0 3px 10px rgba(0,0,0,0.9);
+}
+
+
+------------------------------------------------
+
+STEP 5 — Footer Branding
+
+.footerBranding {
+position: absolute;
+bottom: 20px;
+left: 0;
+right: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 10px;
+font-size: 16px;
+font-weight: 600;
+color: white;
+text-shadow: 0 3px 10px rgba(0,0,0,0.9);
+}
+
+
+------------------------------------------------
+
+STEP 6 — Logo Sizes
+
+.logo365 {
+width: 32px;
+height: auto;
+}
+
+.playBadge {
+width: 70px;
+height: auto;
+}
+
+
+------------------------------------------------
+
+STEP 7 — Mobile Optimization
+
+@media (max-width: 600px) {
+
+.cardScripture {
+font-size: clamp(24px, 5vw, 30px);
+line-height: 1.4;
+}
+
+.cardReference {
+font-size: 18px;
+}
+
+.footerBranding {
+font-size: 14px;
+}
+
+.logo365 {
+width: 28px;
+}
+
+.playBadge {
+width: 60px;
+}
+
+}
+
+------------------------------------------------
+
+STEP 8
+
+Ensure the verse text remains inside the image frame and vertically centered.
+
+Do not change any other functional
