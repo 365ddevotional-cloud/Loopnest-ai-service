@@ -829,3 +829,11 @@
   border: 1.5px solid rgba(0,0,0,0.1);
 }
 
+@keyframes promiseGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(255,215,0,0.15), 0 20px 60px rgba(0,0,0,0.1); }
+  50% { box-shadow: 0 0 40px rgba(255,215,0,0.25), 0 20px 60px rgba(0,0,0,0.15); }
+}
+.animate-promise-glow {
+  animation: promiseGlow 4s ease-in-out infinite;
+}
+

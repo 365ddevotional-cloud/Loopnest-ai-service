@@ -397,3 +397,12 @@ export const prayerFollowUps = pgTable("prayer_follow_ups", {
 });
 
 export type PrayerFollowUp = typeof prayerFollowUps.$inferSelect;
+
+export const promiseDeliveryState = pgTable("promise_delivery_state", {
+  id: serial("id").primaryKey(),
+  lastIndex: integer("last_index").default(0).notNull(),
+  lastSentTime: timestamp("last_sent_time").defaultNow(),
+  isEnabled: boolean("is_enabled").default(true).notNull(),
+});
+
+export type PromiseDeliveryState = typeof promiseDeliveryState.$inferSelect;

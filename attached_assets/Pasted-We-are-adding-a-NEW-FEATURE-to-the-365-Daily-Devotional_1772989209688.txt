@@ -1,0 +1,254 @@
+We are adding a NEW FEATURE to the 365 Daily Devotional App.
+
+FEATURE NAME:
+Daily Promises of God (In-App Notifications)
+
+Goal:
+Deliver TWO daily inspirational Bible promise notifications to users inside the app using the existing in-app messaging system.
+
+Source Content:
+Use the "500 God's Promises for Believers" dataset.
+
+Example entries include:
+
+God promises salvation to those who believe in Jesus — John 3:16
+God promises peace that surpasses understanding — Philippians 4:7
+God promises strength when you are weak — Isaiah 40:29
+God promises to guide your path — Proverbs 3:5–6
+God promises that He works all things for good — Romans 8:28
+God promises that nothing can separate us from His love — Romans 8:38–39
+
+These promises must be used as Bible quotes.
+
+----------------------------------------------------
+
+FEATURE REQUIREMENTS
+
+1. TWO DAILY PROMISE NOTIFICATIONS
+
+Each user receives:
+
+Promise #1 in the morning
+Promise #2 nine hours later
+
+Example schedule:
+
+First notification: 8:00 AM
+Second notification: 5:00 PM
+
+Use a scheduler or cron job to trigger the messages daily.
+
+----------------------------------------------------
+
+2. MESSAGE FORMAT
+
+Each notification must include:
+
+• Catchy heading
+• Bible promise text
+• Bible reference
+• “From the 365DailyDevotional” stamp
+
+Example:
+
+Heading:
+God Is Working Everything For Your Good
+
+Card Message:
+"And we know that God causes everything to work together for the good of those who love God."
+Romans 8:28
+
+Stamp:
+From the 365DailyDevotional
+
+----------------------------------------------------
+
+3. BEAUTIFUL 3D PROMISE CARD
+
+Each promise must appear in a BEAUTIFUL 3D CARD.
+
+Card design requirements:
+
+• Soft glowing background
+• Gold or light rays
+• Rounded corners
+• Subtle 3D shadow
+• Gradient background
+• Different colors every time
+• Light animation glow
+
+Each card must be visually DIFFERENT from the previous one.
+
+Examples of color themes:
+
+Gold + White
+Purple + Light
+Blue + Heaven glow
+Sunrise gradient
+Soft green peace theme
+
+----------------------------------------------------
+
+4. RANDOM PROMISE ENGINE
+
+Create a Promise Engine that:
+
+• pulls from the 500 promise dataset
+• ensures promises rotate sequentially
+• prevents repeats until all 500 are used
+• stores last delivered promise index
+
+Storage can be:
+
+database table
+or
+JSON store
+
+Example structure:
+
+promises_table
+
+id
+promise_text
+scripture_reference
+heading
+
+delivery_state
+
+last_index
+last_sent_time
+
+----------------------------------------------------
+
+5. NOTIFICATION TYPES
+
+Send the notification through:
+
+1) In-app message popup
+2) Push notification
+3) Notification center inside the app
+
+Popup example:
+
+"God's Promise for You Today"
+
+Then show the 3D promise card.
+
+----------------------------------------------------
+
+6. USER EXPERIENCE
+
+When the notification appears:
+
+User taps it
+App opens
+A BEAUTIFUL full-screen promise card appears
+
+With buttons:
+
+Share
+Save
+Amen
+Read Devotional
+
+----------------------------------------------------
+
+7. SHARE FEATURE
+
+Allow users to share the promise card to:
+
+WhatsApp
+Facebook
+Instagram
+X
+Telegram
+
+Export the card as an image.
+
+----------------------------------------------------
+
+8. BRAND STAMP
+
+Every promise card must include a small elegant footer stamp:
+
+From the 365DailyDevotional
+
+----------------------------------------------------
+
+9. ADMIN CONTROL
+
+Add an admin toggle:
+
+Enable / Disable Promise Notifications
+
+Admin can also:
+
+• preview next promise
+• manually send promise
+• reset promise rotation
+
+----------------------------------------------------
+
+10. PERFORMANCE
+
+Promises must load instantly.
+
+Cache the next promise.
+
+----------------------------------------------------
+
+11. FILE STRUCTURE
+
+Create the following modules:
+
+/promises
+    promises.json
+    promiseEngine.ts
+    promiseScheduler.ts
+
+/components
+    PromiseCard3D.tsx
+
+/services
+    promiseNotificationService.ts
+
+----------------------------------------------------
+
+12. VISUAL CARD COMPONENT
+
+Create a React component:
+
+PromiseCard3D.tsx
+
+Props:
+
+heading
+scripture
+reference
+theme
+
+Use:
+
+gradient backgrounds
+3D shadow
+soft animation glow
+
+----------------------------------------------------
+
+13. TESTING
+
+Verify:
+
+two notifications daily
+9 hour interval
+no duplicate promise
+card renders properly
+share button works
+
+----------------------------------------------------
+
+14. FINAL RESULT
+
+Users will now receive TWO beautiful promise cards daily that inspire them with God's Word.
+
+This feature must feel like a premium spiritual experience.

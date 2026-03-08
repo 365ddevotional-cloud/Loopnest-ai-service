@@ -77,3 +77,13 @@ The architecture emphasizes shared types and type-safe APIs, with schema definit
 - **Prayer Follow-Up Scheduler**: Automated Day 2/5/7 follow-up thread messages via `server/prayer-followups.ts`. Runs on startup and every 6 hours.
 - **Navigation Links**: Testimonies and Quick Prayer ("Pray Now") added to Header mobile nav. Quick Prayer and Testimony Wall cards linked from PrayerCounseling page.
 - **Schema Tables**: `testimonies` (id, requestId, name, country, message, photoUrl, isApproved, createdAt), `prayerFollowUps` (id, requestId, dayNumber, message, sentAt).
+
+## Daily Promises of God System
+- **Promise Dataset**: 500 Bible promises stored in `client/src/promises/promises.json` (id, heading, text, reference).
+- **Promise Engine** (`server/promiseEngine.ts`): Sequential rotation through 500 promises with no repeats until all used. Tracks delivery state in `promise_delivery_state` DB table (lastIndex, lastSentTime, isEnabled).
+- **3D Promise Card** (`client/src/components/PromiseCard3D.tsx`): Beautiful gradient cards with 5 rotating themes (gold, purple, blue, sunrise, green), 3D shadow, glow animation, brand stamp. Action buttons: Share, Amen, Read Devotional.
+- **Promise Popup** (`client/src/components/PromisePopup.tsx`): In-app modal notification showing promise card. Shows max 2x per day (morning 8AM, afternoon 5PM) via localStorage tracking. Mounted globally in App.tsx.
+- **Daily Promise Page** (`client/src/pages/DailyPromise.tsx`): Route `/daily-promise`. Full page showing current and next promise with themed cards.
+- **Promise Share** (`client/src/share/sharePromise.ts`): Canvas-based 1080x1080 image generation with 5 matching themes. Uses navigator.share with download fallback.
+- **Admin Controls**: "Promises" tab in Admin dashboard. Toggle enable/disable, advance to next, reset rotation, preview current/next promise. API: `GET /api/promise/current`, `GET /api/promise/next`, `POST /api/promise/advance`, `POST /api/promise/reset`, `PATCH /api/promise/toggle`, `GET /api/promise/stats`.
+- **Navigation**: "God's Promises" link with Sparkles icon added to both desktop and mobile nav in Header.

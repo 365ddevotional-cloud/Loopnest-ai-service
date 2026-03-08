@@ -55,6 +55,8 @@ import LoopNestDashboard from "@/loopnest/DashboardPage";
 import LoopNestBuilder from "@/loopnest/BuilderPage";
 import TestimonyWall from "@/pages/TestimonyWall";
 import QuickPrayer from "@/pages/QuickPrayer";
+import DailyPromise from "@/pages/DailyPromise";
+import PromisePopup from "@/components/PromisePopup";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -70,6 +72,7 @@ function Router() {
       <Route path="/my-requests" component={MyPrayerRequests} />
       <Route path="/testimonies" component={TestimonyWall} />
       <Route path="/quick-prayer" component={QuickPrayer} />
+      <Route path="/daily-promise" component={DailyPromise} />
       <Route path="/devotional/today" component={PublicDevotionalToday} />
       <Route path="/devotional/:date" component={SingleDevotional} />
       <Route path="/public/archive" component={PublicArchive} />
@@ -136,6 +139,7 @@ function AppContent() {
         <Toaster />
         <NotificationPrompt />
         <NotificationTrigger />
+        <PromisePopup />
         <WalkthroughModal />
         <FloatingFeedbackButton />
         <AudioMiniPlayer />

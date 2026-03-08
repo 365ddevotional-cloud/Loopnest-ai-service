@@ -125,6 +125,134 @@ function SeedDevotionalsButton() {
   );
 }
 
+function PromiseAdmin() {
+  const { toast } = useToast();
+
+  const { data: stats, isLoading } = useQuery<{
+    total: number;
+    currentIndex: number;
+    isEnabled: boolean;
+    currentPromise: { id: number; heading: string; text: string; reference: string };
+    nextPromise: { id: number; heading: string; text: string; reference: string };
+  }>({
+    queryKey: ["/api/promise/stats"],
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (enabled: boolean) =>
+      apiRequest("PATCH", "/api/promise/toggle", { enabled }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/promise/stats"] });
+      toast({ title: "Promise notifications updated" });
+    },
+  });
+
+  const advanceMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/promise/advance"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/promise/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/promise/current"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/promise/next"] });
+      toast({ title: "Advanced to next promise" });
+    },
+  });
+
+  const resetMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/promise/reset"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/promise/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/promise/current"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/promise/next"] });
+      toast({ title: "Promise rotation reset to beginning" });
+    },
+  });
+
+  if (isLoading) {
+    return <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+  }
+
+  if (!stats) return null;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-4 bg-muted/30 rounded-lg border border-border">
+          <p className="text-sm text-muted-foreground">Total Promises</p>
+          <p className="text-3xl font-bold text-primary" data-testid="text-total-promises">{stats.total}</p>
+        </div>
+        <div className="p-4 bg-muted/30 rounded-lg border border-border">
+          <p className="text-sm text-muted-foreground">Current Position</p>
+          <p className="text-3xl font-bold text-primary" data-testid="text-current-index">{stats.currentIndex + 1} / {stats.total}</p>
+        </div>
+        <div className="p-4 bg-muted/30 rounded-lg border border-border">
+          <p className="text-sm text-muted-foreground">Status</p>
+          <Badge
+            data-testid="badge-promise-status"
+            variant={stats.isEnabled ? "default" : "secondary"}
+            className={stats.isEnabled ? "bg-green-600" : ""}
+          >
+            {stats.isEnabled ? "Active" : "Disabled"}
+          </Badge>
+        </div>
+      </div>
+
+      <div className="flex gap-3 flex-wrap">
+        <Button
+          data-testid="button-toggle-promises"
+          variant={stats.isEnabled ? "destructive" : "default"}
+          onClick={() => toggleMutation.mutate(!stats.isEnabled)}
+          disabled={toggleMutation.isPending}
+        >
+          {stats.isEnabled ? "Disable Notifications" : "Enable Notifications"}
+        </Button>
+        <Button
+          data-testid="button-advance-promise"
+          variant="outline"
+          onClick={() => advanceMutation.mutate()}
+          disabled={advanceMutation.isPending}
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Advance to Next
+        </Button>
+        <Button
+          data-testid="button-reset-promises"
+          variant="outline"
+          onClick={() => {
+            if (confirm("Reset promise rotation to the beginning?")) {
+              resetMutation.mutate();
+            }
+          }}
+          disabled={resetMutation.isPending}
+        >
+          Reset Rotation
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="p-5 border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl">
+          <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-3 flex items-center gap-2">
+            <Eye className="w-4 h-4" />
+            Current Promise (#{stats.currentIndex + 1})
+          </h3>
+          <p className="font-bold text-lg mb-2" data-testid="text-current-promise-heading">{stats.currentPromise.heading}</p>
+          <p className="italic text-muted-foreground mb-2">"{stats.currentPromise.text}"</p>
+          <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">— {stats.currentPromise.reference}</p>
+        </div>
+
+        <div className="p-5 border border-sky-200 dark:border-sky-800 bg-sky-50/50 dark:bg-sky-950/20 rounded-xl">
+          <h3 className="text-sm font-semibold text-sky-800 dark:text-sky-300 mb-3 flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Next Promise (#{stats.currentIndex + 2})
+          </h3>
+          <p className="font-bold text-lg mb-2" data-testid="text-next-promise-heading">{stats.nextPromise.heading}</p>
+          <p className="italic text-muted-foreground mb-2">"{stats.nextPromise.text}"</p>
+          <p className="text-sm font-semibold text-sky-700 dark:text-sky-400">— {stats.nextPromise.reference}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TestimonyManager() {
   const { toast } = useToast();
   const { data: allTestimonies = [], isLoading } = useQuery<any[]>({
@@ -1688,7 +1816,7 @@ export default function Admin() {
       </div>
 
       <Tabs defaultValue="inbox" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6 max-w-4xl">
+        <TabsList className="grid w-full grid-cols-7 max-w-5xl">
           <TabsTrigger value="inbox" data-testid="tab-inbox">
             <Inbox className="w-4 h-4 mr-2" />
             Prayer Inbox
@@ -1712,6 +1840,10 @@ export default function Admin() {
           <TabsTrigger value="devotionals" data-testid="tab-devotionals">
             <ShieldCheck className="w-4 h-4 mr-2" />
             Create New
+          </TabsTrigger>
+          <TabsTrigger value="promises" data-testid="tab-promises">
+            <Sparkles className="w-4 h-4 mr-2" />
+            Promises
           </TabsTrigger>
         </TabsList>
 
@@ -1807,6 +1939,20 @@ export default function Admin() {
             </CardHeader>
             <CardContent className="p-6 md:p-8">
               <CreateDevotionalForm />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="promises">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+                <Sparkles className="w-6 h-6" />
+                Daily Promises of God
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <PromiseAdmin />
             </CardContent>
           </Card>
         </TabsContent>

@@ -9,6 +9,7 @@ import { registerObjectStorageRoutes } from "./replit_integrations/object_storag
 import { getTodayDateString, isFutureDate, isPastDate, getDayOfYear } from "./date-utils";
 import { seedAllDevotionals } from "./seed-devotionals";
 import { getOrCreateTranslation, isAllowedLanguage, getCachedTranslationsForLanguage } from "./translationService";
+import { getCurrentPromise, getNextPromise, advancePromise, resetRotation, toggleEnabled, getTotalPromises, startPromiseScheduler } from "./promiseEngine";
 
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
@@ -1505,6 +1506,79 @@ export async function registerRoutes(
   await seedDatabase();
   await seedAutoReplyTemplates();
 
+  // =========== PROMISE OF GOD ROUTES ===========
+
+  app.get("/api/promise/current", async (_req, res) => {
+    try {
+      const result = await getCurrentPromise();
+      res.json(result);
+    } catch (err) {
+      console.error("Error getting current promise:", err);
+      res.status(500).json({ message: "Could not get current promise" });
+    }
+  });
+
+  app.get("/api/promise/next", async (_req, res) => {
+    try {
+      const result = await getNextPromise();
+      res.json(result);
+    } catch (err) {
+      console.error("Error getting next promise:", err);
+      res.status(500).json({ message: "Could not get next promise" });
+    }
+  });
+
+  app.post("/api/promise/advance", requireAdmin, async (_req, res) => {
+    try {
+      const result = await advancePromise();
+      res.json(result);
+    } catch (err) {
+      console.error("Error advancing promise:", err);
+      res.status(500).json({ message: "Could not advance promise" });
+    }
+  });
+
+  app.post("/api/promise/reset", requireAdmin, async (_req, res) => {
+    try {
+      await resetRotation();
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Error resetting promise rotation:", err);
+      res.status(500).json({ message: "Could not reset promise rotation" });
+    }
+  });
+
+  app.patch("/api/promise/toggle", requireAdmin, async (req, res) => {
+    try {
+      const { enabled } = req.body;
+      if (typeof enabled !== "boolean") {
+        return res.status(400).json({ message: "enabled must be a boolean" });
+      }
+      const result = await toggleEnabled(enabled);
+      res.json({ isEnabled: result });
+    } catch (err) {
+      console.error("Error toggling promise notifications:", err);
+      res.status(500).json({ message: "Could not toggle promise notifications" });
+    }
+  });
+
+  app.get("/api/promise/stats", requireAdmin, async (_req, res) => {
+    try {
+      const current = await getCurrentPromise();
+      const next = await getNextPromise();
+      res.json({
+        total: getTotalPromises(),
+        currentIndex: current.index,
+        isEnabled: current.isEnabled,
+        currentPromise: current.promise,
+        nextPromise: next.promise,
+      });
+    } catch (err) {
+      console.error("Error getting promise stats:", err);
+      res.status(500).json({ message: "Could not get promise stats" });
+    }
+  });
+
   // Run prayer follow-ups on startup and every 6 hours
   import("./prayer-followups").then(({ runPrayerFollowUps }) => {
     runPrayerFollowUps().catch(err => console.error("[FollowUp] Initial run error:", err));
@@ -1512,6 +1586,8 @@ export async function registerRoutes(
       runPrayerFollowUps().catch(err => console.error("[FollowUp] Scheduled run error:", err));
     }, 6 * 60 * 60 * 1000);
   });
+
+  startPromiseScheduler();
 
   return httpServer;
 }
