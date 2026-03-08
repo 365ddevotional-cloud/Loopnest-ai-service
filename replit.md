@@ -37,7 +37,7 @@ The architecture emphasizes shared types and type-safe APIs using a `/shared` di
 - **Universal Audio Reader**: Browser-based TTS using SpeechSynthesis API with enhanced voice selection, intelligent pacing, and a devotional-specific slower rate. Features a voice selector in settings and a floating MiniPlayer.
 - **Donation System**: Integrates PayPal, CashApp, and Stripe for card payments via a dedicated donation page and modal.
 - **Testimony & Quick Prayer System**: Allows public submission of testimonies (requiring admin approval) and quick prayer requests. Admins can manage testimonies.
-- **Daily Promises of God System**: Rotates through 500 Bible promises. Features a 3D Promise Card with realistic themes, a popup notification, a dedicated page, and image sharing. Includes an "Amen" button with analytics and admin controls.
+- **Daily Promises of God System**: Rotates through 500 Bible promises. Features premium devotional poster cards using 50 rotating background images (`/public/devotional-backgrounds/`), large typography (36px heading, 28px scripture, 22px reference). Background engine (`client/src/lib/backgroundEngine.ts`) handles image loading, caching, and preloading. Canvas-based share images also use background images. Includes popup notification, dedicated `/daily-promise` page, "Amen" button with `promise_amens` DB persistence and admin analytics (most loved today/week/all-time), and Devotional button navigating to `/devotional/today`.
 
 ## External Dependencies
 

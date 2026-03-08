@@ -1,0 +1,217 @@
+d" id="83291"}
+Upgrade the 365 Daily Devotional app to produce premium devotional poster style Bible verse cards.
+
+This upgrade must fix font size issues, replace flat backgrounds with image backgrounds, and support 50 rotating Christian background images.
+
+-------------------------------------
+
+SECTION 1 — FONT SIZE AND TYPOGRAPHY FIX
+
+Current verse cards display text too small.
+
+Update typography to the following:
+
+Title font:
+font-size: 36px
+font-weight: 700
+font-family: serif
+text-align: center
+
+Scripture text:
+font-size: 28px
+font-weight: 600
+line-height: 1.6
+text-align: center
+max-width: 80%
+
+Reference text:
+font-size: 22px
+font-weight: 600
+opacity: 0.9
+text-align: center
+
+Footer stamp:
+font-size: 14px
+opacity: 0.6
+text-align: center
+
+-------------------------------------
+
+SECTION 2 — BACKGROUND IMAGE SYSTEM
+
+Replace all flat color backgrounds with rotating image backgrounds.
+
+Create folder:
+
+/public/devotional-backgrounds/
+
+Add 50 background image files.
+
+Use names:
+
+bg_01.jpg
+bg_02.jpg
+bg_03.jpg
+...
+bg_50.jpg
+
+These images must be used randomly for:
+
+Daily Promise cards
+Greeting Card generator
+Bible verse share images
+
+-------------------------------------
+
+SECTION 3 — BACKGROUND ROTATION ENGINE
+
+Create file:
+
+backgroundEngine.ts
+
+Logic:
+
+Load array of 50 background images.
+
+When generating a card:
+
+Select a random background.
+
+Apply CSS:
+
+background-size: cover
+background-position: center
+background-repeat: no-repeat
+
+Add soft overlay gradient:
+
+linear-gradient(
+rgba(0,0,0,0.15),
+rgba(0,0,0,0.15)
+)
+
+This ensures text readability.
+
+-------------------------------------
+
+SECTION 4 — CARD LAYOUT
+
+Create a premium devotional poster layout.
+
+Structure:
+
+Card container
+Rounded corners
+Soft shadow
+Padding: 40px
+
+Top section:
+
+Title
+
+Middle section:
+
+Scripture verse
+
+Bottom section:
+
+Reference
+
+Footer:
+
+From the 365DailyDevotional
+
+-------------------------------------
+
+SECTION 5 — PROMISE CARD COMPONENT
+
+Update PromiseCard component.
+
+Props:
+
+title
+scripture
+reference
+backgroundImage
+
+Use random background from backgroundEngine.
+
+-------------------------------------
+
+SECTION 6 — GREETING CARD GENERATOR UPGRADE
+
+Upgrade the Greeting Card generator to use the same background system.
+
+When user taps:
+
+Share
+Greeting Card
+
+Generate a card using:
+
+random devotional background
+large typography
+centered layout
+poster style formatting
+
+-------------------------------------
+
+SECTION 7 — AMEN ANALYTICS
+
+Create table:
+
+promise_amens
+
+Columns:
+
+id
+promise_id
+user_id
+created_at
+
+Each time Amen button is pressed:
+
+Insert row.
+
+Create admin dashboard showing:
+
+Most loved promise today
+Most loved promise this week
+Total Amen count per promise
+
+-------------------------------------
+
+SECTION 8 — DEVOTIONAL BUTTON FIX
+
+Fix the Devotional button on promise popup.
+
+When tapped:
+
+Navigate to today's devotional page.
+
+Use route:
+
+/devotional/today
+
+-------------------------------------
+
+SECTION 9 — PERFORMANCE
+
+Preload background images.
+
+Cache 5 backgrounds ahead.
+
+Ensure card generation loads instantly.
+
+-------------------------------------
+
+SECTION 10 — FINAL RESULT
+
+After implementation the app must display:
+
+Large readable scripture text
+Premium devotional poster cards
+Rotating Christian backgrounds
+Beautiful greeting cards
+Amen analytics dashboard
+Working devotio
