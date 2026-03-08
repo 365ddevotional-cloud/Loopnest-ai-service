@@ -3,7 +3,8 @@ import { Share2, Heart, BookOpen, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { getBackgroundUrl, getRandomBgIndex, isLightBackground, preloadAhead } from "@/lib/backgroundEngine";
+import { devotionalBackgrounds } from "@/constants/devotionalBackgrounds";
+import { getRandomBgIndex, preloadAhead } from "@/lib/backgroundEngine";
 
 export function getRandomThemeIndex(seed: number): number {
   return getRandomBgIndex(seed);
@@ -34,9 +35,8 @@ export default function PromiseCard3D({
 }: PromiseCard3DProps) {
   const [amenClicked, setAmenClicked] = useState(false);
   const [, navigate] = useLocation();
-  const bgIndex = themeIndex % 50;
-  const bgUrl = getBackgroundUrl(bgIndex);
-  const isLight = isLightBackground(bgIndex);
+  const bgIndex = getRandomBgIndex(themeIndex);
+  const randomBackground = devotionalBackgrounds[bgIndex];
 
   useEffect(() => {
     preloadAhead(themeIndex, 5);
@@ -79,7 +79,7 @@ export default function PromiseCard3D({
         style={{
           borderRadius: "18px",
           minHeight: "420px",
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url(${bgUrl})`,
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url(${randomBackground})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
@@ -114,7 +114,7 @@ export default function PromiseCard3D({
                 fontSize: "36px",
                 fontWeight: 700,
                 textAlign: "center",
-                textShadow: "0 2px 8px rgba(0,0,0,0.35)",
+                textShadow: "0 3px 8px rgba(0,0,0,0.7)",
               }}
             >
               {heading}
@@ -131,12 +131,12 @@ export default function PromiseCard3D({
                 className={`italic ${textColor}`}
                 style={{
                   fontFamily: "Georgia, 'DM Sans', serif",
-                  fontSize: "22px",
+                  fontSize: "28px",
                   fontWeight: 700,
-                  lineHeight: 1.6,
+                  lineHeight: 1.5,
                   textAlign: "center",
                   padding: "20px 0",
-                  textShadow: "0 2px 6px rgba(0,0,0,0.35)",
+                  textShadow: "0 3px 8px rgba(0,0,0,0.7)",
                 }}
               >
                 {scripture}
@@ -156,7 +156,7 @@ export default function PromiseCard3D({
                 fontWeight: 600,
                 opacity: 0.9,
                 textAlign: "center",
-                textShadow: "0 1px 4px rgba(0,0,0,0.25)",
+                textShadow: "0 2px 6px rgba(0,0,0,0.5)",
               }}
             >
               — {reference}

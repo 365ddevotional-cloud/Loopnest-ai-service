@@ -1,0 +1,132 @@
+IMPORTANT SAFETY RULES
+
+Do NOT refactor the project.
+Do NOT modify backend logic.
+Do NOT change routing.
+Do NOT change database code.
+Do NOT rename files.
+Do NOT modify existing APIs.
+
+Only implement a background rotation system and improve verse readability on the devotional greeting card.
+
+
+STEP 1 — Create Background List File
+
+Create file:
+
+client/src/constants/devotionalBackgrounds.ts
+
+
+Paste this code inside:
+
+export const devotionalBackgrounds = [
+
+"https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=2048",
+"https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=2048",
+"https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=2048",
+"https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=2048",
+"https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=2048",
+"https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=2048",
+"https://images.unsplash.com/photo-1439853949127-fa647821eba0?w=2048",
+"https://images.unsplash.com/photo-1500534623283-312aade485b7?w=2048",
+"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=2048",
+"https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=2048",
+
+"https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=2048",
+"https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=2048",
+"https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=2048",
+"https://images.unsplash.com/photo-1459664018906-085c36f472af?w=2048",
+"https://images.unsplash.com/photo-1465101046530-73398c7f28ca?w=2048",
+"https://images.unsplash.com/photo-1482192596544-9eb780fc7f66?w=2048",
+"https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=2048",
+"https://images.unsplash.com/photo-1465101178521-c1a9136a3b99?w=2048",
+"https://images.unsplash.com/photo-1476231790875-016a80c274f3?w=2048",
+"https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=2048",
+
+"https://images.unsplash.com/photo-1464822759844-d150ad6f5be4?w=2048",
+"https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=2048",
+"https://images.unsplash.com/photo-1482192505345-5655af888cc4?w=2048",
+"https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=2048",
+"https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=2048",
+"https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=2048",
+"https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=2048",
+"https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=2048",
+"https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=2048",
+"https://images.unsplash.com/photo-1459664018906-085c36f472af?w=2048",
+
+"https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=2048",
+"https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=2048",
+"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=2048",
+"https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=2048",
+"https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=2048",
+"https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=2048",
+"https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=2048",
+"https://images.unsplash.com/photo-1482192596544-9eb780fc7f66?w=2048",
+"https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=2048",
+"https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=2048",
+
+"https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=2048",
+"https://images.unsplash.com/photo-1465101178521-c1a9136a3b99?w=2048",
+"https://images.unsplash.com/photo-1476231790875-016a80c274f3?w=2048",
+"https://images.unsplash.com/photo-1464822759844-d150ad6f5be4?w=2048",
+"https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=2048",
+"https://images.unsplash.com/photo-1500534623283-312aade485b7?w=2048",
+"https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=2048",
+"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=2048",
+"https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=2048",
+"https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=2048"
+
+]
+
+
+STEP 2 — Apply Random Background
+
+In the devotional greeting card component add:
+
+import { devotionalBackgrounds } from "@/constants/devotionalBackgrounds"
+
+const randomBackground =
+devotionalBackgrounds[Math.floor(Math.random() * devotionalBackgrounds.length)]
+
+
+STEP 3 — Apply Background Styling
+
+Add to the card container:
+
+style={{
+backgroundImage: `url(${randomBackground})`,
+backgroundSize: "cover",
+backgroundPosition: "center"
+}}
+
+
+STEP 4 — Add Dark Overlay for Readability
+
+Add overlay layer:
+
+background: rgba(0,0,0,0.45)
+
+
+STEP 5 — Improve Verse Readability
+
+.cardScripture {
+color: white;
+font-size: 28px;
+font-weight: 700;
+text-align: center;
+text-shadow: 0 3px 8px rgba(0,0,0,0.7);
+line-height: 1.5;
+}
+
+.cardReference {
+color: white;
+font-size: 16px;
+margin-top: 10px;
+opacity: 0.9;
+}
+
+
+STEP 6 — Do Not Modify Anything Else
+
+Leave all other UI logic unchanged.
+Only apply the background rotation and verse readability improvements.
