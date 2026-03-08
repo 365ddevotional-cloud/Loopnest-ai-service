@@ -1,5 +1,9 @@
 const express = require("express")
 const cors = require("cors")
+const OpenAI = require("openai")
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+})
 
 const app = express()
 
@@ -12,43 +16,40 @@ app.get("/", (req, res) => {
   res.send("LoopNest AI Service Running")
 })
 
-app.post("/generate-game", (req, res) => {
+app.post("/generate-game", async (req, res) => {
+
   const { theme, ageGroup } = req.body
 
-  res.json({
-    title: "Adventure Quest",
-    type: "platformer",
-    theme: theme || "adventure",
-    ageGroup: ageGroup || "all",
-    objective: "Collect items and avoid obstacles",
-    difficulty: "easy"
-  })
+  try {
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "You are LoopNest AI, an AI that designs safe, moral, family-friendly video games suitable for all ages."
+        },
+        {
+          role: "user",
+          content: `Create a game idea with theme ${theme} suitable for ${ageGroup}. Include title, gameplay, characters, and objective.`
+        }
+      ]
+    })
+
+    res.json({
+      game: completion.choices[0].message.content
+    })
+
+  } catch (error) {
+
+    res.status(500).json({
+      error: "Game generation failed"
+    })
+
+  }
+
 })
 
-app.post("/generate-quiz", (req, res) => {
-  const { topic } = req.body
-
-  res.json({
-    title: `${topic || "General"} Quiz`,
-    questions: [
-      {
-        question: "Which animal is the fastest?",
-        options: ["Lion","Cheetah","Tiger","Horse"],
-        answer: "Cheetah"
-      }
-    ]
-  })
-})
-
-app.post("/generate-puzzle", (req, res) => {
-  const { theme } = req.body
-
-  res.json({
-    type: "word-puzzle",
-    theme: theme || "nature",
-    words: ["tree","river","mountain"]
-  })
-})
 
 app.post("/text-to-video", (req, res) => {
   res.json({ status: "coming soon" })
