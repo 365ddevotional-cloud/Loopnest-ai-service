@@ -6,7 +6,7 @@ const loadingPromises: Map<number, Promise<HTMLImageElement>> = new Map();
 
 export function getBackgroundUrl(index: number): string {
   const num = ((index % TOTAL_BACKGROUNDS) + 1).toString().padStart(2, "0");
-  return `${BG_PATH}/bg_${num}.jpg`;
+  return `${BG_PATH}/bg${num}.jpg`;
 }
 
 export function getRandomBgIndex(seed: number): number {

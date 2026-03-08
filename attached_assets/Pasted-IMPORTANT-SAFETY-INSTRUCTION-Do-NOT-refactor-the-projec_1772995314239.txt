@@ -1,0 +1,127 @@
+IMPORTANT SAFETY INSTRUCTION
+
+Do NOT refactor the project.
+Do NOT modify existing backend logic.
+Do NOT change routing.
+Do NOT change database models.
+Do NOT change any API behavior.
+Do NOT rename files.
+Do NOT modify existing working components.
+
+Only ADD the devotional background system described below.
+
+GOAL
+
+Add 50 premium Christian poster-style backgrounds so devotional greeting cards look world-class similar to Bible App or Hallow style devotional cards.
+
+These backgrounds will be used randomly for scripture greeting cards.
+
+
+STEP 1 — Create Background Folder
+
+Create a folder:
+
+/public/devotional-backgrounds/
+
+
+STEP 2 — Add Background Loader File
+
+Create a file:
+
+client/src/constants/devotionalBackgrounds.ts
+
+
+Insert the following list of 50 backgrounds:
+
+export const devotionalBackgrounds = [
+
+"/devotional-backgrounds/bg01.jpg",
+"/devotional-backgrounds/bg02.jpg",
+"/devotional-backgrounds/bg03.jpg",
+"/devotional-backgrounds/bg04.jpg",
+"/devotional-backgrounds/bg05.jpg",
+"/devotional-backgrounds/bg06.jpg",
+"/devotional-backgrounds/bg07.jpg",
+"/devotional-backgrounds/bg08.jpg",
+"/devotional-backgrounds/bg09.jpg",
+"/devotional-backgrounds/bg10.jpg",
+
+"/devotional-backgrounds/bg11.jpg",
+"/devotional-backgrounds/bg12.jpg",
+"/devotional-backgrounds/bg13.jpg",
+"/devotional-backgrounds/bg14.jpg",
+"/devotional-backgrounds/bg15.jpg",
+"/devotional-backgrounds/bg16.jpg",
+"/devotional-backgrounds/bg17.jpg",
+"/devotional-backgrounds/bg18.jpg",
+"/devotional-backgrounds/bg19.jpg",
+"/devotional-backgrounds/bg20.jpg",
+
+"/devotional-backgrounds/bg21.jpg",
+"/devotional-backgrounds/bg22.jpg",
+"/devotional-backgrounds/bg23.jpg",
+"/devotional-backgrounds/bg24.jpg",
+"/devotional-backgrounds/bg25.jpg",
+"/devotional-backgrounds/bg26.jpg",
+"/devotional-backgrounds/bg27.jpg",
+"/devotional-backgrounds/bg28.jpg",
+"/devotional-backgrounds/bg29.jpg",
+"/devotional-backgrounds/bg30.jpg",
+
+"/devotional-backgrounds/bg31.jpg",
+"/devotional-backgrounds/bg32.jpg",
+"/devotional-backgrounds/bg33.jpg",
+"/devotional-backgrounds/bg34.jpg",
+"/devotional-backgrounds/bg35.jpg",
+"/devotional-backgrounds/bg36.jpg",
+"/devotional-backgrounds/bg37.jpg",
+"/devotional-backgrounds/bg38.jpg",
+"/devotional-backgrounds/bg39.jpg",
+"/devotional-backgrounds/bg40.jpg",
+
+"/devotional-backgrounds/bg41.jpg",
+"/devotional-backgrounds/bg42.jpg",
+"/devotional-backgrounds/bg43.jpg",
+"/devotional-backgrounds/bg44.jpg",
+"/devotional-backgrounds/bg45.jpg",
+"/devotional-backgrounds/bg46.jpg",
+"/devotional-backgrounds/bg47.jpg",
+"/devotional-backgrounds/bg48.jpg",
+"/devotional-backgrounds/bg49.jpg",
+"/devotional-backgrounds/bg50.jpg"
+
+];
+
+
+STEP 3 — Add Random Background Selection
+
+Where the devotional card background is set, import:
+
+import { devotionalBackgrounds } from "@/constants/devotionalBackgrounds"
+
+Add:
+
+const randomBackground =
+devotionalBackgrounds[Math.floor(Math.random() * devotionalBackgrounds.length)]
+
+Then apply:
+
+style={{
+backgroundImage: `url(${randomBackground})`,
+backgroundSize: "cover",
+backgroundPosition: "center"
+}}
+
+
+STEP 4 — Ensure Background Does Not Break Layout
+
+Do NOT change existing layout.
+Do NOT change card structure.
+
+Only ensure the background image fills the card properly.
+
+
+STEP 5 — Preserve Everything Else
+
+Leave all existing UI logic exactly as it is.
+Only add the background rotation feature.

@@ -109,12 +109,12 @@ async function generate() {
   for (let i = 0; i < BACKGROUNDS.length; i++) {
     const num = String(i + 1).padStart(2, '0');
     const svg = buildSvg(BACKGROUNDS[i], i);
-    const outPath = join(OUT, `bg_${num}.jpg`);
+    const outPath = join(OUT, `bg${num}.jpg`);
     await sharp(Buffer.from(svg))
       .resize(1080, 1080)
       .jpeg({ quality: 85 })
       .toFile(outPath);
-    console.log(`  Created bg_${num}.jpg`);
+    console.log(`  Created bg${num}.jpg`);
   }
   console.log('Done!');
 }
