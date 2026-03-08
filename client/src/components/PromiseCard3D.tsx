@@ -79,7 +79,7 @@ export default function PromiseCard3D({
         style={{
           borderRadius: "18px",
           minHeight: "420px",
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url(${randomBackground})`,
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.50), rgba(0,0,0,0.50)), url(${randomBackground})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
@@ -131,12 +131,15 @@ export default function PromiseCard3D({
                 className={`italic ${textColor}`}
                 style={{
                   fontFamily: "Georgia, 'DM Sans', serif",
-                  fontSize: "28px",
-                  fontWeight: 700,
-                  lineHeight: 1.5,
+                  fontSize: "40px",
+                  fontWeight: 800,
+                  lineHeight: 1.45,
                   textAlign: "center",
-                  padding: "20px 0",
-                  textShadow: "0 3px 8px rgba(0,0,0,0.7)",
+                  paddingLeft: "24px",
+                  paddingRight: "24px",
+                  maxWidth: "90%",
+                  margin: "auto",
+                  textShadow: "0 4px 12px rgba(0,0,0,0.9)",
                 }}
               >
                 {scripture}
@@ -150,13 +153,14 @@ export default function PromiseCard3D({
 
             <p
               data-testid="text-promise-reference"
-              className={`mb-6 ${accentColor}`}
+              className={`mb-6 text-white`}
               style={{
-                fontSize: "16px",
-                fontWeight: 600,
-                opacity: 0.9,
+                fontSize: "22px",
+                fontWeight: 700,
+                opacity: 0.95,
+                marginTop: "18px",
                 textAlign: "center",
-                textShadow: "0 2px 6px rgba(0,0,0,0.5)",
+                textShadow: "0 3px 8px rgba(0,0,0,0.85)",
               }}
             >
               — {reference}
@@ -198,16 +202,18 @@ export default function PromiseCard3D({
             )}
 
             <div
-              className={`text-center ${accentColor} pt-2 border-t border-white/10`}
+              data-testid="text-promise-stamp"
+              className="text-center text-white pt-2 border-t border-white/10"
               style={{
-                fontSize: "14px",
-                opacity: 0.6,
+                fontSize: "18px",
+                fontWeight: 600,
+                opacity: 0.95,
                 textAlign: "center",
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
+                letterSpacing: "0.4px",
+                textShadow: "0 3px 8px rgba(0,0,0,0.9)",
               }}
             >
-              From the 365DailyDevotional
+              Shared from 365 Daily Devotional
             </div>
           </div>
         </div>
