@@ -15,6 +15,8 @@ import {
   sundaySchoolLessons,
   testimonies,
   prayerFollowUps,
+  inboxThreads,
+  inboxMessages,
   type Devotional,
   type InsertDevotional,
   type UpdateDevotionalRequest,
@@ -46,6 +48,10 @@ import {
   type Testimony,
   type InsertTestimony,
   type PrayerFollowUp,
+  type InboxThread,
+  type InsertInboxThread,
+  type InboxMessage,
+  type InsertInboxMessage,
 } from "@shared/schema";
 import { eq, desc, and, isNull, or, ilike, lte, notInArray, sql } from "drizzle-orm";
 
@@ -121,6 +127,19 @@ export interface IStorage {
   getFollowUpsForRequest(requestId: number): Promise<PrayerFollowUp[]>;
   createFollowUp(requestId: number, dayNumber: number, message: string): Promise<PrayerFollowUp>;
   getRequestsNeedingFollowUp(dayNumber: number): Promise<PrayerRequest[]>;
+
+  // Inbox
+  createInboxThread(thread: InsertInboxThread, firstMessage: string): Promise<InboxThread>;
+  getInboxThreadsByEmail(email: string): Promise<InboxThread[]>;
+  getAllInboxThreads(filters?: { category?: string; status?: string }): Promise<InboxThread[]>;
+  getInboxThread(id: number): Promise<InboxThread | undefined>;
+  getInboxMessages(threadId: number, viewerType: "user" | "admin"): Promise<InboxMessage[]>;
+  createInboxMessage(message: InsertInboxMessage): Promise<InboxMessage>;
+  updateInboxThreadStatus(id: number, status: string): Promise<InboxThread>;
+  markInboxThreadRead(id: number, readerType: "user" | "admin"): Promise<void>;
+  deleteInboxMessage(id: number, viewerType: "user" | "admin"): Promise<void>;
+  getLastInboxMessage(threadId: number): Promise<InboxMessage | undefined>;
+  cleanupOldInboxMessages(daysOld: number): Promise<number>;
 
   // Bible Passages
   getBiblePassage(reference: string, translation: BibleTranslation): Promise<BiblePassage | undefined>;
@@ -626,6 +645,117 @@ export class DatabaseStorage implements IStorage {
           sql`${prayerRequests.id} NOT IN (${existingFollowUps})`
         )
       );
+  }
+  // Inbox methods
+  async createInboxThread(thread: InsertInboxThread, firstMessage: string): Promise<InboxThread> {
+    const [created] = await db
+      .insert(inboxThreads)
+      .values({ ...thread, hasUnreadAdmin: true })
+      .returning();
+    await db
+      .insert(inboxMessages)
+      .values({ threadId: created.id, senderType: "user", message: firstMessage });
+    return created;
+  }
+
+  async getInboxThreadsByEmail(email: string): Promise<InboxThread[]> {
+    return await db
+      .select()
+      .from(inboxThreads)
+      .where(eq(inboxThreads.userEmail, email.toLowerCase()))
+      .orderBy(desc(inboxThreads.updatedAt));
+  }
+
+  async getAllInboxThreads(filters?: { category?: string; status?: string }): Promise<InboxThread[]> {
+    const conditions = [];
+    if (filters?.category) conditions.push(eq(inboxThreads.category, filters.category));
+    if (filters?.status) conditions.push(eq(inboxThreads.status, filters.status));
+    return await db
+      .select()
+      .from(inboxThreads)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(inboxThreads.updatedAt));
+  }
+
+  async getInboxThread(id: number): Promise<InboxThread | undefined> {
+    const [thread] = await db
+      .select()
+      .from(inboxThreads)
+      .where(eq(inboxThreads.id, id));
+    return thread;
+  }
+
+  async getInboxMessages(threadId: number, viewerType: "user" | "admin"): Promise<InboxMessage[]> {
+    const deletedCol = viewerType === "user" ? inboxMessages.deletedByUser : inboxMessages.deletedByAdmin;
+    return await db
+      .select()
+      .from(inboxMessages)
+      .where(and(eq(inboxMessages.threadId, threadId), eq(deletedCol, false)))
+      .orderBy(inboxMessages.createdAt);
+  }
+
+  async createInboxMessage(message: InsertInboxMessage): Promise<InboxMessage> {
+    const [created] = await db
+      .insert(inboxMessages)
+      .values(message)
+      .returning();
+    const updateData: Record<string, unknown> = { updatedAt: new Date() };
+    if (message.senderType === "admin" || message.senderType === "ai") {
+      updateData.hasUnreadUser = true;
+      updateData.status = "replied";
+    } else {
+      updateData.hasUnreadAdmin = true;
+    }
+    await db
+      .update(inboxThreads)
+      .set(updateData)
+      .where(eq(inboxThreads.id, message.threadId));
+    return created;
+  }
+
+  async updateInboxThreadStatus(id: number, status: string): Promise<InboxThread> {
+    const [updated] = await db
+      .update(inboxThreads)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(inboxThreads.id, id))
+      .returning();
+    return updated;
+  }
+
+  async markInboxThreadRead(id: number, readerType: "user" | "admin"): Promise<void> {
+    const field = readerType === "user" ? { hasUnreadUser: false } : { hasUnreadAdmin: false };
+    await db
+      .update(inboxThreads)
+      .set(field)
+      .where(eq(inboxThreads.id, id));
+  }
+
+  async deleteInboxMessage(id: number, viewerType: "user" | "admin"): Promise<void> {
+    const field = viewerType === "user" ? { deletedByUser: true } : { deletedByAdmin: true };
+    await db
+      .update(inboxMessages)
+      .set(field)
+      .where(eq(inboxMessages.id, id));
+  }
+
+  async getLastInboxMessage(threadId: number): Promise<InboxMessage | undefined> {
+    const [msg] = await db
+      .select()
+      .from(inboxMessages)
+      .where(eq(inboxMessages.threadId, threadId))
+      .orderBy(desc(inboxMessages.createdAt))
+      .limit(1);
+    return msg;
+  }
+
+  async cleanupOldInboxMessages(daysOld: number): Promise<number> {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - daysOld);
+    const result = await db
+      .delete(inboxMessages)
+      .where(lte(inboxMessages.createdAt, cutoff))
+      .returning();
+    return result.length;
   }
 }
 

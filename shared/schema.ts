@@ -415,3 +415,54 @@ export const promiseAmens = pgTable("promise_amens", {
 });
 
 export type PromiseAmen = typeof promiseAmens.$inferSelect;
+
+export const INBOX_CATEGORIES = ["Prayer", "Counseling", "Scripture Question", "Support", "General"] as const;
+export type InboxCategory = typeof INBOX_CATEGORIES[number];
+
+export const INBOX_STATUSES = ["open", "replied", "closed"] as const;
+export type InboxStatus = typeof INBOX_STATUSES[number];
+
+export const inboxThreads = pgTable("inbox_threads", {
+  id: serial("id").primaryKey(),
+  userEmail: text("user_email").notNull(),
+  userName: text("user_name").notNull(),
+  subject: text("subject").notNull(),
+  category: text("category").notNull(),
+  status: text("status").default("open").notNull(),
+  hasUnreadAdmin: boolean("has_unread_admin").default(false),
+  hasUnreadUser: boolean("has_unread_user").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertInboxThreadSchema = createInsertSchema(inboxThreads).omit({
+  id: true,
+  status: true,
+  hasUnreadAdmin: true,
+  hasUnreadUser: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InboxThread = typeof inboxThreads.$inferSelect;
+export type InsertInboxThread = z.infer<typeof insertInboxThreadSchema>;
+
+export const inboxMessages = pgTable("inbox_messages", {
+  id: serial("id").primaryKey(),
+  threadId: integer("thread_id").notNull(),
+  senderType: text("sender_type").notNull(),
+  message: text("message").notNull(),
+  deletedByUser: boolean("deleted_by_user").default(false),
+  deletedByAdmin: boolean("deleted_by_admin").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertInboxMessageSchema = createInsertSchema(inboxMessages).omit({
+  id: true,
+  deletedByUser: true,
+  deletedByAdmin: true,
+  createdAt: true,
+});
+
+export type InboxMessage = typeof inboxMessages.$inferSelect;
+export type InsertInboxMessage = z.infer<typeof insertInboxMessageSchema>;

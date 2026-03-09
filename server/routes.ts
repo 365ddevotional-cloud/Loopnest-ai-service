@@ -10,7 +10,8 @@ import { getTodayDateString, isFutureDate, isPastDate, getDayOfYear } from "./da
 import { seedAllDevotionals } from "./seed-devotionals";
 import { getOrCreateTranslation, isAllowedLanguage, getCachedTranslationsForLanguage } from "./translationService";
 import { getCurrentPromise, getNextPromise, advancePromise, resetRotation, toggleEnabled, getTotalPromises, startPromiseScheduler } from "./promiseEngine";
-import { promiseAmens } from "@shared/schema";
+import { generateAIEncouragement } from "./inbox-ai";
+import { promiseAmens, INBOX_CATEGORIES } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, desc, gte } from "drizzle-orm";
 
@@ -1662,6 +1663,224 @@ export async function registerRoutes(
   });
 
   startPromiseScheduler();
+
+  // ============================================
+  // INBOX ROUTES — User endpoints
+  // ============================================
+
+  app.post("/api/inbox/threads", async (req, res) => {
+    try {
+      const schema = z.object({
+        userEmail: z.string().email(),
+        userName: z.string().min(1),
+        subject: z.string().min(1),
+        category: z.enum(INBOX_CATEGORIES as unknown as [string, ...string[]]),
+        message: z.string().min(1),
+      });
+      const data = schema.parse(req.body);
+      const thread = await storage.createInboxThread(
+        {
+          userEmail: data.userEmail.toLowerCase(),
+          userName: data.userName,
+          subject: data.subject,
+          category: data.category,
+        },
+        data.message
+      );
+
+      generateAIEncouragement(data.category, data.message)
+        .then(async (aiMessage) => {
+          await storage.createInboxMessage({
+            threadId: thread.id,
+            senderType: "ai",
+            message: aiMessage,
+          });
+        })
+        .catch((err) => console.error("AI encouragement failed:", err));
+
+      res.status(201).json(thread);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Create inbox thread error:", error);
+      res.status(500).json({ message: "Failed to create thread" });
+    }
+  });
+
+  app.get("/api/inbox/threads", async (req, res) => {
+    try {
+      const email = req.query.email as string;
+      if (!email) return res.status(400).json({ message: "Email is required" });
+      const threads = await storage.getInboxThreadsByEmail(email.toLowerCase());
+      const threadsWithPreview = await Promise.all(
+        threads.map(async (thread) => {
+          const lastMsg = await storage.getLastInboxMessage(thread.id);
+          return {
+            ...thread,
+            lastMessage: lastMsg?.message?.substring(0, 100) || "",
+            lastMessageDate: lastMsg?.createdAt || thread.createdAt,
+            lastMessageSender: lastMsg?.senderType || "user",
+          };
+        })
+      );
+      res.json(threadsWithPreview);
+    } catch (error) {
+      console.error("Get inbox threads error:", error);
+      res.status(500).json({ message: "Failed to fetch threads" });
+    }
+  });
+
+  app.get("/api/inbox/threads/:id", async (req, res) => {
+    try {
+      const email = req.query.email as string;
+      if (!email) return res.status(400).json({ message: "Email is required" });
+      const thread = await storage.getInboxThread(parseInt(req.params.id));
+      if (!thread) return res.status(404).json({ message: "Thread not found" });
+      if (thread.userEmail !== email.toLowerCase()) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      await storage.markInboxThreadRead(thread.id, "user");
+      const messages = await storage.getInboxMessages(thread.id, "user");
+      res.json({ thread: { ...thread, hasUnreadUser: false }, messages });
+    } catch (error) {
+      console.error("Get inbox thread error:", error);
+      res.status(500).json({ message: "Failed to fetch thread" });
+    }
+  });
+
+  app.post("/api/inbox/threads/:id/messages", async (req, res) => {
+    try {
+      const email = req.query.email as string;
+      if (!email) return res.status(400).json({ message: "Email is required" });
+      const thread = await storage.getInboxThread(parseInt(req.params.id));
+      if (!thread) return res.status(404).json({ message: "Thread not found" });
+      if (thread.userEmail !== email.toLowerCase()) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      if (thread.status === "closed") {
+        return res.status(400).json({ message: "This conversation has been closed" });
+      }
+      const { message } = z.object({ message: z.string().min(1) }).parse(req.body);
+      const created = await storage.createInboxMessage({
+        threadId: thread.id,
+        senderType: "user",
+        message,
+      });
+      res.status(201).json(created);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Send inbox message error:", error);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  app.delete("/api/inbox/messages/:id", async (req, res) => {
+    try {
+      const email = req.query.email as string;
+      if (!email) return res.status(400).json({ message: "Email is required" });
+      const messageId = parseInt(req.params.id);
+      const threadId = req.query.threadId as string;
+      if (!threadId) return res.status(400).json({ message: "Thread ID is required" });
+      const thread = await storage.getInboxThread(parseInt(threadId));
+      if (!thread) return res.status(404).json({ message: "Thread not found" });
+      if (thread.userEmail !== email.toLowerCase()) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      await storage.deleteInboxMessage(messageId, "user");
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete inbox message error:", error);
+      res.status(500).json({ message: "Failed to delete message" });
+    }
+  });
+
+  // ============================================
+  // INBOX ROUTES — Admin endpoints
+  // ============================================
+
+  app.get("/api/admin/inbox/threads", requireAdmin, async (req, res) => {
+    try {
+      const filters: { category?: string; status?: string } = {};
+      if (req.query.category) filters.category = req.query.category as string;
+      if (req.query.status) filters.status = req.query.status as string;
+      const threads = await storage.getAllInboxThreads(filters);
+      const threadsWithPreview = await Promise.all(
+        threads.map(async (thread) => {
+          const lastMsg = await storage.getLastInboxMessage(thread.id);
+          return {
+            ...thread,
+            lastMessage: lastMsg?.message?.substring(0, 100) || "",
+            lastMessageDate: lastMsg?.createdAt || thread.createdAt,
+            lastMessageSender: lastMsg?.senderType || "user",
+          };
+        })
+      );
+      res.json(threadsWithPreview);
+    } catch (error) {
+      console.error("Admin get inbox threads error:", error);
+      res.status(500).json({ message: "Failed to fetch threads" });
+    }
+  });
+
+  app.get("/api/admin/inbox/threads/:id", requireAdmin, async (req, res) => {
+    try {
+      const thread = await storage.getInboxThread(parseInt(req.params.id));
+      if (!thread) return res.status(404).json({ message: "Thread not found" });
+      await storage.markInboxThreadRead(thread.id, "admin");
+      const messages = await storage.getInboxMessages(thread.id, "admin");
+      res.json({ thread: { ...thread, hasUnreadAdmin: false }, messages });
+    } catch (error) {
+      console.error("Admin get inbox thread error:", error);
+      res.status(500).json({ message: "Failed to fetch thread" });
+    }
+  });
+
+  app.post("/api/admin/inbox/threads/:id/messages", requireAdmin, async (req, res) => {
+    try {
+      const thread = await storage.getInboxThread(parseInt(req.params.id));
+      if (!thread) return res.status(404).json({ message: "Thread not found" });
+      const { message } = z.object({ message: z.string().min(1) }).parse(req.body);
+      const created = await storage.createInboxMessage({
+        threadId: thread.id,
+        senderType: "admin",
+        message,
+      });
+      res.status(201).json(created);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Admin send inbox message error:", error);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  app.patch("/api/admin/inbox/threads/:id/status", requireAdmin, async (req, res) => {
+    try {
+      const { status } = z.object({ status: z.enum(["open", "replied", "closed"]) }).parse(req.body);
+      const updated = await storage.updateInboxThreadStatus(parseInt(req.params.id), status);
+      res.json(updated);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Admin update thread status error:", error);
+      res.status(500).json({ message: "Failed to update status" });
+    }
+  });
+
+  app.delete("/api/admin/inbox/messages/:id", requireAdmin, async (req, res) => {
+    try {
+      await storage.deleteInboxMessage(parseInt(req.params.id), "admin");
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Admin delete inbox message error:", error);
+      res.status(500).json({ message: "Failed to delete message" });
+    }
+  });
 
   return httpServer;
 }

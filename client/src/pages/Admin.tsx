@@ -14,7 +14,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
 import { useLocation } from "wouter";
-import type { PrayerRequest, ThreadMessage, PrayerAttachment, Devotional, SundaySchoolLesson } from "@shared/schema";
+import type { PrayerRequest, ThreadMessage, PrayerAttachment, Devotional, SundaySchoolLesson, InboxThread, InboxMessage } from "@shared/schema";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getDevotionalStatus } from "@/lib/date-utils";
@@ -1712,6 +1712,290 @@ function formatDevotionalForCopy(d: Devotional): string {
   return lines.join('\n');
 }
 
+interface ExtendedInboxThread extends InboxThread {
+  lastMessage?: string;
+  lastMessageDate?: string;
+  lastMessageSender?: string;
+}
+
+const INBOX_CATEGORY_OPTIONS = [
+  { value: "all", label: "All" },
+  { value: "Prayer", label: "Prayer" },
+  { value: "Counseling", label: "Counseling" },
+  { value: "Scripture Question", label: "Scripture Question" },
+  { value: "Support", label: "Support" },
+  { value: "General", label: "General" },
+];
+
+const INBOX_STATUS_OPTIONS = [
+  { value: "all", label: "All" },
+  { value: "open", label: "Open" },
+  { value: "replied", label: "Replied" },
+  { value: "closed", label: "Closed" },
+];
+
+const INBOX_STATUS_COLORS: Record<string, string> = {
+  open: "bg-blue-100 text-blue-800",
+  replied: "bg-green-100 text-green-800",
+  closed: "bg-gray-100 text-gray-800",
+};
+
+function MessagesInbox() {
+  const { toast } = useToast();
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedThreadId, setSelectedThreadId] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState("");
+
+  const queryParams = new URLSearchParams();
+  if (categoryFilter !== "all") queryParams.set("category", categoryFilter);
+  if (statusFilter !== "all") queryParams.set("status", statusFilter);
+  const queryString = queryParams.toString();
+
+  const { data: threads = [], isLoading: threadsLoading } = useQuery<ExtendedInboxThread[]>({
+    queryKey: ["/api/admin/inbox/threads", categoryFilter, statusFilter],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/inbox/threads${queryString ? `?${queryString}` : ""}`);
+      if (!res.ok) throw new Error("Failed to load threads");
+      return res.json();
+    },
+  });
+
+  const { data: threadDetail, isLoading: detailLoading } = useQuery<{ thread: ExtendedInboxThread; messages: InboxMessage[] }>({
+    queryKey: ["/api/admin/inbox/threads", selectedThreadId],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/inbox/threads/${selectedThreadId}`);
+      if (!res.ok) throw new Error("Failed to load thread");
+      return res.json();
+    },
+    enabled: !!selectedThreadId,
+  });
+
+  const sendReplyMutation = useMutation({
+    mutationFn: async ({ threadId, message }: { threadId: number; message: string }) => {
+      const res = await apiRequest("POST", `/api/admin/inbox/threads/${threadId}/messages`, { message });
+      return res.json();
+    },
+    onSuccess: () => {
+      setReplyText("");
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/inbox/threads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/inbox/threads", selectedThreadId] });
+      toast({ title: "Reply sent" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to send reply", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ threadId, status }: { threadId: number; status: string }) => {
+      return apiRequest("PATCH", `/api/admin/inbox/threads/${threadId}/status`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/inbox/threads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/inbox/threads", selectedThreadId] });
+      toast({ title: "Status updated" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to update status", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleSendReply = () => {
+    if (!selectedThreadId || !replyText.trim()) return;
+    sendReplyMutation.mutate({ threadId: selectedThreadId, message: replyText });
+  };
+
+  if (threadsLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const selectedThread = threadDetail?.thread;
+  const messages = threadDetail?.messages || [];
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <h3 className="font-serif text-lg font-semibold text-foreground">Message Threads</h3>
+        </div>
+
+        <div className="flex items-center gap-3 flex-wrap">
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-44" data-testid="admin-inbox-select-category">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              {INBOX_CATEGORY_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-36" data-testid="admin-inbox-select-status">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              {INBOX_STATUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2 max-h-[500px] overflow-y-auto">
+          {threads.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">No threads found.</p>
+          ) : (
+            threads.map((thread) => (
+              <div
+                key={thread.id}
+                onClick={() => setSelectedThreadId(thread.id)}
+                className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                  selectedThreadId === thread.id
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:bg-muted/50"
+                }`}
+                data-testid={`admin-inbox-thread-${thread.id}`}
+              >
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {thread.hasUnreadAdmin && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-primary flex-shrink-0" data-testid={`admin-inbox-unread-${thread.id}`} />
+                    )}
+                    <span className="font-medium text-foreground">{thread.userName}</span>
+                    <span className="text-xs text-muted-foreground">{thread.userEmail}</span>
+                  </div>
+                  <Badge className={`text-xs ${INBOX_STATUS_COLORS[thread.status] || ""}`}>
+                    {thread.status.charAt(0).toUpperCase() + thread.status.slice(1)}
+                  </Badge>
+                </div>
+                <p className="text-sm font-medium text-foreground mb-1">{thread.subject}</p>
+                {thread.lastMessage && (
+                  <p className="text-sm text-muted-foreground line-clamp-1">{thread.lastMessage}</p>
+                )}
+                <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground flex-wrap">
+                  <Badge variant="secondary" className="text-xs">{thread.category}</Badge>
+                  <span>|</span>
+                  <span>{thread.updatedAt ? format(new Date(thread.updatedAt), "MMM d, h:mm a") : ""}</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div>
+        {selectedThreadId && selectedThread ? (
+          <Card className="border-primary/10">
+            <CardHeader className="bg-muted/30 border-b">
+              <div className="flex items-start justify-between gap-2 flex-wrap">
+                <div>
+                  <CardTitle className="font-serif text-xl text-foreground">{selectedThread.subject}</CardTitle>
+                  <p className="text-sm text-muted-foreground">{selectedThread.userName} &lt;{selectedThread.userEmail}&gt;</p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="secondary" className="text-xs">{selectedThread.category}</Badge>
+                  <Select
+                    value={selectedThread.status}
+                    onValueChange={(value) => updateStatusMutation.mutate({ threadId: selectedThread.id, status: value })}
+                  >
+                    <SelectTrigger className="w-28" data-testid="admin-inbox-select-thread-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="open">Open</SelectItem>
+                      <SelectItem value="replied">Replied</SelectItem>
+                      <SelectItem value="closed">Closed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {updateStatusMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              {detailLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                  {messages.map((msg) => {
+                    const isUser = msg.senderType === "user";
+                    const isAi = msg.senderType === "ai";
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`p-3 rounded-lg max-w-[85%] ${
+                          isUser
+                            ? "bg-muted/30 ml-auto"
+                            : isAi
+                              ? "bg-violet-50 dark:bg-violet-950/20 mr-auto"
+                              : "bg-primary/10 mr-auto"
+                        }`}
+                        data-testid={`admin-inbox-message-${msg.id}`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+                          <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                            {isUser ? "User" : isAi ? (
+                              <>
+                                <Sparkles className="w-3 h-3" />
+                                AI Assistant
+                              </>
+                            ) : "Admin"}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {msg.createdAt ? format(new Date(msg.createdAt), "MMM d, h:mm a") : ""}
+                          </span>
+                        </div>
+                        <p className="text-foreground text-sm whitespace-pre-wrap">{msg.message}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="space-y-3 pt-2 border-t border-border">
+                <Textarea
+                  placeholder="Write your reply..."
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  rows={3}
+                  className="resize-none"
+                  data-testid="admin-inbox-textarea-reply"
+                />
+                <Button
+                  type="button"
+                  onClick={handleSendReply}
+                  disabled={sendReplyMutation.isPending || !replyText.trim()}
+                  data-testid="admin-inbox-button-send-reply"
+                >
+                  {sendReplyMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4 mr-2" />
+                  )}
+                  Send Reply
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full py-12 text-muted-foreground">
+            <MessageSquare className="w-12 h-12 mb-4 opacity-50" />
+            <p>Select a thread to view conversation</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function DevotionalPreviewTools() {
   const { toast } = useToast();
   const today = format(new Date(), "yyyy-MM-dd");
@@ -1939,10 +2223,14 @@ export default function Admin() {
       </div>
 
       <Tabs defaultValue="inbox" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7 max-w-5xl">
+        <TabsList className="grid w-full grid-cols-8 max-w-5xl">
           <TabsTrigger value="inbox" data-testid="tab-inbox">
             <Inbox className="w-4 h-4 mr-2" />
             Prayer Inbox
+          </TabsTrigger>
+          <TabsTrigger value="messages" data-testid="tab-messages">
+            <MessageSquare className="w-4 h-4 mr-2" />
+            Messages
           </TabsTrigger>
           <TabsTrigger value="testimonies" data-testid="tab-testimonies">
             <Star className="w-4 h-4 mr-2" />
@@ -1980,6 +2268,23 @@ export default function Admin() {
             </CardHeader>
             <CardContent className="p-6">
               <PrayerInbox />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="messages">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+                <MessageSquare className="w-6 h-6" />
+                Messages Inbox
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Manage user message threads and conversations.
+              </p>
+            </CardHeader>
+            <CardContent className="p-6">
+              <MessagesInbox />
             </CardContent>
           </Card>
         </TabsContent>

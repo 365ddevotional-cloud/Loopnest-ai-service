@@ -56,6 +56,7 @@ import LoopNestBuilder from "@/loopnest/BuilderPage";
 import TestimonyWall from "@/pages/TestimonyWall";
 import QuickPrayer from "@/pages/QuickPrayer";
 import DailyPromise from "@/pages/DailyPromise";
+import Inbox from "@/pages/Inbox";
 import PromisePopup from "@/components/PromisePopup";
 import NotFound from "@/pages/not-found";
 
@@ -90,6 +91,7 @@ function Router() {
       <Route path="/bible" component={Bible} />
       <Route path="/sunday-school/:id" component={SundaySchoolLessonPage} />
       <Route path="/sunday-school" component={SundaySchool} />
+      <Route path="/inbox" component={Inbox} />
       <Route path="/admin-login" component={AdminLogin} />
       <Route path="/interactive" component={GamesHub} />
       <Route path="/interactive/create" component={CreateGamePage} />

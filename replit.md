@@ -15,7 +15,7 @@ The frontend uses React 18, TypeScript, Wouter for routing, and TanStack React Q
 The backend is built with Node.js and Express, written in TypeScript using ES modules. It provides RESTful API endpoints with Zod validation. esbuild is used for server bundling.
 
 ### Data Storage
-PostgreSQL is the database, managed by Drizzle ORM with `drizzle-zod` for schema validation. The schema includes tables for devotionals, bible passages, prayer requests, prayer replies, sunday school lessons, testimonies, promise delivery states, and promise amens. Drizzle Kit manages migrations.
+PostgreSQL is the database, managed by Drizzle ORM with `drizzle-zod` for schema validation. The schema includes tables for devotionals, bible passages, prayer requests, prayer replies, sunday school lessons, testimonies, promise delivery states, promise amens, inbox threads, and inbox messages. Drizzle Kit manages migrations.
 
 ### Key Design Patterns
 The architecture emphasizes shared types and type-safe APIs using a `/shared` directory. A Repository Pattern abstracts database operations. UI components are designed for composition.
@@ -37,6 +37,7 @@ The architecture emphasizes shared types and type-safe APIs using a `/shared` di
 - **Universal Audio Reader**: Browser-based TTS using SpeechSynthesis API with enhanced voice selection, intelligent pacing, and a devotional-specific slower rate. Features a voice selector in settings and a floating MiniPlayer.
 - **Donation System**: Integrates PayPal, CashApp, and Stripe for card payments via a dedicated donation page and modal.
 - **Testimony & Quick Prayer System**: Allows public submission of testimonies (requiring admin approval) and quick prayer requests. Admins can manage testimonies.
+- **Inbox Conversation System**: Full messaging system between users and admin. Users access via email (no login required). Supports categories (Prayer, Counseling, Scripture Question, Support, General) with threaded conversations. AI auto-response generates scriptural encouragement via OpenAI when threads are created. Chat-bubble UI with user messages on right, admin/AI on left. Admin manages threads via "Messages" tab in dashboard with category/status filters. Tables: `inbox_threads` (id, userEmail, userName, subject, category, status, hasUnreadAdmin, hasUnreadUser) and `inbox_messages` (id, threadId, senderType, message, deletedByUser, deletedByAdmin). Soft-delete for messages. 90-day retention support. AI module: `server/inbox-ai.ts`. User page: `/inbox`. Admin tab: Messages in `/admin`.
 - **Daily Promises of God System**: Rotates through 500 Bible promises. Features premium devotional poster cards using 50 rotating background images (`/public/devotional-backgrounds/`), large typography (36px heading, 28px scripture, 22px reference). Background engine (`client/src/lib/backgroundEngine.ts`) handles image loading, caching, and preloading. Canvas-based share images also use background images. Includes popup notification, dedicated `/daily-promise` page, "Amen" button with `promise_amens` DB persistence and admin analytics (most loved today/week/all-time), and Devotional button navigating to `/devotional/today`.
 
 ## External Dependencies

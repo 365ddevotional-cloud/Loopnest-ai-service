@@ -1,0 +1,219 @@
+IMPORTANT
+
+Do NOT refactor the application  
+Do NOT modify existing APIs unless required  
+Do NOT break the current prayer request system  
+
+Extend it into a full Inbox conversation system between users and admin.
+
+
+--------------------------------------------
+
+FEATURE NAME
+
+Create a new system called Inbox
+
+The Inbox stores conversations between:
+
+User ↔ 365 Daily Devotional Admin
+
+
+--------------------------------------------
+
+STEP 1 — Create Database Tables
+
+
+TABLE: inbox_threads
+
+id
+user_id
+subject
+category
+status
+created_at
+updated_at
+
+
+TABLE: inbox_messages
+
+id
+thread_id
+sender_type (user | admin | ai)
+sender_id
+message
+created_at
+deleted_by_user (boolean)
+deleted_by_admin (boolean)
+
+
+--------------------------------------------
+
+STEP 2 — Convert Prayer Requests Into Threads
+
+Existing prayer requests become conversation threads.
+
+Example:
+
+User sends prayer request  
+→ new inbox_thread created  
+→ first inbox_message created
+
+
+--------------------------------------------
+
+STEP 3 — User Inbox Page
+
+Add new page:
+
+/inbox
+
+
+User can see:
+
+Inbox
+--------------------------------
+Prayer Request
+Counseling
+Scripture Question
+General Message
+Support
+
+
+Each item shows:
+
+subject  
+last message  
+date  
+status
+
+
+--------------------------------------------
+
+STEP 4 — Conversation View
+
+When user opens a thread:
+
+Show messages like chat bubbles.
+
+User message → right side  
+Admin message → left side
+
+
+Example:
+
+User:
+I need prayer for deliverance.
+
+Admin:
+We are praying for you.  
+Psalm 34:17 — The righteous cry out...
+
+
+--------------------------------------------
+
+STEP 5 — Send Message
+
+User can reply inside the conversation.
+
+New messages are stored in:
+
+inbox_messages
+
+
+--------------------------------------------
+
+STEP 6 — Admin Dashboard
+
+Extend the current admin system.
+
+Admin can see:
+
+All inbox threads  
+Filter by category  
+Reply to messages
+
+
+--------------------------------------------
+
+STEP 7 — Categories
+
+Allow these conversation categories:
+
+Prayer
+Counseling
+Scripture Question
+Support
+General
+
+
+--------------------------------------------
+
+STEP 8 — Automatic AI Assistant
+
+If admin is offline, the system can generate a scriptural response using OpenAI.
+
+Rules:
+
+AI replies must include scripture encouragement  
+AI must not replace admin counseling  
+AI response should say:
+
+"This is an automated encouragement message while our ministry team reviews your request."
+
+
+Example AI response:
+
+We are praying for you.
+
+Psalm 147:3  
+"He heals the brokenhearted and binds up their wounds."
+
+Our ministry team will respond soon.
+
+
+--------------------------------------------
+
+STEP 9 — Message Retention
+
+Default retention:
+
+90 days
+
+Users may delete messages manually.
+
+Admin may delete messages manually.
+
+
+--------------------------------------------
+
+STEP 10 — Security
+
+Users may only see threads where:
+
+thread.user_id == current_user.id
+
+Admin can see all threads.
+
+
+--------------------------------------------
+
+STEP 11 — Notification
+
+When admin replies:
+
+Show notification:
+
+"You have a new message from 365 Daily Devotional."
+
+
+--------------------------------------------
+
+STEP 12 — Do Not Change Existing Features
+
+Keep current:
+
+Prayer request system  
+Admin dashboard layout  
+User accounts
+
+Only extend them with Inbox functionality.
