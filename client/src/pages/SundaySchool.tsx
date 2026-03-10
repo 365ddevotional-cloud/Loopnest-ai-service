@@ -8,22 +8,30 @@ import { Link } from "wouter";
 import type { SundaySchoolLesson } from "@shared/schema";
 import { Helmet } from "react-helmet-async";
 import { getAllSundayLessons } from "@/lib/offlineDb";
+import { useMemo } from "react";
 
-function getLocalDateString(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+function formatLocalDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function computeOfflinePreview(lessons: any[]): any[] {
-  if (!lessons.length) return [];
-  const sorted = [...lessons].sort((a, b) => a.date.localeCompare(b.date));
-  const totalCount = sorted.length;
-
-  const today = getLocalDateString();
-  const [tY, tM, tD] = today.split("-").map(Number);
-  const todayDate = new Date(tY, tM - 1, tD);
-  const dayOfWeek = todayDate.getDay();
+function getNextSundays(count: number): string[] {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dayOfWeek = today.getDay();
   const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+  const sundays: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const sunday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + daysUntilSunday + i * 7);
+    sundays.push(formatLocalDate(sunday));
+  }
+  return sundays;
+}
+
+function buildUpcomingLessons(allLessons: any[]): any[] {
+  if (!allLessons.length) return [];
+  const sorted = [...allLessons].sort((a, b) => a.date.localeCompare(b.date));
+  const totalCount = sorted.length;
+  const nextSundays = getNextSundays(4);
 
   const earliestDate = sorted[0].date;
   const [eY, eM, eD] = earliestDate.split("-").map(Number);
@@ -31,25 +39,23 @@ function computeOfflinePreview(lessons: any[]): any[] {
 
   const result: any[] = [];
   const seen = new Set<number>();
-  for (let i = 0; i <= 5; i++) {
-    const targetDate = new Date(tY, tM - 1, tD + daysUntilSunday + i * 7);
-    const targetMs = targetDate.getTime();
-    const targetStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}-${String(targetDate.getDate()).padStart(2, "0")}`;
 
-    const exact = sorted.find((l) => l.date === targetStr);
+  for (const targetSunday of nextSundays) {
+    const exact = sorted.find((l) => l.date === targetSunday);
     if (exact && !seen.has(exact.id)) {
       seen.add(exact.id);
       result.push(exact);
     } else if (!exact) {
+      const [tY, tM, tD] = targetSunday.split("-").map(Number);
+      const targetMs = new Date(tY, tM - 1, tD).getTime();
       const weeksDiff = Math.floor((targetMs - earliestMs) / (7 * 86400000));
       const index = ((weeksDiff % totalCount) + totalCount) % totalCount;
       const looped = sorted[index];
       if (!seen.has(looped.id)) {
         seen.add(looped.id);
-        result.push({ ...looped, _displayDate: targetStr });
+        result.push({ ...looped, _displayDate: targetSunday });
       }
     }
-    if (result.length >= 4) break;
   }
 
   return result;
@@ -75,26 +81,6 @@ async function fetchLessonsWithFallback(): Promise<any[]> {
   }
 }
 
-async function fetchPreviewWithFallback(): Promise<any[]> {
-  if (!navigator.onLine) {
-    const offline = await getAllSundayLessons();
-    if (offline.length > 0) return computeOfflinePreview(offline);
-    throw new Error("offline_no_data");
-  }
-  try {
-    const res = await fetch("/api/sunday-school/preview", { credentials: "include" });
-    if (!res.ok) throw new Error("API error");
-    const data = await res.json();
-    if (Array.isArray(data) && data.length > 0) return data;
-    throw new Error("Empty response");
-  } catch (e) {
-    const offline = await getAllSundayLessons();
-    if (offline.length > 0) return computeOfflinePreview(offline);
-    if (e instanceof Error && e.message === "offline_no_data") throw e;
-    throw new Error("offline_no_data");
-  }
-}
-
 export default function SundaySchool() {
   const { data: lessons, isLoading } = useQuery<SundaySchoolLesson[]>({
     queryKey: ["/api/sunday-school"],
@@ -105,24 +91,18 @@ export default function SundaySchool() {
     },
   });
 
-  const { data: previewLessons, isLoading: isPreviewLoading } = useQuery<SundaySchoolLesson[]>({
-    queryKey: ["/api/sunday-school/preview"],
-    queryFn: fetchPreviewWithFallback,
-    retry: (failureCount, error) => {
-      if (error instanceof Error && error.message === "offline_no_data") return false;
-      return failureCount < 2;
-    },
-  });
-
   const today = startOfDay(new Date());
 
-  const upcomingLessons = previewLessons || [];
+  const { upcomingLessons, pastLessons } = useMemo(() => {
+    const allLessons = lessons || [];
+    const upcoming = buildUpcomingLessons(allLessons);
+    const past = allLessons
+      .filter((l) => isBefore(startOfDay(parseISO(l.date)), today))
+      .sort((a, b) => b.date.localeCompare(a.date));
+    return { upcomingLessons: upcoming, pastLessons: past };
+  }, [lessons, today]);
 
-  const pastLessons = (lessons || [])
-    .filter((l) => isBefore(startOfDay(parseISO(l.date)), today))
-    .sort((a, b) => b.date.localeCompare(a.date));
-
-  if (isLoading || isPreviewLoading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -170,8 +150,9 @@ export default function SundaySchool() {
               Upcoming Lessons
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
-              {upcomingLessons.map((lesson, index) => {
-                const lessonDate = startOfDay(parseISO(lesson.date));
+              {upcomingLessons.map((lesson: any, index: number) => {
+                const displayDate = lesson._displayDate || lesson.date;
+                const lessonDate = startOfDay(parseISO(displayDate));
                 const isThisSunday = index === 0;
                 return (
                   <Card key={lesson.id} className="hover-elevate transition-all" data-testid={`card-lesson-upcoming-${lesson.id}`}>
