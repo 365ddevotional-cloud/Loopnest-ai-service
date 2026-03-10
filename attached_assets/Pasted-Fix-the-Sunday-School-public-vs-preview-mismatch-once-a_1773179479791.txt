@@ -1,0 +1,80 @@
+Fix the Sunday School public-vs-preview mismatch once and for all.
+
+PROBLEM:
+The Replit preview shows the corrected Sunday School lesson display, but the public/published browser still shows stale or incorrect lesson data.
+This means production is not using the same source of truth or logic as preview.
+
+GOAL:
+Make the public browser show the exact same Sunday School output as preview.
+
+STRICT RULES:
+- Do NOT change lesson content manually.
+- Do NOT create fake lessons.
+- Do NOT break any other page.
+- Do NOT refactor unrelated code.
+- Do NOT change database schema unless absolutely required.
+- Focus only on making production and preview use the same Sunday School data + logic.
+
+TASKS:
+
+1. Find every place where Sunday School lessons are loaded:
+   - frontend page/component
+   - API route
+   - server loader
+   - static JSON or hardcoded fallback
+   - cached build output
+   - production-only query path
+
+2. Identify why preview and public are different.
+   Check for:
+   - stale cached response
+   - production-only API route
+   - static prerendered lesson content
+   - fallback mock data in production
+   - different environment variables
+   - different database connection or dataset
+   - ISR/build-time generated data
+
+3. Make Sunday School use ONE source of truth only:
+   - same server-side fetch/query in both preview and production
+   - no separate preview-only logic
+   - no stale hardcoded or build-time lesson list
+
+4. Ensure the Sunday School page dynamically computes:
+   - current “This Sunday”
+   - upcoming future lessons
+   - archive lessons
+   from live lesson data on every production request or from a fresh uncached server fetch.
+
+5. Remove or disable stale caching only for Sunday School page/data.
+   Specifically:
+   - disable cached fetch for Sunday School lessons
+   - disable stale server memoization for this route
+   - disable static pre-render for this page if needed
+   - force fresh server render / dynamic data for Sunday School
+
+6. Verify that production correctly excludes archived lessons from upcoming lessons.
+
+7. Add temporary server logging/debugging for Sunday School in production:
+   - log the lesson IDs/titles/dates returned to public
+   - log whether response came from cache or live source
+   Then remove noisy logs after confirming fix.
+
+8. Republish with a fresh production build after fixing:
+   - clear relevant cache
+   - rebuild
+   - redeploy
+
+9. After fixing, verify in both preview and public:
+   - both show the same Sunday School upcoming lessons
+   - both show the same archive list
+   - public is no longer stale
+
+IMPORTANT:
+If the page is currently built statically, convert ONLY the Sunday School page/data fetch to dynamic server rendering so production always reflects the latest lesson logic.
+
+At the end, give me:
+- root cause found
+- exact files changed
+- whether caching was disabled
+- whether production now matches preview
