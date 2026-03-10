@@ -14,51 +14,12 @@ function formatLocalDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function getNextSundays(count: number): string[] {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const dayOfWeek = today.getDay();
-  const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
-  const sundays: string[] = [];
-  for (let i = 0; i < count; i++) {
-    const sunday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + daysUntilSunday + i * 7);
-    sundays.push(formatLocalDate(sunday));
-  }
-  return sundays;
-}
-
-function buildUpcomingLessons(allLessons: any[]): any[] {
+function buildUpcomingLessons(allLessons: any[], todayStr: string): any[] {
   if (!allLessons.length) return [];
-  const sorted = [...allLessons].sort((a, b) => a.date.localeCompare(b.date));
-  const totalCount = sorted.length;
-  const nextSundays = getNextSundays(4);
-
-  const earliestDate = sorted[0].date;
-  const [eY, eM, eD] = earliestDate.split("-").map(Number);
-  const earliestMs = new Date(eY, eM - 1, eD).getTime();
-
-  const result: any[] = [];
-  const seen = new Set<number>();
-
-  for (const targetSunday of nextSundays) {
-    const exact = sorted.find((l) => l.date === targetSunday);
-    if (exact && !seen.has(exact.id)) {
-      seen.add(exact.id);
-      result.push(exact);
-    } else if (!exact) {
-      const [tY, tM, tD] = targetSunday.split("-").map(Number);
-      const targetMs = new Date(tY, tM - 1, tD).getTime();
-      const weeksDiff = Math.floor((targetMs - earliestMs) / (7 * 86400000));
-      const index = ((weeksDiff % totalCount) + totalCount) % totalCount;
-      const looped = sorted[index];
-      if (!seen.has(looped.id)) {
-        seen.add(looped.id);
-        result.push({ ...looped, _displayDate: targetSunday });
-      }
-    }
-  }
-
-  return result;
+  return [...allLessons]
+    .filter((l) => l.date >= todayStr)
+    .sort((a: any, b: any) => a.date.localeCompare(b.date))
+    .slice(0, 4);
 }
 
 async function fetchLessonsWithFallback(): Promise<any[]> {
@@ -93,14 +54,16 @@ export default function SundaySchool() {
 
   const today = startOfDay(new Date());
 
+  const todayStr = formatLocalDate(today);
+
   const { upcomingLessons, pastLessons } = useMemo(() => {
     const allLessons = lessons || [];
-    const upcoming = buildUpcomingLessons(allLessons);
+    const upcoming = buildUpcomingLessons(allLessons, todayStr);
     const past = allLessons
-      .filter((l) => isBefore(startOfDay(parseISO(l.date)), today))
+      .filter((l) => l.date < todayStr)
       .sort((a, b) => b.date.localeCompare(a.date));
     return { upcomingLessons: upcoming, pastLessons: past };
-  }, [lessons, today]);
+  }, [lessons, todayStr]);
 
   if (isLoading) {
     return (
@@ -151,8 +114,7 @@ export default function SundaySchool() {
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
               {upcomingLessons.map((lesson: any, index: number) => {
-                const displayDate = lesson._displayDate || lesson.date;
-                const lessonDate = startOfDay(parseISO(displayDate));
+                const lessonDate = startOfDay(parseISO(lesson.date));
                 const isThisSunday = index === 0;
                 return (
                   <Card key={lesson.id} className="hover-elevate transition-all" data-testid={`card-lesson-upcoming-${lesson.id}`}>
