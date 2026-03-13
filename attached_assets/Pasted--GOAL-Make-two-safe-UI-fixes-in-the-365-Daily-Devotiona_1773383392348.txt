@@ -1,0 +1,118 @@
+"}
+
+GOAL  
+Make two safe UI fixes in the 365 Daily Devotional app without changing architecture, routing, API logic, database structure, or any other features.
+
+IMPORTANT SAFETY RULES  
+• Do NOT refactor existing code.  
+• Do NOT modify backend APIs.  
+• Do NOT change database schemas.  
+• Do NOT alter devotional message generation.  
+• Only modify the exact UI areas described below.  
+• Ensure all current features continue working exactly the same.
+
+------------------------------------------------
+
+FIX #1 — Restore Exact Bible Verse (No Paraphrasing)
+
+Problem:
+The verse shown under the devotional title is currently paraphrased text explaining the verse.  
+This is incorrect.
+
+Example from UI:
+
+Current incorrect display:
+"believers to pray at all times..."
+
+Correct behavior:
+Show the exact Bible verse text.
+
+For example:
+
+Ephesians 6:18 (KJV)
+"Praying always with all prayer and supplication in the Spirit, and watching thereunto with all perseverance and supplication for all saints."
+
+Required action:
+
+1. Locate where the verse text is rendered in the devotional card (likely in the component rendering the verse reference).
+
+2. Ensure the component pulls the exact verse text from the Bible verse dataset (bible-data.ts or similar source).
+
+3. Replace any paraphrased or generated explanation text with the exact verse string.
+
+4. Keep the existing reference label formatting:
+
+Example display:
+
+Ephesians 6:18  [KJV]
+
+"Praying always with all prayer and supplication in the Spirit, and watching thereunto with all perseverance and supplication for all saints."
+
+5. Preserve all current styling.
+
+6. Do NOT modify any devotional message text below it.
+
+------------------------------------------------
+
+FIX #2 — Add Navigation Button on the Promise Screen
+
+Problem:
+When the “God’s Promise” screen appears (the 8-hour interval promise popup), there is no button to go to the main devotional page.
+
+This confuses users.
+
+Required action:
+
+On the Promise screen component (likely TapThePromise.tsx or promise modal component):
+
+Add a visible button at the bottom of the promise card.
+
+Button text:
+
+Go To Today’s Devotional
+
+Button style:
+• Use existing orange button style used elsewhere in the app.
+• Maintain consistent padding and rounded style.
+
+Button behavior:
+
+When clicked:
+
+navigate("/")
+
+OR
+
+navigate("/home")
+
+whichever route loads the main devotional screen.
+
+The button must:
+
+• Close the promise view
+• Navigate to today's devotional page
+
+------------------------------------------------
+
+Expected Result
+
+1. Devotional verse area shows the exact Bible verse text (not paraphrased).
+
+2. The Promise popup includes a clear button:
+
+Go To Today’s Devotional
+
+that takes the user directly to the main devotional page.
+
+------------------------------------------------
+
+Verification checklist after implementation
+
+✔ Verse text matches actual KJV verse exactly  
+✔ Devotional message section unchanged  
+✔ Promise popup still appears every 8 hours  
+✔ New button navigates to devotional home page  
+✔ No errors introduced in console  
+✔ No API or backend files modified
+
+Implement only these two UI fixe

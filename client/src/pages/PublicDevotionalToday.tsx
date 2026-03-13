@@ -4,6 +4,7 @@ import PublicHeader from "@/components/PublicHeader";
 import { format, parseISO } from "date-fns";
 import { Link } from "wouter";
 import { Loader2 } from "lucide-react";
+import { useScriptureText } from "@/hooks/use-scripture";
 
 function PublicFooter() {
   const currentYear = new Date().getFullYear();
@@ -47,6 +48,10 @@ function PublicFooter() {
 
 export default function PublicDevotionalToday() {
   const { data: devotional, isLoading, error } = useTodayDevotional();
+  const { text: resolvedScriptureText } = useScriptureText(
+    devotional?.scriptureReference,
+    devotional?.scriptureText
+  );
 
   if (isLoading) {
     return (
@@ -207,7 +212,7 @@ export default function PublicDevotionalToday() {
           }}
           data-testid="text-public-scripture"
         >
-          <span>{devotional.scriptureText}</span>
+          <span>{resolvedScriptureText}</span>
           <span
             style={{
               display: "block",

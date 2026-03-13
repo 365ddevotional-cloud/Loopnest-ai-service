@@ -171,38 +171,49 @@ export default function PromiseCard3D({
             </p>
 
             {showActions && (
-              <div className="flex items-center justify-center gap-3 mb-4" data-testid="promise-actions">
-                <button
-                  data-testid="button-share-promise"
-                  onClick={onShare}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium backdrop-blur-sm transition-all ${buttonStyle}`}
-                >
-                  <Share2 className="w-4 h-4" />
-                  Share
-                </button>
+              <>
+                <div className="flex items-center justify-center gap-3 mb-3" data-testid="promise-actions">
+                  <button
+                    data-testid="button-share-promise"
+                    onClick={onShare}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium backdrop-blur-sm transition-all ${buttonStyle}`}
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Share
+                  </button>
+
+                  <button
+                    data-testid="button-amen-promise"
+                    onClick={handleAmen}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all
+                      ${amenClicked
+                        ? "bg-red-500/40 text-white scale-110 shadow-lg shadow-red-500/20"
+                        : `backdrop-blur-sm ${buttonStyle}`
+                      }`}
+                  >
+                    <Heart className={`w-4 h-4 ${amenClicked ? "fill-current" : ""}`} />
+                    Amen{localAmenCount > 0 ? ` (${localAmenCount})` : ""}
+                  </button>
+                </div>
 
                 <button
-                  data-testid="button-amen-promise"
-                  onClick={handleAmen}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all
-                    ${amenClicked
-                      ? "bg-red-500/40 text-white scale-110 shadow-lg shadow-red-500/20"
-                      : `backdrop-blur-sm ${buttonStyle}`
-                    }`}
-                >
-                  <Heart className={`w-4 h-4 ${amenClicked ? "fill-current" : ""}`} />
-                  Amen{localAmenCount > 0 ? ` (${localAmenCount})` : ""}
-                </button>
-
-                <button
-                  data-testid="button-read-devotional"
-                  onClick={() => navigate("/devotional/today")}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium backdrop-blur-sm transition-all ${buttonStyle}`}
+                  data-testid="button-go-to-devotional"
+                  onClick={() => {
+                    onClose?.();
+                    navigate("/devotional/today");
+                  }}
+                  className="flex items-center justify-center gap-2 w-full px-5 py-3 rounded-full text-sm font-semibold transition-all mb-3"
+                  style={{
+                    background: "linear-gradient(135deg, #e8872a 0%, #c9a84c 100%)",
+                    color: "#fff",
+                    boxShadow: "0 4px 14px rgba(232,135,42,0.5)",
+                    letterSpacing: "0.02em",
+                  }}
                 >
                   <BookOpen className="w-4 h-4" />
-                  Devotional
+                  Go To Today's Devotional
                 </button>
-              </div>
+              </>
             )}
 
             <div
