@@ -17,6 +17,8 @@ import {
   prayerFollowUps,
   inboxThreads,
   inboxMessages,
+  songs,
+  songTestimonies,
   type Devotional,
   type InsertDevotional,
   type UpdateDevotionalRequest,
@@ -52,6 +54,10 @@ import {
   type InsertInboxThread,
   type InboxMessage,
   type InsertInboxMessage,
+  type Song,
+  type InsertSong,
+  type SongTestimony,
+  type InsertSongTestimony,
 } from "@shared/schema";
 import { eq, desc, and, isNull, or, ilike, lte, notInArray, sql } from "drizzle-orm";
 
@@ -154,6 +160,17 @@ export interface IStorage {
   createSundaySchoolLesson(lesson: InsertSundaySchoolLesson): Promise<SundaySchoolLesson>;
   updateSundaySchoolLesson(id: number, updates: Partial<InsertSundaySchoolLesson>): Promise<SundaySchoolLesson>;
   deleteSundaySchoolLesson(id: number): Promise<void>;
+
+  // Songs — Song of the Week
+  getFeaturedSong(): Promise<Song | undefined>;
+  getSongs(): Promise<Song[]>;
+  getSong(id: number): Promise<Song | undefined>;
+  createSong(song: InsertSong): Promise<Song>;
+  updateSong(id: number, updates: Partial<InsertSong>): Promise<Song>;
+  getSongTestimonies(songId?: number): Promise<SongTestimony[]>;
+  createSongTestimony(testimony: InsertSongTestimony): Promise<SongTestimony>;
+  updateSongTestimony(id: number, data: Partial<SongTestimony>): Promise<SongTestimony>;
+  deleteSongTestimony(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -756,6 +773,85 @@ export class DatabaseStorage implements IStorage {
       .where(lte(inboxMessages.createdAt, cutoff))
       .returning();
     return result.length;
+  }
+
+  // Songs — Song of the Week
+  async getFeaturedSong(): Promise<Song | undefined> {
+    const today = new Date().toISOString().split("T")[0];
+    // Try to find a song featured for today's date range first
+    const [dated] = await db
+      .select()
+      .from(songs)
+      .where(
+        and(
+          eq(songs.isActive, true),
+          sql`${songs.featuredWeekStart} <= ${today}`,
+          sql`${songs.featuredWeekEnd} >= ${today}`
+        )
+      )
+      .orderBy(desc(songs.featuredWeekStart))
+      .limit(1);
+    if (dated) return dated;
+    // Fall back to the most recently created active song
+    const [fallback] = await db
+      .select()
+      .from(songs)
+      .where(eq(songs.isActive, true))
+      .orderBy(desc(songs.createdAt))
+      .limit(1);
+    return fallback;
+  }
+
+  async getSongs(): Promise<Song[]> {
+    return db.select().from(songs).orderBy(desc(songs.createdAt));
+  }
+
+  async getSong(id: number): Promise<Song | undefined> {
+    const [song] = await db.select().from(songs).where(eq(songs.id, id));
+    return song;
+  }
+
+  async createSong(song: InsertSong): Promise<Song> {
+    const [created] = await db.insert(songs).values(song).returning();
+    return created;
+  }
+
+  async updateSong(id: number, updates: Partial<InsertSong>): Promise<Song> {
+    const [updated] = await db
+      .update(songs)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(songs.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getSongTestimonies(songId?: number): Promise<SongTestimony[]> {
+    if (songId !== undefined) {
+      return db
+        .select()
+        .from(songTestimonies)
+        .where(eq(songTestimonies.songId, songId))
+        .orderBy(desc(songTestimonies.createdAt));
+    }
+    return db.select().from(songTestimonies).orderBy(desc(songTestimonies.createdAt));
+  }
+
+  async createSongTestimony(testimony: InsertSongTestimony): Promise<SongTestimony> {
+    const [created] = await db.insert(songTestimonies).values(testimony).returning();
+    return created;
+  }
+
+  async updateSongTestimony(id: number, data: Partial<SongTestimony>): Promise<SongTestimony> {
+    const [updated] = await db
+      .update(songTestimonies)
+      .set(data)
+      .where(eq(songTestimonies.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteSongTestimony(id: number): Promise<void> {
+    await db.delete(songTestimonies).where(eq(songTestimonies.id, id));
   }
 }
 

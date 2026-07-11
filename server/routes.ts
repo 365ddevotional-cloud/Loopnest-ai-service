@@ -1418,6 +1418,140 @@ export async function registerRoutes(
     }
   });
 
+  // ── Songs — Song of the Week ──────────────────────────────────────────────
+
+  // Public: get currently featured song
+  app.get("/api/songs/featured", async (req, res) => {
+    try {
+      const song = await storage.getFeaturedSong();
+      if (!song) return res.status(404).json({ message: "No featured song found" });
+      res.json(song);
+    } catch (err) {
+      console.error("Error fetching featured song:", err);
+      res.status(500).json({ message: "Could not fetch featured song" });
+    }
+  });
+
+  // Admin: list all songs
+  app.get("/api/songs", requireAdmin, async (req, res) => {
+    try {
+      const allSongs = await storage.getSongs();
+      res.json(allSongs);
+    } catch (err) {
+      console.error("Error fetching songs:", err);
+      res.status(500).json({ message: "Could not fetch songs" });
+    }
+  });
+
+  // Admin: get song by id
+  app.get("/api/songs/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const song = await storage.getSong(id);
+      if (!song) return res.status(404).json({ message: "Song not found" });
+      res.json(song);
+    } catch (err) {
+      res.status(500).json({ message: "Could not fetch song" });
+    }
+  });
+
+  // Admin: create song
+  app.post("/api/songs", requireAdmin, async (req, res) => {
+    try {
+      const data = req.body;
+      if (!data.title || !data.slug || !data.scriptureReference) {
+        return res.status(400).json({ message: "title, slug, and scriptureReference are required" });
+      }
+      const song = await storage.createSong(data);
+      res.status(201).json(song);
+    } catch (err) {
+      console.error("Error creating song:", err);
+      res.status(500).json({ message: "Could not create song" });
+    }
+  });
+
+  // Admin: update song
+  app.patch("/api/songs/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const song = await storage.updateSong(id, req.body);
+      res.json(song);
+    } catch (err) {
+      console.error("Error updating song:", err);
+      res.status(500).json({ message: "Could not update song" });
+    }
+  });
+
+  // Public: submit song testimony
+  app.post("/api/song-testimonies", async (req, res) => {
+    try {
+      const { songId, name, isAnonymous, email, testimony, consentToPublish, songTitle } = req.body;
+      if (!songId || !name || !testimony || !songTitle) {
+        return res.status(400).json({ message: "songId, name, testimony, and songTitle are required" });
+      }
+      if (typeof testimony !== "string" || testimony.trim().length < 10) {
+        return res.status(400).json({ message: "Testimony must be at least 10 characters" });
+      }
+      if (testimony.trim().length > 2000) {
+        return res.status(400).json({ message: "Testimony must be under 2000 characters" });
+      }
+      const created = await storage.createSongTestimony({
+        songId: Number(songId),
+        name: name.trim().substring(0, 100),
+        isAnonymous: Boolean(isAnonymous),
+        email: email?.trim() || null,
+        testimony: testimony.trim(),
+        consentToPublish: Boolean(consentToPublish),
+        songTitle: songTitle.trim().substring(0, 200),
+      });
+      // Return without email for privacy
+      const { email: _email, ...safe } = created;
+      res.status(201).json(safe);
+    } catch (err) {
+      console.error("Error submitting song testimony:", err);
+      res.status(500).json({ message: "Could not submit testimony" });
+    }
+  });
+
+  // Admin: list song testimonies (all or by song)
+  app.get("/api/song-testimonies", requireAdmin, async (req, res) => {
+    try {
+      const songId = req.query.songId ? Number(req.query.songId) : undefined;
+      const list = await storage.getSongTestimonies(songId);
+      res.json(list);
+    } catch (err) {
+      res.status(500).json({ message: "Could not fetch song testimonies" });
+    }
+  });
+
+  // Admin: approve/feature/reject testimony
+  app.patch("/api/song-testimonies/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const updated = await storage.updateSongTestimony(id, req.body);
+      res.json(updated);
+    } catch (err) {
+      res.status(500).json({ message: "Could not update testimony" });
+    }
+  });
+
+  // Admin: delete song testimony
+  app.delete("/api/song-testimonies/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      await storage.deleteSongTestimony(id);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ message: "Could not delete testimony" });
+    }
+  });
+
+  // ── End Songs ─────────────────────────────────────────────────────────────
+
   // Quick Prayer ("Pray With Someone Now")
   app.post("/api/quick-prayer", async (req, res) => {
     try {
@@ -1509,6 +1643,7 @@ export async function registerRoutes(
   // Seed Data if empty
   await seedDatabase();
   await seedAutoReplyTemplates();
+  await seedSampleSong();
 
   // =========== PROMISE OF GOD ROUTES ===========
 
@@ -1910,6 +2045,73 @@ async function seedDatabase() {
     });
 
     console.log("Database seeded with initial devotional.");
+  }
+}
+
+async function seedSampleSong() {
+  const existing = await storage.getFeaturedSong();
+  if (existing) return; // Already have a song
+  try {
+    await storage.createSong({
+      title: "The Lord Is My Shepherd",
+      slug: "the-lord-is-my-shepherd",
+      artist: null,
+      featuredArtist: null,
+      labelName: "SpiritTone Records",
+      labelLogoUrl: null,
+      producer: "Moses Afolabi",
+      composer: "Moses Afolabi",
+      lyricist: "Moses Afolabi",
+      scriptureReference: "Psalm 23:1",
+      scriptureText: "The LORD is my shepherd; I shall not want.",
+      lyrics: `[Verse 1]
+The Lord is my Shepherd, I shall not want
+He leads me beside still waters
+He restores my weary soul
+In paths of righteousness I'll walk
+
+[Chorus]
+You are my Shepherd, my Provider
+My Comforter, my Guide
+I will not fear the valley of shadows
+For You are by my side
+
+[Verse 2]
+He prepares a table before me
+In the presence of my enemies
+He anoints my head with oil
+My cup it overflows with peace
+
+[Chorus]
+You are my Shepherd, my Provider
+My Comforter, my Guide
+I will not fear the valley of shadows
+For You are by my side
+
+[Bridge]
+Surely goodness and mercy
+Shall follow me all my days
+And I will dwell in the house of the Lord
+Forever I will give Him praise
+
+[Outro]
+The Lord is my Shepherd
+The Lord is my Shepherd
+I shall not want
+I shall not want`,
+      audioUrl: null,
+      coverImageUrl: null,
+      description: "A peaceful worship melody inspired by the timeless words of Psalm 23, reminding us of God's faithful guidance, provision, and protection through every season of life.",
+      isActive: true,
+      featuredWeekStart: new Date().toISOString().split("T")[0],
+      featuredWeekEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      releaseYear: 2026,
+      copyrightNotice: "© 2026 SpiritTone Records. All rights reserved.",
+      downloadStatus: "coming_soon",
+    });
+    console.log("[Songs] Sample song seeded.");
+  } catch (err) {
+    console.error("[Songs] Seed error:", err);
   }
 }
 

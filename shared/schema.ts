@@ -466,3 +466,65 @@ export const insertInboxMessageSchema = createInsertSchema(inboxMessages).omit({
 
 export type InboxMessage = typeof inboxMessages.$inferSelect;
 export type InsertInboxMessage = z.infer<typeof insertInboxMessageSchema>;
+
+// Songs Table — Song of the Week feature
+export const songs = pgTable("songs", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
+  artist: text("artist"),
+  featuredArtist: text("featured_artist"),
+  labelName: text("label_name").default("SpiritTone Records").notNull(),
+  labelLogoUrl: text("label_logo_url"),
+  producer: text("producer").default("Moses Afolabi").notNull(),
+  composer: text("composer"),
+  lyricist: text("lyricist"),
+  scriptureReference: text("scripture_reference").notNull(),
+  scriptureText: text("scripture_text"),
+  lyrics: text("lyrics"),
+  audioUrl: text("audio_url"),
+  coverImageUrl: text("cover_image_url"),
+  description: text("description"),
+  isActive: boolean("is_active").default(true).notNull(),
+  featuredWeekStart: date("featured_week_start"),
+  featuredWeekEnd: date("featured_week_end"),
+  releaseYear: integer("release_year"),
+  copyrightNotice: text("copyright_notice"),
+  downloadStatus: text("download_status").default("coming_soon").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSongSchema = createInsertSchema(songs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Song = typeof songs.$inferSelect;
+export type InsertSong = z.infer<typeof insertSongSchema>;
+
+// Song Testimonies Table
+export const songTestimonies = pgTable("song_testimonies", {
+  id: serial("id").primaryKey(),
+  songId: integer("song_id").notNull().references(() => songs.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  isAnonymous: boolean("is_anonymous").default(false).notNull(),
+  email: text("email"),
+  testimony: text("testimony").notNull(),
+  consentToPublish: boolean("consent_to_publish").default(false).notNull(),
+  isApproved: boolean("is_approved").default(false),
+  isFeatured: boolean("is_featured").default(false),
+  songTitle: text("song_title").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertSongTestimonySchema = createInsertSchema(songTestimonies).omit({
+  id: true,
+  isApproved: true,
+  isFeatured: true,
+  createdAt: true,
+});
+
+export type SongTestimony = typeof songTestimonies.$inferSelect;
+export type InsertSongTestimony = z.infer<typeof insertSongTestimonySchema>;

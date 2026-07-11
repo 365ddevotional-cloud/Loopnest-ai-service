@@ -127,7 +127,12 @@ function AppContent() {
   }
 
   if (isPublicRoute) {
-    return <Router />;
+    return (
+      <>
+        <Router />
+        <PromisePopup />
+      </>
+    );
   }
 
   return (

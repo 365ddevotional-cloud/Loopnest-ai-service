@@ -1,0 +1,555 @@
+Implement the following changes in the existing live 365 Daily Devotional app as one carefully controlled update.
+
+CRITICAL SAFETY RULES — DO NOT BREAK THE APP:
+
+- This Replit project is the production version currently connected to the Google Play Store.
+- Before changing anything, create a full checkpoint or backup of the current working project.
+- Do not rebuild, redesign, refactor, rename, delete, or replace the app.
+- Do not change existing routes, database tables, devotional content, admin functions, notifications, prayer requests, counseling, inbox, sharing, authentication, Sunday School, Bible, archive, or any unrelated feature.
+- Inspect and modify only the files directly required for the features below.
+- Preserve the current app appearance, navigation, mobile responsiveness, dark mode, and every working feature.
+- Make minimal surgical changes only.
+- Do not remove existing code merely because it appears unused.
+- Do not overwrite the production database.
+- Do not run any broad seed process.
+- Do not replace existing devotional records.
+- Do not publish or deploy automatically.
+- Complete the changes, test them inside Replit, report the results, and stop.
+- If any requested feature conflicts with existing working code, preserve the working feature and report the conflict instead of forcing a risky change.
+- Do not inspect or modify unrelated files.
+- Keep this task tightly scoped to conserve Replit credits.
+
+==================================================
+PART 1 — RESTORE THE DAILY “GOD’S PROMISES” EXPERIENCE
+==================================================
+
+A previously working daily feature stopped appearing after the most recent publication.
+
+Restore the original first-open-of-the-day “God’s Promises” or “Tap the Promise” experience.
+
+Expected behavior:
+
+1. The first time a user opens the app on a new calendar day, automatically show the existing God’s Promises experience.
+2. It should contain the same promise interaction that previously existed, including the existing reaction or response choices such as Love and the other current options.
+3. It must appear only once per user or device per calendar day after the user completes or dismisses it.
+4. It must appear again on the next new day.
+5. Do not create a completely different replacement if the original component, modal, page, data, or trigger still exists.
+6. Locate and restore the original feature.
+7. Preserve its previous wording, visual design, animation, Scripture content, reaction buttons, and behavior wherever possible.
+8. Check whether it stopped working because of:
+   - incorrect local-storage logic
+   - an outdated date key
+   - service-worker caching
+   - routing changes
+   - a disabled component
+   - a removed first-open trigger
+   - incorrect timezone logic
+   - a publication/build change
+9. Use the app’s established timezone and date logic so it appears on the correct day.
+10. Do not repeatedly show it whenever the user refreshes the app during the same day.
+11. Add only a small safe fallback if the original trigger cannot be restored, but reuse the original component and original content.
+
+Test by safely simulating:
+
+- first visit today
+- second visit during the same day
+- visit on a new day
+
+Confirm:
+
+- first visit shows God’s Promises
+- second visit the same day does not show it again
+- the next day shows it again
+
+==================================================
+PART 2 — ADD SCRIPTURE SONGS / SONG OF THE WEEK
+==================================================
+
+Add a small pilot feature called “Song of the Week” to the Today devotional experience.
+
+Start with only one sample song. Do not build a large music library yet.
+
+PLACEMENT:
+
+- Add the featured Song of the Week section beneath the main Today devotional content and before the final page footer.
+- If the existing layout has a clearly safer location, use that location.
+- Do not cover, remove, replace, or rearrange existing devotional content.
+- Keep the section mobile-friendly but visually prominent.
+
+The Song of the Week section must include:
+
+1. Song cover artwork
+2. Large cinematic heading: “SONG OF THE WEEK”
+3. Actual song title
+4. Artist or vocalist
+5. Ministry or record-label name
+6. Ministry or record-label logo
+7. Producer credit
+8. Composer credit, optional
+9. Lyricist credit, optional
+10. Related Bible Scripture
+11. Play and Pause control
+12. Audio progress bar
+13. Current playback time
+14. Total song duration where supported
+15. Lyrics button
+16. Favorite button
+17. Share button
+18. “Support the Ministry” button
+19. Testimony button
+20. Download button marked according to the rules below
+
+==================================================
+PART 3 — SPIRITTONE RECORDS BRANDING
+==================================================
+
+Treat “SpiritTone Records” as the primary music-ministry and record-label brand throughout the Song of the Week feature.
+
+Important:
+
+- SpiritTone Records has its own logo.
+- The SpiritTone Records logo is different from the 365 Daily Devotional logo.
+- The song cover artwork is also separate from both logos.
+- Do not replace the 365 Daily Devotional app logo.
+- Do not use the 365 Daily Devotional logo as the SpiritTone Records logo.
+- Do not use the SpiritTone Records logo as the song cover image.
+- Keep all three image fields separate and independently editable.
+
+The three separate image types are:
+
+1. 365 Daily Devotional app logo
+   - Existing app branding
+   - Do not modify in this task
+
+2. SpiritTone Records ministry or record-label logo
+   - Displayed as the music ministry/label identity
+   - Must have its own editable upload or image URL field
+
+3. Individual song cover artwork
+   - Unique artwork for each song
+   - Must have its own editable upload or image URL field
+
+DISPLAY REQUIREMENTS:
+
+- Display “SpiritTone Records” as the primary ministry or record-label name.
+- Display the SpiritTone Records logo near the label name in a tasteful, professional way.
+- Display “Produced by Moses Afolabi” beneath the label or song information in a smaller refined style.
+- Allow an optional artist or vocalist name when a singer is credited.
+- Do not imply that SpiritTone Records is necessarily the performing artist unless the song metadata says so.
+
+Example visual hierarchy:
+
+SONG OF THE WEEK
+
+The Lord Is My Shepherd
+
+SpiritTone Records
+[SpiritTone Records Logo]
+
+Produced by Moses Afolabi
+
+Psalm 23:1
+
+If a separate vocalist exists, support:
+
+SONG OF THE WEEK
+
+The Lord Is My Shepherd
+
+Performed by [Artist or Vocalist Name]
+
+SpiritTone Records
+[SpiritTone Records Logo]
+
+Produced by Moses Afolabi
+
+Psalm 23:1
+
+Do not hard-code these display values directly into the Today page.
+
+==================================================
+PART 4 — CINEMATIC FEATURED TITLE DESIGN
+==================================================
+
+Make “SONG OF THE WEEK” appear boldly across the featured artwork in a premium cinematic streaming-platform style, inspired only by the visual feeling of the supplied reference image.
+
+Design requirements:
+
+- Use very large, bold, condensed uppercase lettering.
+- Place the heading across the center or lower-middle portion of the song artwork.
+- Style “SONG OF THE” in white or warm cream.
+- Style “WEEK” in rich gold, golden yellow, or another suitable premium accent.
+- Add a subtle glow, shadow, outline, gradient, or dark image overlay so the words remain readable.
+- Keep it elegant, spiritual, professional, and ministry-appropriate.
+- Do not make it childish, cartoonish, or excessively flashy.
+- Do not copy the reference program’s title, trademark, exact font, logo, or exact layout.
+- Create an original design that captures only the strong cinematic feeling.
+- Ensure the heading scales correctly on small phones, larger phones, tablets, and desktop.
+- Ensure no words are cut off or overflow the card.
+- Ensure readability in both light mode and dark mode.
+- Below the cinematic heading, display the actual song title, ministry or label, logo, producer, artist, and Scripture in a smaller refined hierarchy.
+
+==================================================
+PART 5 — SONG DATA STRUCTURE
+==================================================
+
+Create the smallest clean song data structure, reusing an existing database or content pattern when safely available.
+
+Each song record should support:
+
+- id
+- title
+- slug
+- artist or vocalist
+- featured artist, optional
+- ministry or label name
+- ministry or label logo URL
+- producer
+- composer, optional
+- lyricist, optional
+- Scripture reference
+- Scripture text, optional
+- lyrics
+- audio URL
+- song cover image URL
+- description, optional
+- active or inactive status
+- featured week start date
+- featured week end date
+- release year
+- copyright notice
+- download status
+- free or paid-download status for future use
+- created date
+- updated date
+
+Default label name:
+
+SpiritTone Records
+
+Default producer:
+
+Moses Afolabi
+
+However:
+
+- Keep these values editable.
+- Do not hard-code them into the component.
+- Future songs may use different artists, vocalists, producers, or featured artists.
+- Future records must be manageable without changing source code.
+
+==================================================
+PART 6 — AUDIO PLAYER
+==================================================
+
+AUDIO REQUIREMENTS:
+
+- Listening inside the app must remain free.
+- Do not autoplay.
+- Audio should play smoothly on Android, iPhone browsers, tablets, and desktop.
+- Stop or pause the currently playing song before another audio item begins.
+- Do not allow multiple audio tracks to play simultaneously.
+- Preserve controls when the screen size changes.
+- Use a secure audio-file URL.
+- Handle loading, unavailable audio, interrupted connection, and playback errors gracefully.
+- Do not interfere with existing audio narration or other app media.
+- Start with only one sample song.
+- Use accessible labels for Play, Pause, Seek, Favorite, Lyrics, Share, Testimony, Support, and Download.
+- Do not cause the screen to jump unexpectedly when playback starts.
+
+==================================================
+PART 7 — LYRICS
+==================================================
+
+Add a Lyrics button.
+
+When tapped:
+
+- Open the lyrics using the app’s existing modal, sheet, drawer, or dialog style.
+- Display the song title.
+- Display the artist or vocalist when available.
+- Display SpiritTone Records and its logo.
+- Display the producer.
+- Display the related Scripture.
+- Display the complete lyrics with readable spacing.
+- Preserve verse, chorus, bridge, interlude, and paragraph breaks.
+- Include a clear Close button.
+- Support dark mode.
+- Do not navigate the user away from the devotional page unnecessarily.
+- Do not expose editing controls to regular users.
+
+==================================================
+PART 8 — FAVORITES
+==================================================
+
+Add Favorite and Unfavorite functionality for songs.
+
+- Reuse the app’s existing favorites or account system if one already exists.
+- Do not create a new login system in this task.
+- If there is no cloud account system, temporarily save the favorite locally on the device using a clear namespaced storage key.
+- Clearly document that local storage is device-specific.
+- Do not interfere with devotional favorites.
+- The favorite state should remain after refreshing or reopening the app on the same device.
+- Prepare the data structure so cloud synchronization can be added later.
+
+==================================================
+PART 9 — TESTIMONIES
+==================================================
+
+Add a “Share Your Testimony” form connected to the featured song.
+
+The form should include:
+
+- name
+- option to submit anonymously
+- email address, optional and private
+- testimony or message
+- checkbox confirming consent for possible publication
+- song identifier
+- song title
+- submission date
+
+Rules:
+
+- Store testimonies privately for admin review.
+- Do not publish any testimony automatically.
+- Add required validation.
+- Add reasonable minimum and maximum character limits.
+- Add basic lightweight spam protection using an existing safe project pattern.
+- Show a clear success message after submission.
+- Preserve the user’s typed testimony if submission temporarily fails.
+- Do not expose private email addresses publicly.
+- Do not send private testimony content to analytics.
+- Do not log private testimony email addresses in the browser console.
+
+Admin should be able to:
+
+- review submissions
+- approve them
+- reject them
+- mark them as featured
+- see which song each testimony concerns
+- see whether publication consent was granted
+
+Do not create a broad new admin dashboard if the existing admin area can be extended safely.
+
+==================================================
+PART 10 — SUPPORT THE MINISTRY
+==================================================
+
+Add a “Support the Ministry” button.
+
+When tapped, show a respectful support panel with wording similar to:
+
+“Were you blessed by this song?
+
+Your support helps SpiritTone Records and 365 Daily Devotional continue producing Scripture-based devotionals, worship music, Bible teaching, prayer resources, and counseling encouragement while keeping the main ministry content freely available.”
+
+Suggested support amounts:
+
+- $0.99
+- $1.99
+- $2.99
+- $5.00
+- Custom amount
+
+IMPORTANT PAYMENT AND GOOGLE PLAY RULES:
+
+- Listening, lyrics, sharing, favorites, and testimonies must remain available without payment.
+- A donation must not unlock the song, download, badge, feature, or other digital content.
+- Do not make an external Cash App or PayPal payment unlock a digital song download inside the Android app.
+- Do not create a misleading payment flow.
+- Preserve existing donation methods, but place them behind the new support explanation rather than deleting them.
+- Do not automatically charge anyone.
+- Do not implement recurring payments in this task.
+- Do not store card information.
+- Clearly state that support is voluntary.
+- Do not claim that a donation is tax-deductible unless that status has been legally confirmed.
+- Do not change existing donation credentials or payment accounts without explicit approval.
+
+==================================================
+PART 11 — SONG DOWNLOAD
+==================================================
+
+The ministry wants song downloads eventually, potentially connected to financial support.
+
+For this pilot:
+
+- Show a visible Download button.
+- Label it “Download — Coming Soon.”
+- Alternatively, allow a completely free promotional download only if explicitly configured by the admin.
+- Do not sell or unlock a digital download using Cash App, PayPal, or another outside payment link inside the Android app.
+- Do not implement Google Play Billing unless the project already has a fully working and approved Play Billing system.
+- Do not pretend a purchase system is complete when it is not.
+- Structure the song data and interface so a compliant paid-download system can be added later without rebuilding the entire feature.
+- Explain in the final report what is still required before paid song downloads can legally and safely be released through Google Play.
+
+==================================================
+PART 12 — SHARE
+==================================================
+
+Add a Share button using the app’s existing sharing system.
+
+Shared content should include:
+
+- song title
+- artist or vocalist
+- SpiritTone Records
+- related Scripture
+- a short ministry message
+- safe public app link when available
+
+Do not share:
+
+- private storage credentials
+- private audio storage paths
+- direct private audio-file URLs
+- testimony email addresses
+- admin links
+
+==================================================
+PART 13 — SMALL ADMIN CONTROLS
+==================================================
+
+Add the smallest safe admin controls required to manage this pilot.
+
+Admin should be able to:
+
+- enter or edit the song title
+- enter artist or vocalist
+- enter featured artist, optional
+- enter ministry or label name
+- upload or enter the SpiritTone Records logo URL
+- preview the SpiritTone Records logo
+- replace the ministry logo later
+- upload or enter the individual song cover artwork URL
+- preview the song cover
+- keep the ministry logo and song cover as separate fields
+- enter producer
+- enter composer, optional
+- enter lyricist, optional
+- enter Scripture reference
+- enter Scripture text, optional
+- enter lyrics
+- enter audio URL
+- enter description
+- enter release year
+- enter copyright information
+- set featured-week start date
+- set featured-week end date
+- activate or deactivate the song
+- preview the Song of the Week card
+- review song testimonies
+
+IMAGE-UPLOAD REQUIREMENTS:
+
+- Reuse the project’s existing safe image-upload method where available.
+- Do not introduce a new expensive storage service.
+- Do not expose storage credentials in frontend code.
+- Validate accepted image types.
+- Limit image size reasonably.
+- Display a fallback placeholder if a logo or song cover is unavailable.
+- Do not overwrite the 365 Daily Devotional app logo.
+- Do not automatically resize or crop the ministry logo in a way that damages its design.
+- Preserve transparency for PNG logos where supported.
+
+Do not modify unrelated admin sections.
+
+==================================================
+PART 14 — SECURITY AND PRIVACY
+==================================================
+
+- Sanitize all testimony, lyrics, song metadata, and text inputs.
+- Do not expose admin-only controls publicly.
+- Do not expose private database keys.
+- Do not place secret payment credentials in frontend files.
+- Do not expose storage-management credentials.
+- Do not log private testimony emails.
+- Preserve existing access-control rules.
+- Do not weaken database security or row-level security.
+- Do not delete or rewrite production devotional records.
+- Do not allow regular users to upload or modify songs.
+- Do not permit unapproved HTML or script execution in lyrics or testimonies.
+- Do not expose the full database connection string.
+- Do not make repositories, files, or storage buckets public unnecessarily.
+
+==================================================
+PART 15 — REQUIRED TESTING
+==================================================
+
+Before reporting completion, test all of the following:
+
+1. A checkpoint or backup was created.
+2. The app still opens normally.
+3. Today’s devotional still loads.
+4. Archive still works.
+5. Bible still works.
+6. Sunday School still works.
+7. God’s Promises or Tap the Promise appears on the first visit of the day.
+8. God’s Promises does not repeatedly appear again the same day.
+9. God’s Promises appears again on the next simulated day.
+10. Song of the Week displays correctly.
+11. The cinematic heading fits on a small phone.
+12. “SONG OF THE” and “WEEK” display clearly.
+13. The actual song title displays correctly.
+14. SpiritTone Records displays correctly.
+15. The SpiritTone Records logo displays correctly.
+16. The SpiritTone Records logo is separate from the song cover image.
+17. The existing 365 Daily Devotional app logo remains unchanged.
+18. “Produced by Moses Afolabi” displays correctly.
+19. Optional artist or vocalist displays correctly.
+20. Scripture displays correctly.
+21. Audio plays.
+22. Audio pauses.
+23. The progress bar works.
+24. Current time and duration display where supported.
+25. Lyrics open and close.
+26. Lyrics preserve their formatting.
+27. Favorite state persists.
+28. Share works.
+29. Testimony submits privately.
+30. Admin can review the testimony.
+31. Private testimony email is not publicly displayed.
+32. Support panel opens.
+33. Support remains voluntary.
+34. No support payment unlocks digital content.
+35. Download correctly shows “Coming Soon” unless configured as a completely free download.
+36. Prayer requests still work.
+37. Counseling still works.
+38. Inbox still works.
+39. Notifications are not broken.
+40. Dark mode still works.
+41. Existing mobile navigation is not broken.
+42. No new console errors appear.
+43. No existing content or database record is deleted.
+44. No unrelated file or feature is changed.
+45. Existing Google Play-connected behavior is preserved.
+
+==================================================
+FINAL RESPONSE REQUIRED FROM REPLIT
+==================================================
+
+When finished, provide only:
+
+1. Confirmation that a checkpoint or backup was created.
+2. The exact files changed.
+3. The exact cause of the missing daily God’s Promises feature.
+4. What was done to restore it.
+5. Where the Song of the Week data is managed.
+6. Where the SpiritTone Records name and logo are managed.
+7. Confirmation that the SpiritTone Records logo, song cover artwork, and 365 Daily Devotional app logo are separate.
+8. How to upload or replace the SpiritTone Records logo.
+9. How to replace the sample song with a real song.
+10. How to replace the song cover artwork.
+11. How testimonies are reviewed.
+12. How favorites are stored.
+13. What payment and support behavior was implemented.
+14. What remains necessary before paid song downloads can be released legally and through Google Play.
+15. Short manual testing steps.
+16. Any unresolved issue.
+
+Do not publish automatically.
+Do not deploy automatically.
+Do not modify anything unrelated.
+Do not continue into another task after completing this one.
+Stop and wait for approval.

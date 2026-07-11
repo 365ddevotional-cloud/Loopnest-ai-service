@@ -8,13 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
 import { useLocation } from "wouter";
-import type { PrayerRequest, ThreadMessage, PrayerAttachment, Devotional, SundaySchoolLesson, InboxThread, InboxMessage } from "@shared/schema";
+import type { PrayerRequest, ThreadMessage, PrayerAttachment, Devotional, SundaySchoolLesson, InboxThread, InboxMessage, Song, SongTestimony } from "@shared/schema";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getDevotionalStatus } from "@/lib/date-utils";
@@ -2223,7 +2223,7 @@ export default function Admin() {
       </div>
 
       <Tabs defaultValue="inbox" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-8 max-w-5xl">
+        <TabsList className="grid w-full grid-cols-9 max-w-5xl">
           <TabsTrigger value="inbox" data-testid="tab-inbox">
             <Inbox className="w-4 h-4 mr-2" />
             Prayer Inbox
@@ -2255,6 +2255,10 @@ export default function Admin() {
           <TabsTrigger value="promises" data-testid="tab-promises">
             <Sparkles className="w-4 h-4 mr-2" />
             Promises
+          </TabsTrigger>
+          <TabsTrigger value="songs" data-testid="tab-songs">
+            <Music className="w-4 h-4 mr-2" />
+            Songs
           </TabsTrigger>
         </TabsList>
 
@@ -2384,7 +2388,514 @@ export default function Admin() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="songs">
+          <SongsAdmin />
+        </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+// ── Songs Admin ───────────────────────────────────────────────────────────────
+
+function SongsAdmin() {
+  const { toast } = useToast();
+  const [editingSong, setEditingSong] = useState<Song | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [viewTestimonyFor, setViewTestimonyFor] = useState<number | null>(null);
+
+  const { data: songs = [], isLoading, refetch } = useQuery<Song[]>({
+    queryKey: ["/api/songs"],
+  });
+
+  const { data: testimonies = [] } = useQuery<SongTestimony[]>({
+    queryKey: ["/api/song-testimonies"],
+  });
+
+  const updateSongMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<Song> }) =>
+      apiRequest("PATCH", `/api/songs/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/songs"] });
+      toast({ title: "Song updated" });
+      setEditingSong(null);
+      setShowForm(false);
+    },
+    onError: () => toast({ title: "Error", description: "Could not update song.", variant: "destructive" }),
+  });
+
+  const createSongMutation = useMutation({
+    mutationFn: (data: Partial<Song>) => apiRequest("POST", "/api/songs", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/songs"] });
+      toast({ title: "Song created" });
+      setShowForm(false);
+      setEditingSong(null);
+    },
+    onError: () => toast({ title: "Error", description: "Could not create song.", variant: "destructive" }),
+  });
+
+  const updateTestimonyMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<SongTestimony> }) =>
+      apiRequest("PATCH", `/api/song-testimonies/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/song-testimonies"] });
+      toast({ title: "Testimony updated" });
+    },
+    onError: () => toast({ title: "Error", variant: "destructive" }),
+  });
+
+  const deleteTestimonyMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/song-testimonies/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/song-testimonies"] });
+      toast({ title: "Testimony deleted" });
+    },
+    onError: () => toast({ title: "Error", variant: "destructive" }),
+  });
+
+  const openEdit = (song: Song) => {
+    setEditingSong({ ...song });
+    setShowForm(true);
+  };
+
+  const openNew = () => {
+    setEditingSong({
+      id: 0,
+      title: "",
+      slug: "",
+      artist: null,
+      featuredArtist: null,
+      labelName: "SpiritTone Records",
+      labelLogoUrl: null,
+      producer: "Moses Afolabi",
+      composer: null,
+      lyricist: null,
+      scriptureReference: "",
+      scriptureText: null,
+      lyrics: null,
+      audioUrl: null,
+      coverImageUrl: null,
+      description: null,
+      isActive: true,
+      featuredWeekStart: null,
+      featuredWeekEnd: null,
+      releaseYear: new Date().getFullYear(),
+      copyrightNotice: `© ${new Date().getFullYear()} SpiritTone Records. All rights reserved.`,
+      downloadStatus: "coming_soon",
+      createdAt: null,
+      updatedAt: null,
+    } as unknown as Song);
+    setShowForm(true);
+  };
+
+  const handleSave = () => {
+    if (!editingSong) return;
+    if (!editingSong.title || !editingSong.slug || !editingSong.scriptureReference) {
+      toast({ title: "Required fields missing", description: "Title, slug, and scripture reference are required.", variant: "destructive" });
+      return;
+    }
+    const { id, createdAt, updatedAt, ...rest } = editingSong as any;
+    if (id && id > 0) {
+      updateSongMutation.mutate({ id, data: rest });
+    } else {
+      createSongMutation.mutate(rest);
+    }
+  };
+
+  const filteredTestimonies = viewTestimonyFor
+    ? testimonies.filter((t) => t.songId === viewTestimonyFor)
+    : testimonies;
+
+  return (
+    <div className="space-y-6">
+      {/* Songs List */}
+      <Card className="border-primary/10 shadow-lg shadow-primary/5">
+        <CardHeader className="bg-muted/30 border-b border-border">
+          <div className="flex items-center justify-between">
+            <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+              <Music2 className="w-6 h-6" />
+              Song of the Week
+            </CardTitle>
+            <Button size="sm" onClick={openNew} data-testid="button-new-song">
+              <Plus className="w-4 h-4 mr-2" />
+              New Song
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6">
+          {isLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+          ) : songs.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No songs yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {songs.map((song) => (
+                <div
+                  key={song.id}
+                  className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card"
+                  data-testid={`card-song-${song.id}`}
+                >
+                  {song.coverImageUrl ? (
+                    <img src={song.coverImageUrl} alt={song.title} className="w-12 h-12 rounded object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Music2 className="w-5 h-5 text-primary" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-foreground truncate">{song.title}</p>
+                    <p className="text-xs text-muted-foreground">{song.labelName} · {song.scriptureReference}</p>
+                    {song.featuredWeekStart && (
+                      <p className="text-xs text-muted-foreground">
+                        Featured: {song.featuredWeekStart} – {song.featuredWeekEnd}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Badge variant={song.isActive ? "default" : "secondary"} className="text-xs">
+                      {song.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setViewTestimonyFor(viewTestimonyFor === song.id ? null : song.id)}
+                      data-testid={`button-view-testimonies-${song.id}`}
+                      className="text-xs"
+                    >
+                      <MessageSquare className="w-3 h-3 mr-1" />
+                      {testimonies.filter((t) => t.songId === song.id).length}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openEdit(song)}
+                      data-testid={`button-edit-song-${song.id}`}
+                    >
+                      <Edit className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Song Testimonies */}
+      <Card className="border-primary/10 shadow-lg shadow-primary/5">
+        <CardHeader className="bg-muted/30 border-b border-border">
+          <div className="flex items-center justify-between">
+            <CardTitle className="font-serif text-xl text-primary flex items-center gap-2">
+              <MessageSquare className="w-5 h-5" />
+              Song Testimonies {viewTestimonyFor && <span className="text-sm font-normal text-muted-foreground">— filtered by song</span>}
+            </CardTitle>
+            {viewTestimonyFor && (
+              <Button size="sm" variant="outline" onClick={() => setViewTestimonyFor(null)}>Show All</Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="p-6">
+          {filteredTestimonies.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No testimonies yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {filteredTestimonies.map((t) => (
+                <div key={t.id} className="p-3 rounded-lg border border-border/50 space-y-1" data-testid={`card-song-testimony-${t.id}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">
+                        {t.isAnonymous ? "Anonymous" : t.name}
+                        {t.isApproved && <span className="ml-2 text-xs text-green-600 dark:text-green-400">✓ Approved</span>}
+                        {t.isFeatured && <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">★ Featured</span>}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Song: {t.songTitle} · {t.createdAt ? format(new Date(t.createdAt), "MMM d, yyyy") : ""}
+                        {t.consentToPublish ? " · Consented to publish" : ""}
+                      </p>
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <Button
+                        size="sm"
+                        variant={t.isApproved ? "secondary" : "outline"}
+                        className="text-xs"
+                        onClick={() => updateTestimonyMutation.mutate({ id: t.id, data: { isApproved: !t.isApproved } })}
+                        data-testid={`button-approve-testimony-${t.id}`}
+                      >
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        {t.isApproved ? "Approved" : "Approve"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={t.isFeatured ? "secondary" : "outline"}
+                        className="text-xs"
+                        onClick={() => updateTestimonyMutation.mutate({ id: t.id, data: { isFeatured: !t.isFeatured } })}
+                        data-testid={`button-feature-testimony-${t.id}`}
+                      >
+                        <Star className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive text-xs"
+                        onClick={() => {
+                          if (confirm("Delete this testimony?")) deleteTestimonyMutation.mutate(t.id);
+                        }}
+                        data-testid={`button-delete-testimony-${t.id}`}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-sm text-foreground/80 whitespace-pre-line leading-relaxed">{t.testimony}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Song Edit/Create Dialog */}
+      <Dialog open={showForm} onOpenChange={(open) => { if (!open) { setShowForm(false); setEditingSong(null); } }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-xl text-primary">
+              {editingSong?.id ? "Edit Song" : "New Song"}
+            </DialogTitle>
+          </DialogHeader>
+          {editingSong && (
+            <div className="space-y-4 mt-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Title *</Label>
+                  <Input
+                    value={editingSong.title ?? ""}
+                    onChange={(e) => setEditingSong({ ...editingSong, title: e.target.value })}
+                    placeholder="Song title"
+                    data-testid="input-song-title"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Slug * (URL-safe)</Label>
+                  <Input
+                    value={editingSong.slug ?? ""}
+                    onChange={(e) => setEditingSong({ ...editingSong, slug: e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") })}
+                    placeholder="song-url-slug"
+                    data-testid="input-song-slug"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Artist / Vocalist</Label>
+                  <Input
+                    value={editingSong.artist ?? ""}
+                    onChange={(e) => setEditingSong({ ...editingSong, artist: e.target.value || null })}
+                    placeholder="Optional vocalist"
+                    data-testid="input-song-artist"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Featured Artist</Label>
+                  <Input
+                    value={editingSong.featuredArtist ?? ""}
+                    onChange={(e) => setEditingSong({ ...editingSong, featuredArtist: e.target.value || null })}
+                    placeholder="ft. Artist (optional)"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Ministry / Label Name</Label>
+                  <Input
+                    value={editingSong.labelName ?? "SpiritTone Records"}
+                    onChange={(e) => setEditingSong({ ...editingSong, labelName: e.target.value })}
+                    data-testid="input-song-label-name"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Producer</Label>
+                  <Input
+                    value={editingSong.producer ?? "Moses Afolabi"}
+                    onChange={(e) => setEditingSong({ ...editingSong, producer: e.target.value })}
+                    data-testid="input-song-producer"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">SpiritTone Records Logo URL (separate from song cover & app logo)</Label>
+                <Input
+                  value={editingSong.labelLogoUrl ?? ""}
+                  onChange={(e) => setEditingSong({ ...editingSong, labelLogoUrl: e.target.value || null })}
+                  placeholder="https://... logo image URL"
+                  data-testid="input-song-label-logo"
+                />
+                {editingSong.labelLogoUrl && (
+                  <img src={editingSong.labelLogoUrl} alt="Label logo preview" className="h-10 mt-1 object-contain border rounded p-1" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Song Cover Artwork URL (separate from label logo & app logo)</Label>
+                <Input
+                  value={editingSong.coverImageUrl ?? ""}
+                  onChange={(e) => setEditingSong({ ...editingSong, coverImageUrl: e.target.value || null })}
+                  placeholder="https://... cover image URL"
+                  data-testid="input-song-cover"
+                />
+                {editingSong.coverImageUrl && (
+                  <img src={editingSong.coverImageUrl} alt="Cover preview" className="h-24 mt-1 object-cover rounded border" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Scripture Reference *</Label>
+                  <Input
+                    value={editingSong.scriptureReference ?? ""}
+                    onChange={(e) => setEditingSong({ ...editingSong, scriptureReference: e.target.value })}
+                    placeholder="Psalm 23:1"
+                    data-testid="input-song-scripture-ref"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Release Year</Label>
+                  <Input
+                    type="number"
+                    value={editingSong.releaseYear ?? ""}
+                    onChange={(e) => setEditingSong({ ...editingSong, releaseYear: Number(e.target.value) || null })}
+                    placeholder="2026"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Scripture Text (optional)</Label>
+                <Input
+                  value={editingSong.scriptureText ?? ""}
+                  onChange={(e) => setEditingSong({ ...editingSong, scriptureText: e.target.value || null })}
+                  placeholder="The LORD is my shepherd; I shall not want."
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Audio URL</Label>
+                <Input
+                  value={editingSong.audioUrl ?? ""}
+                  onChange={(e) => setEditingSong({ ...editingSong, audioUrl: e.target.value || null })}
+                  placeholder="https://... audio file URL"
+                  data-testid="input-song-audio"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Lyrics (use blank lines between sections)</Label>
+                <Textarea
+                  value={editingSong.lyrics ?? ""}
+                  onChange={(e) => setEditingSong({ ...editingSong, lyrics: e.target.value || null })}
+                  rows={8}
+                  placeholder="[Verse 1]&#10;..."
+                  className="font-mono text-xs"
+                  data-testid="textarea-song-lyrics"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Description</Label>
+                <Textarea
+                  value={editingSong.description ?? ""}
+                  onChange={(e) => setEditingSong({ ...editingSong, description: e.target.value || null })}
+                  rows={2}
+                  placeholder="Brief description of the song..."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Featured Week Start</Label>
+                  <Input
+                    type="date"
+                    value={editingSong.featuredWeekStart ?? ""}
+                    onChange={(e) => setEditingSong({ ...editingSong, featuredWeekStart: e.target.value || null })}
+                    data-testid="input-song-week-start"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Featured Week End</Label>
+                  <Input
+                    type="date"
+                    value={editingSong.featuredWeekEnd ?? ""}
+                    onChange={(e) => setEditingSong({ ...editingSong, featuredWeekEnd: e.target.value || null })}
+                    data-testid="input-song-week-end"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Copyright Notice</Label>
+                <Input
+                  value={editingSong.copyrightNotice ?? ""}
+                  onChange={(e) => setEditingSong({ ...editingSong, copyrightNotice: e.target.value || null })}
+                  placeholder="© 2026 SpiritTone Records. All rights reserved."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Download Status</Label>
+                  <Select
+                    value={editingSong.downloadStatus ?? "coming_soon"}
+                    onValueChange={(v) => setEditingSong({ ...editingSong, downloadStatus: v })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="coming_soon">Coming Soon</SelectItem>
+                      <SelectItem value="free">Free Download</SelectItem>
+                      <SelectItem value="paid">Paid (Future)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Status</Label>
+                  <Select
+                    value={editingSong.isActive ? "active" : "inactive"}
+                    onValueChange={(v) => setEditingSong({ ...editingSong, isActive: v === "active" })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="mt-4 gap-2">
+            <Button
+              variant="outline"
+              onClick={() => { setShowForm(false); setEditingSong(null); }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={updateSongMutation.isPending || createSongMutation.isPending}
+              className="bg-primary hover:bg-primary/90"
+              data-testid="button-save-song"
+            >
+              {(updateSongMutation.isPending || createSongMutation.isPending) && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              )}
+              Save Song
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
