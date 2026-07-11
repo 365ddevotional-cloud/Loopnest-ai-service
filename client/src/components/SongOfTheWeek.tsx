@@ -361,6 +361,11 @@ export function SongOfTheWeek() {
   const { isPlaying, currentTime, duration, loading: audioLoading, error: audioError, togglePlay, seek } =
     useAudioPlayer(song?.audioUrl);
 
+  // Broadcast play state so the mini preview card can sync its icon
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("song-play-state", { detail: { isPlaying } }));
+  }, [isPlaying]);
+
   const [isFavorite, setIsFavorite] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
   const [showTestimony, setShowTestimony] = useState(false);
@@ -422,6 +427,7 @@ export function SongOfTheWeek() {
   return (
     <>
       <div
+        id="song-of-the-week-full"
         className="rounded-2xl overflow-hidden shadow-xl border border-border/30"
         data-testid="section-song-of-the-week"
       >
@@ -431,7 +437,7 @@ export function SongOfTheWeek() {
           style={{
             background: hasCover
               ? undefined
-              : "linear-gradient(135deg, #1a0520 0%, #2d0e3c 40%, #1e1a00 100%)",
+              : "linear-gradient(160deg, #fdf5e8 0%, #f0d898 35%, #deb850 65%, #c29820 100%)",
           }}
         >
           {/* Cover image */}
@@ -443,8 +449,14 @@ export function SongOfTheWeek() {
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
             />
           )}
-          {/* Dark gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/55 to-black/75" />
+          {/* Warm gradient overlay — replaces pure black */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(to bottom, rgba(100,40,0,0.22) 0%, rgba(80,30,0,0.42) 50%, rgba(55,18,0,0.68) 100%)",
+            }}
+          />
 
           {/* Cinematic title */}
           <div className="relative z-10 pointer-events-none select-none">
@@ -687,5 +699,122 @@ export function SongOfTheWeek() {
       <TestimonyModal song={song} open={showTestimony} onClose={() => setShowTestimony(false)} />
       <SupportModal song={song} open={showSupport} onClose={() => setShowSupport(false)} />
     </>
+  );
+}
+
+// ── Mini Preview Card (placed above the devotional) ───────────────────────────
+
+export function SongMiniCard() {
+  const { data: song } = useQuery<Song>({
+    queryKey: ["/api/songs/featured"],
+    retry: 1,
+  });
+
+  const [miniIsPlaying, setMiniIsPlaying] = useState(false);
+
+  // Sync play/pause icon with the full section via custom event
+  useEffect(() => {
+    const handler = (e: Event) => {
+      setMiniIsPlaying((e as CustomEvent<{ isPlaying: boolean }>).detail.isPlaying);
+    };
+    window.addEventListener("song-play-state", handler);
+    return () => window.removeEventListener("song-play-state", handler);
+  }, []);
+
+  const scrollToFull = () => {
+    const el = document.getElementById("song-of-the-week-full");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handlePlayPause = () => {
+    // Scroll to the full player, then trigger its play/pause button
+    scrollToFull();
+    setTimeout(() => {
+      const btn = document.querySelector<HTMLButtonElement>('[data-testid="button-play-pause"]');
+      if (btn) btn.click();
+    }, 550);
+  };
+
+  if (!song) return null;
+
+  return (
+    <div
+      className="flex items-center gap-3 p-3 rounded-xl border border-amber-200/70 dark:border-amber-800/30 shadow-sm"
+      style={{
+        background: "linear-gradient(135deg, rgba(253,245,232,0.9) 0%, rgba(240,216,152,0.7) 100%)",
+      }}
+      data-testid="section-song-mini-card"
+    >
+      {/* Thumbnail */}
+      <div className="flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden flex items-center justify-center"
+        style={{ background: "linear-gradient(135deg, #f0d080 0%, #c89820 100%)" }}
+      >
+        {song.coverImageUrl ? (
+          <img
+            src={song.coverImageUrl}
+            alt={song.title}
+            className="w-full h-full object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          />
+        ) : (
+          <Music2 className="w-6 h-6 text-amber-900" />
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <div
+          className="mb-0.5"
+          style={{
+            fontSize: "9px",
+            fontWeight: 800,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: "#7a4a00",
+          }}
+        >
+          🎵 Song of the Week
+        </div>
+        <div
+          className="truncate leading-tight"
+          style={{
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontWeight: 700,
+            fontSize: "0.875rem",
+            color: "#2d1400",
+          }}
+        >
+          {song.title}
+        </div>
+        <div className="text-xs truncate" style={{ color: "#7a4a00" }}>
+          {song.labelName} · {song.scriptureReference}
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <button
+          onClick={handlePlayPause}
+          aria-label={miniIsPlaying ? "Pause song" : "Play song"}
+          data-testid="button-mini-play-pause"
+          className="w-9 h-9 rounded-full flex items-center justify-center shadow-sm transition-all active:scale-95"
+          style={{ background: "linear-gradient(135deg, #d4a020 0%, #a07010 100%)" }}
+        >
+          {miniIsPlaying ? (
+            <Pause className="w-4 h-4 text-white" />
+          ) : (
+            <Play className="w-4 h-4 text-white ml-0.5" />
+          )}
+        </button>
+        <button
+          onClick={scrollToFull}
+          data-testid="button-view-song"
+          className="text-xs font-semibold transition-colors whitespace-nowrap"
+          style={{ color: "#7a4a00" }}
+        >
+          View Song →
+        </button>
+      </div>
+    </div>
   );
 }

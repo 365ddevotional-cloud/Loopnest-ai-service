@@ -1,7 +1,7 @@
 import { useTodayDevotional } from "@/hooks/use-devotionals";
 import { DevotionalCard } from "@/components/DevotionalCard";
 import { DailyBibleVerse } from "@/components/DailyBibleVerse";
-import { SongOfTheWeek } from "@/components/SongOfTheWeek";
+import { SongOfTheWeek, SongMiniCard } from "@/components/SongOfTheWeek";
 import { Loader2, BookX, WifiOff } from "lucide-react";
 import { GameConsoleIcon } from "@/interactive/GameConsoleIcon";
 import { Button } from "@/components/ui/button";
@@ -97,6 +97,13 @@ export default function Home() {
         transition={{ duration: 0.4, ease: "easeOut", delay: 0.05 }}
       >
         <DailyBibleVerse />
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut", delay: 0.12 }}
+      >
+        <SongMiniCard />
       </motion.div>
       <motion.div 
         initial={{ opacity: 0, y: 20 }}

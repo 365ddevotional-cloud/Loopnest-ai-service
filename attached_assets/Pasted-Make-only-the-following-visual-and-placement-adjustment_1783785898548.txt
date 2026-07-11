@@ -1,0 +1,94 @@
+Make only the following visual and placement adjustments to the existing Song of the Week feature.
+
+CRITICAL:
+- Do not rebuild or refactor the feature.
+- Do not change the database, API routes, audio logic, testimony system, favorites, admin controls, support flow, or any unrelated feature.
+- Do not remove the existing large Song of the Week section below the devotional.
+- Do not publish or deploy automatically.
+- Make minimal surgical changes only.
+
+1. ADD A SMALL SONG OF THE WEEK CARD ABOVE TODAY’S DEVOTIONAL
+
+Place a compact Song of the Week preview card near the top of the Today page, above the main devotional content.
+
+The small card should:
+- be much smaller than the full Song of the Week section below
+- reuse the same active song data
+- show the song cover thumbnail
+- show the words “SONG OF THE WEEK”
+- show the song title
+- show SpiritTone Records
+- show the Scripture reference
+- include a small Play/Pause button
+- include a small “View Song” or “Open Full Song” button
+- when tapped, scroll smoothly to the full Song of the Week section below
+- remain mobile-friendly and not push the devotional too far down
+- not duplicate the full lyrics, testimony, support, or download controls
+
+The large detailed Song of the Week section must remain below the devotional exactly as the full experience.
+
+2. CHANGE THE BLACK BACKGROUND
+
+The current large Song of the Week artwork/header background is too dark and plain.
+
+Replace the solid black background with a brighter, more beautiful, professional, ministry-appropriate design.
+
+Use:
+- warm cream
+- soft gold
+- light beige
+- muted sunrise tones
+- gentle brown or burgundy accents
+- a subtle gradient
+- optional soft light texture or glow
+
+Avoid:
+- solid black
+- harsh neon colors
+- overly dark appearance
+- childish or cartoonish styling
+
+Keep the title bold and cinematic:
+
+“SONG OF THE” in warm cream or white
+“WEEK” in elegant gold
+
+Make sure:
+- the text remains highly readable
+- it looks professional on desktop and mobile
+- it works in light mode and dark mode
+- the current song title, SpiritTone Records, producer credit, Scripture, player, and buttons remain intact
+
+3. KEEP BOTH SECTIONS
+
+Final layout should be:
+
+- Small compact Song of the Week preview above Today’s devotional
+- Full devotional content
+- Large detailed Song of the Week section below the devotional
+
+Do not remove either one.
+
+4. TEST
+
+Verify:
+- small card appears above the devotional
+- large card remains below the devotional
+- both use the same active song data
+- Play/Pause works
+- “View Song” scrolls to the large section
+- no duplicated audio starts at the same time
+- no existing devotional content is moved incorrectly
+- no mobile overflow
+- no console errors
+
+When finished, report only:
+1. exact files changed
+2. where the small card was added
+3. what background styling was changed
+4. confirmation that the full lower section still works
+5. confirmation that nothing unrelated was changed
+
+Do not publish.
+Do not deploy.
+Stop and wait for approval.
