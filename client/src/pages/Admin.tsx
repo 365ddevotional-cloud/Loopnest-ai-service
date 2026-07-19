@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2, Upload } from "lucide-react";
+import { useUpload } from "@/hooks/use-upload";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
@@ -2455,6 +2456,72 @@ function SongsAdmin() {
     onError: () => toast({ title: "Error", variant: "destructive" }),
   });
 
+  const deleteSongMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/songs/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/songs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/songs/featured"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/songs/library"] });
+      toast({ title: "Song deleted" });
+    },
+    onError: () => toast({ title: "Error", description: "Could not delete song.", variant: "destructive" }),
+  });
+
+  const audioUpload = useUpload();
+  const coverUpload = useUpload();
+  const logoUpload = useUpload();
+
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    if (file.size > 80 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Audio must be under 80MB.", variant: "destructive" });
+      return;
+    }
+    const result = await audioUpload.uploadFile(file);
+    if (result) {
+      setEditingSong((prev) => (prev ? { ...prev, audioUrl: result.objectPath } : null));
+      toast({ title: "✓ Audio uploaded", description: file.name });
+    } else {
+      toast({ title: "Upload failed", description: "Could not upload audio.", variant: "destructive" });
+    }
+  };
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Images must be under 10MB.", variant: "destructive" });
+      return;
+    }
+    const result = await coverUpload.uploadFile(file);
+    if (result) {
+      setEditingSong((prev) => (prev ? { ...prev, coverImageUrl: result.objectPath } : null));
+      toast({ title: "✓ Cover uploaded" });
+    } else {
+      toast({ title: "Upload failed", variant: "destructive" });
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Logos must be under 5MB.", variant: "destructive" });
+      return;
+    }
+    const result = await logoUpload.uploadFile(file);
+    if (result) {
+      setEditingSong((prev) => (prev ? { ...prev, labelLogoUrl: result.objectPath } : null));
+      toast({ title: "✓ Logo uploaded" });
+    } else {
+      toast({ title: "Upload failed", variant: "destructive" });
+    }
+  };
+
   const openEdit = (song: Song) => {
     setEditingSong({ ...song });
     setShowForm(true);
@@ -2472,11 +2539,16 @@ function SongsAdmin() {
       producer: "Moses Afolabi",
       composer: null,
       lyricist: null,
+      choir: null,
+      instrumentalist: null,
+      genre: null,
+      language: "English",
       scriptureReference: "",
       scriptureText: null,
       lyrics: null,
       audioUrl: null,
       coverImageUrl: null,
+      shortDescription: null,
       description: null,
       isActive: true,
       featuredWeekStart: null,
@@ -2519,8 +2591,8 @@ function SongsAdmin() {
               Song of the Week
             </CardTitle>
             <Button size="sm" onClick={openNew} data-testid="button-new-song">
-              <Plus className="w-4 h-4 mr-2" />
-              New Song
+              <Upload className="w-4 h-4 mr-2" />
+              Upload New Song
             </Button>
           </div>
         </CardHeader>
@@ -2554,6 +2626,12 @@ function SongsAdmin() {
                     )}
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
+                    {song.audioUrl && (
+                      <Badge variant="outline" className="text-xs border-amber-400/50 text-amber-600">
+                        <Music className="w-2.5 h-2.5 mr-1" />
+                        Audio
+                      </Badge>
+                    )}
                     <Badge variant={song.isActive ? "default" : "secondary"} className="text-xs">
                       {song.isActive ? "Active" : "Inactive"}
                     </Badge>
@@ -2574,6 +2652,19 @@ function SongsAdmin() {
                       data-testid={`button-edit-song-${song.id}`}
                     >
                       <Edit className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => {
+                        if (confirm(`Delete "${song.title}"? This cannot be undone.`)) {
+                          deleteSongMutation.mutate(song.id);
+                        }
+                      }}
+                      data-testid={`button-delete-song-${song.id}`}
+                    >
+                      <Trash2 className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
@@ -2661,7 +2752,7 @@ function SongsAdmin() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-serif text-xl text-primary">
-              {editingSong?.id ? "Edit Song" : "New Song"}
+              {editingSong?.id ? "Edit Song" : "Upload New Song"}
             </DialogTitle>
           </DialogHeader>
           {editingSong && (
@@ -2726,29 +2817,104 @@ function SongsAdmin() {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs">SpiritTone Records Logo URL (separate from song cover & app logo)</Label>
-                <Input
-                  value={editingSong.labelLogoUrl ?? ""}
-                  onChange={(e) => setEditingSong({ ...editingSong, labelLogoUrl: e.target.value || null })}
-                  placeholder="https://... logo image URL"
-                  data-testid="input-song-label-logo"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Composer</Label>
+                  <Input
+                    value={editingSong.composer ?? ""}
+                    onChange={(e) => setEditingSong({ ...editingSong, composer: e.target.value || null })}
+                    placeholder="Optional"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Lyricist</Label>
+                  <Input
+                    value={editingSong.lyricist ?? ""}
+                    onChange={(e) => setEditingSong({ ...editingSong, lyricist: e.target.value || null })}
+                    placeholder="Optional"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Choir / Group</Label>
+                  <Input
+                    value={editingSong.choir ?? ""}
+                    onChange={(e) => setEditingSong({ ...editingSong, choir: e.target.value || null })}
+                    placeholder="Optional choir name"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Instrumentalist</Label>
+                  <Input
+                    value={editingSong.instrumentalist ?? ""}
+                    onChange={(e) => setEditingSong({ ...editingSong, instrumentalist: e.target.value || null })}
+                    placeholder="Optional"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Genre</Label>
+                  <Input
+                    value={editingSong.genre ?? ""}
+                    onChange={(e) => setEditingSong({ ...editingSong, genre: e.target.value || null })}
+                    placeholder="e.g. Gospel, Worship"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Language</Label>
+                  <Input
+                    value={editingSong.language ?? "English"}
+                    onChange={(e) => setEditingSong({ ...editingSong, language: e.target.value || null })}
+                    placeholder="English"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs">SpiritTone Records Logo <span className="text-muted-foreground">(PNG/JPG/SVG, max 5MB)</span></Label>
                 {editingSong.labelLogoUrl && (
-                  <img src={editingSong.labelLogoUrl} alt="Label logo preview" className="h-10 mt-1 object-contain border rounded p-1" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  <div className="flex items-center gap-2">
+                    <img src={editingSong.labelLogoUrl} alt="Label logo preview" className="h-10 object-contain border rounded p-1 bg-muted/30" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    <Button size="sm" variant="ghost" className="text-destructive h-7 text-xs" onClick={() => setEditingSong({ ...editingSong, labelLogoUrl: null })}>
+                      <X className="w-3 h-3 mr-1" /> Remove
+                    </Button>
+                  </div>
+                )}
+                <label className={`inline-flex items-center gap-1.5 text-xs border rounded-md px-3 py-1.5 cursor-pointer hover:bg-muted transition-colors ${logoUpload.isUploading ? "opacity-60 pointer-events-none" : ""}`}>
+                  <Upload className="w-3 h-3" />
+                  {logoUpload.isUploading ? `Uploading ${Math.round(logoUpload.progress ?? 0)}%…` : editingSong.labelLogoUrl ? "Replace Logo" : "Upload Logo"}
+                  <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.webp,.svg" disabled={logoUpload.isUploading} onChange={handleLogoUpload} data-testid="input-song-label-logo" />
+                </label>
+                {logoUpload.isUploading && (
+                  <div className="w-48 bg-muted rounded-full h-1.5">
+                    <div className="bg-primary rounded-full h-1.5 transition-all" style={{ width: `${logoUpload.progress ?? 0}%` }} />
+                  </div>
                 )}
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs">Song Cover Artwork URL (separate from label logo & app logo)</Label>
-                <Input
-                  value={editingSong.coverImageUrl ?? ""}
-                  onChange={(e) => setEditingSong({ ...editingSong, coverImageUrl: e.target.value || null })}
-                  placeholder="https://... cover image URL"
-                  data-testid="input-song-cover"
-                />
+              <div className="space-y-2">
+                <Label className="text-xs">Song Cover Artwork <span className="text-muted-foreground">(JPG/PNG/WebP, max 10MB)</span></Label>
                 {editingSong.coverImageUrl && (
-                  <img src={editingSong.coverImageUrl} alt="Cover preview" className="h-24 mt-1 object-cover rounded border" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  <div className="flex items-center gap-2">
+                    <img src={editingSong.coverImageUrl} alt="Cover preview" className="h-20 w-20 rounded object-cover border" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    <Button size="sm" variant="ghost" className="text-destructive h-7 text-xs" onClick={() => setEditingSong({ ...editingSong, coverImageUrl: null })}>
+                      <X className="w-3 h-3 mr-1" /> Remove
+                    </Button>
+                  </div>
+                )}
+                <label className={`inline-flex items-center gap-1.5 text-xs border rounded-md px-3 py-1.5 cursor-pointer hover:bg-muted transition-colors ${coverUpload.isUploading ? "opacity-60 pointer-events-none" : ""}`}>
+                  <Upload className="w-3 h-3" />
+                  {coverUpload.isUploading ? `Uploading ${Math.round(coverUpload.progress ?? 0)}%…` : editingSong.coverImageUrl ? "Replace Cover" : "Upload Cover"}
+                  <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.webp" disabled={coverUpload.isUploading} onChange={handleCoverUpload} data-testid="input-song-cover" />
+                </label>
+                {coverUpload.isUploading && (
+                  <div className="w-48 bg-muted rounded-full h-1.5">
+                    <div className="bg-primary rounded-full h-1.5 transition-all" style={{ width: `${coverUpload.progress ?? 0}%` }} />
+                  </div>
                 )}
               </div>
 
@@ -2782,14 +2948,27 @@ function SongsAdmin() {
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs">Audio URL</Label>
-                <Input
-                  value={editingSong.audioUrl ?? ""}
-                  onChange={(e) => setEditingSong({ ...editingSong, audioUrl: e.target.value || null })}
-                  placeholder="https://... audio file URL"
-                  data-testid="input-song-audio"
-                />
+              <div className="space-y-2">
+                <Label className="text-xs">Song Audio File <span className="text-muted-foreground">(MP3/M4A/WAV, max 80MB)</span></Label>
+                {editingSong.audioUrl && (
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-muted/30 border">
+                    <Music className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs text-foreground truncate flex-1">{editingSong.audioUrl.split("/").pop()}</span>
+                    <Button size="sm" variant="ghost" className="text-destructive h-6 text-xs flex-shrink-0" onClick={() => setEditingSong({ ...editingSong, audioUrl: null })}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
+                <label className={`inline-flex items-center gap-1.5 text-xs border rounded-md px-3 py-1.5 cursor-pointer hover:bg-muted transition-colors ${audioUpload.isUploading ? "opacity-60 pointer-events-none" : ""}`}>
+                  <Upload className="w-3 h-3" />
+                  {audioUpload.isUploading ? `Uploading ${Math.round(audioUpload.progress ?? 0)}%…` : editingSong.audioUrl ? "Replace Audio" : "Upload Audio"}
+                  <input type="file" className="hidden" accept=".mp3,.m4a,.wav,.aac,.ogg" disabled={audioUpload.isUploading} onChange={handleAudioUpload} data-testid="input-song-audio" />
+                </label>
+                {audioUpload.isUploading && (
+                  <div className="w-48 bg-muted rounded-full h-1.5">
+                    <div className="bg-primary rounded-full h-1.5 transition-all" style={{ width: `${audioUpload.progress ?? 0}%` }} />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1">
@@ -2805,12 +2984,23 @@ function SongsAdmin() {
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs">Description</Label>
+                <Label className="text-xs">Short Description <span className="text-muted-foreground">(shown in library listing)</span></Label>
+                <Textarea
+                  value={editingSong.shortDescription ?? ""}
+                  onChange={(e) => setEditingSong({ ...editingSong, shortDescription: e.target.value || null })}
+                  rows={2}
+                  placeholder="One-line summary shown in the song library..."
+                  data-testid="textarea-song-short-description"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Full Description <span className="text-muted-foreground">(shown on song detail page)</span></Label>
                 <Textarea
                   value={editingSong.description ?? ""}
                   onChange={(e) => setEditingSong({ ...editingSong, description: e.target.value || null })}
-                  rows={2}
-                  placeholder="Brief description of the song..."
+                  rows={3}
+                  placeholder="Full description for the song detail page..."
                 />
               </div>
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff, Book, GraduationCap, Star, HandHeart, Sparkles, Inbox } from "lucide-react";
+import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff, Book, GraduationCap, Star, HandHeart, Sparkles, Inbox, Music2 } from "lucide-react";
 import { GameConsoleIcon } from "@/interactive/GameConsoleIcon";
 import { SiYoutube } from "react-icons/si";
 import { cn } from "@/lib/utils";
@@ -115,6 +115,7 @@ export function Header() {
     { href: "/bible", label: t("bible"), icon: Book, external: false, adminOnly: false },
     { href: "/sunday-school", label: t("sundaySchool"), icon: GraduationCap, external: false, adminOnly: false },
     { href: "/daily-promise", label: "God's Promises", icon: Sparkles, external: false, adminOnly: false },
+    { href: "/music", label: "SpiritTone Music", icon: Music2, external: false, adminOnly: false },
     { href: "https://www.youtube.com/@365DailyDevotional", label: "YouTube", icon: SiYoutube, external: true, adminOnly: false },
     { href: "https://payhip.com/SpiritToneRecords", label: "Shop", icon: ShoppingBag, external: true, adminOnly: false },
     { href: "/prayer-counseling", label: t("prayerCounseling"), icon: MessageCircleHeart, external: false, adminOnly: false },
@@ -130,6 +131,7 @@ export function Header() {
     { href: "/bible", label: t("bible"), icon: Book, external: false },
     { href: "/sunday-school", label: t("sundaySchool"), icon: GraduationCap, external: false },
     { href: "/daily-promise", label: "God's Promises", icon: Sparkles, external: false },
+    { href: "/music", label: "SpiritTone Music", icon: Music2, external: false },
     { href: "https://www.youtube.com/@365DailyDevotional", label: "YouTube", icon: SiYoutube, external: true },
     { href: "https://payhip.com/SpiritToneRecords", label: "Shop", icon: ShoppingBag, external: true },
     { href: "/prayer-counseling", label: t("prayerCounseling"), icon: MessageCircleHeart, external: false },

@@ -57,6 +57,8 @@ import TestimonyWall from "@/pages/TestimonyWall";
 import QuickPrayer from "@/pages/QuickPrayer";
 import DailyPromise from "@/pages/DailyPromise";
 import Inbox from "@/pages/Inbox";
+import Music from "@/pages/Music";
+import SongDetail from "@/pages/SongDetail";
 import PromisePopup from "@/components/PromisePopup";
 import NotFound from "@/pages/not-found";
 
@@ -74,6 +76,8 @@ function Router() {
       <Route path="/testimonies" component={TestimonyWall} />
       <Route path="/quick-prayer" component={QuickPrayer} />
       <Route path="/daily-promise" component={DailyPromise} />
+      <Route path="/music/:slug" component={SongDetail} />
+      <Route path="/music" component={Music} />
       <Route path="/devotional/today" component={PublicDevotionalToday} />
       <Route path="/devotional/:date" component={SingleDevotional} />
       <Route path="/public/archive" component={PublicArchive} />

@@ -161,12 +161,15 @@ export interface IStorage {
   updateSundaySchoolLesson(id: number, updates: Partial<InsertSundaySchoolLesson>): Promise<SundaySchoolLesson>;
   deleteSundaySchoolLesson(id: number): Promise<void>;
 
-  // Songs — Song of the Week
+  // Songs — Song of the Week / SpiritTone Music
   getFeaturedSong(): Promise<Song | undefined>;
+  getPublicSongs(): Promise<Song[]>;
   getSongs(): Promise<Song[]>;
   getSong(id: number): Promise<Song | undefined>;
+  getSongBySlug(slug: string): Promise<Song | undefined>;
   createSong(song: InsertSong): Promise<Song>;
   updateSong(id: number, updates: Partial<InsertSong>): Promise<Song>;
+  deleteSong(id: number): Promise<void>;
   getSongTestimonies(songId?: number): Promise<SongTestimony[]>;
   createSongTestimony(testimony: InsertSongTestimony): Promise<SongTestimony>;
   updateSongTestimony(id: number, data: Partial<SongTestimony>): Promise<SongTestimony>;
@@ -802,6 +805,12 @@ export class DatabaseStorage implements IStorage {
     return fallback;
   }
 
+  async getPublicSongs(): Promise<Song[]> {
+    return db.select().from(songs)
+      .where(eq(songs.isActive, true))
+      .orderBy(desc(songs.createdAt));
+  }
+
   async getSongs(): Promise<Song[]> {
     return db.select().from(songs).orderBy(desc(songs.createdAt));
   }
@@ -809,6 +818,15 @@ export class DatabaseStorage implements IStorage {
   async getSong(id: number): Promise<Song | undefined> {
     const [song] = await db.select().from(songs).where(eq(songs.id, id));
     return song;
+  }
+
+  async getSongBySlug(slug: string): Promise<Song | undefined> {
+    const [song] = await db.select().from(songs).where(eq(songs.slug, slug));
+    return song;
+  }
+
+  async deleteSong(id: number): Promise<void> {
+    await db.delete(songs).where(eq(songs.id, id));
   }
 
   async createSong(song: InsertSong): Promise<Song> {

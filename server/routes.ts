@@ -1432,6 +1432,28 @@ export async function registerRoutes(
     }
   });
 
+  // Public: list all active songs for the SpiritTone Music library
+  app.get("/api/songs/library", async (req, res) => {
+    try {
+      const allSongs = await storage.getPublicSongs();
+      res.json(allSongs);
+    } catch (err) {
+      console.error("Error fetching public songs:", err);
+      res.status(500).json({ message: "Could not fetch songs" });
+    }
+  });
+
+  // Public: get song by slug (for song detail page)
+  app.get("/api/songs/by-slug/:slug", async (req, res) => {
+    try {
+      const song = await storage.getSongBySlug(req.params.slug);
+      if (!song || !song.isActive) return res.status(404).json({ message: "Song not found" });
+      res.json(song);
+    } catch (err) {
+      res.status(500).json({ message: "Could not fetch song" });
+    }
+  });
+
   // Admin: list all songs
   app.get("/api/songs", requireAdmin, async (req, res) => {
     try {
@@ -1481,6 +1503,19 @@ export async function registerRoutes(
     } catch (err) {
       console.error("Error updating song:", err);
       res.status(500).json({ message: "Could not update song" });
+    }
+  });
+
+  // Admin: delete song
+  app.delete("/api/songs/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      await storage.deleteSong(id);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Error deleting song:", err);
+      res.status(500).json({ message: "Could not delete song" });
     }
   });
 

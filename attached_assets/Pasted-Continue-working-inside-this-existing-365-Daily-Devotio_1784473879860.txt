@@ -1,0 +1,63 @@
+Continue working inside this existing 365 Daily Devotional project. This is not a new project.
+
+Do not enter Plan Mode. Start implementing immediately.
+
+BUILD ONLY PHASE A + B:
+
+1. Complete the existing Admin Songs section.
+2. Add a clear “Upload New Song” button.
+3. Replace URL-only inputs with real file uploads using the existing object-storage/upload system:
+   - Song audio
+   - Song cover/thumbnail
+   - Separate SpiritTone Records or ministry logo
+4. Allow Admin to enter:
+   - Song title
+   - Short description
+   - Full description
+   - Artist/vocalist
+   - Producer and credits
+   - Scripture reference
+   - Lyrics
+   - Featured start date
+   - Featured end date
+   - Active/inactive status
+   - Download status: disabled, coming soon, or free promotional download
+5. Preserve multiple songs as separate records. Never overwrite an older song when a new one is uploaded.
+6. During the scheduled start/end dates, automatically show the selected song in both existing Song of the Week locations on Today’s Message.
+7. After the end date, remove it only from Today’s Message; keep it in the music library.
+8. The Play button on Today’s Message must play the song there without navigating away.
+9. Clicking the Song of the Week artwork, title, heading, or “View Song” area must open the correct full song page.
+10. Create a basic public section named “SpiritTone Music.”
+11. Create:
+    - A SpiritTone Music library page showing all active public songs
+    - A full song-details page showing artwork, descriptions, credits, Scripture, lyrics, audio player, testimony, download status, and the existing Support the Ministry button
+12. Add SpiritTone Music carefully to desktop and mobile navigation without breaking the layout.
+13. Keep donation support using the existing donation page for now. Do not build new payment integrations or donation-management tables in this task.
+
+DO NOT BUILD YET:
+
+- My Library
+- Saved-song account synchronization
+- Cross-device history
+- Prayer or counseling migration
+- New email authentication
+- New donation methods
+- Venmo, Zelle, or card-payment integrations
+- Paid song purchases
+- Google Play Billing
+- Books
+- Playlists
+- Subscriptions
+
+CRITICAL SAFETY AND COST RULES:
+
+- Create a checkpoint before editing.
+- Reuse the existing songs table, APIs, Admin tab, upload system, authentication, components, and styling.
+- Do not create duplicate systems.
+- Do not inspect or modify unrelated files.
+- Do not broadly audit, refactor, redesign, or rebuild the app.
+- Do not reseed, overwrite, or delete devotional records.
+- Preserve God’s Promises, prayer, counseling, Bible, Archive, Sunday School, Inbox, notifications, favorites, testimonies, sharing, dark mode, and mobile navigation.
+- Do not publish or deploy automatically.
+- Test only the requested Phase A + B functionality.
+- When complete, report the exact files changed, testing results, and any limitation, then stop for approval.

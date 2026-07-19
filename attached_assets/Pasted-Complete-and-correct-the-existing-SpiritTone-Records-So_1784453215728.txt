@@ -1,0 +1,585 @@
+Complete and correct the existing SpiritTone Records Song of the Week feature in the production 365 Daily Devotional Replit project.
+
+IMPORTANT CONTEXT
+
+The app already contains:
+
+1. A compact Song of the Week card above Today’s devotional.
+2. A large Song of the Week section below Today’s devotional.
+3. Existing partial song database, API, admin and component work.
+4. SpiritTone Records branding.
+5. Existing prayer, counseling, testimony, favorites and admin features.
+
+Do not rebuild these features from scratch. Inspect what already exists, preserve everything that works, and complete only the missing functionality described below.
+
+==================================================
+CRITICAL SAFETY, COST AND SCOPE RULES
+==================================================
+
+- This is the production Replit project connected to the Google Play version of 365 Daily Devotional.
+- Create a checkpoint or backup before making any changes.
+- Do not rebuild, broadly redesign, refactor, rename, delete or replace the application.
+- Do not modify unrelated devotional content, Archive, Bible, Sunday School, prayer, counseling, Inbox, notifications, God’s Promises, dark mode or mobile navigation.
+- Do not reseed, overwrite or delete devotional records.
+- Do not delete existing songs, testimonies, favorites or users.
+- Reuse existing song tables, APIs, storage, authentication, admin authorization and visual components.
+- Do not create duplicate song systems, duplicate account systems or duplicate API routes.
+- Make minimal additive changes only.
+- Inspect and modify only files directly required for this task.
+- Do not introduce a new paid third-party service.
+- Do not expose database, authentication, payment or storage secrets in frontend code.
+- Do not automatically publish or deploy.
+- Test inside Replit and stop for approval.
+- Keep this task tightly scoped to conserve Replit credits.
+
+==================================================
+PART 1 — ADMIN: CLEAR “UPLOAD NEW SONG” WORKFLOW
+==================================================
+
+Inside the existing Admin area, add or repair a clearly visible navigation section named:
+
+“SpiritTone Music”
+or
+“Songs”
+
+Use “SpiritTone Music” as the preferred visible name.
+
+At the top of this section, provide a prominent button:
+
+“Upload New Song”
+
+The administrator must not need to edit code or manually insert a database record.
+
+Clicking “Upload New Song” must open a clear form containing:
+
+CORE SONG INFORMATION
+
+- Song title
+- Short description
+- Full description
+- Artist or vocalist
+- Featured artist, optional
+- Ministry or record-label name
+- Producer
+- Composer, optional
+- Lyricist, optional
+- Choir, optional
+- Instrumentalist, optional
+- Genre or category
+- Language
+- Release year
+- Copyright notice
+
+SCRIPTURE AND LYRICS
+
+- Scripture reference
+- Optional Scripture text
+- Full lyrics
+- Preserve Verse, Chorus, Bridge and paragraph formatting
+
+BRANDING AND IMAGES
+
+- Upload Song Cover or Thumbnail
+- Upload Ministry or Record-Label Logo
+- Keep the song cover and SpiritTone Records logo as two completely separate fields
+- Never overwrite the 365 Daily Devotional app logo
+- Show image previews before saving
+- Support JPG, JPEG, PNG and WebP
+- Preserve transparent PNG logos where supported
+- Default the ministry/label name to “SpiritTone Records,” but keep it editable
+- Default the producer to “Moses Afolabi,” but keep it editable
+
+AUDIO UPLOAD
+
+Provide a clearly labelled button:
+
+“Upload Song Audio”
+
+Required behavior:
+
+- Allow upload of an actual audio file, not only a typed URL
+- Prefer MP3 for economical storage and broad playback compatibility
+- Support other safe formats already handled by the project, such as M4A
+- Validate file type and reasonable file size
+- Display upload progress
+- Display clear success and failure messages
+- Allow Admin to replace the file later
+- Save the secure resulting audio location to the song record
+- Use the existing object-storage method
+- Never place large audio files inside the application source bundle
+- Never expose privileged storage credentials in frontend code
+
+==================================================
+PART 2 — ADMIN: FEATURED START AND END DATES
+==================================================
+
+While uploading or editing a song, Admin must be able to control exactly when it appears on Today’s Message.
+
+Add:
+
+- Show on Today’s Message: Yes/No
+- Featured start date
+- Featured start time, optional
+- Featured end date
+- Featured end time, optional
+- Timezone
+- Draft, Active, Inactive or Archived status
+
+Use the app’s existing date and timezone system.
+
+Required behavior:
+
+1. Before the start date/time, the song remains stored in SpiritTone Music but does not appear on Today’s Message.
+2. During the selected period, it appears in both Song of the Week locations.
+3. After the end date/time, it automatically disappears from both Today-page locations.
+4. It remains available in SpiritTone Music after the featured period ends.
+5. Never delete or archive a song automatically when the featured period ends.
+6. Prevent two songs from being featured during overlapping periods, or display a clear conflict warning.
+7. Admin can manually activate, deactivate or reschedule a song.
+8. Admin changes must update the app through normal database/API refresh and must not require a new deployment.
+
+==================================================
+PART 3 — ADMIN: MULTIPLE SONG LIBRARY
+==================================================
+
+Admin must be able to upload and retain as many songs as desired.
+
+The Admin song list must display:
+
+- Cover thumbnail
+- Song title
+- Artist or vocalist
+- Ministry/label
+- Audio availability
+- Draft, Active, Inactive or Archived status
+- Featured start date
+- Featured end date
+- Currently Featured indicator
+- Download status
+- Created date
+- Edit
+- Preview
+- Activate/Deactivate
+- Schedule as Song of the Week
+- Archive
+- Delete with confirmation, only when safe
+
+Rules:
+
+- Every upload creates a separate song record.
+- Uploading a new song must never overwrite an older song.
+- Prefer Archive instead of permanent deletion.
+- Preserve testimonies, favorites, saved-library records and download history.
+- Allow an older song to be scheduled again later.
+
+==================================================
+PART 4 — TODAY’S MESSAGE: PLAY WITHOUT LEAVING
+==================================================
+
+Preserve both existing Today-page locations:
+
+1. Compact Song of the Week card above the devotional.
+2. Large Song of the Week card below the devotional.
+
+Both must use the same scheduled database song.
+
+The Play button on Today’s Message must:
+
+- Play the audio directly on Today’s Message.
+- Not navigate away.
+- Not autoplay.
+- Support Play and Pause.
+- Display progress and duration where available.
+- Prevent two audio instances from playing simultaneously.
+- Share playback state between the upper and lower cards where practical.
+- Not trigger navigation when the progress bar is touched.
+- Show a friendly message when no audio is available.
+
+==================================================
+PART 5 — CLICK SONG OF THE WEEK TO OPEN FULL SECTION
+==================================================
+
+The surrounding Song of the Week area must be clickable.
+
+When users click or tap:
+
+- The Song of the Week heading
+- Song artwork
+- Song title
+- “Open Full Song”
+- “View Song Details”
+
+take them to the correct song inside the new SpiritTone Music section.
+
+Do not make the following controls trigger navigation:
+
+- Play/Pause
+- Audio progress bar
+- Lyrics
+- Favorite
+- Share
+- Testimony
+- Support
+- Download
+
+Use a proper route containing the song ID or slug.
+
+Add accessible keyboard, focus, hover and pressed states.
+
+==================================================
+PART 6 — NEW SUBSCRIBER SECTION: SPIRITTONE MUSIC
+==================================================
+
+Create a new user-facing section called:
+
+“SpiritTone Music”
+
+Add it to the existing navigation carefully without breaking or overcrowding mobile navigation.
+
+This section must load song information from the database/API and must not hard-code individual songs in the page.
+
+A. MUSIC LIBRARY VIEW
+
+Display active public songs with:
+
+- Cover thumbnail
+- Song title
+- Artist or vocalist
+- SpiritTone Records or selected label
+- Short description
+- Scripture reference
+- Play button
+- Saved/Favorite state
+- Open Song button
+
+Do not preload every audio file. Load metadata and cover thumbnails first. Load or stream audio only when Play is selected.
+
+B. FULL SONG DETAIL VIEW
+
+Display:
+
+- Large cover artwork
+- Song title
+- Artist or vocalist
+- SpiritTone Records name
+- Separate SpiritTone Records logo
+- Producer and optional credits
+- Scripture reference and Scripture text
+- Full description
+- Complete lyrics
+- Full audio player
+- Favorite
+- Save to My Library
+- Download
+- Share
+- Share Your Testimony
+- Support the Ministry
+- Release year
+- Copyright notice
+
+The song clicked from Today’s Message must open directly in its own detail view.
+
+==================================================
+PART 7 — FREE DOWNLOAD CONTROL
+==================================================
+
+Add a Download button on the full song page.
+
+Allow Admin to choose one of these per song:
+
+- Downloads Disabled
+- Download Coming Soon
+- Free Promotional Download
+
+Rules:
+
+- Enable actual downloading only when Admin selects Free Promotional Download and a valid file exists.
+- Do not make a donation unlock downloading.
+- Do not require payment to listen, view lyrics or save a song.
+- Do not sell digital songs through PayPal, Cash App, Venmo or another external payment link inside the Android app.
+- Do not implement paid song purchases in this task.
+- Keep the structure ready for future Google Play Billing integration if paid digital downloads are introduced later.
+
+==================================================
+PART 8 — VOLUNTARY “SUPPORT THE MINISTRY”
+==================================================
+
+Keep the donation/support feature completely separate from listening, saving and downloading.
+
+Add a clearly visible button:
+
+“Support the Ministry”
+
+Place it near the Download and Save to My Library controls, but do not imply that support is required.
+
+Suggested panel wording:
+
+“Were you blessed by this song?
+
+Your voluntary support helps SpiritTone Records and 365 Daily Devotional continue producing Scripture-based songs, devotionals, Bible teaching, prayer resources and counseling encouragement.
+
+Giving is optional. You receive the same song access whether or not you give.”
+
+IMPORTANT GOOGLE PLAY COMPLIANCE RULES
+
+- A donation must not unlock a download, song, feature, badge or exclusive content.
+- Donors and non-donors must receive exactly the same digital access.
+- Do not call a payment a purchase when it is a voluntary ministry contribution.
+- Do not use Google Play Billing for this voluntary support panel.
+- Do not claim donations are tax-deductible unless legally confirmed.
+- Do not automatically charge anyone.
+- Do not implement recurring contributions in this task.
+- Do not store card or bank details in the app.
+- Do not display a donor badge or special digital reward.
+- Never require a contribution before listening, downloading a free song, saving or reading lyrics.
+
+==================================================
+PART 9 — BROADER DONATION METHODS WITHOUT COMPLEX INTEGRATION
+==================================================
+
+Do not build or integrate a complicated new payment processor in this task.
+
+Extend the existing Admin donation settings so Admin can configure, activate, deactivate and reorder the following voluntary support methods:
+
+- PayPal
+- Cash App
+- Venmo
+- Debit/Credit Card Giving Link
+- Ministry Website Giving Link
+- Other Custom Giving Method
+
+Each method should support:
+
+- Display name
+- Optional logo/icon
+- Payment or giving URL
+- Optional username/handle
+- Short instructions
+- Active/Inactive toggle
+- Display order
+
+On the user-facing support panel:
+
+- Show only methods that Admin has activated and properly configured.
+- Open payment links securely in the appropriate external app or browser.
+- Do not place secret API keys in frontend code.
+- Do not create a payment account automatically.
+- Do not expose private account credentials.
+- Do not add Venmo unless Admin has supplied an approved Venmo payment link or handle.
+- Label it correctly as “Venmo,” not “Wemo.”
+- The Debit/Credit Card button must use an Admin-provided secure hosted donation page URL.
+- Do not directly collect card numbers inside the 365 Daily Devotional app.
+- Preserve the existing PayPal and Cash App options.
+- Admin must be able to change these links later without code changes or redeployment.
+
+Suggested support amounts may be displayed as optional suggestions:
+
+- $1
+- $3
+- $5
+- $10
+- Custom amount
+
+These amounts must not unlock anything.
+
+==================================================
+PART 10 — SAVE OR ARCHIVE SONG TO USER ACCOUNT
+==================================================
+
+Add:
+
+“Save to My Library”
+
+When an unsigned user selects this action, show:
+
+“Create or sign in to your free 365 Daily Devotional account to keep your saved songs, favorites and ministry activity available across your devices.”
+
+Do not require sign-in simply to:
+
+- Read Today’s devotional
+- Listen to the featured song
+- View lyrics
+- Browse SpiritTone Music
+- View song descriptions
+
+After sign-in:
+
+- Complete the action the user originally requested.
+- Return the user to the same song.
+- Save the selected song to the user’s account.
+- Confirm that it has been saved.
+
+A user must be able to remove a song from My Library without deleting the ministry’s master song.
+
+==================================================
+PART 11 — EMAIL ACCOUNT AND CROSS-DEVICE SYNC
+==================================================
+
+Inspect and reuse the app’s existing authentication system.
+
+Do not create a second authentication provider.
+
+If secure email sign-up/sign-in already exists, reuse it and support:
+
+- Email account creation
+- Secure sign-in
+- Sign-out
+- Password recovery or passwordless recovery
+- Email verification where supported
+
+Do not store plain-text passwords.
+
+Safely add user-linked records for:
+
+- Saved songs
+- Favorite songs
+- Download history
+
+Prepare the account structure for future linking of:
+
+- Prayer history
+- Counseling history
+- Saved books
+- Favorite devotionals
+
+Do not broadly rewrite or migrate the prayer and counseling systems during this task. Report any limitation instead of risking existing data.
+
+==================================================
+PART 12 — MY LIBRARY
+==================================================
+
+Add a “My Library” section inside the existing user account/profile area.
+
+For now, it must include:
+
+- Saved Songs
+- Favorite Songs
+- Download History, when applicable
+
+Each saved-song item should show:
+
+- Thumbnail
+- Song title
+- Artist
+- Scripture
+- Play
+- Open
+- Remove from My Library
+
+Prepare the design for future Saved Books and Favorite Devotionals, but do not build the book section now.
+
+==================================================
+PART 13 — PERFORMANCE
+==================================================
+
+Prevent the app from becoming overloaded.
+
+- Store metadata in the database.
+- Store audio and images in existing external object storage.
+- Never bundle all MP3 files into the app.
+- Load SpiritTone Music only when the user opens it.
+- Do not preload all songs or audio.
+- Stream/load audio only after Play is selected.
+- Use efficient thumbnail sizes.
+- Paginate or progressively load the library if necessary.
+- Reuse existing query/cache patterns.
+- Invalidate only song-related queries after Admin changes a song.
+- Do not clear devotional, prayer, counseling or account data.
+- Prevent duplicate API requests and duplicate players.
+
+==================================================
+PART 14 — SECURITY
+==================================================
+
+- Only authorized administrators can upload, edit, schedule, archive or delete songs.
+- Regular users can read active public songs and manage only their own personal library.
+- Validate and sanitize all text fields.
+- Validate uploaded file types and sizes.
+- Never expose storage, database or authentication secrets.
+- Do not place privileged upload credentials in frontend code.
+- Do not log private emails or passwords.
+- Do not expose one user’s saved songs or history to another user.
+- Preserve existing access-control and row-level-security rules.
+- Add only the smallest necessary policies.
+- Require confirmation before destructive actions.
+
+==================================================
+PART 15 — REQUIRED TESTING
+==================================================
+
+Verify all of the following:
+
+1. Checkpoint created.
+2. App starts normally.
+3. Today’s devotional still loads.
+4. Upper Song of the Week card remains.
+5. Lower Song of the Week card remains.
+6. Both cards show the same scheduled song.
+7. Play works directly on Today’s Message.
+8. Play does not navigate away.
+9. Clicking the Song of the Week area opens the correct SpiritTone Music song.
+10. Only one audio stream plays at a time.
+11. Admin sees Upload New Song.
+12. Admin uploads actual audio.
+13. Admin uploads song cover.
+14. Admin uploads or selects a separate label logo.
+15. Admin enters descriptions, lyrics, Scripture and credits.
+16. Admin sets start and end dates.
+17. Song appears on Today’s Message only within those dates.
+18. Song disappears from Today’s Message after the end date.
+19. Expired song remains in SpiritTone Music.
+20. Multiple songs remain stored without overwriting one another.
+21. Full song-detail page displays all uploaded information.
+22. Free download works only when enabled by Admin.
+23. Donation is never required for download or access.
+24. Support panel displays only configured active methods.
+25. PayPal still works.
+26. Cash App still works.
+27. Venmo appears only when configured.
+28. Debit/Credit Card button uses only the secure Admin-provided hosted giving URL.
+29. No card details are collected by the app.
+30. Unsigned users can browse and listen.
+31. Save to My Library invites sign-in.
+32. After sign-in, the selected song is saved.
+33. Saved song appears in another signed-in session.
+34. Removing it from My Library does not delete the master song.
+35. Lyrics, Favorite, Share, Testimony and Support still work.
+36. God’s Promises still works.
+37. Prayer, counseling, Inbox, Archive, Bible, Sunday School, notifications and dark mode remain working.
+38. No devotional data was reseeded, overwritten or deleted.
+39. No unrelated features were changed.
+40. No secrets were exposed.
+41. No unresolved console errors remain.
+
+==================================================
+FINAL RESPONSE REQUIRED FROM REPLIT
+==================================================
+
+When finished, report only:
+
+1. Confirmation that a checkpoint was created.
+2. Exact files changed.
+3. Where Admin finds Upload New Song.
+4. Exact steps to upload and schedule a song.
+5. Where audio, covers and label logos are stored.
+6. How start/end dates control Today’s Message.
+7. How Play works on Today’s Message.
+8. How clicking Song of the Week opens SpiritTone Music.
+9. Where full song details appear.
+10. How free downloads are controlled.
+11. How the voluntary Support the Ministry panel works.
+12. Where Admin manages PayPal, Cash App, Venmo and card-giving links.
+13. Confirmation that donation does not unlock any digital content.
+14. How Save to My Library works.
+15. Which authentication system was reused.
+16. What synchronizes across devices.
+17. Confirmation that multiple songs are preserved.
+18. Confirmation that nothing unrelated was changed.
+19. Manual testing steps.
+20. Any unresolved limitation.
+
+Do not publish automatically.
+Do not deploy automatically.
+Do not start another task.
+Do not perform a broad project audit.
+Stop and wait for approval.

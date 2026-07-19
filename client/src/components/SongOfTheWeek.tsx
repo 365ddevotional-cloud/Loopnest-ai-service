@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import {
@@ -431,9 +432,10 @@ export function SongOfTheWeek() {
         className="rounded-2xl overflow-hidden shadow-xl border border-border/30"
         data-testid="section-song-of-the-week"
       >
-        {/* ── Cinematic Header ── */}
+        {/* ── Cinematic Header — clicking opens full song page ── */}
+        <Link href={`/music/${song.slug}`}>
         <div
-          className="relative min-h-[260px] sm:min-h-[300px] flex flex-col items-center justify-center text-center px-4 py-8"
+          className="relative min-h-[260px] sm:min-h-[300px] flex flex-col items-center justify-center text-center px-4 py-8 cursor-pointer"
           style={{
             background: hasCover
               ? undefined
@@ -523,6 +525,7 @@ export function SongOfTheWeek() {
             )}
           </div>
         </div>
+        </Link>
 
         {/* ── Song Metadata ── */}
         <div className="bg-card px-4 py-4 space-y-3">
@@ -745,51 +748,52 @@ export function SongMiniCard() {
       }}
       data-testid="section-song-mini-card"
     >
-      {/* Thumbnail */}
-      <div className="flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden flex items-center justify-center"
-        style={{ background: "linear-gradient(135deg, #f0d080 0%, #c89820 100%)" }}
-      >
-        {song.coverImageUrl ? (
-          <img
-            src={song.coverImageUrl}
-            alt={song.title}
-            className="w-full h-full object-cover"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-          />
-        ) : (
-          <Music2 className="w-6 h-6 text-amber-900" />
-        )}
-      </div>
+      {/* Thumbnail + Info — clicking opens song detail page */}
+      <Link href={`/music/${song.slug}`} className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
+        <div className="flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden flex items-center justify-center"
+          style={{ background: "linear-gradient(135deg, #f0d080 0%, #c89820 100%)" }}
+        >
+          {song.coverImageUrl ? (
+            <img
+              src={song.coverImageUrl}
+              alt={song.title}
+              className="w-full h-full object-cover"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            />
+          ) : (
+            <Music2 className="w-6 h-6 text-amber-900" />
+          )}
+        </div>
 
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <div
-          className="mb-0.5"
-          style={{
-            fontSize: "9px",
-            fontWeight: 800,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: "#7a4a00",
-          }}
-        >
-          🎵 Song of the Week
+        <div className="flex-1 min-w-0">
+          <div
+            className="mb-0.5"
+            style={{
+              fontSize: "9px",
+              fontWeight: 800,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: "#7a4a00",
+            }}
+          >
+            🎵 Song of the Week
+          </div>
+          <div
+            className="truncate leading-tight"
+            style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontWeight: 700,
+              fontSize: "0.875rem",
+              color: "#2d1400",
+            }}
+          >
+            {song.title}
+          </div>
+          <div className="text-xs truncate" style={{ color: "#7a4a00" }}>
+            {song.labelName} · {song.scriptureReference}
+          </div>
         </div>
-        <div
-          className="truncate leading-tight"
-          style={{
-            fontFamily: "'Playfair Display', Georgia, serif",
-            fontWeight: 700,
-            fontSize: "0.875rem",
-            color: "#2d1400",
-          }}
-        >
-          {song.title}
-        </div>
-        <div className="text-xs truncate" style={{ color: "#7a4a00" }}>
-          {song.labelName} · {song.scriptureReference}
-        </div>
-      </div>
+      </Link>
 
       {/* Controls */}
       <div className="flex items-center gap-2 flex-shrink-0">
@@ -806,14 +810,15 @@ export function SongMiniCard() {
             <Play className="w-4 h-4 text-white ml-0.5" />
           )}
         </button>
-        <button
-          onClick={scrollToFull}
-          data-testid="button-view-song"
-          className="text-xs font-semibold transition-colors whitespace-nowrap"
-          style={{ color: "#7a4a00" }}
-        >
-          View Song →
-        </button>
+        <Link href={`/music/${song.slug}`}>
+          <button
+            data-testid="button-view-song"
+            className="text-xs font-semibold transition-colors whitespace-nowrap"
+            style={{ color: "#7a4a00" }}
+          >
+            View Song →
+          </button>
+        </Link>
       </div>
     </div>
   );

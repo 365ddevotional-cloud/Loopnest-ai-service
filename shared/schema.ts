@@ -467,7 +467,7 @@ export const insertInboxMessageSchema = createInsertSchema(inboxMessages).omit({
 export type InboxMessage = typeof inboxMessages.$inferSelect;
 export type InsertInboxMessage = z.infer<typeof insertInboxMessageSchema>;
 
-// Songs Table — Song of the Week feature
+// Songs Table — Song of the Week / SpiritTone Music feature
 export const songs = pgTable("songs", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -479,11 +479,16 @@ export const songs = pgTable("songs", {
   producer: text("producer").default("Moses Afolabi").notNull(),
   composer: text("composer"),
   lyricist: text("lyricist"),
+  choir: text("choir"),
+  instrumentalist: text("instrumentalist"),
+  genre: text("genre"),
+  language: text("language").default("English"),
   scriptureReference: text("scripture_reference").notNull(),
   scriptureText: text("scripture_text"),
   lyrics: text("lyrics"),
   audioUrl: text("audio_url"),
   coverImageUrl: text("cover_image_url"),
+  shortDescription: text("short_description"),
   description: text("description"),
   isActive: boolean("is_active").default(true).notNull(),
   featuredWeekStart: date("featured_week_start"),

@@ -1,0 +1,65 @@
+Proceed with implementation, but keep the scope tightly limited to the following only:
+
+PHASE 1 — BUILD NOW
+
+1. Complete the Admin song upload workflow.
+2. Add real MP3/audio upload using the existing object storage.
+3. Add song cover upload.
+4. Add separate SpiritTone Records logo upload.
+5. Add fields for:
+   - song title
+   - short description
+   - full description
+   - artist/vocalist
+   - producer
+   - credits
+   - Scripture reference
+   - lyrics
+   - featured start date
+   - featured end date
+   - active/inactive status
+   - download enabled/disabled
+6. Let Admin upload and preserve multiple songs without overwriting older songs.
+7. Let Admin choose which song appears as Song of the Week and when it starts and ends.
+8. Keep both existing Song of the Week cards on Today’s Message.
+9. The Play button must play the song directly on Today’s Message without leaving the page.
+10. Clicking the Song of the Week artwork, title, or surrounding card must open the full song page.
+11. Create the basic SpiritTone Music section.
+12. Create a full song-detail page showing:
+   - artwork
+   - title
+   - description
+   - credits
+   - Scripture
+   - lyrics
+   - audio player
+   - download button placeholder/status
+   - Support the Ministry button using the existing donation page
+
+DO NOT BUILD YET
+
+- user account music archiving
+- cross-device song syncing
+- My Library
+- prayer/counseling migration
+- donation-method management tables
+- Venmo/Zelle/custom giving administration
+- complex download history
+- broad account-system changes
+- books
+- playlists
+- subscriptions
+- paid digital purchases
+- Google Play Billing
+- broad redesigns or refactors
+
+CRITICAL RULES
+
+- Create a checkpoint before changing code.
+- Reuse the existing songs table, API routes, object storage, Admin tab, authentication, and components.
+- Do not create duplicate systems.
+- Do not modify unrelated features.
+- Do not reseed or overwrite devotional data.
+- Do not publish or deploy.
+- Test only this limited scope.
+- When finished, report exact files changed and stop for approval.
