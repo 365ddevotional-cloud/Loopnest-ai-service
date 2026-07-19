@@ -1,17 +1,27 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useRoute, Link } from "wouter";
+import { useRoute, Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Play, Pause, Volume2, SkipBack, SkipForward, Download, Share2,
   Heart, ChevronLeft, Music2, BookOpen, Loader2, ExternalLink,
-  Gift, X, AlertCircle,
+  Gift, X, AlertCircle, BookMarked,
 } from "lucide-react";
 import { SiPaypal, SiCashapp, SiVenmo } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/contexts/UserContext";
 import type { Song, GivingMethod } from "@shared/schema";
+
+const LOCAL_FAV_KEY = "spirittone-song-favorites";
+
+function getLocalFavorites(): number[] {
+  try { return JSON.parse(localStorage.getItem(LOCAL_FAV_KEY) ?? "[]"); } catch { return []; }
+}
+function setLocalFavorites(ids: number[]) {
+  localStorage.setItem(LOCAL_FAV_KEY, JSON.stringify(ids));
+}
 
 function useAudioPlayer(src: string | null | undefined) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -178,15 +188,86 @@ function SupportModal({ open, onClose, songTitle }: { open: boolean; onClose: ()
 export default function SongDetail() {
   const [, params] = useRoute("/music/:slug");
   const slug = params?.slug;
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user, emailVerified, getIdToken } = useUser();
+  const isSignedIn = !!user && emailVerified;
   const [showSupport, setShowSupport] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [localFav, setLocalFav] = useState(false);
 
   const { data: song, isLoading, error } = useQuery<Song>({
     queryKey: ["/api/songs/by-slug", slug],
     queryFn: () => fetch(`/api/songs/by-slug/${slug}`).then((r) => r.json()),
     enabled: !!slug,
+  });
+
+  useEffect(() => {
+    if (song && !isSignedIn) {
+      setLocalFav(getLocalFavorites().includes(song.id));
+    }
+  }, [song?.id, isSignedIn]);
+
+  // DB-backed favorites list (only when signed in)
+  const { data: dbFavorites = [] } = useQuery<{ songId: number }[]>({
+    queryKey: ["/api/user/library/favorites"],
+    queryFn: async () => {
+      const token = await getIdToken();
+      if (!token) return [];
+      const res = await fetch("/api/user/library/favorites", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.ok ? res.json() : [];
+    },
+    enabled: isSignedIn,
+  });
+
+  // DB-backed saved list (only when signed in)
+  const { data: dbSaved = [] } = useQuery<{ songId: number }[]>({
+    queryKey: ["/api/user/library/saved"],
+    queryFn: async () => {
+      const token = await getIdToken();
+      if (!token) return [];
+      const res = await fetch("/api/user/library/saved", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.ok ? res.json() : [];
+    },
+    enabled: isSignedIn,
+  });
+
+  const isFavorite = isSignedIn
+    ? dbFavorites.some((f) => f.songId === song?.id)
+    : localFav;
+
+  const isSaved = isSignedIn && dbSaved.some((s) => s.songId === song?.id);
+
+  const favoriteMutation = useMutation({
+    mutationFn: async ({ songId, add }: { songId: number; add: boolean }) => {
+      const token = await getIdToken();
+      if (!token) throw new Error("Not signed in");
+      const res = await fetch(add ? "/api/user/library/favorites" : `/api/user/library/favorites/${songId}`, {
+        method: add ? "POST" : "DELETE",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: add ? JSON.stringify({ songId }) : undefined,
+      });
+      if (!res.ok) throw new Error("Failed");
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/user/library/favorites"] }),
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async ({ songId, save }: { songId: number; save: boolean }) => {
+      const token = await getIdToken();
+      if (!token) throw new Error("Not signed in");
+      const res = await fetch(save ? "/api/user/library/saved" : `/api/user/library/saved/${songId}`, {
+        method: save ? "POST" : "DELETE",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: save ? JSON.stringify({ songId }) : undefined,
+      });
+      if (!res.ok) throw new Error("Failed");
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/user/library/saved"] }),
   });
 
   const audioSrc = song?.audioUrl ? `/api/songs/${song.id}/audio` : null;
@@ -205,9 +286,45 @@ export default function SongDetail() {
     }
   };
 
-  const toggleFavorite = () => {
-    setIsFavorite((prev) => !prev);
-    toast({ title: isFavorite ? "Removed from favorites" : "Added to favorites" });
+  const toggleFavorite = async () => {
+    if (!song) return;
+    if (isSignedIn) {
+      const adding = !isFavorite;
+      favoriteMutation.mutate({ songId: song.id, add: adding });
+      toast({ title: adding ? "Added to favorites" : "Removed from favorites" });
+    } else {
+      const ids = getLocalFavorites();
+      const wasIn = ids.includes(song.id);
+      const updated = wasIn ? ids.filter((id) => id !== song.id) : [...ids, song.id];
+      setLocalFavorites(updated);
+      setLocalFav(!wasIn);
+      toast({ title: wasIn ? "Removed from favorites" : "Added to favorites" });
+    }
+  };
+
+  const toggleSave = async () => {
+    if (!song) return;
+    if (!isSignedIn) {
+      setLocation(`/signin?return=/music/${song.slug}&action=save&songId=${song.id}`);
+      return;
+    }
+    const adding = !isSaved;
+    saveMutation.mutate({ songId: song.id, save: adding });
+    toast({ title: adding ? "Saved to My Library" : "Removed from library" });
+  };
+
+  const handleDownloadClick = async () => {
+    if (!song || !isSignedIn) return;
+    try {
+      const token = await getIdToken();
+      if (!token) return;
+      await fetch("/api/user/library/downloads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ songId: song.id }),
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/library/downloads"] });
+    } catch {}
   };
 
   if (isLoading) {
@@ -346,16 +463,32 @@ export default function SongDetail() {
 
       {/* Action buttons */}
       <div className="flex flex-wrap gap-2" data-testid="section-song-actions">
+        {/* Favorite */}
         <Button
           variant="outline"
           size="sm"
           onClick={toggleFavorite}
+          disabled={favoriteMutation.isPending}
           className={isFavorite ? "border-rose-400 text-rose-500 bg-rose-50 dark:bg-rose-950/20" : ""}
           data-testid="button-favorite-song"
         >
           <Heart className={`w-4 h-4 mr-1.5 ${isFavorite ? "fill-rose-500 text-rose-500" : ""}`} />
           {isFavorite ? "Favorited" : "Favorite"}
         </Button>
+
+        {/* Save to My Library */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={toggleSave}
+          disabled={saveMutation.isPending}
+          className={isSaved ? "border-amber-500 text-amber-700 bg-amber-50 dark:bg-amber-950/20" : ""}
+          data-testid="button-save-song"
+        >
+          <BookMarked className={`w-4 h-4 mr-1.5 ${isSaved ? "fill-amber-500 text-amber-700" : ""}`} />
+          {isSaved ? "Saved" : "Save to Library"}
+        </Button>
+
         <Button variant="outline" size="sm" onClick={handleShare} data-testid="button-share-song">
           <Share2 className="w-4 h-4 mr-1.5" />
           Share
@@ -363,7 +496,7 @@ export default function SongDetail() {
 
         {/* Download button */}
         {song.downloadStatus === "free" && song.audioUrl ? (
-          <a href={`/api/songs/${song.id}/download`} download data-testid="button-download-song">
+          <a href={`/api/songs/${song.id}/download`} download onClick={handleDownloadClick} data-testid="button-download-song">
             <Button variant="outline" size="sm">
               <Download className="w-4 h-4 mr-1.5" />
               Free Download

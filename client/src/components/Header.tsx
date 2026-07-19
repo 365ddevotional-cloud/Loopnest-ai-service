@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff, Book, GraduationCap, Star, HandHeart, Sparkles, Inbox, Music2 } from "lucide-react";
+import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff, Book, GraduationCap, Star, HandHeart, Sparkles, Inbox, Music2, Library, UserCircle } from "lucide-react";
 import { GameConsoleIcon } from "@/interactive/GameConsoleIcon";
 import { SiYoutube } from "react-icons/si";
 import { cn } from "@/lib/utils";
 import logoImage from "@assets/IMG_202512182225101_-_Copy_1767468127874.PNG";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@/contexts/UserContext";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useTranslation, TRANSLATION_LABELS } from "@/contexts/TranslationContext";
 import { useMenuTransition } from "@/contexts/MenuTransitionContext";
@@ -61,6 +62,7 @@ function MobileTranslationSelector() {
 export function Header() {
   const [location, setLocation] = useLocation();
   const { isAdmin, logout } = useAuth();
+  const { user: appUser, emailVerified: appEmailVerified, signUserOut } = useUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { triggerTransition } = useMenuTransition();
   const { t } = useI18n();
@@ -220,6 +222,46 @@ export function Header() {
               {t("logout")}
             </button>
           )}
+          {/* User account area */}
+          {appUser && appEmailVerified ? (
+            <>
+              <button
+                onClick={() => navigateWithTransition("/my-library")}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer",
+                  location === "/my-library"
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                    : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                )}
+                data-testid="button-my-library-nav"
+              >
+                <Library className="w-4 h-4" />
+                My Library
+              </button>
+              <button
+                onClick={async () => { await signUserOut(); setLocation("/"); }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                data-testid="button-user-signout-nav"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => navigateWithTransition("/signin")}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer",
+                location === "/signin"
+                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                  : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
+              )}
+              data-testid="button-signin-nav"
+            >
+              <UserCircle className="w-4 h-4" />
+              Sign In
+            </button>
+          )}
           <TranslationSelector />
           <LanguageSwitcher />
           <SettingsModal />
@@ -348,7 +390,48 @@ export function Header() {
                 {isAdmin ? <Settings className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
                 {isAdmin ? t("adminDashboard") : t("login")}
               </button>
-              
+
+              {/* User account controls — mobile */}
+              {appUser && appEmailVerified ? (
+                <>
+                  <button
+                    onClick={() => handleNavClick("/my-library", false)}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 cursor-pointer text-left",
+                      location === "/my-library"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                    )}
+                    data-testid="button-my-library-nav-mobile"
+                  >
+                    <Library className="w-5 h-5" />
+                    My Library
+                  </button>
+                  <button
+                    onClick={async () => { setMobileMenuOpen(false); await signUserOut(); setLocation("/"); }}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-200 cursor-pointer"
+                    data-testid="button-user-signout-nav-mobile"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => handleNavClick("/signin", false)}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 cursor-pointer text-left",
+                    location === "/signin"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                  )}
+                  data-testid="button-signin-nav-mobile"
+                >
+                  <UserCircle className="w-5 h-5" />
+                  Sign In / My Library
+                </button>
+              )}
+
               <MobileLanguageSwitcher />
               
               <MobileTranslationSelector />

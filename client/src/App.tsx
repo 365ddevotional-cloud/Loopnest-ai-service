@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Header } from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { UserProvider } from "@/contexts/UserContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
 import { MenuTransitionProvider, useMenuTransition } from "@/contexts/MenuTransitionContext";
@@ -59,6 +60,8 @@ import DailyPromise from "@/pages/DailyPromise";
 import Inbox from "@/pages/Inbox";
 import Music from "@/pages/Music";
 import SongDetail from "@/pages/SongDetail";
+import SignIn from "@/pages/SignIn";
+import MyLibrary from "@/pages/MyLibrary";
 import PromisePopup from "@/components/PromisePopup";
 import NotFound from "@/pages/not-found";
 
@@ -78,6 +81,8 @@ function Router() {
       <Route path="/daily-promise" component={DailyPromise} />
       <Route path="/music/:slug" component={SongDetail} />
       <Route path="/music" component={Music} />
+      <Route path="/signin" component={SignIn} />
+      <Route path="/my-library" component={MyLibrary} />
       <Route path="/devotional/today" component={PublicDevotionalToday} />
       <Route path="/devotional/:date" component={SingleDevotional} />
       <Route path="/public/archive" component={PublicArchive} />
@@ -166,6 +171,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
+            <UserProvider>
             <NotificationProvider>
               <TranslationProvider>
                 <FontSizeProvider>
@@ -177,6 +183,7 @@ function App() {
                 </FontSizeProvider>
               </TranslationProvider>
             </NotificationProvider>
+            </UserProvider>
           </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>

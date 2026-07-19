@@ -20,6 +20,9 @@ import {
   songs,
   songTestimonies,
   givingMethods,
+  userSavedSongs,
+  userFavoriteSongs,
+  userDownloadHistory,
   type Devotional,
   type InsertDevotional,
   type UpdateDevotionalRequest,
@@ -60,6 +63,9 @@ import {
   type GivingMethod,
   type InsertGivingMethod,
   type SongTestimony,
+  type UserSavedSong,
+  type UserFavoriteSong,
+  type UserDownloadRecord,
   type InsertSongTestimony,
 } from "@shared/schema";
 import { eq, desc, and, isNull, or, ilike, lte, notInArray, sql } from "drizzle-orm";
@@ -183,6 +189,21 @@ export interface IStorage {
   createGivingMethod(method: InsertGivingMethod): Promise<GivingMethod>;
   updateGivingMethod(id: number, data: Partial<InsertGivingMethod>): Promise<GivingMethod | undefined>;
   deleteGivingMethod(id: number): Promise<void>;
+
+  // User Library — saved/favorite songs and download history keyed by Firebase UID
+  getUserSavedSongs(uid: string): Promise<(UserSavedSong & { song: Song })[]>;
+  saveSong(uid: string, songId: number): Promise<UserSavedSong>;
+  unsaveSong(uid: string, songId: number): Promise<void>;
+  isSongSaved(uid: string, songId: number): Promise<boolean>;
+
+  getUserFavoriteSongs(uid: string): Promise<(UserFavoriteSong & { song: Song })[]>;
+  favoriteSong(uid: string, songId: number): Promise<UserFavoriteSong>;
+  unfavoriteSong(uid: string, songId: number): Promise<void>;
+  isSongFavorited(uid: string, songId: number): Promise<boolean>;
+  mergeLocalFavorites(uid: string, songIds: number[]): Promise<void>;
+
+  getUserDownloadHistory(uid: string): Promise<(UserDownloadRecord & { song: Song | null })[]>;
+  recordDownload(uid: string, songId: number): Promise<UserDownloadRecord>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -908,6 +929,121 @@ export class DatabaseStorage implements IStorage {
 
   async deleteGivingMethod(id: number): Promise<void> {
     await db.delete(givingMethods).where(eq(givingMethods.id, id));
+  }
+
+  // ── User Library ──────────────────────────────────────────────────────────
+
+  async getUserSavedSongs(uid: string): Promise<(UserSavedSong & { song: Song })[]> {
+    const rows = await db
+      .select({ saved: userSavedSongs, song: songs })
+      .from(userSavedSongs)
+      .innerJoin(songs, eq(userSavedSongs.songId, songs.id))
+      .where(and(eq(userSavedSongs.firebaseUid, uid), eq(songs.isActive, true)))
+      .orderBy(desc(userSavedSongs.savedAt));
+    return rows.map((r) => ({ ...r.saved, song: r.song }));
+  }
+
+  async saveSong(uid: string, songId: number): Promise<UserSavedSong> {
+    const [row] = await db
+      .insert(userSavedSongs)
+      .values({ firebaseUid: uid, songId })
+      .onConflictDoNothing()
+      .returning();
+    if (!row) {
+      const [existing] = await db
+        .select()
+        .from(userSavedSongs)
+        .where(and(eq(userSavedSongs.firebaseUid, uid), eq(userSavedSongs.songId, songId)));
+      return existing;
+    }
+    return row;
+  }
+
+  async unsaveSong(uid: string, songId: number): Promise<void> {
+    await db
+      .delete(userSavedSongs)
+      .where(and(eq(userSavedSongs.firebaseUid, uid), eq(userSavedSongs.songId, songId)));
+  }
+
+  async isSongSaved(uid: string, songId: number): Promise<boolean> {
+    const [row] = await db
+      .select({ id: userSavedSongs.id })
+      .from(userSavedSongs)
+      .where(and(eq(userSavedSongs.firebaseUid, uid), eq(userSavedSongs.songId, songId)));
+    return !!row;
+  }
+
+  async getUserFavoriteSongs(uid: string): Promise<(UserFavoriteSong & { song: Song })[]> {
+    const rows = await db
+      .select({ fav: userFavoriteSongs, song: songs })
+      .from(userFavoriteSongs)
+      .innerJoin(songs, eq(userFavoriteSongs.songId, songs.id))
+      .where(and(eq(userFavoriteSongs.firebaseUid, uid), eq(songs.isActive, true)))
+      .orderBy(desc(userFavoriteSongs.createdAt));
+    return rows.map((r) => ({ ...r.fav, song: r.song }));
+  }
+
+  async favoriteSong(uid: string, songId: number): Promise<UserFavoriteSong> {
+    const [row] = await db
+      .insert(userFavoriteSongs)
+      .values({ firebaseUid: uid, songId })
+      .onConflictDoNothing()
+      .returning();
+    if (!row) {
+      const [existing] = await db
+        .select()
+        .from(userFavoriteSongs)
+        .where(and(eq(userFavoriteSongs.firebaseUid, uid), eq(userFavoriteSongs.songId, songId)));
+      return existing;
+    }
+    return row;
+  }
+
+  async unfavoriteSong(uid: string, songId: number): Promise<void> {
+    await db
+      .delete(userFavoriteSongs)
+      .where(and(eq(userFavoriteSongs.firebaseUid, uid), eq(userFavoriteSongs.songId, songId)));
+  }
+
+  async isSongFavorited(uid: string, songId: number): Promise<boolean> {
+    const [row] = await db
+      .select({ id: userFavoriteSongs.id })
+      .from(userFavoriteSongs)
+      .where(and(eq(userFavoriteSongs.firebaseUid, uid), eq(userFavoriteSongs.songId, songId)));
+    return !!row;
+  }
+
+  async mergeLocalFavorites(uid: string, songIds: number[]): Promise<void> {
+    if (!songIds.length) return;
+    const validSongs = await db
+      .select({ id: songs.id })
+      .from(songs)
+      .where(and(eq(songs.isActive, true), sql`${songs.id} = ANY(${songIds})`));
+    const validIds = validSongs.map((s) => s.id);
+    if (!validIds.length) return;
+    await db
+      .insert(userFavoriteSongs)
+      .values(validIds.map((songId) => ({ firebaseUid: uid, songId })))
+      .onConflictDoNothing();
+  }
+
+  async getUserDownloadHistory(uid: string): Promise<(UserDownloadRecord & { song: Song | null })[]> {
+    const rows = await db
+      .select({ dl: userDownloadHistory, song: songs })
+      .from(userDownloadHistory)
+      .leftJoin(songs, eq(userDownloadHistory.songId, songs.id))
+      .where(eq(userDownloadHistory.firebaseUid, uid))
+      .orderBy(desc(userDownloadHistory.downloadedAt))
+      .limit(100);
+    return rows.map((r) => ({ ...r.dl, song: r.song }));
+  }
+
+  async recordDownload(uid: string, songId: number): Promise<UserDownloadRecord> {
+    const [row] = await db
+      .insert(userDownloadHistory)
+      .values({ firebaseUid: uid, songId })
+      .returning();
+    return row;
   }
 }
 

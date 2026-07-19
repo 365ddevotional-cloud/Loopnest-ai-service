@@ -534,6 +534,36 @@ export const insertSongTestimonySchema = createInsertSchema(songTestimonies).omi
 export type SongTestimony = typeof songTestimonies.$inferSelect;
 export type InsertSongTestimony = z.infer<typeof insertSongTestimonySchema>;
 
+// User Library Tables — Per-Firebase-UID saved/favorite songs and download history
+export const userSavedSongs = pgTable("user_saved_songs", {
+  id: serial("id").primaryKey(),
+  firebaseUid: text("firebase_uid").notNull(),
+  songId: integer("song_id").notNull().references(() => songs.id, { onDelete: "cascade" }),
+  savedAt: timestamp("saved_at").defaultNow(),
+}, (t) => ({
+  uniqueSavedSong: unique().on(t.firebaseUid, t.songId),
+}));
+
+export const userFavoriteSongs = pgTable("user_favorite_songs", {
+  id: serial("id").primaryKey(),
+  firebaseUid: text("firebase_uid").notNull(),
+  songId: integer("song_id").notNull().references(() => songs.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => ({
+  uniqueFavoriteSong: unique().on(t.firebaseUid, t.songId),
+}));
+
+export const userDownloadHistory = pgTable("user_download_history", {
+  id: serial("id").primaryKey(),
+  firebaseUid: text("firebase_uid").notNull(),
+  songId: integer("song_id").notNull().references(() => songs.id, { onDelete: "cascade" }),
+  downloadedAt: timestamp("downloaded_at").defaultNow(),
+});
+
+export type UserSavedSong = typeof userSavedSongs.$inferSelect;
+export type UserFavoriteSong = typeof userFavoriteSongs.$inferSelect;
+export type UserDownloadRecord = typeof userDownloadHistory.$inferSelect;
+
 // Giving Methods Table — Admin-managed voluntary support options
 export const givingMethods = pgTable("giving_methods", {
   id: serial("id").primaryKey(),

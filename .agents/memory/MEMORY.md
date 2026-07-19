@@ -1,0 +1,2 @@
+- [Firebase user auth architecture](firebase-user-auth.md) — Firebase email/password for user accounts, separate from admin session auth; UID stored in PostgreSQL.
+- [Phase D user library tables](phase-d-schema.md) — user_saved_songs, user_favorite_songs, user_download_history keyed by firebase_uid.

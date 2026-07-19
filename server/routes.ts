@@ -3,6 +3,7 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
+import { OAuth2Client } from "google-auth-library";
 import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification } from "./sendgrid";
 import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
@@ -62,6 +63,49 @@ async function applyTranslationToList(devotionals: any[], lang: string | undefin
 if (!ADMIN_PASSWORD) {
   console.warn("WARNING: ADMIN_PASSWORD not set. Admin login will be disabled.");
 }
+
+// ── Firebase ID-token verification ──────────────────────────────────────────
+const FIREBASE_CERT_URL =
+  "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com";
+let _certCache: { certs: Record<string, string>; expiry: number } | null = null;
+
+async function getFirebaseCerts(): Promise<Record<string, string>> {
+  if (_certCache && Date.now() < _certCache.expiry) return _certCache.certs;
+  const resp = await fetch(FIREBASE_CERT_URL);
+  const certs = (await resp.json()) as Record<string, string>;
+  _certCache = { certs, expiry: Date.now() + 3_600_000 };
+  return certs;
+}
+
+async function verifyFirebaseToken(idToken: string): Promise<string> {
+  const projectId = process.env.VITE_FIREBASE_PROJECT_ID;
+  if (!projectId) throw new Error("VITE_FIREBASE_PROJECT_ID not set");
+  const certs = await getFirebaseCerts();
+  const client = new OAuth2Client();
+  const ticket = await (client as any).verifySignedJwtWithCertsAsync(
+    idToken,
+    certs,
+    projectId,
+    [`https://securetoken.google.com/${projectId}`]
+  );
+  const payload = ticket.getPayload() as Record<string, any>;
+  return payload.sub as string;
+}
+
+function requireUser(req: Request, res: Response, next: NextFunction) {
+  const header = req.headers.authorization;
+  if (!header?.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  const token = header.slice(7);
+  verifyFirebaseToken(token)
+    .then((uid) => {
+      (req as any).uid = uid;
+      next();
+    })
+    .catch(() => res.status(401).json({ message: "Invalid or expired token" }));
+}
+// ──────────────────────────────────────────────────────────────────────────────
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (req.session?.isAdmin) {
@@ -2200,6 +2244,122 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Admin delete inbox message error:", error);
       res.status(500).json({ message: "Failed to delete message" });
+    }
+  });
+
+  // ── User Library Routes ────────────────────────────────────────────────────
+
+  // GET saved songs
+  app.get("/api/user/library/saved", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const songs = await storage.getUserSavedSongs(uid);
+      res.json(songs);
+    } catch (err) {
+      console.error("Get saved songs:", err);
+      res.status(500).json({ message: "Could not fetch saved songs" });
+    }
+  });
+
+  // POST save a song
+  app.post("/api/user/library/saved", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const songId = Number(req.body.songId);
+      if (isNaN(songId)) return res.status(400).json({ message: "songId required" });
+      const row = await storage.saveSong(uid, songId);
+      res.json(row);
+    } catch (err) {
+      console.error("Save song:", err);
+      res.status(500).json({ message: "Could not save song" });
+    }
+  });
+
+  // DELETE unsave a song
+  app.delete("/api/user/library/saved/:songId", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const songId = Number(req.params.songId);
+      if (isNaN(songId)) return res.status(400).json({ message: "Invalid songId" });
+      await storage.unsaveSong(uid, songId);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ message: "Could not remove saved song" });
+    }
+  });
+
+  // GET favorite songs
+  app.get("/api/user/library/favorites", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const songs = await storage.getUserFavoriteSongs(uid);
+      res.json(songs);
+    } catch (err) {
+      console.error("Get favorites:", err);
+      res.status(500).json({ message: "Could not fetch favorites" });
+    }
+  });
+
+  // POST add favorite
+  app.post("/api/user/library/favorites", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const songId = Number(req.body.songId);
+      if (isNaN(songId)) return res.status(400).json({ message: "songId required" });
+      const row = await storage.favoriteSong(uid, songId);
+      res.json(row);
+    } catch (err) {
+      res.status(500).json({ message: "Could not add favorite" });
+    }
+  });
+
+  // DELETE remove favorite
+  app.delete("/api/user/library/favorites/:songId", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const songId = Number(req.params.songId);
+      if (isNaN(songId)) return res.status(400).json({ message: "Invalid songId" });
+      await storage.unfavoriteSong(uid, songId);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ message: "Could not remove favorite" });
+    }
+  });
+
+  // POST merge local favorites after sign-in
+  app.post("/api/user/library/favorites/merge", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const songIds: number[] = (req.body.songIds ?? []).map(Number).filter(Number.isFinite);
+      if (!songIds.length) return res.json({ merged: 0 });
+      await storage.mergeLocalFavorites(uid, songIds);
+      res.json({ merged: songIds.length });
+    } catch (err) {
+      res.status(500).json({ message: "Could not merge favorites" });
+    }
+  });
+
+  // GET download history
+  app.get("/api/user/library/downloads", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const history = await storage.getUserDownloadHistory(uid);
+      res.json(history);
+    } catch (err) {
+      res.status(500).json({ message: "Could not fetch download history" });
+    }
+  });
+
+  // POST record a download
+  app.post("/api/user/library/downloads", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const songId = Number(req.body.songId);
+      if (isNaN(songId)) return res.status(400).json({ message: "songId required" });
+      const row = await storage.recordDownload(uid, songId);
+      res.json(row);
+    } catch (err) {
+      res.status(500).json({ message: "Could not record download" });
     }
   });
 

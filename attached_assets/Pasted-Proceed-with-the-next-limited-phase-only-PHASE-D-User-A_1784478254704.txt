@@ -1,0 +1,285 @@
+Proceed with the next limited phase only:
+
+PHASE D — User Accounts, My Library, and Cross-Device Song Sync.
+
+Phase A + B and Phase C are already complete. Do not rebuild, repeat, replace, or broadly review those phases.
+
+==================================================
+BUILD NOW — PHASE D ONLY
+==================================================
+
+1. REUSE THE EXISTING AUTHENTICATION SYSTEM
+
+Inspect the current authentication system and reuse it.
+
+Do not create a second or competing login system.
+
+Support the safest existing account flow already available in this project, including:
+
+- Email sign-up
+- Email sign-in
+- Sign-out
+- Password recovery or approved passwordless recovery
+- Email verification where supported
+
+Rules:
+
+- Do not store plain-text passwords.
+- Do not expose authentication secrets.
+- Do not break existing admin login.
+- Do not force users to sign in just to read devotionals, browse songs, listen, view lyrics, share, or submit testimonies.
+
+==================================================
+2. ADD “SAVE TO MY LIBRARY”
+==================================================
+
+On each SpiritTone Music song-detail page, add a clear button:
+
+“Save to My Library”
+
+When a signed-out user taps it, show:
+
+“Create or sign in to your free 365 Daily Devotional account to keep your saved songs and favorites available across your devices.”
+
+After successful sign-in:
+
+- Return the user to the same song.
+- Complete the save action automatically.
+- Show a confirmation message.
+- Do not make the user search for the song again.
+
+For signed-in users:
+
+- Save the selected song to that user’s personal library.
+- Prevent duplicate saved-song records.
+- Allow the user to remove the song later.
+- Removing from My Library must never delete the ministry’s master song record.
+
+==================================================
+3. CREATE “MY LIBRARY”
+==================================================
+
+Add a user-facing “My Library” section inside the existing account/profile area.
+
+For this phase, My Library should include only:
+
+- Saved Songs
+- Favorite Songs
+- Downloaded Songs or Download History, only if Phase C already stores this safely
+
+Each saved-song card should display:
+
+- Cover thumbnail
+- Song title
+- Artist or vocalist
+- Scripture reference
+- Play
+- Open Song
+- Remove from My Library
+
+Do not build books, devotionals, prayer history, counseling history, playlists, or subscriptions in this phase.
+
+Prepare the layout so those categories can be added later without redesigning My Library.
+
+==================================================
+4. CROSS-DEVICE SYNCHRONIZATION
+==================================================
+
+Saved songs and favorite songs must be linked to the authenticated user account, not only to local browser storage.
+
+Required behavior:
+
+- A user saves a song on one device.
+- The same song appears after the user signs in on another device or browser.
+- Removing a saved song updates the user’s account everywhere after normal refresh.
+- One user must never see another user’s saved songs.
+- Preserve any existing local favorites safely.
+
+If local song favorites already exist:
+
+- Do not delete them.
+- After a user signs in, offer or safely perform a one-time migration of local song favorites into that user’s account.
+- Prevent duplicates.
+- Do not migrate unrelated local-storage data.
+
+==================================================
+5. FAVORITE SONGS
+==================================================
+
+Update the existing song Favorite action so:
+
+- Signed-in users have favorites stored in the database and synchronized across devices.
+- Signed-out users may continue using device-local favorites temporarily.
+- When they later sign in, safely merge those local favorites into their account.
+- Do not break devotional favorites.
+- Do not use the same storage key or table in a way that mixes devotional and song favorites.
+
+==================================================
+6. DOWNLOAD HISTORY
+==================================================
+
+Only if Phase C already supports safe free promotional downloads:
+
+- Record a lightweight download-history entry for signed-in users.
+- Store song ID, user ID, and download date.
+- Do not store downloaded audio inside the database.
+- Do not count an attempted or failed download as successful.
+- Do not create analytics dashboards in this phase.
+
+For signed-out users:
+
+- Free promotional download may still work if already allowed.
+- Do not force sign-in merely to download unless the existing design specifically requires account tracking.
+- Invite them to sign in to preserve the download in My Library, but do not misrepresent the file as cloud-stored when it is only on their device.
+
+==================================================
+7. ACCOUNT PROFILE ENTRY POINTS
+==================================================
+
+Make account access easy but not intrusive.
+
+Add or preserve:
+
+- Sign In
+- Create Account
+- My Library
+- Sign Out
+
+Use the existing profile/account menu.
+
+Do not overcrowd Today’s Message or the main bottom navigation.
+
+When an unsigned user clicks:
+
+- Save to My Library
+- Cloud Favorite
+- View My Library
+
+open the sign-in flow and return them to the intended action afterward.
+
+==================================================
+8. DATABASE AND SECURITY
+==================================================
+
+Use the smallest safe additive data structure needed for:
+
+- User saved songs
+- User favorite songs
+- Optional download history
+
+Reuse existing user IDs and authentication relationships.
+
+Security rules:
+
+- Only the authenticated user may read or modify their own saved-song records.
+- Admin may manage master songs but should not browse private user libraries unless explicitly required for support and already permitted.
+- Regular users must not edit or delete master song records.
+- Add or preserve row-level security where applicable.
+- Do not expose private emails publicly.
+- Do not log passwords, tokens, or private account data.
+- Do not weaken existing authentication.
+- Do not create public write access.
+
+==================================================
+9. PERFORMANCE
+==================================================
+
+- Store only song references in the user library, not duplicate full song records.
+- Retrieve current song metadata through the existing song relationship.
+- Paginate or progressively load My Library if needed.
+- Do not preload audio.
+- Do not download audio automatically.
+- Invalidate only user-library and song-favorite queries after save/remove actions.
+- Do not clear devotional, prayer, counseling, or admin caches.
+- Avoid duplicate database requests.
+
+==================================================
+DO NOT BUILD YET
+==================================================
+
+Do not implement:
+
+- Prayer-history synchronization
+- Counseling-history synchronization
+- Saved books
+- Book library
+- Favorite devotionals
+- Reading history
+- Notes
+- Playlists
+- Monthly subscriptions
+- Paid song purchases
+- Google Play Billing
+- Social login providers unless already configured
+- Broad account redesign
+- Admin user-library analytics
+
+==================================================
+CRITICAL SAFETY AND COST RULES
+==================================================
+
+- Create a checkpoint before editing.
+- Modify only files directly required for authentication reuse, saved songs, song favorites, and My Library.
+- Do not repeat Phase A + B or Phase C.
+- Do not perform another broad project audit.
+- Do not rebuild or refactor unrelated systems.
+- Do not reseed, overwrite, or delete devotional data.
+- Preserve all existing songs, testimonies, giving methods, download settings, prayer, counseling, Bible, Archive, Sunday School, Inbox, notifications, God’s Promises, dark mode, sharing, and mobile navigation.
+- Do not publish or deploy automatically.
+- Test this limited Phase D only.
+- Stop after completion and wait for approval.
+
+==================================================
+REQUIRED TESTING
+==================================================
+
+Verify:
+
+1. A checkpoint was created.
+2. Existing users can still sign in.
+3. Admin login still works.
+4. New email account creation works if already supported.
+5. Password recovery or approved recovery flow works.
+6. Users can browse and listen without signing in.
+7. Signed-out Save to My Library opens the sign-in invitation.
+8. After sign-in, the original song is saved automatically.
+9. Saved song appears in My Library.
+10. Saving the same song twice does not create duplicates.
+11. Removing a song from My Library does not delete the master song.
+12. Saved songs appear on another signed-in device or browser.
+13. One user cannot see another user’s library.
+14. Signed-in song favorites synchronize across devices.
+15. Existing device-local song favorites are preserved and merged safely.
+16. Devotional favorites are not broken or mixed with song favorites.
+17. Download history records only successful downloads, if implemented.
+18. My Library works on mobile and desktop.
+19. Dark mode works.
+20. No unrelated feature was changed.
+21. No private secrets or user data were exposed.
+22. No unresolved console errors were introduced.
+
+==================================================
+FINAL RESPONSE REQUIRED
+==================================================
+
+When finished, report only:
+
+1. Confirmation that a checkpoint was created.
+2. Exact files changed.
+3. Which existing authentication system was reused.
+4. Where users create accounts and sign in.
+5. How Save to My Library works.
+6. Where My Library appears.
+7. How saved songs synchronize across devices.
+8. How local favorites are handled.
+9. Whether download history was implemented.
+10. What database tables or relationships were added or reused.
+11. Confirmation that prayer and counseling systems were not modified.
+12. Confirmation that nothing unrelated was changed.
+13. Manual testing steps.
+14. Any unresolved limitation.
+
+Do not publish.
+Do not deploy.
+Do not start another phase.
+Stop and wait for approval.
