@@ -2,9 +2,11 @@ import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useUser } from "@/contexts/UserContext";
+import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, BookMarked, Heart, Download, Play, ExternalLink, Trash2, Music2, UserCircle } from "lucide-react";
+import { Loader2, BookMarked, Heart, Download, Play, ExternalLink, Trash2, Music2, UserCircle, Clock } from "lucide-react";
+import { Link } from "wouter";
 import type { Song } from "@shared/schema";
 
 interface LibraryEntry {
@@ -289,9 +291,65 @@ export default function MyLibrary() {
         )}
       </section>
 
+      <RecentlyPlayedSection />
+
       <p className="text-[11px] text-muted-foreground/50 text-center">
         My Library syncs across all your signed-in devices automatically.
       </p>
     </div>
+  );
+}
+
+function RecentlyPlayedSection() {
+  const { recentlyPlayed } = useMusicPlayer();
+
+  if (recentlyPlayed.length === 0) return null;
+
+  const timeAgo = (iso: string) => {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  };
+
+  return (
+    <section data-testid="section-recently-played-library">
+      <div className="flex items-center gap-2 mb-3">
+        <Clock className="w-4 h-4 text-muted-foreground" />
+        <h2 className="font-serif text-lg text-foreground">Recently Played</h2>
+        <Badge variant="secondary" className="text-xs">{recentlyPlayed.length}</Badge>
+      </div>
+      <div className="space-y-2">
+        {recentlyPlayed.slice(0, 10).map((entry) => (
+          <Link key={entry.songId} href={`/music/${entry.slug}`}>
+            <div
+              className="flex items-center gap-3 p-3 rounded-xl border border-border/40 bg-card hover:bg-muted/20 transition-colors cursor-pointer"
+              data-testid={`card-recent-library-${entry.songId}`}
+            >
+              <div className="w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden bg-gradient-to-br from-amber-200 to-amber-500 flex items-center justify-center">
+                {entry.coverImageUrl ? (
+                  <img src={entry.coverImageUrl} alt={entry.title} className="w-full h-full object-cover" />
+                ) : (
+                  <Music2 className="w-4 h-4 text-amber-800/60" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-sm text-foreground truncate">{entry.title}</div>
+                <div className="text-xs text-muted-foreground">{timeAgo(entry.lastPlayedAt)}</div>
+                {entry.duration > 0 && entry.progressPercent > 0 && (
+                  <div className="mt-1 w-full h-1 bg-border/30 rounded-full overflow-hidden">
+                    <div className="h-full bg-primary/60 rounded-full" style={{ width: `${entry.progressPercent}%` }} />
+                  </div>
+                )}
+              </div>
+              <ExternalLink className="w-3.5 h-3.5 text-muted-foreground/40 flex-shrink-0" />
+            </div>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }

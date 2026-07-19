@@ -1,4 +1,4 @@
-import { pgTable, text, serial, date, timestamp, boolean, integer, unique, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, date, timestamp, boolean, integer, unique, jsonb, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -563,6 +563,33 @@ export const userDownloadHistory = pgTable("user_download_history", {
 export type UserSavedSong = typeof userSavedSongs.$inferSelect;
 export type UserFavoriteSong = typeof userFavoriteSongs.$inferSelect;
 export type UserDownloadRecord = typeof userDownloadHistory.$inferSelect;
+
+// Playback History — per-song listening progress per Firebase UID
+export const userPlaybackHistory = pgTable("user_playback_history", {
+  id: serial("id").primaryKey(),
+  firebaseUid: text("firebase_uid").notNull(),
+  songId: integer("song_id").notNull().references(() => songs.id, { onDelete: "cascade" }),
+  lastPosition: integer("last_position").default(0),
+  durationSecs: integer("duration_secs").default(0),
+  progressPercent: integer("progress_percent").default(0),
+  lastPlayedAt: timestamp("last_played_at").defaultNow(),
+}, (t) => ({
+  uniquePlayback: unique().on(t.firebaseUid, t.songId),
+}));
+
+// Music Settings — per-user listening preferences
+export const userMusicSettings = pgTable("user_music_settings", {
+  id: serial("id").primaryKey(),
+  firebaseUid: text("firebase_uid").notNull().unique(),
+  autoplayNext: boolean("autoplay_next").default(false),
+  rememberPosition: boolean("remember_position").default(true),
+  defaultSpeed: real("default_speed").default(1),
+  repeatMode: text("repeat_mode").default("none"),
+  shuffle: boolean("shuffle").default(false),
+});
+
+export type UserPlaybackHistory = typeof userPlaybackHistory.$inferSelect;
+export type UserMusicSettings = typeof userMusicSettings.$inferSelect;
 
 // Giving Methods Table — Admin-managed voluntary support options
 export const givingMethods = pgTable("giving_methods", {

@@ -1,17 +1,19 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRoute, Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
-  Play, Pause, Volume2, SkipBack, SkipForward, Download, Share2,
+  Play, Pause, Volume2, Download, Share2,
   Heart, ChevronLeft, Music2, BookOpen, Loader2, ExternalLink,
-  Gift, X, AlertCircle, BookMarked,
+  Gift, X, AlertCircle, BookMarked, SkipForward, Settings2,
 } from "lucide-react";
 import { SiPaypal, SiCashapp, SiVenmo } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
+import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
+import MusicSettings from "@/components/MusicSettings";
 import type { Song, GivingMethod } from "@shared/schema";
 
 const LOCAL_FAV_KEY = "spirittone-song-favorites";
@@ -21,68 +23,6 @@ function getLocalFavorites(): number[] {
 }
 function setLocalFavorites(ids: number[]) {
   localStorage.setItem(LOCAL_FAV_KEY, JSON.stringify(ids));
-}
-
-function useAudioPlayer(src: string | null | undefined) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (!src) return;
-    const audio = new Audio(src);
-    audioRef.current = audio;
-    audio.volume = volume;
-    const onTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const onDurationChange = () => setDuration(audio.duration);
-    const onEnded = () => setIsPlaying(false);
-    const onLoadStart = () => setIsLoading(true);
-    const onCanPlay = () => setIsLoading(false);
-    audio.addEventListener("timeupdate", onTimeUpdate);
-    audio.addEventListener("durationchange", onDurationChange);
-    audio.addEventListener("ended", onEnded);
-    audio.addEventListener("loadstart", onLoadStart);
-    audio.addEventListener("canplay", onCanPlay);
-    return () => {
-      audio.pause();
-      audio.src = "";
-      audio.removeEventListener("timeupdate", onTimeUpdate);
-      audio.removeEventListener("durationchange", onDurationChange);
-      audio.removeEventListener("ended", onEnded);
-      audio.removeEventListener("loadstart", onLoadStart);
-      audio.removeEventListener("canplay", onCanPlay);
-    };
-  }, [src]);
-
-  const togglePlay = useCallback(async () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (isPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-    } else {
-      try {
-        await audio.play();
-        setIsPlaying(true);
-      } catch {
-        setIsPlaying(false);
-      }
-    }
-  }, [isPlaying]);
-
-  const seek = useCallback((time: number) => {
-    if (audioRef.current) audioRef.current.currentTime = time;
-  }, []);
-
-  const changeVolume = useCallback((vol: number) => {
-    setVolume(vol);
-    if (audioRef.current) audioRef.current.volume = vol;
-  }, []);
-
-  return { isPlaying, currentTime, duration, volume, isLoading, togglePlay, seek, changeVolume };
 }
 
 function formatTime(sec: number) {
@@ -194,6 +134,7 @@ export default function SongDetail() {
   const isSignedIn = !!user && emailVerified;
   const [showSupport, setShowSupport] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
+  const [showMusicSettings, setShowMusicSettings] = useState(false);
   const [localFav, setLocalFav] = useState(false);
 
   const { data: song, isLoading, error } = useQuery<Song>({
@@ -270,9 +211,22 @@ export default function SongDetail() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/user/library/saved"] }),
   });
 
-  const audioSrc = song?.audioUrl ? `/api/songs/${song.id}/audio` : null;
-  const { isPlaying, currentTime, duration, volume, isLoading: audioLoading, togglePlay, seek, changeVolume } =
-    useAudioPlayer(audioSrc);
+  const {
+    currentSong: playerSong, isPlaying: playerIsPlaying, currentTime, duration, volume,
+    isLoading: audioLoading, playSong, togglePlay, seek, setVolume, nextSong, playNext,
+  } = useMusicPlayer();
+  const isCurrentSong = playerSong?.id === song?.id;
+  const isPlaying = isCurrentSong && playerIsPlaying;
+  const displayTime = isCurrentSong ? currentTime : 0;
+  const displayDuration = isCurrentSong ? duration : 0;
+  const displayVolume = isCurrentSong ? volume : 1;
+  const displayLoading = isCurrentSong && audioLoading;
+
+  const handlePlayPause = () => {
+    if (!song) return;
+    if (isCurrentSong) togglePlay();
+    else playSong(song);
+  };
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -403,12 +357,12 @@ export default function SongDetail() {
         <div className="rounded-xl border border-border/40 bg-card p-4 space-y-3" data-testid="section-audio-player">
           <div className="flex items-center gap-3">
             <button
-              onClick={togglePlay}
+              onClick={handlePlayPause}
               className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 hover:bg-primary/90 transition-colors"
               data-testid="button-play-song"
               aria-label={isPlaying ? "Pause" : "Play"}
             >
-              {audioLoading ? (
+              {displayLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin text-white" />
               ) : isPlaying ? (
                 <Pause className="w-4 h-4 text-white" />
@@ -420,15 +374,15 @@ export default function SongDetail() {
               <input
                 type="range"
                 min={0}
-                max={duration || 100}
-                value={currentTime}
-                onChange={(e) => seek(Number(e.target.value))}
+                max={displayDuration || 100}
+                value={displayTime}
+                onChange={(e) => isCurrentSong && seek(Number(e.target.value))}
                 className="w-full h-1.5 accent-primary cursor-pointer"
                 data-testid="input-song-scrubber"
               />
               <div className="flex justify-between text-[10px] text-muted-foreground">
-                <span>{formatTime(currentTime)}</span>
-                <span>{formatTime(duration)}</span>
+                <span>{formatTime(displayTime)}</span>
+                <span>{formatTime(displayDuration)}</span>
               </div>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
@@ -438,15 +392,46 @@ export default function SongDetail() {
                 min={0}
                 max={1}
                 step={0.05}
-                value={volume}
-                onChange={(e) => changeVolume(Number(e.target.value))}
+                value={displayVolume}
+                onChange={(e) => setVolume(Number(e.target.value))}
                 className="w-16 h-1.5 accent-primary cursor-pointer"
                 data-testid="input-song-volume"
               />
             </div>
           </div>
+
+          {/* Play Next suggestion */}
+          {isCurrentSong && nextSong && (
+            <div className="flex items-center justify-between px-1 pt-1 border-t border-border/30">
+              <div className="text-[11px] text-muted-foreground">
+                Up next: <span className="font-medium text-foreground">{nextSong.title}</span>
+              </div>
+              <button
+                onClick={playNext}
+                className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 font-medium transition-colors"
+                data-testid="button-play-next"
+              >
+                <SkipForward className="w-3.5 h-3.5" />
+                Play
+              </button>
+            </div>
+          )}
+
+          {/* Settings shortcut */}
+          <div className="flex justify-end px-1">
+            <button
+              onClick={() => setShowMusicSettings(true)}
+              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
+              data-testid="button-open-music-settings"
+            >
+              <Settings2 className="w-3 h-3" />
+              Settings
+            </button>
+          </div>
         </div>
       )}
+
+      <MusicSettings open={showMusicSettings} onClose={() => setShowMusicSettings(false)} />
 
       {/* Scripture */}
       {song.scriptureReference && (

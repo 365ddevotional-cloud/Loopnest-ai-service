@@ -1,0 +1,164 @@
+Proceed with PHASE E ONLY.
+
+Phase A, B, C and D are complete.
+
+Do not modify those phases except where required for this feature.
+
+==================================================
+BUILD NOW
+==================================================
+
+Create a personalized listening experience.
+
+1. CONTINUE LISTENING
+
+If a user stops listening halfway through a song:
+
+- remember playback position
+- show "Continue Listening"
+- resume from the saved position
+
+Do not restart from the beginning unless the user chooses.
+
+--------------------------------------------------
+
+2. RECENTLY PLAYED
+
+Create a "Recently Played" section.
+
+Store:
+
+- last played songs
+- date
+- progress
+- last listening time
+
+Limit to 20 songs.
+
+--------------------------------------------------
+
+3. RECOMMENDED FOR YOU
+
+Using only existing song metadata, recommend songs based on:
+
+- genre
+- scripture
+- artist
+- recently played
+- favorites
+
+No AI service.
+
+Simple recommendation logic only.
+
+--------------------------------------------------
+
+4. PLAY NEXT
+
+When one song finishes:
+
+Automatically suggest:
+
+- Next Recommended Song
+or
+- Continue Playlist (future-ready)
+
+Do not autoplay unless app settings allow it.
+
+--------------------------------------------------
+
+5. MINI PLAYER
+
+Create a floating mini player.
+
+Show:
+
+- artwork
+- title
+- artist
+- play
+- pause
+- seek
+- close
+
+The music should continue while navigating between pages.
+
+--------------------------------------------------
+
+6. PLAYBACK MEMORY
+
+Remember:
+
+- playback speed
+- repeat
+- shuffle
+
+per user.
+
+Signed-out users:
+store locally.
+
+Signed-in users:
+sync with account.
+
+--------------------------------------------------
+
+7. USER SETTINGS
+
+Add Music Settings:
+
+- autoplay next
+- remember position
+- download on Wi-Fi only (future-ready)
+- default playback speed
+- repeat
+- shuffle
+
+--------------------------------------------------
+
+8. PERFORMANCE
+
+Reuse existing player.
+
+Do not preload all songs.
+
+Do not duplicate audio.
+
+Do not rebuild current music pages.
+
+==================================================
+DO NOT BUILD
+==================================================
+
+No AI.
+
+No playlists.
+
+No podcasts.
+
+No books.
+
+No sermons.
+
+No radio.
+
+No livestream.
+
+No subscriptions.
+
+==================================================
+STOP WHEN COMPLETE
+==================================================
+
+Create checkpoint.
+
+Test only this phase.
+
+Report:
+
+- files changed
+- tests run
+- limitations
+
+Do not continue to another phase.
+Wait for approval.

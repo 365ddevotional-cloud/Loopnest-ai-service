@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Music2, Play, ExternalLink, Loader2 } from "lucide-react";
+import { Music2, Play, ExternalLink, Loader2, Clock, RotateCcw, Sparkles } from "lucide-react";
 import type { Song } from "@shared/schema";
+import { useMusicPlayer, type RecentlyPlayedEntry } from "@/contexts/MusicPlayerContext";
 
 function SongCard({ song, isFeatured }: { song: Song; isFeatured?: boolean }) {
   return (
@@ -64,10 +65,74 @@ function SongCard({ song, isFeatured }: { song: Song; isFeatured?: boolean }) {
   );
 }
 
+function RecentCard({ entry, isContinue }: { entry: RecentlyPlayedEntry; isContinue?: boolean }) {
+  const timeAgo = (() => {
+    const diff = Date.now() - new Date(entry.lastPlayedAt).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  })();
+
+  return (
+    <Link href={`/music/${entry.slug}`}>
+      <div
+        className="group flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card hover:border-primary/20 hover:shadow-sm cursor-pointer transition-all active:scale-[0.99]"
+        data-testid={`card-recent-song-${entry.songId}`}
+      >
+        <div
+          className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center"
+          style={{ background: "linear-gradient(135deg, #f0d080 0%, #c89820 100%)" }}
+        >
+          {entry.coverImageUrl ? (
+            <img
+              src={entry.coverImageUrl}
+              alt={entry.title}
+              className="w-full h-full object-cover"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            />
+          ) : (
+            <Music2 className="w-6 h-6 text-amber-900" />
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm text-foreground truncate leading-tight group-hover:text-primary transition-colors">
+            {entry.title}
+          </p>
+          <p className="text-xs text-muted-foreground truncate">{entry.artist}</p>
+          {isContinue && entry.duration > 0 && (
+            <div className="mt-1.5 space-y-0.5">
+              <div className="w-full h-1 bg-border/40 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary/70 rounded-full"
+                  style={{ width: `${entry.progressPercent}%` }}
+                />
+              </div>
+              <span className="text-[10px] text-muted-foreground/70">
+                {entry.progressPercent}% · {timeAgo}
+              </span>
+            </div>
+          )}
+          {!isContinue && (
+            <span className="text-[10px] text-muted-foreground/60">{timeAgo}</span>
+          )}
+        </div>
+
+        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary/50 flex-shrink-0 transition-colors" />
+      </div>
+    </Link>
+  );
+}
+
 export default function Music() {
   const { data: songs = [], isLoading } = useQuery<Song[]>({
     queryKey: ["/api/songs/library"],
   });
+
+  const { continueListening, recentlyPlayed, recommendations } = useMusicPlayer();
 
   const today = new Date().toISOString().split("T")[0];
   const featured = songs.find(
@@ -103,6 +168,22 @@ export default function Music() {
         </p>
       </div>
 
+      {/* Continue Listening */}
+      {continueListening.length > 0 && (
+        <div className="space-y-2" data-testid="section-continue-listening">
+          <h2 className="font-serif text-lg font-semibold text-foreground flex items-center gap-2">
+            <RotateCcw className="w-4 h-4 text-primary" />
+            Continue Listening
+          </h2>
+          <div className="space-y-2">
+            {continueListening.slice(0, 3).map((entry) => (
+              <RecentCard key={entry.songId} entry={entry} isContinue />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Song of the Week */}
       {featured && (
         <div className="space-y-2">
           <h2 className="font-serif text-lg font-semibold text-foreground flex items-center gap-2">
@@ -113,6 +194,37 @@ export default function Music() {
         </div>
       )}
 
+      {/* Recommended For You */}
+      {recommendations.length > 0 && (
+        <div className="space-y-2" data-testid="section-recommendations">
+          <h2 className="font-serif text-lg font-semibold text-foreground flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            Recommended For You
+          </h2>
+          <div className="space-y-3">
+            {recommendations.map((song) => (
+              <SongCard key={song.id} song={song} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recently Played */}
+      {recentlyPlayed.length > 0 && (
+        <div className="space-y-2" data-testid="section-recently-played">
+          <h2 className="font-serif text-lg font-semibold text-foreground flex items-center gap-2">
+            <Clock className="w-4 h-4 text-muted-foreground" />
+            Recently Played
+          </h2>
+          <div className="space-y-2">
+            {recentlyPlayed.slice(0, 10).map((entry) => (
+              <RecentCard key={entry.songId} entry={entry} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Music Library */}
       <div className="space-y-3">
         <h2 className="font-serif text-lg font-semibold text-foreground">
           Music Library

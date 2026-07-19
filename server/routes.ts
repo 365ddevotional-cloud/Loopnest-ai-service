@@ -2363,6 +2363,51 @@ export async function registerRoutes(
     }
   });
 
+  // ── Playback History & Music Settings ─────────────────────────────────────
+  app.get("/api/user/playback/history", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const history = await storage.getUserPlaybackHistory(uid);
+      res.json(history);
+    } catch {
+      res.status(500).json({ message: "Failed to get playback history" });
+    }
+  });
+
+  app.patch("/api/user/playback/:songId", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const songId = Number(req.params.songId);
+      if (!songId) return res.status(400).json({ message: "Invalid song ID" });
+      const { lastPosition = 0, durationSecs = 0, progressPercent = 0 } = req.body;
+      await storage.upsertPlaybackPosition(uid, songId, lastPosition, durationSecs, progressPercent);
+      res.json({ success: true });
+    } catch {
+      res.status(500).json({ message: "Failed to save position" });
+    }
+  });
+
+  app.get("/api/user/music-settings", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const settings = await storage.getUserMusicSettings(uid);
+      res.json(settings ?? {});
+    } catch {
+      res.status(500).json({ message: "Failed to get music settings" });
+    }
+  });
+
+  app.put("/api/user/music-settings", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const { autoplayNext, rememberPosition, defaultSpeed, repeatMode, shuffle } = req.body;
+      const settings = await storage.upsertUserMusicSettings(uid, { autoplayNext, rememberPosition, defaultSpeed, repeatMode, shuffle });
+      res.json(settings);
+    } catch {
+      res.status(500).json({ message: "Failed to save music settings" });
+    }
+  });
+
   return httpServer;
 }
 

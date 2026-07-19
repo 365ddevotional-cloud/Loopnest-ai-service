@@ -23,6 +23,8 @@ import {
   userSavedSongs,
   userFavoriteSongs,
   userDownloadHistory,
+  userPlaybackHistory,
+  userMusicSettings,
   type Devotional,
   type InsertDevotional,
   type UpdateDevotionalRequest,
@@ -66,6 +68,8 @@ import {
   type UserSavedSong,
   type UserFavoriteSong,
   type UserDownloadRecord,
+  type UserPlaybackHistory,
+  type UserMusicSettings,
   type InsertSongTestimony,
 } from "@shared/schema";
 import { eq, desc, and, isNull, or, ilike, lte, notInArray, sql } from "drizzle-orm";
@@ -204,6 +208,10 @@ export interface IStorage {
 
   getUserDownloadHistory(uid: string): Promise<(UserDownloadRecord & { song: Song | null })[]>;
   recordDownload(uid: string, songId: number): Promise<UserDownloadRecord>;
+  getUserPlaybackHistory(uid: string): Promise<(UserPlaybackHistory & { song: Song | null })[]>;
+  upsertPlaybackPosition(uid: string, songId: number, lastPosition: number, durationSecs: number, progressPercent: number): Promise<void>;
+  getUserMusicSettings(uid: string): Promise<UserMusicSettings | null>;
+  upsertUserMusicSettings(uid: string, settings: Partial<Pick<UserMusicSettings, "autoplayNext" | "rememberPosition" | "defaultSpeed" | "repeatMode" | "shuffle">>): Promise<UserMusicSettings>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1042,6 +1050,60 @@ export class DatabaseStorage implements IStorage {
     const [row] = await db
       .insert(userDownloadHistory)
       .values({ firebaseUid: uid, songId })
+      .returning();
+    return row;
+  }
+
+  async getUserPlaybackHistory(uid: string): Promise<(UserPlaybackHistory & { song: Song | null })[]> {
+    const rows = await db
+      .select({ history: userPlaybackHistory, song: songs })
+      .from(userPlaybackHistory)
+      .leftJoin(songs, eq(userPlaybackHistory.songId, songs.id))
+      .where(eq(userPlaybackHistory.firebaseUid, uid))
+      .orderBy(desc(userPlaybackHistory.lastPlayedAt))
+      .limit(20);
+    return rows.map((r) => ({ ...r.history, song: r.song }));
+  }
+
+  async upsertPlaybackPosition(uid: string, songId: number, lastPosition: number, durationSecs: number, progressPercent: number): Promise<void> {
+    await db
+      .insert(userPlaybackHistory)
+      .values({ firebaseUid: uid, songId, lastPosition, durationSecs, progressPercent, lastPlayedAt: new Date() })
+      .onConflictDoUpdate({
+        target: [userPlaybackHistory.firebaseUid, userPlaybackHistory.songId],
+        set: { lastPosition, durationSecs, progressPercent, lastPlayedAt: new Date() },
+      });
+  }
+
+  async getUserMusicSettings(uid: string): Promise<UserMusicSettings | null> {
+    const [row] = await db
+      .select()
+      .from(userMusicSettings)
+      .where(eq(userMusicSettings.firebaseUid, uid));
+    return row ?? null;
+  }
+
+  async upsertUserMusicSettings(uid: string, settings: Partial<Pick<UserMusicSettings, "autoplayNext" | "rememberPosition" | "defaultSpeed" | "repeatMode" | "shuffle">>): Promise<UserMusicSettings> {
+    const [row] = await db
+      .insert(userMusicSettings)
+      .values({
+        firebaseUid: uid,
+        autoplayNext: settings.autoplayNext ?? false,
+        rememberPosition: settings.rememberPosition ?? true,
+        defaultSpeed: settings.defaultSpeed ?? 1,
+        repeatMode: settings.repeatMode ?? "none",
+        shuffle: settings.shuffle ?? false,
+      })
+      .onConflictDoUpdate({
+        target: userMusicSettings.firebaseUid,
+        set: {
+          ...(settings.autoplayNext !== undefined && { autoplayNext: settings.autoplayNext }),
+          ...(settings.rememberPosition !== undefined && { rememberPosition: settings.rememberPosition }),
+          ...(settings.defaultSpeed !== undefined && { defaultSpeed: settings.defaultSpeed }),
+          ...(settings.repeatMode !== undefined && { repeatMode: settings.repeatMode }),
+          ...(settings.shuffle !== undefined && { shuffle: settings.shuffle }),
+        },
+      })
       .returning();
     return row;
   }

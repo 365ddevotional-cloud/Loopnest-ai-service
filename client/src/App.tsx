@@ -20,7 +20,10 @@ import { MenuTransitionOverlay } from "@/components/MenuTransitionOverlay";
 import { WalkthroughModal } from "@/components/WalkthroughModal";
 import { FloatingFeedbackButton } from "@/components/FloatingFeedbackButton";
 import { AudioMiniPlayer } from "@/components/AudioMiniPlayer";
+import MiniPlayer from "@/components/MiniPlayer";
 import { stopAudioOnNavigate } from "@/hooks/useAudioReader";
+import { MusicPlayerProvider } from "@/contexts/MusicPlayerContext";
+import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import { useOfflineSync } from "@/hooks/use-offline-sync";
 import { useLanguageAutoApply } from "@/components/LanguageSwitcher";
 import Home from "@/pages/Home";
@@ -119,6 +122,7 @@ function AppContent() {
   useLanguageAutoApply();
   const { isTransitioning, completeTransition } = useMenuTransition();
   const [location] = useLocation();
+  const { currentSong } = useMusicPlayer();
 
   useEffect(() => {
     stopAudioOnNavigate();
@@ -148,7 +152,7 @@ function AppContent() {
     <>
       <div className="min-h-screen flex flex-col bg-background font-sans text-foreground">
         <Header />
-        <main className="flex-grow container mx-auto px-4 pt-6 pb-12 sm:pt-8 sm:pb-16">
+        <main className={`flex-grow container mx-auto px-4 pt-6 sm:pt-8 ${currentSong ? "pb-28 sm:pb-32" : "pb-12 sm:pb-16"}`}>
           <Router />
         </main>
         <Footer />
@@ -159,6 +163,7 @@ function AppContent() {
         <WalkthroughModal />
         <FloatingFeedbackButton />
         <AudioMiniPlayer />
+        <MiniPlayer />
       </div>
       <MenuTransitionOverlay isVisible={isTransitioning} onComplete={completeTransition} />
     </>
@@ -172,6 +177,7 @@ function App() {
         <ThemeProvider>
           <AuthProvider>
             <UserProvider>
+            <MusicPlayerProvider>
             <NotificationProvider>
               <TranslationProvider>
                 <FontSizeProvider>
@@ -183,6 +189,7 @@ function App() {
                 </FontSizeProvider>
               </TranslationProvider>
             </NotificationProvider>
+            </MusicPlayerProvider>
             </UserProvider>
           </AuthProvider>
         </ThemeProvider>
