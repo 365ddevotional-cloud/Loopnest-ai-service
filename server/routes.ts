@@ -1519,6 +1519,157 @@ export async function registerRoutes(
     }
   });
 
+  // Public: stream audio for listening (no download headers)
+  app.get("/api/songs/:id/audio", async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const song = await storage.getSong(id);
+      if (!song || !song.isActive) return res.status(404).json({ message: "Song not found" });
+      if (!song.audioUrl) return res.status(404).json({ message: "No audio file" });
+
+      const { ObjectStorageService } = await import("./replit_integrations/object_storage/index.js");
+      const svc = new ObjectStorageService();
+      const file = await svc.getObjectEntityFile(song.audioUrl);
+
+      const [metadata] = await file.getMetadata();
+      res.set({
+        "Content-Type": (metadata.contentType as string) || "audio/mpeg",
+        "Cache-Control": "public, max-age=3600",
+        "Accept-Ranges": "bytes",
+      });
+      if (metadata.size) res.set("Content-Length", String(metadata.size));
+
+      const stream = file.createReadStream();
+      stream.on("error", (err) => {
+        console.error("Song audio stream error:", err);
+        if (!res.headersSent) res.status(500).json({ message: "Error streaming audio" });
+      });
+      stream.pipe(res);
+    } catch (err: any) {
+      if (err?.name === "ObjectNotFoundError") return res.status(404).json({ message: "Audio file not found" });
+      res.status(500).json({ message: "Streaming failed" });
+    }
+  });
+
+  // Public: free promotional download — streams audio with safe filename
+  app.get("/api/songs/:id/download", async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const song = await storage.getSong(id);
+      if (!song) return res.status(404).json({ message: "Song not found" });
+      if (song.downloadStatus !== "free") {
+        return res.status(403).json({ message: "Download is not available for this song" });
+      }
+      if (!song.audioUrl) {
+        return res.status(404).json({ message: "No audio file associated with this song" });
+      }
+
+      const { ObjectStorageService } = await import("./replit_integrations/object_storage/index.js");
+      const svc = new ObjectStorageService();
+      const file = await svc.getObjectEntityFile(song.audioUrl);
+
+      const [metadata] = await file.getMetadata();
+      const contentType = (metadata.contentType as string) || "audio/mpeg";
+      const ext = contentType.includes("mp4") || contentType.includes("m4a") ? ".m4a"
+        : contentType.includes("wav") ? ".wav"
+        : contentType.includes("ogg") ? ".ogg"
+        : ".mp3";
+
+      const safeTitle = song.title
+        .replace(/[^\w\s-]/gi, "")
+        .trim()
+        .replace(/\s+/g, "-")
+        .substring(0, 80) || "song";
+
+      res.set({
+        "Content-Type": contentType,
+        "Content-Disposition": `attachment; filename="${safeTitle}${ext}"`,
+        "Cache-Control": "private, no-store",
+      });
+      if (metadata.size) res.set("Content-Length", String(metadata.size));
+
+      const stream = file.createReadStream();
+      stream.on("error", (err) => {
+        console.error("Song download stream error:", err);
+        if (!res.headersSent) res.status(500).json({ message: "Error streaming audio file" });
+      });
+      stream.pipe(res);
+    } catch (err: any) {
+      console.error("Song download error:", err);
+      if (err?.name === "ObjectNotFoundError") {
+        return res.status(404).json({ message: "Audio file not found in storage" });
+      }
+      res.status(500).json({ message: "Download failed" });
+    }
+  });
+
+  // Public: get active giving methods (voluntary support)
+  app.get("/api/giving-methods", async (_req, res) => {
+    try {
+      const methods = await storage.getGivingMethods(true);
+      res.json(methods);
+    } catch (err) {
+      console.error("Error fetching giving methods:", err);
+      res.status(500).json({ message: "Could not fetch giving methods" });
+    }
+  });
+
+  // Admin: get all giving methods
+  app.get("/api/giving-methods/all", requireAdmin, async (_req, res) => {
+    try {
+      const methods = await storage.getGivingMethods(false);
+      res.json(methods);
+    } catch (err) {
+      res.status(500).json({ message: "Could not fetch giving methods" });
+    }
+  });
+
+  // Admin: create giving method
+  app.post("/api/giving-methods", requireAdmin, async (req, res) => {
+    try {
+      const { name, type, url, handle, instructions, isActive, displayOrder } = req.body;
+      if (!name || !type) return res.status(400).json({ message: "name and type are required" });
+      const method = await storage.createGivingMethod({
+        name, type, url: url || null, handle: handle || null,
+        instructions: instructions || null,
+        isActive: !!isActive,
+        displayOrder: Number(displayOrder) || 0,
+      });
+      res.json(method);
+    } catch (err) {
+      console.error("Error creating giving method:", err);
+      res.status(500).json({ message: "Could not create giving method" });
+    }
+  });
+
+  // Admin: update giving method
+  app.patch("/api/giving-methods/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const updated = await storage.updateGivingMethod(id, req.body);
+      if (!updated) return res.status(404).json({ message: "Giving method not found" });
+      res.json(updated);
+    } catch (err) {
+      console.error("Error updating giving method:", err);
+      res.status(500).json({ message: "Could not update giving method" });
+    }
+  });
+
+  // Admin: delete giving method
+  app.delete("/api/giving-methods/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      await storage.deleteGivingMethod(id);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ message: "Could not delete giving method" });
+    }
+  });
+
   // Public: submit song testimony
   app.post("/api/song-testimonies", async (req, res) => {
     try {

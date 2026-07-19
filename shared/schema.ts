@@ -533,3 +533,19 @@ export const insertSongTestimonySchema = createInsertSchema(songTestimonies).omi
 
 export type SongTestimony = typeof songTestimonies.$inferSelect;
 export type InsertSongTestimony = z.infer<typeof insertSongTestimonySchema>;
+
+// Giving Methods Table — Admin-managed voluntary support options
+export const givingMethods = pgTable("giving_methods", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull().default("other"),
+  url: text("url"),
+  handle: text("handle"),
+  instructions: text("instructions"),
+  isActive: boolean("is_active").notNull().default(false),
+  displayOrder: integer("display_order").notNull().default(0),
+});
+
+export const insertGivingMethodSchema = createInsertSchema(givingMethods).omit({ id: true });
+export type GivingMethod = typeof givingMethods.$inferSelect;
+export type InsertGivingMethod = z.infer<typeof insertGivingMethodSchema>;

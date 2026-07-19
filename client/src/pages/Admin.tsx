@@ -8,14 +8,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2, Upload } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2, Upload, Gift } from "lucide-react";
 import { useUpload } from "@/hooks/use-upload";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
 import { useLocation } from "wouter";
-import type { PrayerRequest, ThreadMessage, PrayerAttachment, Devotional, SundaySchoolLesson, InboxThread, InboxMessage, Song, SongTestimony } from "@shared/schema";
+import type { PrayerRequest, ThreadMessage, PrayerAttachment, Devotional, SundaySchoolLesson, InboxThread, InboxMessage, Song, SongTestimony, GivingMethod } from "@shared/schema";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getDevotionalStatus } from "@/lib/date-utils";
@@ -2456,6 +2456,13 @@ function SongsAdmin() {
     onError: () => toast({ title: "Error", variant: "destructive" }),
   });
 
+  const [showMethodForm, setShowMethodForm] = useState(false);
+  const [editingMethod, setEditingMethod] = useState<Partial<GivingMethod> | null>(null);
+
+  const { data: givingMethodsList = [] } = useQuery<GivingMethod[]>({
+    queryKey: ["/api/giving-methods/all"],
+  });
+
   const deleteSongMutation = useMutation({
     mutationFn: (id: number) => apiRequest("DELETE", `/api/songs/${id}`),
     onSuccess: () => {
@@ -2519,6 +2526,57 @@ function SongsAdmin() {
       toast({ title: "✓ Logo uploaded" });
     } else {
       toast({ title: "Upload failed", variant: "destructive" });
+    }
+  };
+
+  const createMethodMutation = useMutation({
+    mutationFn: (data: Partial<GivingMethod>) => apiRequest("POST", "/api/giving-methods", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/giving-methods/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/giving-methods"] });
+      setShowMethodForm(false);
+      setEditingMethod(null);
+      toast({ title: "Giving method saved" });
+    },
+    onError: () => toast({ title: "Error saving method", variant: "destructive" }),
+  });
+
+  const updateMethodMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<GivingMethod> }) =>
+      apiRequest("PATCH", `/api/giving-methods/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/giving-methods/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/giving-methods"] });
+      toast({ title: "Giving method updated" });
+    },
+    onError: () => toast({ title: "Error updating method", variant: "destructive" }),
+  });
+
+  const deleteMethodMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/giving-methods/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/giving-methods/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/giving-methods"] });
+      toast({ title: "Giving method deleted" });
+    },
+    onError: () => toast({ title: "Error", variant: "destructive" }),
+  });
+
+  const handleSaveMethod = () => {
+    if (!editingMethod) return;
+    const payload = {
+      name: editingMethod.name || "",
+      type: editingMethod.type || "other",
+      url: editingMethod.url || null,
+      handle: editingMethod.handle || null,
+      instructions: editingMethod.instructions || null,
+      isActive: !!editingMethod.isActive,
+      displayOrder: Number(editingMethod.displayOrder) || 0,
+    };
+    if (editingMethod.id) {
+      updateMethodMutation.mutate({ id: editingMethod.id, data: payload });
+    } else {
+      createMethodMutation.mutate(payload);
     }
   };
 
@@ -2748,6 +2806,186 @@ function SongsAdmin() {
       </Card>
 
       {/* Song Edit/Create Dialog */}
+      {/* ── Giving Methods ── */}
+      <Card className="mt-6">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+              <Gift className="w-6 h-6" />
+              Giving Methods
+            </CardTitle>
+            <Button
+              size="sm"
+              onClick={() => { setEditingMethod({ type: "other", isActive: false, displayOrder: givingMethodsList.length }); setShowMethodForm(true); }}
+              data-testid="button-add-giving-method"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Method
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground pt-1">
+            Configure voluntary support options shown on the SpiritTone Music pages. Giving is never required and never unlocks content.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {givingMethodsList.length === 0 && !showMethodForm && (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No giving methods configured. Click "Add Method" to add PayPal, Cash App, Venmo, or other options.
+            </p>
+          )}
+          <div className="space-y-2">
+            {givingMethodsList.map((method) => (
+              <div key={method.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-muted/10" data-testid={`card-giving-method-${method.id}`}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-semibold">{method.name}</span>
+                    <Badge variant={method.isActive ? "default" : "secondary"} className="text-xs">
+                      {method.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs capitalize">{method.type}</Badge>
+                    <span className="text-xs text-muted-foreground">Order: {method.displayOrder}</span>
+                  </div>
+                  {method.handle && <div className="text-xs text-muted-foreground mt-0.5">{method.handle}</div>}
+                  {method.url && <div className="text-xs text-muted-foreground truncate max-w-sm">{method.url}</div>}
+                  {method.instructions && <div className="text-xs text-muted-foreground/70 italic">{method.instructions}</div>}
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-xs"
+                    onClick={() => {
+                      updateMethodMutation.mutate({ id: method.id, data: { isActive: !method.isActive } });
+                    }}
+                    data-testid={`button-toggle-method-${method.id}`}
+                  >
+                    {method.isActive ? "Deactivate" : "Activate"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => { setEditingMethod({ ...method }); setShowMethodForm(true); }}
+                    data-testid={`button-edit-method-${method.id}`}
+                  >
+                    <Edit className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => { if (confirm(`Delete "${method.name}"? This cannot be undone.`)) deleteMethodMutation.mutate(method.id); }}
+                    data-testid={`button-delete-method-${method.id}`}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {showMethodForm && editingMethod !== null && (
+            <div className="mt-2 p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-3">
+              <h4 className="font-semibold text-sm text-primary">{editingMethod.id ? "Edit Giving Method" : "New Giving Method"}</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Display Name *</Label>
+                  <Input
+                    value={editingMethod.name ?? ""}
+                    onChange={(e) => setEditingMethod({ ...editingMethod, name: e.target.value })}
+                    placeholder="e.g. PayPal"
+                    data-testid="input-method-name"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Type *</Label>
+                  <Select value={editingMethod.type ?? "other"} onValueChange={(v) => setEditingMethod({ ...editingMethod, type: v })}>
+                    <SelectTrigger data-testid="select-method-type"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="paypal">PayPal</SelectItem>
+                      <SelectItem value="cashapp">Cash App</SelectItem>
+                      <SelectItem value="venmo">Venmo</SelectItem>
+                      <SelectItem value="card">Debit / Credit Card Link</SelectItem>
+                      <SelectItem value="website">Ministry Website</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Giving URL</Label>
+                <Input
+                  value={editingMethod.url ?? ""}
+                  onChange={(e) => setEditingMethod({ ...editingMethod, url: e.target.value || null })}
+                  placeholder="https://paypal.me/... or https://cash.app/$..."
+                  data-testid="input-method-url"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Handle / Username</Label>
+                  <Input
+                    value={editingMethod.handle ?? ""}
+                    onChange={(e) => setEditingMethod({ ...editingMethod, handle: e.target.value || null })}
+                    placeholder="$cashtag or @username"
+                    data-testid="input-method-handle"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Display Order</Label>
+                  <Input
+                    type="number"
+                    value={editingMethod.displayOrder ?? 0}
+                    onChange={(e) => setEditingMethod({ ...editingMethod, displayOrder: Number(e.target.value) })}
+                    data-testid="input-method-order"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Short Instructions <span className="text-muted-foreground">(shown below the link)</span></Label>
+                <Input
+                  value={editingMethod.instructions ?? ""}
+                  onChange={(e) => setEditingMethod({ ...editingMethod, instructions: e.target.value || null })}
+                  placeholder="e.g. Tap to open in the PayPal app"
+                  data-testid="input-method-instructions"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="method-is-active"
+                  checked={!!editingMethod.isActive}
+                  onChange={(e) => setEditingMethod({ ...editingMethod, isActive: e.target.checked })}
+                  data-testid="checkbox-method-active"
+                />
+                <label htmlFor="method-is-active" className="text-xs cursor-pointer">
+                  Active — visible to users on the SpiritTone Music page
+                </label>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { setShowMethodForm(false); setEditingMethod(null); }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSaveMethod}
+                  disabled={!editingMethod.name || createMethodMutation.isPending || updateMethodMutation.isPending}
+                  data-testid="button-save-giving-method"
+                >
+                  {(createMethodMutation.isPending || updateMethodMutation.isPending) && (
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  )}
+                  Save Method
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Dialog open={showForm} onOpenChange={(open) => { if (!open) { setShowForm(false); setEditingSong(null); } }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -3043,9 +3281,9 @@ function SongsAdmin() {
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="coming_soon">Coming Soon</SelectItem>
-                      <SelectItem value="free">Free Download</SelectItem>
-                      <SelectItem value="paid">Paid (Future)</SelectItem>
+                      <SelectItem value="disabled">Downloads Disabled</SelectItem>
+                      <SelectItem value="coming_soon">Download Coming Soon</SelectItem>
+                      <SelectItem value="free">Free Promotional Download</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

@@ -5,10 +5,13 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Play, Pause, Volume2, SkipBack, SkipForward, Download, Share2,
   Heart, ChevronLeft, Music2, BookOpen, Loader2, ExternalLink,
+  Gift, X, AlertCircle,
 } from "lucide-react";
+import { SiPaypal, SiCashapp, SiVenmo } from "react-icons/si";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import type { Song } from "@shared/schema";
+import type { Song, GivingMethod } from "@shared/schema";
 
 function useAudioPlayer(src: string | null | undefined) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -51,27 +54,25 @@ function useAudioPlayer(src: string | null | undefined) {
       audio.pause();
       setIsPlaying(false);
     } else {
-      await audio.play().catch(() => {});
-      setIsPlaying(true);
+      try {
+        await audio.play();
+        setIsPlaying(true);
+      } catch {
+        setIsPlaying(false);
+      }
     }
   }, [isPlaying]);
 
-  const seek = useCallback((t: number) => {
-    const audio = audioRef.current;
-    if (audio) { audio.currentTime = t; setCurrentTime(t); }
+  const seek = useCallback((time: number) => {
+    if (audioRef.current) audioRef.current.currentTime = time;
   }, []);
 
-  const setVol = useCallback((v: number) => {
-    const audio = audioRef.current;
-    if (audio) { audio.volume = v; setVolume(v); }
+  const changeVolume = useCallback((vol: number) => {
+    setVolume(vol);
+    if (audioRef.current) audioRef.current.volume = vol;
   }, []);
 
-  const skip = useCallback((delta: number) => {
-    const audio = audioRef.current;
-    if (audio) { audio.currentTime = Math.max(0, Math.min(audio.currentTime + delta, audio.duration)); }
-  }, []);
-
-  return { isPlaying, currentTime, duration, volume, isLoading, togglePlay, seek, setVol, skip };
+  return { isPlaying, currentTime, duration, volume, isLoading, togglePlay, seek, changeVolume };
 }
 
 function formatTime(sec: number) {
@@ -81,23 +82,96 @@ function formatTime(sec: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-function LyricsBlock({ lyrics }: { lyrics: string }) {
-  const lines = lyrics.split("\n");
+function MethodIcon({ type }: { type: string }) {
+  if (type === "paypal") return <SiPaypal className="w-5 h-5 text-blue-600" />;
+  if (type === "cashapp") return <SiCashapp className="w-5 h-5 text-green-600" />;
+  if (type === "venmo") return <SiVenmo className="w-5 h-5 text-blue-500" />;
+  if (type === "card") return <ExternalLink className="w-5 h-5 text-purple-600" />;
+  if (type === "website") return <ExternalLink className="w-5 h-5 text-amber-700" />;
+  return <Gift className="w-5 h-5 text-primary" />;
+}
+
+function SupportModal({ open, onClose, songTitle }: { open: boolean; onClose: () => void; songTitle: string }) {
+  const { data: methods = [], isLoading } = useQuery<GivingMethod[]>({
+    queryKey: ["/api/giving-methods"],
+    enabled: open,
+  });
+
+  const active = methods.filter((m) => m.isActive);
+
   return (
-    <div className="space-y-1 font-mono text-sm leading-relaxed">
-      {lines.map((line, i) => {
-        const isSectionHeader = /^\[.+\]$/.test(line.trim());
-        if (line.trim() === "") return <div key={i} className="h-3" />;
-        if (isSectionHeader) {
-          return (
-            <div key={i} className="font-bold text-primary/80 text-xs uppercase tracking-wider mt-4 first:mt-0">
-              {line.replace(/[\[\]]/g, "")}
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-xl text-primary flex items-center gap-2">
+            <Gift className="w-5 h-5" />
+            Support the Ministry
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-1">
+          <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/30 p-4 space-y-2">
+            <p className="text-sm font-medium text-foreground">Were you blessed by this song?</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Your voluntary support helps SpiritTone Records and 365 Daily Devotional continue producing
+              Scripture-based songs, devotionals, Bible teaching, prayer resources, and counseling encouragement.
+            </p>
+            <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+              Giving is optional. You receive the same song access whether or not you give.
+            </p>
+          </div>
+
+          {isLoading && (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
-          );
-        }
-        return <div key={i} className="text-foreground/90">{line}</div>;
-      })}
-    </div>
+          )}
+
+          {!isLoading && active.length === 0 && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-3 justify-center">
+              <AlertCircle className="w-4 h-4" />
+              No giving options are currently configured.
+            </div>
+          )}
+
+          {!isLoading && active.length > 0 && (
+            <div className="space-y-2">
+              {active.map((method) => (
+                <a
+                  key={method.id}
+                  href={method.url || "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 rounded-xl border border-border/50 hover:bg-muted/40 transition-colors group"
+                  onClick={(e) => {
+                    if (!method.url) e.preventDefault();
+                  }}
+                  data-testid={`link-giving-method-${method.id}`}
+                >
+                  <div className="flex-shrink-0">
+                    <MethodIcon type={method.type} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-foreground">{method.name}</div>
+                    {method.handle && (
+                      <div className="text-xs text-muted-foreground">{method.handle}</div>
+                    )}
+                    {method.instructions && (
+                      <div className="text-xs text-muted-foreground mt-0.5">{method.instructions}</div>
+                    )}
+                  </div>
+                  <ExternalLink className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </a>
+              ))}
+            </div>
+          )}
+
+          <p className="text-[10px] text-muted-foreground/60 text-center">
+            No card information is collected by this app. All giving links open in your browser or payment app.
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -105,84 +179,53 @@ export default function SongDetail() {
   const [, params] = useRoute("/music/:slug");
   const slug = params?.slug;
   const { toast } = useToast();
+  const [showSupport, setShowSupport] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [showTestimonyForm, setShowTestimonyForm] = useState(false);
-  const [testimonyName, setTestimonyName] = useState("");
-  const [testimonyText, setTestimonyText] = useState("");
 
-  const { data: song, isLoading, isError } = useQuery<Song>({
-    queryKey: [`/api/songs/by-slug/${slug}`],
+  const { data: song, isLoading, error } = useQuery<Song>({
+    queryKey: ["/api/songs/by-slug", slug],
+    queryFn: () => fetch(`/api/songs/by-slug/${slug}`).then((r) => r.json()),
     enabled: !!slug,
   });
 
-  const player = useAudioPlayer(song?.audioUrl);
-
-  useEffect(() => {
-    if (!song) return;
-    const favKey = `favorite_song_${song.id}`;
-    setIsFavorite(localStorage.getItem(favKey) === "true");
-  }, [song]);
-
-  const toggleFavorite = () => {
-    if (!song) return;
-    const favKey = `favorite_song_${song.id}`;
-    const next = !isFavorite;
-    setIsFavorite(next);
-    localStorage.setItem(favKey, String(next));
-    toast({ title: next ? "❤️ Added to favorites" : "Removed from favorites" });
-  };
+  const audioSrc = song?.audioUrl ? `/api/songs/${song.id}/audio` : null;
+  const { isPlaying, currentTime, duration, volume, isLoading: audioLoading, togglePlay, seek, changeVolume } =
+    useAudioPlayer(audioSrc);
 
   const handleShare = async () => {
-    if (!song) return;
-    const url = `${window.location.origin}/music/${song.slug}`;
+    const url = window.location.href;
     if (navigator.share) {
-      await navigator.share({ title: song.title, text: `Listen to "${song.title}" — ${song.scriptureReference}`, url });
+      try {
+        await navigator.share({ title: song?.title, url });
+      } catch {}
     } else {
       await navigator.clipboard.writeText(url);
       toast({ title: "Link copied!" });
     }
   };
 
-  const submitTestimonyMutation = useMutation({
-    mutationFn: (data: object) => apiRequest("POST", "/api/song-testimonies", data),
-    onSuccess: () => {
-      toast({ title: "✓ Testimony submitted", description: "Thank you for sharing how this song touched your heart." });
-      setShowTestimonyForm(false);
-      setTestimonyName("");
-      setTestimonyText("");
-    },
-    onError: () => toast({ title: "Could not submit", variant: "destructive" }),
-  });
-
-  const handleTestimonySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!song || !testimonyName.trim() || !testimonyText.trim()) return;
-    submitTestimonyMutation.mutate({
-      songId: song.id,
-      songTitle: song.title,
-      name: testimonyName.trim(),
-      testimony: testimonyText.trim(),
-      isAnonymous: false,
-      consentToPublish: true,
-    });
+  const toggleFavorite = () => {
+    setIsFavorite((prev) => !prev);
+    toast({ title: isFavorite ? "Removed from favorites" : "Added to favorites" });
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (isError || !song) {
+  if (error || !song) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center px-4">
-        <Music2 className="w-12 h-12 text-muted-foreground/40" />
-        <h2 className="font-serif text-xl font-bold text-foreground">Song not found</h2>
-        <p className="text-muted-foreground text-sm">This song may no longer be available.</p>
+      <div className="max-w-xl mx-auto py-12 text-center space-y-4">
+        <Music2 className="w-12 h-12 mx-auto text-muted-foreground" />
+        <h2 className="font-serif text-2xl text-foreground">Song Not Found</h2>
+        <p className="text-muted-foreground">This song doesn't exist or has been removed.</p>
         <Link href="/music">
-          <Button variant="outline" size="sm">← Back to Music Library</Button>
+          <Button variant="outline">Back to Music Library</Button>
         </Link>
       </div>
     );
@@ -190,25 +233,23 @@ export default function SongDetail() {
 
   const hasCover = !!song.coverImageUrl;
   const downloadLabel =
-    song.downloadStatus === "free"
-      ? "Free Download"
-      : song.downloadStatus === "disabled"
-      ? "Download Unavailable"
-      : "Coming Soon";
+    song.downloadStatus === "disabled"
+      ? "Downloads Disabled"
+      : "Download Coming Soon";
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      {/* Back */}
+    <div className="max-w-2xl mx-auto space-y-6 pb-12">
+      {/* Back link */}
       <Link href="/music">
-        <button className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="link-back-to-music">
           <ChevronLeft className="w-4 h-4" />
           All Songs
         </button>
       </Link>
 
-      {/* Cinematic Header */}
+      {/* Hero card */}
       <div
-        className="relative rounded-2xl overflow-hidden min-h-[240px] flex flex-col items-center justify-center text-center"
+        className="relative rounded-2xl overflow-hidden flex flex-col items-center justify-center text-center min-h-[220px] px-6 py-8"
         style={{
           background: hasCover
             ? undefined
@@ -226,130 +267,85 @@ export default function SongDetail() {
         <div
           className="absolute inset-0"
           style={{
-            background: "linear-gradient(to bottom, rgba(100,40,0,0.18) 0%, rgba(80,30,0,0.38) 50%, rgba(55,18,0,0.70) 100%)",
+            background: "linear-gradient(to bottom, rgba(80,30,0,0.18) 0%, rgba(55,18,0,0.65) 100%)",
           }}
         />
-        <div className="relative z-10 select-none px-4 py-6">
+        <div className="relative z-10 pointer-events-none select-none space-y-1">
           <div
-            style={{
-              fontFamily: "'Playfair Display', Georgia, serif",
-              fontWeight: 900,
-              textTransform: "uppercase",
-              letterSpacing: "0.2em",
-              fontSize: "clamp(1.6rem, 6vw, 2.6rem)",
-              color: "#c9a840",
-              textShadow: "0 0 30px rgba(201,168,64,0.5), 0 4px 20px rgba(0,0,0,0.9)",
-            }}
+            className="font-serif font-black uppercase tracking-widest"
+            style={{ fontSize: "clamp(1.4rem,6vw,2.4rem)", color: "#c9a840", textShadow: "0 4px 24px rgba(0,0,0,0.85)" }}
           >
             {song.title}
           </div>
-          {song.artist && (
-            <div
-              className="mt-1"
-              style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: "clamp(0.8rem, 2.5vw, 1rem)",
-                color: "#e8d8b0",
-                textShadow: "0 1px 6px rgba(0,0,0,0.9)",
-              }}
-            >
-              Performed by {song.artist}
-              {song.featuredArtist ? ` ft. ${song.featuredArtist}` : ""}
-            </div>
-          )}
-          <div
-            className="mt-1 text-xs"
-            style={{ color: "#c9a840", textShadow: "0 1px 4px rgba(0,0,0,0.9)", letterSpacing: "0.12em" }}
-          >
-            {song.labelName}
-          </div>
+          <div className="text-xs uppercase tracking-[0.22em] text-amber-200/80">{song.labelName}</div>
         </div>
       </div>
 
-      {/* Scripture */}
-      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-1">
-        <div className="flex items-center gap-2 text-primary">
-          <BookOpen className="w-4 h-4 flex-shrink-0" />
-          <span className="font-bold text-sm">{song.scriptureReference}</span>
-        </div>
-        {song.scriptureText && (
-          <p className="text-sm italic text-foreground/80 leading-relaxed pl-6">
-            "{song.scriptureText}"
-          </p>
-        )}
-      </div>
-
-      {/* Audio Player */}
+      {/* Audio player */}
       {song.audioUrl && (
-        <div className="rounded-xl border border-border/50 bg-card p-4 space-y-3">
-          <div className="flex items-center justify-between gap-3">
+        <div className="rounded-xl border border-border/40 bg-card p-4 space-y-3" data-testid="section-audio-player">
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => player.skip(-10)}
-              className="p-2 rounded-full hover:bg-muted transition-colors"
-              aria-label="Rewind 10s"
+              onClick={togglePlay}
+              className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 hover:bg-primary/90 transition-colors"
+              data-testid="button-play-song"
+              aria-label={isPlaying ? "Pause" : "Play"}
             >
-              <SkipBack className="w-5 h-5 text-muted-foreground" />
-            </button>
-            <button
-              onClick={player.togglePlay}
-              disabled={player.isLoading}
-              className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95"
-              style={{ background: "linear-gradient(135deg, #d4a020 0%, #a07010 100%)" }}
-              aria-label={player.isPlaying ? "Pause" : "Play"}
-              data-testid="button-detail-play-pause"
-            >
-              {player.isLoading ? (
-                <Loader2 className="w-6 h-6 text-white animate-spin" />
-              ) : player.isPlaying ? (
-                <Pause className="w-6 h-6 text-white" />
+              {audioLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
+              ) : isPlaying ? (
+                <Pause className="w-4 h-4 text-white" />
               ) : (
-                <Play className="w-6 h-6 text-white ml-0.5" />
+                <Play className="w-4 h-4 text-white ml-0.5" />
               )}
             </button>
-            <button
-              onClick={() => player.skip(10)}
-              className="p-2 rounded-full hover:bg-muted transition-colors"
-              aria-label="Skip 10s"
-            >
-              <SkipForward className="w-5 h-5 text-muted-foreground" />
-            </button>
-          </div>
-
-          {/* Progress bar */}
-          <div className="space-y-1">
-            <input
-              type="range"
-              min={0}
-              max={player.duration || 100}
-              value={player.currentTime}
-              onChange={(e) => player.seek(Number(e.target.value))}
-              className="w-full h-1.5 accent-amber-600 cursor-pointer"
-              data-testid="input-song-progress"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{formatTime(player.currentTime)}</span>
-              <span>{formatTime(player.duration)}</span>
+            <div className="flex-1 space-y-1">
+              <input
+                type="range"
+                min={0}
+                max={duration || 100}
+                value={currentTime}
+                onChange={(e) => seek(Number(e.target.value))}
+                className="w-full h-1.5 accent-primary cursor-pointer"
+                data-testid="input-song-scrubber"
+              />
+              <div className="flex justify-between text-[10px] text-muted-foreground">
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
+              </div>
             </div>
-          </div>
-
-          {/* Volume */}
-          <div className="flex items-center gap-2">
-            <Volume2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={player.volume}
-              onChange={(e) => player.setVol(Number(e.target.value))}
-              className="w-24 h-1 accent-amber-600 cursor-pointer"
-            />
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <Volume2 className="w-3.5 h-3.5 text-muted-foreground" />
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={volume}
+                onChange={(e) => changeVolume(Number(e.target.value))}
+                className="w-16 h-1.5 accent-primary cursor-pointer"
+                data-testid="input-song-volume"
+              />
+            </div>
           </div>
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-2">
+      {/* Scripture */}
+      {song.scriptureReference && (
+        <div className="rounded-xl border border-amber-200/50 dark:border-amber-800/30 bg-amber-50/60 dark:bg-amber-950/20 p-4 space-y-1" data-testid="section-scripture">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-primary" />
+            <span className="font-semibold text-sm text-primary">{song.scriptureReference}</span>
+          </div>
+          {song.scriptureText && (
+            <p className="text-sm text-foreground/80 italic pl-6">"{song.scriptureText}"</p>
+          )}
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="flex flex-wrap gap-2" data-testid="section-song-actions">
         <Button
           variant="outline"
           size="sm"
@@ -364,29 +360,32 @@ export default function SongDetail() {
           <Share2 className="w-4 h-4 mr-1.5" />
           Share
         </Button>
+
+        {/* Download button */}
         {song.downloadStatus === "free" && song.audioUrl ? (
-          <a href={song.audioUrl} download target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" size="sm" data-testid="button-download-song">
+          <a href={`/api/songs/${song.id}/download`} download data-testid="button-download-song">
+            <Button variant="outline" size="sm">
               <Download className="w-4 h-4 mr-1.5" />
               Free Download
             </Button>
           </a>
-        ) : (
-          <Button variant="outline" size="sm" disabled className="opacity-60" data-testid="button-download-unavailable">
+        ) : song.downloadStatus !== "disabled" ? (
+          <Button variant="outline" size="sm" disabled className="opacity-60" data-testid="button-download-coming-soon">
             <Download className="w-4 h-4 mr-1.5" />
             {downloadLabel}
           </Button>
-        )}
-        <Link href="/donate">
-          <Button
-            size="sm"
-            className="bg-amber-600 hover:bg-amber-700 text-white"
-            data-testid="button-support-ministry-song"
-          >
-            <ExternalLink className="w-4 h-4 mr-1.5" />
-            Support the Ministry
-          </Button>
-        </Link>
+        ) : null}
+
+        {/* Support the Ministry — voluntary only */}
+        <Button
+          size="sm"
+          className="bg-amber-600 hover:bg-amber-700 text-white"
+          onClick={() => setShowSupport(true)}
+          data-testid="button-support-ministry-song"
+        >
+          <Gift className="w-4 h-4 mr-1.5" />
+          Support the Ministry
+        </Button>
       </div>
 
       {/* Short Description */}
@@ -418,129 +417,72 @@ export default function SongDetail() {
               <span className="text-foreground">{song.lyricist}</span>
             </>
           )}
-          {song.choir && (
+          {(song as any).choir && (
             <>
-              <span className="text-muted-foreground">Choir</span>
-              <span className="text-foreground">{song.choir}</span>
+              <span className="text-muted-foreground">Choir / Group</span>
+              <span className="text-foreground">{(song as any).choir}</span>
             </>
           )}
-          {song.instrumentalist && (
+          {(song as any).instrumentalist && (
             <>
               <span className="text-muted-foreground">Instrumentalist</span>
-              <span className="text-foreground">{song.instrumentalist}</span>
+              <span className="text-foreground">{(song as any).instrumentalist}</span>
             </>
           )}
-          {song.genre && (
-            <>
-              <span className="text-muted-foreground">Genre</span>
-              <span className="text-foreground">{song.genre}</span>
-            </>
-          )}
-          {song.language && (
+          {(song as any).language && (
             <>
               <span className="text-muted-foreground">Language</span>
-              <span className="text-foreground">{song.language}</span>
+              <span className="text-foreground">{(song as any).language}</span>
             </>
           )}
           {song.releaseYear && (
             <>
-              <span className="text-muted-foreground">Release Year</span>
+              <span className="text-muted-foreground">Year</span>
               <span className="text-foreground">{song.releaseYear}</span>
             </>
           )}
+          {(song as any).genre && (
+            <>
+              <span className="text-muted-foreground">Genre</span>
+              <span className="text-foreground">{(song as any).genre}</span>
+            </>
+          )}
         </div>
-        {song.labelLogoUrl && (
-          <img
-            src={song.labelLogoUrl}
-            alt={song.labelName}
-            className="h-8 mt-2 object-contain"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-          />
-        )}
       </div>
-
-      {/* Full Description */}
-      {song.description && (
-        <div className="space-y-2">
-          <h3 className="font-serif text-base font-bold text-foreground">About This Song</h3>
-          <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">{song.description}</p>
-        </div>
-      )}
 
       {/* Lyrics */}
       {song.lyrics && (
-        <div className="space-y-3">
-          <h3 className="font-serif text-base font-bold text-foreground">Lyrics</h3>
-          <div className="rounded-xl border border-border/40 bg-muted/10 p-4">
-            <LyricsBlock lyrics={song.lyrics} />
+        <div className="rounded-xl border border-border/40 bg-card p-4 space-y-3" data-testid="section-lyrics">
+          <div className="flex items-center justify-between">
+            <h3 className="font-serif text-sm font-bold text-foreground uppercase tracking-wider">Lyrics</h3>
+            <button
+              onClick={() => setShowLyrics((v) => !v)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              data-testid="button-toggle-lyrics"
+            >
+              {showLyrics ? "Hide" : "Show"}
+            </button>
           </div>
+          {showLyrics && (
+            <pre className="text-sm text-foreground/80 whitespace-pre-wrap font-sans leading-relaxed">
+              {song.lyrics}
+            </pre>
+          )}
         </div>
       )}
 
-      {/* Testimony Section */}
-      <div className="rounded-xl border border-border/40 bg-card p-5 space-y-4">
-        <h3 className="font-serif text-base font-bold text-foreground">Share Your Testimony</h3>
-        <p className="text-xs text-muted-foreground">
-          Has this song touched your heart? Share how God spoke to you through it.
-        </p>
-        {!showTestimonyForm ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowTestimonyForm(true)}
-            data-testid="button-open-testimony-form"
-          >
-            Share a Testimony
-          </Button>
-        ) : (
-          <form onSubmit={handleTestimonySubmit} className="space-y-3">
-            <input
-              className="w-full text-sm border rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
-              placeholder="Your name"
-              value={testimonyName}
-              onChange={(e) => setTestimonyName(e.target.value)}
-              required
-              data-testid="input-testimony-name"
-            />
-            <textarea
-              className="w-full text-sm border rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
-              placeholder="Share how this song blessed you…"
-              value={testimonyText}
-              onChange={(e) => setTestimonyText(e.target.value)}
-              rows={4}
-              required
-              data-testid="textarea-testimony-text"
-            />
-            <div className="flex gap-2">
-              <Button
-                type="submit"
-                size="sm"
-                className="bg-primary hover:bg-primary/90"
-                disabled={submitTestimonyMutation.isPending}
-                data-testid="button-submit-testimony"
-              >
-                {submitTestimonyMutation.isPending ? (
-                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                ) : null}
-                Submit
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowTestimonyForm(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        )}
-      </div>
+      {/* Description */}
+      {song.description && (
+        <p className="text-sm text-foreground/75 leading-relaxed">{song.description}</p>
+      )}
 
       {/* Copyright */}
       {song.copyrightNotice && (
-        <p className="text-[10px] text-muted-foreground/60 text-center">{song.copyrightNotice}</p>
+        <p className="text-[10px] text-muted-foreground/60 text-center pt-2">{song.copyrightNotice}</p>
       )}
+
+      {/* Support Modal */}
+      <SupportModal open={showSupport} onClose={() => setShowSupport(false)} songTitle={song.title} />
     </div>
   );
 }

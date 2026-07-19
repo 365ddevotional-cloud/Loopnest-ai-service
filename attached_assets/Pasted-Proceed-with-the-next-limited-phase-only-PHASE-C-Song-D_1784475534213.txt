@@ -1,0 +1,207 @@
+Proceed with the next limited phase only: PHASE C — Song Download and Support the Ministry.
+
+The Phase A + B implementation is already complete. Do not rebuild, repeat, replace, or broadly review that work.
+
+==================================================
+BUILD NOW — PHASE C ONLY
+==================================================
+
+1. COMPLETE THE SONG DOWNLOAD CONTROL
+
+Use the existing song records and full SpiritTone Music song-detail page.
+
+Allow Admin to select one download status for each song:
+
+- Downloads Disabled
+- Download Coming Soon
+- Free Promotional Download
+
+Required behavior:
+
+- If “Downloads Disabled” is selected, hide or disable the Download button with a clear message.
+- If “Download Coming Soon” is selected, show:
+  “Download Coming Soon.”
+- If “Free Promotional Download” is selected and a valid audio file exists, allow the user to download that song.
+- Use the audio file already uploaded through the existing object-storage system.
+- Do not create another upload system.
+- Do not expose private storage credentials.
+- Use a safe downloadable response or signed download URL according to the project’s existing storage design.
+- Use the song title to create a clean download filename where practical.
+- Show a friendly error if the file is unavailable.
+- Do not require a donation before downloading.
+- Do not implement paid song purchases.
+- Do not implement Google Play Billing in this task.
+- Do not track complex download history yet.
+
+2. COMPLETE THE VOLUNTARY SUPPORT PANEL
+
+Keep “Support the Ministry” completely separate from song listening and downloading.
+
+Use wording similar to:
+
+“Were you blessed by this song?
+
+Your voluntary support helps SpiritTone Records and 365 Daily Devotional continue producing Scripture-based songs, devotionals, Bible teaching, prayer resources, and counseling encouragement.
+
+Giving is optional. You receive the same song access whether or not you give.”
+
+Important rules:
+
+- Donation must never unlock a song, download, badge, feature, or exclusive content.
+- Donors and non-donors must receive the same digital access.
+- Do not claim that gifts are tax-deductible.
+- Do not collect or store debit-card, credit-card, or banking details inside the app.
+- Do not create recurring payments in this task.
+- Do not implement a complicated payment API.
+- External giving links must open securely in a browser or the appropriate payment app.
+
+3. ADMIN-MANAGED GIVING METHODS
+
+Inside the existing Admin area, add a small section named:
+
+“Giving Methods”
+or
+“Support Methods”
+
+Admin should be able to configure these voluntary giving options:
+
+- PayPal
+- Cash App
+- Venmo
+- Debit/Credit Card Giving Link
+- Ministry Website Giving Link
+- Other Custom Giving Link
+
+Each method should support:
+
+- Display name
+- Giving URL or payment link
+- Optional username or handle
+- Short instructions
+- Active/Inactive toggle
+- Display order
+
+Rules:
+
+- Preserve any existing PayPal and Cash App settings.
+- Do not hard-code personal payment information into components.
+- Show only methods that Admin activates and properly configures.
+- Venmo must appear only when Admin provides a valid Venmo link or handle.
+- A debit/credit-card option must use an Admin-provided secure hosted giving-page URL.
+- Never collect card numbers directly in the app.
+- Admin must be able to change the links without editing code or redeploying.
+- Reuse an existing app-settings or ministry-settings table if suitable.
+- Create only the smallest additive database structure if no suitable settings storage exists.
+- Do not create a full payment-processing system.
+
+4. USER-FACING SUPPORT DISPLAY
+
+On the SpiritTone Music song-detail page:
+
+- Keep the Download and Support the Ministry buttons visually separate.
+- Do not write wording such as “Donate to Download.”
+- Place Support near the song actions without making it appear compulsory.
+- When Support is opened, display only active giving methods.
+- Clearly label every method.
+- Open external links safely.
+- Preserve the existing design language, mobile responsiveness, and dark mode.
+
+Also keep the existing general donation page working.
+
+5. OPTIONAL SUGGESTED AMOUNTS
+
+The voluntary support panel may display:
+
+- $1
+- $3
+- $5
+- $10
+- Custom amount
+
+Only show these as optional suggestions if they work naturally with the configured giving link.
+
+Do not build custom payment collection or pass amounts in an unsafe way.
+
+==================================================
+DO NOT BUILD YET
+==================================================
+
+Do not implement any of these in this task:
+
+- My Library
+- Save to My Account
+- Cross-device song synchronization
+- New email authentication
+- Prayer or counseling migration
+- Download-history dashboards
+- Paid song sales
+- Google Play Billing
+- Subscriptions
+- Donor badges or digital rewards
+- Books
+- Playlists
+- New third-party paid services
+
+==================================================
+CRITICAL SAFETY AND COST RULES
+==================================================
+
+- Create a checkpoint before editing.
+- Modify only files directly required for download status and giving methods.
+- Reuse the existing song system, Admin area, object storage, donation page, routes, components, and styling.
+- Do not repeat Phase A + B.
+- Do not conduct another broad codebase survey.
+- Do not rebuild or refactor unrelated features.
+- Do not reseed, overwrite, or delete devotional data.
+- Do not delete songs, testimonies, favorites, users, or ministry settings.
+- Preserve Today’s Message, SpiritTone Music, God’s Promises, prayer, counseling, Bible, Archive, Sunday School, Inbox, notifications, sharing, testimony, favorites, dark mode, and mobile navigation.
+- Do not introduce secrets into frontend code.
+- Do not publish or deploy automatically.
+- Test this limited Phase C work only.
+- Stop after completion and wait for approval.
+
+==================================================
+TEST BEFORE COMPLETION
+==================================================
+
+Verify:
+
+1. Existing songs and the SpiritTone Music section still load.
+2. Admin can choose Disabled, Coming Soon, or Free Promotional Download.
+3. Disabled and Coming Soon states display correctly.
+4. Free promotional download works only when enabled and a valid file exists.
+5. Donation is not required for download.
+6. Support the Ministry opens independently.
+7. Existing PayPal and Cash App options remain available.
+8. Admin can activate or deactivate giving methods.
+9. Venmo appears only when configured.
+10. Card giving uses only an external secure hosted giving link.
+11. No payment details are collected by the app.
+12. Inactive giving methods are hidden from users.
+13. External links open correctly.
+14. Mobile layout and dark mode still work.
+15. No unrelated feature was changed.
+16. No devotional or song data was overwritten.
+17. No unresolved console errors were introduced.
+
+==================================================
+FINAL RESPONSE REQUIRED
+==================================================
+
+When finished, report only:
+
+1. Confirmation that a checkpoint was created.
+2. Exact files changed.
+3. Where Admin controls each song’s download status.
+4. How free promotional downloads work.
+5. Where Admin manages giving methods.
+6. Which giving methods are supported.
+7. Confirmation that donations never unlock downloads or other digital content.
+8. Confirmation that no card information is collected inside the app.
+9. Manual testing steps.
+10. Any unresolved limitation.
+
+Do not publish.
+Do not deploy.
+Do not start another phase.
+Stop and wait for approval.

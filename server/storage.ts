@@ -19,6 +19,7 @@ import {
   inboxMessages,
   songs,
   songTestimonies,
+  givingMethods,
   type Devotional,
   type InsertDevotional,
   type UpdateDevotionalRequest,
@@ -56,6 +57,8 @@ import {
   type InsertInboxMessage,
   type Song,
   type InsertSong,
+  type GivingMethod,
+  type InsertGivingMethod,
   type SongTestimony,
   type InsertSongTestimony,
 } from "@shared/schema";
@@ -174,6 +177,12 @@ export interface IStorage {
   createSongTestimony(testimony: InsertSongTestimony): Promise<SongTestimony>;
   updateSongTestimony(id: number, data: Partial<SongTestimony>): Promise<SongTestimony>;
   deleteSongTestimony(id: number): Promise<void>;
+
+  // Giving Methods — Admin-managed voluntary support options
+  getGivingMethods(activeOnly?: boolean): Promise<GivingMethod[]>;
+  createGivingMethod(method: InsertGivingMethod): Promise<GivingMethod>;
+  updateGivingMethod(id: number, data: Partial<InsertGivingMethod>): Promise<GivingMethod | undefined>;
+  deleteGivingMethod(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -870,6 +879,35 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSongTestimony(id: number): Promise<void> {
     await db.delete(songTestimonies).where(eq(songTestimonies.id, id));
+  }
+
+  async getGivingMethods(activeOnly = false): Promise<GivingMethod[]> {
+    if (activeOnly) {
+      return db
+        .select()
+        .from(givingMethods)
+        .where(eq(givingMethods.isActive, true))
+        .orderBy(givingMethods.displayOrder, givingMethods.id);
+    }
+    return db.select().from(givingMethods).orderBy(givingMethods.displayOrder, givingMethods.id);
+  }
+
+  async createGivingMethod(method: InsertGivingMethod): Promise<GivingMethod> {
+    const [created] = await db.insert(givingMethods).values(method).returning();
+    return created;
+  }
+
+  async updateGivingMethod(id: number, data: Partial<InsertGivingMethod>): Promise<GivingMethod | undefined> {
+    const [updated] = await db
+      .update(givingMethods)
+      .set(data)
+      .where(eq(givingMethods.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteGivingMethod(id: number): Promise<void> {
+    await db.delete(givingMethods).where(eq(givingMethods.id, id));
   }
 }
 
