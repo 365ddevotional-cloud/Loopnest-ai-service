@@ -291,7 +291,6 @@ function DonationModal({ open, onClose }: { open: boolean; onClose: () => void }
 }
 
 export default function Donate() {
-  const [modalOpen, setModalOpen] = useState(false);
   const [opaycopied, setOpayCopied] = useState(false);
   const { toast } = useToast();
 
@@ -299,157 +298,115 @@ export default function Donate() {
     try {
       await navigator.clipboard.writeText(OPAY_ACCOUNT_NUMBER);
       setOpayCopied(true);
-      toast({ title: "Account number copied" });
+      toast({ title: "Account number copied." });
       setTimeout(() => setOpayCopied(false), 2500);
     } catch {
-      toast({ title: "Account number copied", description: OPAY_ACCOUNT_NUMBER });
+      toast({ title: "Account number copied.", description: OPAY_ACCOUNT_NUMBER });
     }
   };
 
   return (
-    <div id="donate" className="max-w-4xl mx-auto py-8">
-      <div className="text-center mb-12 space-y-4">
+    <div id="donate" className="max-w-2xl mx-auto px-4 py-10 space-y-10">
+
+      {/* Header */}
+      <div className="text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto shadow-lg">
+          <Heart className="w-8 h-8 text-white" />
+        </div>
         <h1 className="font-serif text-4xl md:text-5xl font-bold text-primary">Support the Ministry</h1>
         <div className="decorative-divider" />
+        <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto">
+          Your generous support helps us continue sharing God's Word freely around the world through the
+          365 Daily Devotional ministry. Every gift is greatly appreciated. Thank you, and may God
+          richly bless you.
+        </p>
       </div>
 
-      <Card className="bg-card border-card-border shadow-xl shadow-primary/10 overflow-hidden">
-        <div className="relative bg-gradient-to-br from-accent/20 via-primary/10 to-secondary/15 p-8 md:p-12 text-center">
-          <div className="absolute inset-0 opacity-30 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M0%200h20v20H0z%22%20fill%3D%22none%22%2F%3E%3Cpath%20d%3D%22M10%2010m-1%200a1%201%200%201%200%202%200a1%201%200%201%200-2%200%22%20fill%3D%22%23C58E45%22%20fill-opacity%3D%220.1%22%2F%3E%3C%2Fsvg%3E')]" />
-          <div className="relative">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-5 shadow-lg">
-              <Heart className="w-8 h-8 text-white" />
-            </div>
-            <p className="text-lg text-primary font-medium italic font-serif">
-              "Each of you should give what you have decided in your heart to give, not reluctantly or under compulsion, for God loves a cheerful giver."
-            </p>
-            <p className="text-sm text-muted-foreground mt-2 font-medium">— 2 Corinthians 9:7</p>
+      {/* Venmo — USA */}
+      <Card className="shadow-lg shadow-primary/10 border border-primary/15 overflow-hidden" data-testid="card-venmo">
+        <div className="bg-gradient-to-r from-[#008CFF]/10 via-[#008CFF]/5 to-transparent px-6 py-4 border-b border-primary/10 flex items-center gap-3">
+          <SiVenmo className="w-7 h-7 text-[#008CFF]" />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">🇺🇸 United States</p>
+            <h2 className="font-serif text-xl font-bold text-foreground">Donate with Venmo</h2>
           </div>
         </div>
-
-        <div className="p-8 md:p-12 space-y-8 font-serif leading-relaxed text-lg text-muted-foreground">
-          <div className="text-center space-y-4">
-            <p className="font-bold text-foreground text-xl">
-              Your generosity helps spread God's Word daily.
-            </p>
-            <p className="text-sm text-muted-foreground italic">"Give, and it will be given to you. A good measure, pressed down, shaken together and running over." — Luke 6:38</p>
+        <div className="px-6 py-6 space-y-5 text-center">
+          <div className="inline-flex items-center gap-2 bg-muted/50 rounded-full px-5 py-2 border border-primary/10">
+            <SiVenmo className="w-5 h-5 text-[#008CFF]" />
+            <span className="font-mono text-lg font-bold text-foreground tracking-wide">@dailydevotional</span>
           </div>
-
-          <p>
-            Your generous support helps us continue sharing God's Word through daily devotionals, Bible teachings, prayer, worship, and encouragement around the world.
-            Every contribution, no matter the size, makes a meaningful difference in our ability to serve believers everywhere.
+          <p className="text-sm text-muted-foreground">
+            Tap the button below to open Venmo and send your gift. If Venmo is installed on your device it will open automatically.
           </p>
-
-          <div className="bg-muted/30 p-6 rounded-xl border border-primary/10">
-            <h3 className="font-sans font-bold text-primary mb-4 uppercase tracking-wide text-sm">Your Donations Support</h3>
-            <ul className="space-y-3 text-base">
-              <li className="flex items-start gap-3">
-                <span className="text-primary mt-1">•</span>
-                <span>Daily devotional creation and curation</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-primary mt-1">•</span>
-                <span>Faith-based outreach and ministry expansion</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-primary mt-1">•</span>
-                <span>Platform maintenance and growth</span>
-              </li>
-            </ul>
-          </div>
-
-          <Separator className="bg-primary/10" />
-
-          <div className="text-center space-y-6">
+          <a
+            href={VENMO_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="link-venmo-donate"
+            className="block"
+          >
             <Button
               size="lg"
-              className="gap-2 text-base px-8"
-              onClick={() => setModalOpen(true)}
-              data-testid="button-donate-open-modal"
+              className="w-full gap-2 text-base bg-[#008CFF] hover:bg-[#0079e0] text-white border-0"
+              data-testid="button-venmo-donate"
             >
-              <Heart className="w-5 h-5" />
-              Donate Now
+              <SiVenmo className="w-5 h-5" />
+              Donate via Venmo
+              <ExternalLink className="w-4 h-4" />
             </Button>
-
-            <div className="space-y-4 mt-4">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">🇺🇸 United States</p>
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <a
-                  href={PAYPAL_LINK}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid="link-paypal-donate"
-                >
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto gap-2">
-                    <SiPaypal className="w-5 h-5" />
-                    PayPal Donation
-                    <ExternalLink className="w-4 h-4" />
-                  </Button>
-                </a>
-
-                <a
-                  href={CASHAPP_LINK}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid="link-cashapp-donate"
-                >
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto gap-2">
-                    <SiCashapp className="w-5 h-5" />
-                    Cash App ({CASHAPP_TAG})
-                    <ExternalLink className="w-4 h-4" />
-                  </Button>
-                </a>
-
-                <a
-                  href={VENMO_LINK}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid="link-venmo-donate"
-                >
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto gap-2">
-                    <SiVenmo className="w-5 h-5 text-[#008CFF]" />
-                    Donate with Venmo
-                    <ExternalLink className="w-4 h-4" />
-                  </Button>
-                </a>
-              </div>
-
-              <Separator className="bg-primary/10" />
-
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">🇳🇬 Nigeria</p>
-              <div className="bg-muted/30 rounded-xl border border-primary/10 p-5 text-left space-y-3 font-sans max-w-sm mx-auto">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-foreground">OPay</span>
-                  <span className="text-xs text-muted-foreground">Bank Transfer</span>
-                </div>
-                <div className="space-y-1 text-sm text-foreground">
-                  <div><span className="text-muted-foreground">Bank:</span> <span className="font-medium">OPay</span></div>
-                  <div><span className="text-muted-foreground">Account Name:</span> <span className="font-medium">MOSES AFOLABI</span></div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Account Number:</span>
-                    <span className="font-mono font-bold tracking-wider">{OPAY_ACCOUNT_NUMBER}</span>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2 w-full"
-                  onClick={handleCopyOpay}
-                  data-testid="button-copy-opay-account"
-                >
-                  {opaycopied ? (
-                    <><Check className="w-4 h-4 text-green-600" /> Account number copied</>
-                  ) : (
-                    <><Copy className="w-4 h-4" /> Copy Account Number</>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
+          </a>
         </div>
       </Card>
 
-      <DonationModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      {/* OPay — Nigeria */}
+      <Card className="shadow-lg shadow-primary/10 border border-primary/15 overflow-hidden" data-testid="card-opay">
+        <div className="bg-gradient-to-r from-green-600/10 via-green-600/5 to-transparent px-6 py-4 border-b border-primary/10 flex items-center gap-3">
+          <div className="w-7 h-7 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-xs font-bold leading-none">₦</span>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">🇳🇬 Nigeria</p>
+            <h2 className="font-serif text-xl font-bold text-foreground">Donate by Bank Transfer</h2>
+          </div>
+        </div>
+        <div className="px-6 py-6 space-y-5">
+          <div className="bg-muted/40 rounded-xl border border-primary/10 divide-y divide-primary/10 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-muted-foreground font-medium">Account Name</span>
+              <span className="text-sm font-bold text-foreground tracking-wide">MOSES AFOLABI</span>
+            </div>
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-muted-foreground font-medium">Bank</span>
+              <span className="text-sm font-bold text-foreground">OPay</span>
+            </div>
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-muted-foreground font-medium">Account Number</span>
+              <span className="font-mono text-base font-bold text-foreground tracking-widest">{OPAY_ACCOUNT_NUMBER}</span>
+            </div>
+          </div>
+          <Button
+            size="lg"
+            variant="outline"
+            className="w-full gap-2 text-base border-green-600/40 hover:bg-green-600/5 hover:border-green-600/70"
+            onClick={handleCopyOpay}
+            data-testid="button-copy-opay-account"
+          >
+            {opaycopied ? (
+              <>
+                <Check className="w-5 h-5 text-green-600" />
+                Account number copied
+              </>
+            ) : (
+              <>
+                <Copy className="w-5 h-5" />
+                Copy Account Number
+              </>
+            )}
+          </Button>
+        </div>
+      </Card>
+
     </div>
   );
 }
