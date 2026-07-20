@@ -85,7 +85,7 @@ export function CreateDevotionalForm() {
               <FormItem>
                 <FormLabel>Author</FormLabel>
                 <FormControl>
-                  <Input {...field} className="bg-white" />
+                  <Input {...field} value={field.value ?? ""} className="bg-white" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
