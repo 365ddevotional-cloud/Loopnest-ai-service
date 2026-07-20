@@ -46,6 +46,6 @@ integrations = ["sendgrid:1.0.0", "javascript_object_storage:2.0.0", "javascript
 
 [userenv.shared]
 PAYPAL_DONATION_LINK = "https://www.paypal.com/donate/?hosted_button_id=Y9PAZK36FKT8L"
-CASHTAG = "$MuzAfo"
+CASHTAG = "$365dailydevotional"
 VITE_PAYPAL_DONATION_LINK = "https://www.paypal.com/donate/?hosted_button_id=Y9PAZK36FKT8L"
-VITE_CASHTAG = "$MuzAfo"
+VITE_CASHTAG = "$365dailydevotional"
