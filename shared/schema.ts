@@ -663,3 +663,34 @@ export const userDevotionalNotes = pgTable("user_devotional_notes", {
 }));
 
 export type UserDevotionalNote = typeof userDevotionalNotes.$inferSelect;
+
+// ── Donation Confirmations ─────────────────────────────────────────────────────
+// Submitted by donors after making a gift so admin can acknowledge and thank them
+
+export const donationConfirmations = pgTable("donation_confirmations", {
+  id: serial("id").primaryKey(),
+  fullName: text("full_name").notNull(),
+  email: text("email"),
+  phoneWhatsapp: text("phone_whatsapp"),
+  country: text("country"),
+  amount: text("amount").notNull(),
+  currency: text("currency").notNull(),        // USD | NGN | Other
+  paymentMethod: text("payment_method").notNull(), // Venmo | OPay Bank Transfer | Other
+  givingType: text("giving_type").notNull(),    // One-Time Donation | Monthly Support
+  paymentReference: text("payment_reference"),
+  message: text("message"),
+  wantsThankYou: boolean("wants_thank_you").default(false),
+  thankYouStatus: text("thank_you_status").notNull().default("not_sent"), // not_sent | sent
+  thankYouSentAt: timestamp("thank_you_sent_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertDonationConfirmationSchema = createInsertSchema(donationConfirmations).omit({
+  id: true,
+  thankYouStatus: true,
+  thankYouSentAt: true,
+  createdAt: true,
+});
+
+export type DonationConfirmation = typeof donationConfirmations.$inferSelect;
+export type InsertDonationConfirmation = z.infer<typeof insertDonationConfirmationSchema>;

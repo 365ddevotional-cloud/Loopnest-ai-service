@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { OAuth2Client } from "google-auth-library";
-import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification } from "./sendgrid";
+import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification, sendDonationThankYouEmail } from "./sendgrid";
 import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { getTodayDateString, isFutureDate, isPastDate, getDayOfYear } from "./date-utils";
@@ -12,7 +12,7 @@ import { seedAllDevotionals } from "./seed-devotionals";
 import { getOrCreateTranslation, isAllowedLanguage, getCachedTranslationsForLanguage } from "./translationService";
 import { getCurrentPromise, getNextPromise, advancePromise, resetRotation, toggleEnabled, getTotalPromises, startPromiseScheduler } from "./promiseEngine";
 import { generateAIEncouragement } from "./inbox-ai";
-import { promiseAmens, INBOX_CATEGORIES } from "@shared/schema";
+import { promiseAmens, INBOX_CATEGORIES, insertDonationConfirmationSchema } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, desc, gte } from "drizzle-orm";
 
@@ -2682,6 +2682,69 @@ export async function registerRoutes(
       res.json(updated);
     } catch {
       res.status(500).json({ message: "Failed to submit testimony for review" });
+    }
+  });
+
+  // ── Donation Confirmations ────────────────────────────────────────────────
+
+  // POST /api/donation-confirmations — public, submit after donating
+  app.post("/api/donation-confirmations", async (req, res) => {
+    try {
+      const parsed = insertDonationConfirmationSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid data", errors: parsed.error.errors });
+      }
+      const confirmation = await storage.createDonationConfirmation(parsed.data);
+      res.status(201).json(confirmation);
+    } catch {
+      res.status(500).json({ message: "Failed to record donation confirmation" });
+    }
+  });
+
+  // GET /api/admin/donation-confirmations — admin only
+  app.get("/api/admin/donation-confirmations", requireAdmin, async (req, res) => {
+    try {
+      const confirmations = await storage.getDonationConfirmations();
+      res.json(confirmations);
+    } catch {
+      res.status(500).json({ message: "Failed to fetch donation confirmations" });
+    }
+  });
+
+  // PATCH /api/admin/donation-confirmations/:id/thank-you-status — admin only
+  app.patch("/api/admin/donation-confirmations/:id/thank-you-status", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid id" });
+      const { status } = req.body;
+      if (!["not_sent", "sent"].includes(status)) {
+        return res.status(400).json({ message: "Status must be not_sent or sent" });
+      }
+      const updated = await storage.updateDonationConfirmationThankYouStatus(id, status);
+      res.json(updated);
+    } catch {
+      res.status(500).json({ message: "Failed to update thank-you status" });
+    }
+  });
+
+  // POST /api/admin/donation-confirmations/:id/send-thank-you — admin only
+  app.post("/api/admin/donation-confirmations/:id/send-thank-you", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid id" });
+      const { message } = req.body;
+      if (!message?.trim()) return res.status(400).json({ message: "Message is required" });
+      const all = await storage.getDonationConfirmations();
+      const confirmation = all.find(c => c.id === id);
+      if (!confirmation) return res.status(404).json({ message: "Confirmation not found" });
+      let emailSent = false;
+      if (confirmation.email) {
+        emailSent = await sendDonationThankYouEmail(confirmation.email, confirmation.fullName, message.trim());
+      }
+      const updated = await storage.updateDonationConfirmationThankYouStatus(id, "sent");
+      res.json({ updated, emailSent });
+    } catch {
+      res.status(500).json({ message: "Failed to send thank-you" });
     }
   });
 

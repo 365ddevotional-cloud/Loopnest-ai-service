@@ -15,7 +15,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
 import { useLocation } from "wouter";
-import type { PrayerRequest, ThreadMessage, PrayerAttachment, Devotional, SundaySchoolLesson, InboxThread, InboxMessage, Song, SongTestimony, GivingMethod } from "@shared/schema";
+import type { PrayerRequest, ThreadMessage, PrayerAttachment, Devotional, SundaySchoolLesson, InboxThread, InboxMessage, Song, SongTestimony, GivingMethod, DonationConfirmation } from "@shared/schema";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getDevotionalStatus } from "@/lib/date-utils";
@@ -2238,6 +2238,262 @@ function DevotionalPreviewTools() {
   );
 }
 
+function DonationConfirmationsAdmin() {
+  const { toast } = useToast();
+  const [filter, setFilter] = useState<"all" | "once" | "monthly" | "pending">("all");
+  const [selected, setSelected] = useState<DonationConfirmation | null>(null);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [thankYouMsg, setThankYouMsg] = useState("");
+  const [sending, setSending] = useState(false);
+  const [copyCheck, setCopyCheck] = useState(false);
+
+  const { data: confirmations = [], isLoading, refetch } = useQuery<DonationConfirmation[]>({
+    queryKey: ["/api/admin/donation-confirmations"],
+  });
+
+  const markSentMutation = useMutation({
+    mutationFn: (id: number) =>
+      apiRequest("PATCH", `/api/admin/donation-confirmations/${id}/thank-you-status`, { status: "sent" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/donation-confirmations"] });
+      toast({ title: "Marked as thank-you sent." });
+      setComposerOpen(false);
+    },
+    onError: () => toast({ title: "Failed to update status.", variant: "destructive" }),
+  });
+
+  const openComposer = (c: DonationConfirmation) => {
+    setSelected(c);
+    const msg = `Dear ${c.fullName},\n\nThank you so much for your generous ${c.givingType === "Monthly Support" ? "monthly support" : "gift"} of ${c.amount} ${c.currency} to 365 Daily Devotional. Your support means everything to us and helps us continue sharing God's Word with people around the world.\n\nGod bless you richly for your faithfulness. "God loves a cheerful giver" (2 Corinthians 9:7), and your sacrifice will not go unnoticed by the Lord.\n\nWith gratitude,\nMoses Afolabi\n365 Daily Devotional Ministry`;
+    setThankYouMsg(msg);
+    setComposerOpen(true);
+  };
+
+  const handleSendEmail = async () => {
+    if (!selected) return;
+    setSending(true);
+    try {
+      await apiRequest("POST", `/api/admin/donation-confirmations/${selected.id}/send-thank-you`, { message: thankYouMsg });
+      toast({ title: "Thank-you email sent!" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/donation-confirmations"] });
+      setComposerOpen(false);
+    } catch {
+      toast({ title: "Failed to send email.", variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleCopyMsg = async () => {
+    await navigator.clipboard.writeText(thankYouMsg);
+    setCopyCheck(true);
+    setTimeout(() => setCopyCheck(false), 2000);
+    toast({ title: "Message copied." });
+  };
+
+  const filtered = confirmations.filter(c => {
+    if (filter === "once") return c.givingType === "One-Time Donation";
+    if (filter === "monthly") return c.givingType === "Monthly Support";
+    if (filter === "pending") return c.thankYouStatus !== "sent";
+    return true;
+  });
+
+  const filterButtons: { key: typeof filter; label: string }[] = [
+    { key: "all", label: "All" },
+    { key: "once", label: "One-Time" },
+    { key: "monthly", label: "Monthly" },
+    { key: "pending", label: "Thank-You Pending" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Filters + Refresh */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {filterButtons.map(f => (
+            <Button
+              key={f.key}
+              size="sm"
+              variant={filter === f.key ? "default" : "outline"}
+              onClick={() => setFilter(f.key)}
+              data-testid={`filter-donations-${f.key}`}
+            >
+              {f.label}
+            </Button>
+          ))}
+        </div>
+        <Button size="sm" variant="ghost" onClick={() => refetch()} data-testid="button-refresh-donations">
+          <RefreshCw className="w-4 h-4 mr-1" /> Refresh
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="text-center py-12 text-muted-foreground">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
+          Loading donation confirmations…
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          <Gift className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p className="text-sm">No donation confirmations yet.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map(c => (
+            <Card key={c.id} className="border-primary/10">
+              <CardContent className="p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-foreground truncate">{c.fullName}</p>
+                      <Badge variant={c.givingType === "Monthly Support" ? "default" : "secondary"} className="text-xs">
+                        {c.givingType}
+                      </Badge>
+                      <Badge variant={c.thankYouStatus === "sent" ? "outline" : "destructive"} className="text-xs">
+                        {c.thankYouStatus === "sent" ? "Thank-You Sent" : "Pending Thank-You"}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-medium text-foreground">{c.amount} {c.currency}</span>
+                      {" · "}{c.paymentMethod}
+                      {c.country ? ` · ${c.country}` : ""}
+                    </p>
+                    {(c.email || c.phoneWhatsapp) && (
+                      <p className="text-xs text-muted-foreground">
+                        {c.email}{c.email && c.phoneWhatsapp ? " · " : ""}{c.phoneWhatsapp}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {c.createdAt ? format(new Date(c.createdAt), "MMM d, yyyy 'at' h:mm a") : ""}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <Button size="sm" variant="outline"
+                      onClick={() => { setSelected(c); setViewOpen(true); }}
+                      data-testid={`button-view-donation-${c.id}`}>
+                      <Eye className="w-3.5 h-3.5 mr-1" /> View
+                    </Button>
+                    <Button size="sm"
+                      onClick={() => openComposer(c)}
+                      data-testid={`button-thank-you-${c.id}`}>
+                      <Send className="w-3.5 h-3.5 mr-1" /> Thank-You
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* View Details Dialog */}
+      <Dialog open={viewOpen} onOpenChange={v => !v && setViewOpen(false)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-xl text-primary">Donation Details</DialogTitle>
+          </DialogHeader>
+          {selected && (
+            <div className="space-y-3 text-sm">
+              {([
+                ["Full Name", selected.fullName],
+                ["Email", selected.email || "—"],
+                ["WhatsApp / Phone", selected.phoneWhatsapp || "—"],
+                ["Country", selected.country || "—"],
+                ["Amount", `${selected.amount} ${selected.currency}`],
+                ["Payment Method", selected.paymentMethod],
+                ["Giving Type", selected.givingType],
+                ["Reference", selected.paymentReference || "—"],
+                ["Wants Thank-You", selected.wantsThankYou ? "Yes" : "No"],
+                ["Status", selected.thankYouStatus === "sent" ? "Thank-You Sent" : "Pending"],
+                ["Submitted", selected.createdAt ? format(new Date(selected.createdAt), "PPP p") : "—"],
+              ] as [string, string][]).map(([label, val]) => (
+                <div key={label} className="flex justify-between gap-4 py-1.5 border-b border-border/50 last:border-0">
+                  <span className="text-muted-foreground font-medium">{label}</span>
+                  <span className="text-foreground text-right">{val}</span>
+                </div>
+              ))}
+              {selected.message && (
+                <div className="mt-2 p-3 bg-muted/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground font-medium mb-1">Message / Prayer Request</p>
+                  <p className="text-sm text-foreground leading-relaxed">{selected.message}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="flex gap-2 mt-2">
+            {selected && selected.thankYouStatus !== "sent" && (
+              <Button size="sm" onClick={() => { setViewOpen(false); openComposer(selected); }}>
+                <Send className="w-3.5 h-3.5 mr-1" /> Send Thank-You
+              </Button>
+            )}
+            <Button size="sm" variant="outline" onClick={() => setViewOpen(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Thank-You Composer Dialog */}
+      <Dialog open={composerOpen} onOpenChange={v => !v && setComposerOpen(false)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-xl text-primary">
+              Send Thank-You — {selected?.fullName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Edit your message below before sending</Label>
+              <Textarea
+                value={thankYouMsg}
+                onChange={e => setThankYouMsg(e.target.value)}
+                rows={10}
+                className="resize-none text-sm leading-relaxed"
+                data-testid="textarea-thank-you-message"
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {selected?.email && (
+                <Button className="gap-1.5" onClick={handleSendEmail} disabled={sending}
+                  data-testid="button-send-thank-you-email">
+                  {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  Send Email
+                </Button>
+              )}
+              {selected?.phoneWhatsapp && (
+                <a
+                  href={`https://wa.me/${selected.phoneWhatsapp.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(thankYouMsg)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="link-open-whatsapp"
+                >
+                  <Button variant="outline" className="gap-1.5">
+                    <Smartphone className="w-4 h-4" />
+                    Open in WhatsApp
+                  </Button>
+                </a>
+              )}
+              <Button variant="outline" className="gap-1.5" onClick={handleCopyMsg}
+                data-testid="button-copy-thank-you">
+                {copyCheck ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                Copy Message
+              </Button>
+              {selected && selected.thankYouStatus !== "sent" && (
+                <Button variant="ghost" className="gap-1.5 text-muted-foreground"
+                  onClick={() => selected && markSentMutation.mutate(selected.id)}
+                  disabled={markSentMutation.isPending}
+                  data-testid="button-mark-as-sent">
+                  <CheckCheck className="w-4 h-4" />
+                  Mark as Sent
+                </Button>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 export default function Admin() {
   const { isAdmin, isLoading } = useAuth();
   const [, setLocation] = useLocation();
@@ -2269,7 +2525,7 @@ export default function Admin() {
       </div>
 
       <Tabs defaultValue="inbox" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-9 max-w-5xl">
+        <TabsList className="grid w-full grid-cols-10 max-w-5xl">
           <TabsTrigger value="inbox" data-testid="tab-inbox">
             <Inbox className="w-4 h-4 mr-2" />
             Prayer Inbox
@@ -2305,6 +2561,10 @@ export default function Admin() {
           <TabsTrigger value="songs" data-testid="tab-songs">
             <Music className="w-4 h-4 mr-2" />
             Songs
+          </TabsTrigger>
+          <TabsTrigger value="donations" data-testid="tab-donations">
+            <Gift className="w-4 h-4 mr-2" />
+            Donations
           </TabsTrigger>
         </TabsList>
 
@@ -2437,6 +2697,20 @@ export default function Admin() {
 
         <TabsContent value="songs">
           <SongsAdmin />
+        </TabsContent>
+
+        <TabsContent value="donations">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+                <Gift className="w-6 h-6" />
+                Donation Confirmations
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <DonationConfirmationsAdmin />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

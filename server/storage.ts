@@ -79,6 +79,9 @@ import {
   type UserDevotionalStreak,
   type UserDevotionalNote,
   type InsertSongTestimony,
+  type DonationConfirmation,
+  type InsertDonationConfirmation,
+  donationConfirmations,
 } from "@shared/schema";
 import { eq, desc, and, isNull, or, ilike, lte, notInArray, sql } from "drizzle-orm";
 
@@ -246,6 +249,11 @@ export interface IStorage {
   getDevotionalNote(uid: string, devotionalId: number): Promise<UserDevotionalNote | null>;
   upsertDevotionalNote(uid: string, devotionalId: number, noteText: string): Promise<void>;
   deleteDevotionalNote(uid: string, devotionalId: number): Promise<void>;
+
+  // Donation Confirmations
+  createDonationConfirmation(data: InsertDonationConfirmation): Promise<DonationConfirmation>;
+  getDonationConfirmations(): Promise<DonationConfirmation[]>;
+  updateDonationConfirmationThankYouStatus(id: number, status: string): Promise<DonationConfirmation>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1313,6 +1321,24 @@ export class DatabaseStorage implements IStorage {
 
   async deleteDevotionalNote(uid: string, devotionalId: number): Promise<void> {
     await db.delete(userDevotionalNotes).where(and(eq(userDevotionalNotes.firebaseUid, uid), eq(userDevotionalNotes.devotionalId, devotionalId)));
+  }
+
+  async createDonationConfirmation(data: InsertDonationConfirmation): Promise<DonationConfirmation> {
+    const [row] = await db.insert(donationConfirmations).values(data).returning();
+    return row;
+  }
+
+  async getDonationConfirmations(): Promise<DonationConfirmation[]> {
+    return await db.select().from(donationConfirmations).orderBy(desc(donationConfirmations.createdAt));
+  }
+
+  async updateDonationConfirmationThankYouStatus(id: number, status: string): Promise<DonationConfirmation> {
+    const [row] = await db
+      .update(donationConfirmations)
+      .set({ thankYouStatus: status, thankYouSentAt: status === "sent" ? new Date() : null })
+      .where(eq(donationConfirmations.id, id))
+      .returning();
+    return row;
   }
 }
 

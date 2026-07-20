@@ -1,10 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Heart, ExternalLink, CreditCard, X, Copy, Check } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Heart, ExternalLink, CreditCard, X, Copy, Check, Calendar, RefreshCw, AlertCircle, Send, CheckCircle2 } from "lucide-react";
 import { SiPaypal, SiCashapp, SiVenmo } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 const PAYPAL_LINK = import.meta.env.VITE_PAYPAL_DONATION_LINK || "https://www.paypal.com/donate/?hosted_button_id=Y9PAZK36FKT8L";
 const CASHAPP_TAG = import.meta.env.VITE_CASHTAG || "$MuzAfo";
@@ -290,8 +296,200 @@ function DonationModal({ open, onClose }: { open: boolean; onClose: () => void }
   );
 }
 
+function ConfirmationModal({ open, onClose, defaultGivingType }: {
+  open: boolean;
+  onClose: () => void;
+  defaultGivingType: string;
+}) {
+  const { toast } = useToast();
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phoneWhatsapp, setPhoneWhatsapp] = useState("");
+  const [country, setCountry] = useState("");
+  const [amount, setAmount] = useState("");
+  const [currency, setCurrency] = useState("USD");
+  const [paymentMethod, setPaymentMethod] = useState("Venmo");
+  const [givingType, setGivingType] = useState(defaultGivingType);
+  const [paymentReference, setPaymentReference] = useState("");
+  const [message, setMessage] = useState("");
+  const [wantsThankYou, setWantsThankYou] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setSubmitted(false);
+      setError("");
+      setGivingType(defaultGivingType);
+    }
+  }, [open, defaultGivingType]);
+
+  const handleSubmit = async () => {
+    setError("");
+    if (!fullName.trim()) { setError("Full name is required."); return; }
+    if (!amount.trim()) { setError("Donation amount is required."); return; }
+    if (!currency) { setError("Please select a currency."); return; }
+    if (!paymentMethod) { setError("Please select a payment method."); return; }
+    if (!givingType) { setError("Please select a giving type."); return; }
+    if (wantsThankYou && !email.trim() && !phoneWhatsapp.trim()) {
+      setError("Please provide an email or WhatsApp/phone number so we can send your thank-you message.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await apiRequest("POST", "/api/donation-confirmations", {
+        fullName: fullName.trim(),
+        email: email.trim() || null,
+        phoneWhatsapp: phoneWhatsapp.trim() || null,
+        country: country.trim() || null,
+        amount: amount.trim(),
+        currency,
+        paymentMethod,
+        givingType,
+        paymentReference: paymentReference.trim() || null,
+        message: message.trim() || null,
+        wantsThankYou,
+      });
+      setSubmitted(true);
+    } catch (err: any) {
+      setError(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-xl text-primary">Confirm My Donation</DialogTitle>
+        </DialogHeader>
+
+        {submitted ? (
+          <div className="py-8 text-center space-y-4">
+            <CheckCircle2 className="w-14 h-14 text-green-600 mx-auto" />
+            <p className="font-serif text-lg font-semibold text-foreground">Thank you for your gift!</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Thank you for supporting 365 Daily Devotional. Your gift has been recorded, and we deeply
+              appreciate your partnership in spreading God's Word.
+            </p>
+            <Button className="w-full" onClick={onClose} data-testid="button-confirm-done">Done</Button>
+          </div>
+        ) : (
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="dc-name">Full Name <span className="text-destructive">*</span></Label>
+              <Input id="dc-name" value={fullName} onChange={e => setFullName(e.target.value)}
+                placeholder="Your full name" data-testid="input-confirm-name" />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="dc-email">Email Address</Label>
+                <Input id="dc-email" type="email" value={email} onChange={e => setEmail(e.target.value)}
+                  placeholder="you@example.com" data-testid="input-confirm-email" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="dc-phone">WhatsApp / Phone</Label>
+                <Input id="dc-phone" type="tel" value={phoneWhatsapp} onChange={e => setPhoneWhatsapp(e.target.value)}
+                  placeholder="+1234567890" data-testid="input-confirm-phone" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="dc-country">Country</Label>
+              <Input id="dc-country" value={country} onChange={e => setCountry(e.target.value)}
+                placeholder="e.g. United States, Nigeria" data-testid="input-confirm-country" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="dc-amount">Amount <span className="text-destructive">*</span></Label>
+                <Input id="dc-amount" value={amount} onChange={e => setAmount(e.target.value)}
+                  placeholder="e.g. 20" data-testid="input-confirm-amount" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Currency <span className="text-destructive">*</span></Label>
+                <Select value={currency} onValueChange={setCurrency}>
+                  <SelectTrigger data-testid="select-confirm-currency"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="NGN">NGN</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Payment Method <span className="text-destructive">*</span></Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger data-testid="select-confirm-method"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Venmo">Venmo</SelectItem>
+                  <SelectItem value="OPay Bank Transfer">OPay Bank Transfer</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Giving Type <span className="text-destructive">*</span></Label>
+              <Select value={givingType} onValueChange={setGivingType}>
+                <SelectTrigger data-testid="select-confirm-giving-type"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="One-Time Donation">One-Time Donation</SelectItem>
+                  <SelectItem value="Monthly Support">Monthly Support</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="dc-ref">Payment Reference or Last 4 Digits</Label>
+              <Input id="dc-ref" value={paymentReference} onChange={e => setPaymentReference(e.target.value)}
+                placeholder="Optional" data-testid="input-confirm-reference" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="dc-message">Message or Prayer Request</Label>
+              <Textarea id="dc-message" value={message} onChange={e => setMessage(e.target.value)}
+                placeholder="Optional — share anything you'd like us to know or pray about."
+                className="resize-none" rows={3} data-testid="textarea-confirm-message" />
+            </div>
+
+            <label className="flex items-start gap-3 cursor-pointer group" data-testid="checkbox-wants-thankyou">
+              <input type="checkbox" checked={wantsThankYou} onChange={e => setWantsThankYou(e.target.checked)}
+                className="mt-1 w-4 h-4 accent-primary" />
+              <span className="text-sm text-muted-foreground leading-snug group-hover:text-foreground transition-colors">
+                I would like to receive a thank-you message from 365 Daily Devotional.
+              </span>
+            </label>
+
+            {error && (
+              <div className="flex items-start gap-2 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                <AlertCircle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+            )}
+
+            <Button className="w-full gap-2" size="lg" onClick={handleSubmit} disabled={submitting}
+              data-testid="button-submit-confirmation">
+              {submitting
+                ? <><RefreshCw className="w-4 h-4 animate-spin" /> Submitting…</>
+                : <><Send className="w-4 h-4" /> Submit Donation Confirmation</>}
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Donate() {
   const [opaycopied, setOpayCopied] = useState(false);
+  const [frequency, setFrequency] = useState<"once" | "monthly">("once");
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const { toast } = useToast();
 
   const handleCopyOpay = async () => {
@@ -322,6 +520,48 @@ export default function Donate() {
         </p>
       </div>
 
+      {/* Giving Frequency Toggle */}
+      <div className="flex justify-center">
+        <div className="inline-flex bg-muted/50 rounded-xl p-1 border border-primary/10 gap-1">
+          <button
+            type="button"
+            onClick={() => setFrequency("once")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+              frequency === "once"
+                ? "bg-primary text-primary-foreground shadow"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            data-testid="button-give-once"
+          >
+            <Heart className="w-4 h-4" />
+            Give Once
+          </button>
+          <button
+            type="button"
+            onClick={() => setFrequency("monthly")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+              frequency === "monthly"
+                ? "bg-primary text-primary-foreground shadow"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            data-testid="button-give-monthly"
+          >
+            <Calendar className="w-4 h-4" />
+            Support Monthly
+          </button>
+        </div>
+      </div>
+
+      {/* Monthly encouragement message */}
+      {frequency === "monthly" && (
+        <div className="bg-primary/5 border border-primary/20 rounded-xl px-6 py-5 text-center">
+          <p className="text-sm md:text-base text-foreground leading-relaxed">
+            Thank you for choosing to support the 365 Daily Devotional ministry every month. Your faithful
+            partnership helps us continue sharing God's Word with people around the world.
+          </p>
+        </div>
+      )}
+
       {/* Venmo — USA */}
       <Card className="shadow-lg shadow-primary/10 border border-primary/15 overflow-hidden" data-testid="card-venmo">
         <div className="bg-gradient-to-r from-[#008CFF]/10 via-[#008CFF]/5 to-transparent px-6 py-4 border-b border-primary/10 flex items-center gap-3">
@@ -337,25 +577,27 @@ export default function Donate() {
             <span className="font-mono text-lg font-bold text-foreground tracking-wide">@dailydevotional</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            Tap the button below to open Venmo and send your gift. If Venmo is installed on your device it will open automatically.
+            {frequency === "monthly"
+              ? "Tap the button below to open Venmo. You can then schedule monthly payments from within the app."
+              : "Tap the button below to open Venmo and send your gift. If Venmo is installed on your device it will open automatically."}
           </p>
-          <a
-            href={VENMO_LINK}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="link-venmo-donate"
-            className="block"
-          >
-            <Button
-              size="lg"
+          <a href={VENMO_LINK} target="_blank" rel="noopener noreferrer"
+            data-testid="link-venmo-donate" className="block">
+            <Button size="lg"
               className="w-full gap-2 text-base bg-[#008CFF] hover:bg-[#0079e0] text-white border-0"
-              data-testid="button-venmo-donate"
-            >
+              data-testid="button-venmo-donate">
               <SiVenmo className="w-5 h-5" />
-              Donate via Venmo
+              {frequency === "monthly" ? "Set Up Monthly Support on Venmo" : "Donate via Venmo"}
               <ExternalLink className="w-4 h-4" />
             </Button>
           </a>
+          {frequency === "monthly" && (
+            <p className="text-xs text-muted-foreground leading-relaxed bg-muted/30 rounded-lg px-4 py-3 border border-primary/10">
+              To make this monthly, open the Venmo app, enter your support amount, tap{" "}
+              <strong>Schedule</strong>, select <strong>Monthly</strong>, and choose your preferred
+              payment date.
+            </p>
+          )}
         </div>
       </Card>
 
@@ -385,28 +627,52 @@ export default function Donate() {
               <span className="font-mono text-base font-bold text-foreground tracking-widest">{OPAY_ACCOUNT_NUMBER}</span>
             </div>
           </div>
-          <Button
-            size="lg"
-            variant="outline"
+          {frequency === "monthly" && (
+            <p className="text-xs text-muted-foreground leading-relaxed bg-muted/30 rounded-lg px-4 py-3 border border-primary/10">
+              For monthly support by bank transfer, you may save these account details and send your
+              chosen amount each month. Where available, you may also create a monthly standing
+              instruction through your banking app.
+            </p>
+          )}
+          <Button size="lg" variant="outline"
             className="w-full gap-2 text-base border-green-600/40 hover:bg-green-600/5 hover:border-green-600/70"
-            onClick={handleCopyOpay}
-            data-testid="button-copy-opay-account"
-          >
+            onClick={handleCopyOpay} data-testid="button-copy-opay-account">
             {opaycopied ? (
-              <>
-                <Check className="w-5 h-5 text-green-600" />
-                Account number copied
-              </>
+              <><Check className="w-5 h-5 text-green-600" /> Account number copied</>
             ) : (
-              <>
-                <Copy className="w-5 h-5" />
-                Copy Account Number
-              </>
+              <><Copy className="w-5 h-5" /> Copy Account Number</>
             )}
           </Button>
         </div>
       </Card>
 
+      {/* Have You Donated? */}
+      <Card className="shadow-lg shadow-primary/10 border border-primary/15">
+        <div className="px-6 py-6 text-center space-y-4">
+          <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h2 className="font-serif text-xl font-bold text-foreground mb-1">Have You Donated?</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
+              Please let us know after making your donation so we can acknowledge your gift and
+              personally thank you.
+            </p>
+          </div>
+          <Button size="lg" variant="outline"
+            className="gap-2 text-base border-primary/30 hover:border-primary/60 hover:bg-primary/5"
+            onClick={() => setConfirmOpen(true)} data-testid="button-confirm-donation">
+            <Send className="w-4 h-4" />
+            Confirm My Donation
+          </Button>
+        </div>
+      </Card>
+
+      <ConfirmationModal
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        defaultGivingType={frequency === "monthly" ? "Monthly Support" : "One-Time Donation"}
+      />
     </div>
   );
 }

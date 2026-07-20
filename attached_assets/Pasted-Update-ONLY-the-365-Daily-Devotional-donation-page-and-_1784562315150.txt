@@ -1,0 +1,226 @@
+Update ONLY the 365 Daily Devotional donation page and its existing admin donation-management area.
+
+Do not inspect, modify, refactor, rebuild, or redesign unrelated pages or files.
+Preserve the Venmo and OPay donation cards that were just completed.
+Make only the smallest changes required below.
+
+==================================================
+1. ADD GIVING FREQUENCY
+==================================================
+
+Near the top of the donation page, add two selectable options:
+
+• Give Once
+• Support Monthly
+
+Default selection:
+Give Once
+
+When “Give Once” is selected:
+Keep the current Venmo and OPay donation options working exactly as they do now.
+
+When “Support Monthly” is selected:
+Show this message:
+
+“Thank you for choosing to support the 365 Daily Devotional ministry every month. Your faithful partnership helps us continue sharing God’s Word with people around the world.”
+
+==================================================
+2. MONTHLY VENMO SUPPORT
+==================================================
+
+Inside the Venmo card, when “Support Monthly” is selected:
+
+Change the main button text to:
+
+Set Up Monthly Support on Venmo
+
+The button must continue opening:
+
+https://venmo.com/u/dailydevotional
+
+Under the button, display:
+
+“To make this monthly, open the Venmo app, enter your support amount, tap Schedule, select Monthly, and choose your preferred payment date.”
+
+Do not claim that our app automatically creates or controls the recurring Venmo payment.
+
+==================================================
+3. MONTHLY OPAY SUPPORT
+==================================================
+
+Inside the OPay card, when “Support Monthly” is selected:
+
+Keep displaying:
+
+Account Name:
+MOSES AFOLABI
+
+Bank:
+OPay
+
+Account Number:
+8054611168
+
+Keep the existing Copy Account Number button.
+
+Add this message beneath the bank information:
+
+“For monthly support by bank transfer, you may save these account details and send your chosen amount each month. Where available, you may also create a monthly standing instruction through your banking app.”
+
+Do not claim that OPay recurring transfers are automatically controlled by this app.
+
+==================================================
+4. DONATION CONFIRMATION FORM
+==================================================
+
+Below the payment cards, add a clearly visible section titled:
+
+Have You Donated?
+
+Supporting text:
+
+“Please let us know after making your donation so we can acknowledge your gift and personally thank you.”
+
+Add a button:
+
+Confirm My Donation
+
+When tapped, open a simple mobile-responsive form containing:
+
+• Full Name — required
+• Email Address — optional
+• WhatsApp or Phone Number — optional
+• Country — optional
+• Donation Amount — required
+• Currency — required dropdown:
+  USD
+  NGN
+  Other
+• Payment Method — required dropdown:
+  Venmo
+  OPay Bank Transfer
+  Other
+• Giving Type — required dropdown:
+  One-Time Donation
+  Monthly Support
+• Payment Reference or Last 4 Digits — optional
+• Message or Prayer Request — optional
+• Checkbox:
+  “I would like to receive a thank-you message from 365 Daily Devotional.”
+
+At least one contact method—email or WhatsApp/phone—must be provided if the donor requests a thank-you message.
+
+Submit button text:
+
+Submit Donation Confirmation
+
+After successful submission, show:
+
+“Thank you for supporting 365 Daily Devotional. Your gift has been recorded, and we deeply appreciate your partnership in spreading God’s Word.”
+
+Prevent duplicate submissions caused by repeatedly tapping the button.
+
+==================================================
+5. ADMIN DONATION CONFIRMATIONS
+==================================================
+
+In the EXISTING admin area, add a small page or section titled:
+
+Donation Confirmations
+
+Do not redesign the full admin dashboard.
+
+Show each submitted confirmation with:
+
+• Donor name
+• Contact information
+• Amount and currency
+• Payment method
+• Giving type
+• Date submitted
+• Payment reference, when supplied
+• Message or prayer request
+• Thank-you status:
+  Not Sent
+  Sent
+
+Add actions:
+
+• View
+• Send Thank-You
+• Mark as Sent
+
+When “Send Thank-You” is selected, open a small message composer.
+
+Pre-fill this appreciation message:
+
+“Dear [Donor Name],
+
+Thank you sincerely for your generous [one-time gift/monthly support] of [Currency] [Amount] to 365 Daily Devotional. Your kindness helps us continue sharing God’s Word, encouragement, and prayer with people around the world.
+
+We deeply appreciate your partnership and pray that God will bless you abundantly, supply all your needs, and multiply every good seed you have sown.
+
+‘God loves a cheerful giver.’ — 2 Corinthians 9:7
+
+With heartfelt appreciation,
+Moses Afolabi
+365 Daily Devotional”
+
+The admin must be able to edit the message before sending.
+
+Sending behavior:
+
+• If the donor supplied an email address, allow the admin to send using the app’s EXISTING email-delivery system only.
+• If the donor supplied a WhatsApp/phone number, add an “Open in WhatsApp” button using a properly encoded WhatsApp message link.
+• Do not create or subscribe to a new paid email, SMS, WhatsApp, or payment service.
+• If neither sending method is configured, allow Copy Message and Mark as Sent.
+
+After sending or marking as sent:
+Update the thank-you status to “Sent” and store the sent date.
+
+==================================================
+6. ADMIN FILTERS
+==================================================
+
+Add only these lightweight filters:
+
+• All
+• One-Time
+• Monthly
+• Thank-You Not Sent
+• Thank-You Sent
+
+Show newest confirmations first.
+
+==================================================
+7. SECURITY AND DATA
+==================================================
+
+• Only authenticated administrators may view donor confirmations.
+• Public users must not be able to view other donors’ information.
+• Validate and sanitize all submitted fields.
+• Do not store bank login information or card details.
+• Do not request screenshots of sensitive banking information.
+• Do not alter the existing DonationModal component unless absolutely required.
+• Reuse the project’s existing database, authentication, form components, toast system, and email system.
+• Do not install a new package unless the current project has no safe built-in alternative.
+
+==================================================
+8. UI
+==================================================
+
+• Keep the current app colors and typography.
+• Preserve the existing Venmo and OPay card design.
+• Use large readable text and buttons.
+• Make everything mobile-responsive.
+• Clearly distinguish Give Once from Support Monthly.
+• Do not change any unrelated page.
+
+Before finishing:
+Test only the donation page, confirmation submission, admin confirmation list, thank-you composer, copy action, email action if already configured, and WhatsApp link.
+
+Return only:
+1. Files changed
+2. Database table or fields added
+3. Brief test results
+4. Any feature that could not work because an existing service is not configured

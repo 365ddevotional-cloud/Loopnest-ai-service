@@ -315,6 +315,40 @@ export async function sendGeneralInquiryNotification(
   }
 }
 
+export async function sendDonationThankYouEmail(
+  toEmail: string,
+  donorName: string,
+  message: string
+): Promise<boolean> {
+  try {
+    const { client, fromEmail } = await getUncachableSendGridClient();
+    const htmlMessage = message.replace(/\n/g, "<br>");
+    const msg = {
+      to: toEmail,
+      from: fromEmail,
+      subject: "Thank You for Supporting 365 Daily Devotional",
+      text: message,
+      html: `
+        <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #9c6b30; margin: 0;">365 Daily Devotional</h1>
+            <p style="color: #666; margin: 5px 0;">Support the Ministry</p>
+          </div>
+          <div style="border-left: 4px solid #9c6b30; padding: 20px; margin: 20px 0; background: #f8f6f3;">
+            <p style="color: #333; font-size: 16px; line-height: 1.8; margin: 0; white-space: pre-wrap;">${htmlMessage}</p>
+          </div>
+        </div>
+      `,
+    };
+    await client.send(msg);
+    console.log(`Donation thank-you sent to ${toEmail}`);
+    return true;
+  } catch (error) {
+    console.error("Failed to send donation thank-you:", error);
+    return false;
+  }
+}
+
 export async function sendContactAutoReply(
   toEmail: string,
   recipientName: string
