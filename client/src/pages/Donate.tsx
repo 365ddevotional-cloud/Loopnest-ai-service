@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
 const PAYPAL_LINK = import.meta.env.VITE_PAYPAL_DONATION_LINK || "https://www.paypal.com/donate/?hosted_button_id=Y9PAZK36FKT8L";
-const CASHAPP_TAG = import.meta.env.VITE_CASHTAG || "$MuzAfo";
+const CASHAPP_TAG = import.meta.env.VITE_CASHTAG || "$365dailydevotional";
 const CASHAPP_LINK = `https://cash.app/${CASHAPP_TAG}`;
 const VENMO_LINK = "https://venmo.com/u/dailydevotional";
 const OPAY_ACCOUNT_NUMBER = "8054611168";
@@ -561,6 +561,78 @@ export default function Donate() {
           </p>
         </div>
       )}
+
+      {/* PayPal */}
+      <Card className="shadow-lg shadow-primary/10 border border-primary/15 overflow-hidden" data-testid="card-paypal">
+        <div className="bg-gradient-to-r from-[#003087]/10 via-[#003087]/5 to-transparent px-6 py-4 border-b border-primary/10 flex items-center gap-3">
+          <SiPaypal className="w-7 h-7 text-[#003087]" />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Worldwide</p>
+            <h2 className="font-serif text-xl font-bold text-foreground">Donate with PayPal</h2>
+          </div>
+        </div>
+        <div className="px-6 py-6 space-y-5 text-center">
+          <p className="text-base text-muted-foreground leading-relaxed">
+            {frequency === "monthly"
+              ? "Tap the button below to open PayPal. You can then set up a recurring monthly gift from within your PayPal account."
+              : "Tap the button below to open PayPal and complete your donation securely."}
+          </p>
+          <a href={PAYPAL_LINK} target="_blank" rel="noopener noreferrer"
+            data-testid="link-paypal-donate" className="block">
+            <Button size="lg"
+              className="w-full gap-2 text-lg font-bold bg-[#003087] hover:bg-[#002574] text-white border-0 h-14"
+              data-testid="button-paypal-donate">
+              <SiPaypal className="w-6 h-6" />
+              Donate with PayPal
+              <ExternalLink className="w-4 h-4" />
+            </Button>
+          </a>
+          {frequency === "monthly" && (
+            <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 rounded-lg px-4 py-3 border border-primary/10">
+              To give monthly, complete your donation on PayPal, then log in and select{" "}
+              <strong>Set up recurring payments</strong> from your payment activity.
+            </p>
+          )}
+        </div>
+      </Card>
+
+      {/* Cash App */}
+      <Card className="shadow-lg shadow-primary/10 border border-primary/15 overflow-hidden" data-testid="card-cashapp">
+        <div className="bg-gradient-to-r from-[#00D632]/10 via-[#00D632]/5 to-transparent px-6 py-4 border-b border-primary/10 flex items-center gap-3">
+          <SiCashapp className="w-7 h-7 text-[#00D632]" />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">USA</p>
+            <h2 className="font-serif text-xl font-bold text-foreground">Donate with Cash App</h2>
+          </div>
+        </div>
+        <div className="px-6 py-6 space-y-5 text-center">
+          <div className="inline-flex items-center gap-2 bg-muted/50 rounded-full px-5 py-2 border border-primary/10">
+            <SiCashapp className="w-5 h-5 text-[#00D632]" />
+            <span className="font-mono text-lg font-bold text-foreground tracking-wide">{CASHAPP_TAG}</span>
+          </div>
+          <p className="text-base text-muted-foreground leading-relaxed">
+            {frequency === "monthly"
+              ? "Tap the button below to open Cash App. You can then schedule a recurring monthly payment from within the app."
+              : "Tap the button below to open Cash App and send your gift directly."}
+          </p>
+          <a href={CASHAPP_LINK} target="_blank" rel="noopener noreferrer"
+            data-testid="link-cashapp-donate" className="block">
+            <Button size="lg"
+              className="w-full gap-2 text-lg font-bold bg-[#00D632] hover:bg-[#00b82a] text-black border-0 h-14"
+              data-testid="button-cashapp-donate">
+              <SiCashapp className="w-6 h-6" />
+              Donate with Cash App
+              <ExternalLink className="w-4 h-4" />
+            </Button>
+          </a>
+          {frequency === "monthly" && (
+            <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 rounded-lg px-4 py-3 border border-primary/10">
+              To make this monthly, open Cash App, tap <strong>Pay</strong>, enter your amount, then
+              select <strong>Make it recurring</strong> before sending.
+            </p>
+          )}
+        </div>
+      </Card>
 
       {/* Venmo — USA */}
       <Card className="shadow-lg shadow-primary/10 border border-primary/15 overflow-hidden" data-testid="card-venmo">

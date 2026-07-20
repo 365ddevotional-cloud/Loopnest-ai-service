@@ -21,7 +21,7 @@ import { ConfirmationModal } from "./Donate";
 const VENMO_LINK = "https://venmo.com/u/dailydevotional";
 const OPAY_ACCOUNT_NUMBER = "8054611168";
 const PAYPAL_LINK = import.meta.env.VITE_PAYPAL_DONATION_LINK || "https://www.paypal.com/donate/?hosted_button_id=Y9PAZK36FKT8L";
-const CASHAPP_TAG = import.meta.env.VITE_CASHTAG || "$MuzAfo";
+const CASHAPP_TAG = import.meta.env.VITE_CASHTAG || "$365dailydevotional";
 const CASHAPP_LINK = `https://cash.app/${CASHAPP_TAG}`;
 
 const LOCAL_FAV_KEY = "spirittone-song-favorites";
@@ -111,6 +111,60 @@ function SupportModal({ open, onClose, songTitle, onHaveDonated }: {
             </div>
           )}
 
+          {/* PayPal */}
+          <div className="rounded-xl border border-[#003087]/30 bg-[#003087]/5 overflow-hidden">
+            <div className="flex items-center gap-3 px-5 py-3 border-b border-[#003087]/20">
+              <SiPaypal className="w-6 h-6 text-[#003087] flex-shrink-0" />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Worldwide</p>
+                <p className="text-base font-bold text-foreground">PayPal</p>
+              </div>
+            </div>
+            <div className="px-5 py-4 space-y-3 text-center">
+              {frequency === "monthly" && (
+                <p className="text-sm text-muted-foreground leading-relaxed bg-white/60 dark:bg-black/20 rounded-lg px-3 py-2">
+                  After donating, log in to PayPal and select <strong>Set up recurring payments</strong> to give monthly.
+                </p>
+              )}
+              <a href={PAYPAL_LINK} target="_blank" rel="noopener noreferrer" className="block"
+                data-testid="support-paypal-link">
+                <Button size="lg" className="w-full gap-2 text-base font-bold bg-[#003087] hover:bg-[#002574] text-white border-0 h-12">
+                  <SiPaypal className="w-5 h-5" />
+                  Donate with PayPal
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+              </a>
+            </div>
+          </div>
+
+          {/* Cash App */}
+          <div className="rounded-xl border border-[#00D632]/30 bg-[#00D632]/5 overflow-hidden">
+            <div className="flex items-center gap-3 px-5 py-3 border-b border-[#00D632]/20">
+              <SiCashapp className="w-6 h-6 text-[#00D632] flex-shrink-0" />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">USA</p>
+                <p className="text-base font-bold text-foreground">Cash App</p>
+              </div>
+            </div>
+            <div className="px-5 py-4 space-y-3 text-center">
+              <p className="font-mono text-lg font-bold text-foreground tracking-wide">{CASHAPP_TAG}</p>
+              {frequency === "monthly" && (
+                <p className="text-sm text-muted-foreground leading-relaxed bg-white/60 dark:bg-black/20 rounded-lg px-3 py-2">
+                  In Cash App, tap <strong>Pay</strong>, enter your amount, then select{" "}
+                  <strong>Make it recurring</strong> before sending.
+                </p>
+              )}
+              <a href={CASHAPP_LINK} target="_blank" rel="noopener noreferrer" className="block"
+                data-testid="support-cashapp-link">
+                <Button size="lg" className="w-full gap-2 text-base font-bold bg-[#00D632] hover:bg-[#00b82a] text-black border-0 h-12">
+                  <SiCashapp className="w-5 h-5" />
+                  Donate with Cash App
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+              </a>
+            </div>
+          </div>
+
           {/* Venmo */}
           <div className="rounded-xl border border-[#008CFF]/30 bg-[#008CFF]/5 overflow-hidden">
             <div className="flex items-center gap-3 px-5 py-3 border-b border-[#008CFF]/20">
@@ -177,28 +231,6 @@ function SupportModal({ open, onClose, songTitle, onHaveDonated }: {
               </Button>
             </div>
           </div>
-
-          {/* PayPal */}
-          <a href={PAYPAL_LINK} target="_blank" rel="noopener noreferrer" className="block"
-            data-testid="support-paypal-link">
-            <Button size="lg" variant="outline"
-              className="w-full gap-2 text-base font-bold border-[#003087]/30 hover:bg-[#003087]/5 h-12">
-              <SiPaypal className="w-5 h-5 text-[#003087]" />
-              Donate with PayPal
-              <ExternalLink className="w-4 h-4" />
-            </Button>
-          </a>
-
-          {/* CashApp */}
-          <a href={CASHAPP_LINK} target="_blank" rel="noopener noreferrer" className="block"
-            data-testid="support-cashapp-link">
-            <Button size="lg" variant="outline"
-              className="w-full gap-2 text-base font-bold border-[#00D632]/30 hover:bg-[#00D632]/5 h-12">
-              <SiCashapp className="w-5 h-5 text-[#00D632]" />
-              Donate with Cash App ({CASHAPP_TAG})
-              <ExternalLink className="w-4 h-4" />
-            </Button>
-          </a>
 
           {/* I Have Donated */}
           <div className="rounded-xl border border-primary/20 bg-primary/5 px-5 py-4 text-center space-y-3">

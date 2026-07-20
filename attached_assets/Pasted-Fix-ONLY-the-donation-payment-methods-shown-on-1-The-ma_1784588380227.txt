@@ -1,0 +1,149 @@
+Fix ONLY the donation payment methods shown on:
+
+1. The main /donate page opened from the menu
+2. The Support the Ministry modal opened from song pages
+
+Do not inspect, refactor, redesign, or modify unrelated files.
+Do not remove the current Venmo, OPay, monthly-support toggle, donation confirmation form, or thank-you workflow.
+
+CURRENT PROBLEM:
+PayPal and Cash App were previously available and working, but they were removed when Venmo and OPay were added.
+
+Restore PayPal and Cash App so that all four donation methods appear together.
+
+==================================================
+CONFIRMED PAYMENT METHODS
+==================================================
+
+1. PAYPAL
+
+PayPal account email:
+365ddevotional@gmail.com
+
+Create or restore the PayPal donation button using a valid PayPal payment link associated with this email.
+
+Preferred button text:
+Donate with PayPal
+
+Important:
+- First preserve and reuse any existing working PayPal link already present in the project.
+- If the old working link exists, do not replace its payment logic.
+- Do not display the email publicly if the existing PayPal button can open the correct PayPal payment flow directly.
+- Do not invent a PayPal username or PayPal.Me address.
+
+2. CASH APP
+
+Cash App cashtag:
+$365dailydevotional
+
+Use this destination link:
+
+https://cash.app/$365dailydevotional
+
+Display:
+$365dailydevotional
+
+Button text:
+Donate with Cash App
+
+Open the Cash App when supported; otherwise open the Cash App web page.
+
+3. VENMO
+
+Keep the existing Venmo method exactly as currently configured:
+
+Username:
+@dailydevotional
+
+Link:
+https://venmo.com/u/dailydevotional
+
+4. OPAY BANK TRANSFER
+
+Keep the existing OPay method exactly as currently configured:
+
+Account Name:
+MOSES AFOLABI
+
+Bank:
+OPay
+
+Account Number:
+8054611168
+
+Keep the Copy Account Number button.
+
+==================================================
+DISPLAY ORDER
+==================================================
+
+Show all four payment methods on both donation surfaces:
+
+1. PayPal
+2. Cash App
+3. Venmo
+4. OPay Bank Transfer
+
+Do not hide PayPal or Cash App because Venmo and OPay were added.
+
+==================================================
+GIVING FREQUENCY
+==================================================
+
+Keep:
+
+• Give Once
+• Support Monthly
+
+For PayPal and Cash App monthly support:
+
+- Preserve any existing recurring-payment behavior already implemented.
+- If no true recurring integration exists, do not falsely claim that recurring payments are automatic.
+- Show a brief instruction explaining that the donor may set up recurring support within the payment provider when available.
+
+Do not change the existing Venmo or OPay monthly instructions.
+
+==================================================
+CONSISTENCY
+==================================================
+
+The same four payment methods must appear on:
+
+• /donate
+• The song-page Support the Ministry modal
+
+Use shared payment-method data where it already exists, but do not perform a broad refactor.
+
+Preserve:
+
+• Current large readable fonts
+• Current cream, brown, and orange design
+• Donation confirmation flow
+• Admin thank-you workflow
+• Mobile responsiveness
+• Existing PayPal payment logic
+• Existing Cash App payment logic, except update the destination to the new confirmed cashtag if necessary
+
+==================================================
+TEST ONLY
+==================================================
+
+Test:
+
+1. PayPal button opens the correct PayPal flow
+2. Cash App button opens:
+   https://cash.app/$365dailydevotional
+3. Venmo opens:
+   https://venmo.com/u/dailydevotional
+4. OPay account number copies correctly
+5. All four methods appear on /donate
+6. All four methods appear in the song Support modal
+7. Give Once and Support Monthly remain functional
+8. I Have Donated still opens the confirmation form
+
+Return only:
+
+1. Files changed
+2. Exact destination used for each payment method
+3. Confirmation that all four methods appear on both donation surfaces
+4. Test results
