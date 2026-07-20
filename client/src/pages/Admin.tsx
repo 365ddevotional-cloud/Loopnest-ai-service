@@ -395,6 +395,17 @@ function TestimonyManager() {
     },
   });
 
+  const rejectMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("PATCH", `/api/testimonies/${id}/reject`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/testimonies/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/testimonies"] });
+      toast({ title: "Testimony returned to user for revision" });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       await apiRequest("DELETE", `/api/testimonies/${id}`);
@@ -428,14 +439,21 @@ function TestimonyManager() {
               <div key={testimony.id} className="p-4 border border-amber-200 bg-amber-50/50 dark:bg-amber-900/10 dark:border-amber-800 rounded-lg" data-testid={`testimony-pending-${testimony.id}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
-                    <p className="font-medium text-foreground">{testimony.name || "Anonymous"}</p>
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <p className="font-medium text-foreground">{testimony.name || "Anonymous"}</p>
+                      {testimony.requestId && (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                          Prayer #{testimony.requestId}
+                        </span>
+                      )}
+                    </div>
                     {testimony.country && <p className="text-xs text-muted-foreground">{testimony.country}</p>}
                     <p className="text-sm text-foreground mt-2 whitespace-pre-wrap">{testimony.message}</p>
                     <p className="text-xs text-muted-foreground mt-2">
                       {testimony.createdAt ? format(new Date(testimony.createdAt), "MMM d, yyyy h:mm a") : ""}
                     </p>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
+                  <div className="flex flex-col gap-2 flex-shrink-0">
                     <Button
                       size="sm"
                       variant="outline"
@@ -445,6 +463,17 @@ function TestimonyManager() {
                     >
                       <ThumbsUp className="w-4 h-4 mr-1" />
                       Approve
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-amber-400 text-amber-700 hover:bg-amber-50 dark:text-amber-300"
+                      onClick={() => rejectMutation.mutate(testimony.id)}
+                      disabled={rejectMutation.isPending}
+                      data-testid={`reject-testimony-${testimony.id}`}
+                    >
+                      <XCircle className="w-4 h-4 mr-1" />
+                      Reject
                     </Button>
                     <Button
                       size="sm"

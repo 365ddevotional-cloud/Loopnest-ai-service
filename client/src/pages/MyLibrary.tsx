@@ -882,7 +882,13 @@ function PrayerCard({
             </div>
           ) : (
             <div className="space-y-2">
-              <div className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Share how God answered your prayer</div>
+              {existingTestimony?.isDraft && existingTestimony?.message ? (
+                <div className="text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 rounded-lg">
+                  Your testimony was returned for revision — please edit and resubmit below.
+                </div>
+              ) : (
+                <div className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Share how God answered your prayer</div>
+              )}
               <input
                 className="w-full text-sm border border-border/50 rounded-lg px-3 py-1.5 bg-background"
                 placeholder="Your name (optional, leave blank to share anonymously)"

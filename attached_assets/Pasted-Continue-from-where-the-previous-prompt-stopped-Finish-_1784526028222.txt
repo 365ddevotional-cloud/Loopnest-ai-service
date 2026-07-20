@@ -1,0 +1,185 @@
+Continue from where the previous prompt stopped.
+
+Finish Phase G only.
+
+Continue from the remainder of Section 5 onward.
+
+==================================================
+5. PRAYER TESTIMONIES (CONTINUED)
+==================================================
+
+Continue implementing the testimony workflow exactly as specified.
+
+Users should be able to:
+
+- Edit testimony before approval when appropriate.
+- Submit testimony for ministry review.
+- Keep testimony private until submitted.
+
+Public testimonies must remain admin-approved.
+
+Never publish a testimony automatically.
+
+==================================================
+6. PRAYER REQUEST PRIVACY
+==================================================
+
+Provide a clear privacy choice if it does not already exist:
+
+• Private
+• Anonymous Public
+• Public With Name
+
+Default to Private.
+
+Never expose email addresses, phone numbers, or private request details publicly.
+
+==================================================
+7. ADMIN PRAYER MANAGEMENT
+==================================================
+
+Reuse the existing Admin Prayer tools.
+
+Where needed add only minimal controls:
+
+- View request
+- Update status
+- Being Prayed For
+- Closed
+- Review testimony
+- Approve testimony
+- Reject testimony
+
+Do not redesign Admin.
+
+==================================================
+8. OPTIONAL INBOX FOLLOW-UP
+==================================================
+
+Reuse the existing Inbox if practical.
+
+Allow authorized admins to send short follow-up encouragement related to a prayer request.
+
+If this cannot be implemented without significant work, skip it and report that it was skipped.
+
+==================================================
+9. OPTIONAL GUEST CLAIMING
+==================================================
+
+If practical, allow future guest prayer requests to be claimed later after account creation using a secure one-time claim token.
+
+Skip if this requires significant architecture changes.
+
+==================================================
+10. MY LIBRARY
+==================================================
+
+Inside My Library keep sections separated:
+
+- Songs
+- Devotionals
+- My Prayers
+
+Load only recent prayer requests initially.
+
+==================================================
+11. DATABASE & SECURITY
+==================================================
+
+Use the smallest additive schema.
+
+All private prayer queries must be scoped by Firebase UID.
+
+Users must only access their own prayer requests.
+
+Admin routes must require existing admin authorization.
+
+Do not expose testimony text or prayer text publicly.
+
+==================================================
+12. DATA SAFETY
+==================================================
+
+Do not modify or delete existing prayer requests.
+
+Do not modify unrelated systems.
+
+Keep all changes additive.
+
+==================================================
+13. PERFORMANCE
+==================================================
+
+Fetch only the signed-in user's prayer requests.
+
+Limit initial results.
+
+Avoid polling.
+
+Only invalidate prayer-related caches.
+
+==================================================
+DO NOT BUILD
+==================================================
+
+Do not build:
+
+- Chat
+- Video prayer
+- Voice calls
+- Group prayer
+- Social feed
+- User messaging
+- Counseling sync
+- Bible notes
+- AI prayer generation
+- Paid prayer
+- Subscription features
+
+==================================================
+CHECKPOINT
+==================================================
+
+Create a checkpoint before continuing.
+
+Modify only files required for the remaining Phase G work.
+
+Do not refactor unrelated code.
+
+Do not deploy.
+
+==================================================
+TEST
+==================================================
+
+Verify:
+
+- Prayer system still works.
+- Guest behavior unchanged.
+- Signed-in prayer requests are linked correctly.
+- My Prayers works.
+- Privacy works.
+- Testimony approval works.
+- Admin still works.
+- Songs, devotionals, Bible, counseling, notifications, and other systems remain unchanged.
+- No new TypeScript errors introduced by Phase G.
+
+==================================================
+FINAL REPORT
+==================================================
+
+When complete report only:
+
+1. Files changed.
+2. Database additions.
+3. Prayer account linking.
+4. Privacy implementation.
+5. Testimony workflow.
+6. Admin workflow.
+7. Inbox follow-up implemented or skipped.
+8. Guest claim implemented or skipped.
+9. Manual testing.
+10. Remaining limitations.
+
+Stop after Phase G.
+Wait for approval.

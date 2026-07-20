@@ -155,6 +155,7 @@ export interface IStorage {
   getAllTestimonies(): Promise<Testimony[]>;
   createTestimony(testimony: InsertTestimony): Promise<Testimony>;
   approveTestimony(id: number): Promise<Testimony>;
+  rejectTestimony(id: number): Promise<Testimony>;
   deleteTestimony(id: number): Promise<void>;
   // User-linked testimony workflow
   getUserTestimony(prayerRequestId: number, uid: string): Promise<Testimony | undefined>;
@@ -731,6 +732,15 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(testimonies)
       .set({ isApproved: true })
+      .where(eq(testimonies.id, id))
+      .returning();
+    return updated;
+  }
+
+  async rejectTestimony(id: number): Promise<Testimony> {
+    const [updated] = await db
+      .update(testimonies)
+      .set({ isDraft: true, isApproved: false })
       .where(eq(testimonies.id, id))
       .returning();
     return updated;

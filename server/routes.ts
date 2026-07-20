@@ -1462,6 +1462,18 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/testimonies/:id/reject", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const testimony = await storage.rejectTestimony(id);
+      res.json(testimony);
+    } catch (err) {
+      console.error("Error rejecting testimony:", err);
+      res.status(500).json({ message: "Could not reject testimony" });
+    }
+  });
+
   app.delete("/api/testimonies/:id", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
