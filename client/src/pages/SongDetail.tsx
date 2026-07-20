@@ -448,11 +448,12 @@ export default function SongDetail() {
 
       {/* Hero card */}
       <div
-        className="relative rounded-2xl overflow-hidden flex flex-col items-center justify-center text-center min-h-[220px] px-6 py-8"
+        className="relative rounded-2xl overflow-hidden flex flex-col items-center justify-center text-center"
         style={{
+          minHeight: "300px",
           background: hasCover
             ? undefined
-            : "linear-gradient(160deg, #fdf5e8 0%, #f0d898 35%, #deb850 65%, #c29820 100%)",
+            : "linear-gradient(145deg, #120400 0%, #3b1000 22%, #7c3200 48%, #c07c0a 76%, #d9a818 100%)",
         }}
       >
         {hasCover && (
@@ -463,20 +464,80 @@ export default function SongDetail() {
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
         )}
+
+        {/* Depth overlay */}
         <div
           className="absolute inset-0"
           style={{
-            background: "linear-gradient(to bottom, rgba(80,30,0,0.18) 0%, rgba(55,18,0,0.65) 100%)",
+            background: hasCover
+              ? "linear-gradient(to bottom, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.72) 100%)"
+              : "radial-gradient(ellipse 80% 70% at 50% 45%, rgba(220,165,30,0.14) 0%, rgba(0,0,0,0.48) 100%)",
           }}
         />
-        <div className="relative z-10 pointer-events-none select-none space-y-1">
+
+        {/* Inset decorative border — placeholder only */}
+        {!hasCover && (
           <div
-            className="font-serif font-black uppercase tracking-widest"
-            style={{ fontSize: "clamp(1.4rem,6vw,2.4rem)", color: "#c9a840", textShadow: "0 4px 24px rgba(0,0,0,0.85)" }}
+            className="absolute pointer-events-none"
+            style={{
+              inset: "14px",
+              border: "1px solid rgba(205,155,25,0.28)",
+              borderRadius: "10px",
+            }}
+          />
+        )}
+
+        {/* Content */}
+        <div className="relative z-10 pointer-events-none select-none px-10 py-10 flex flex-col items-center gap-4 w-full">
+
+          {/* Musical note icon — placeholder only */}
+          {!hasCover && (
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="rgba(210,158,30,0.55)" aria-hidden="true">
+              <path d="M9 3v10.55A4 4 0 1 0 11 17V7h4V3H9z"/>
+            </svg>
+          )}
+
+          {/* Song title */}
+          <div
+            className="font-serif font-black uppercase"
+            style={{
+              fontSize: "clamp(1.75rem, 7.5vw, 3.2rem)",
+              lineHeight: "1.08",
+              letterSpacing: "0.07em",
+              color: hasCover ? "#ffffff" : "#f0cc48",
+              textShadow: "0 2px 18px rgba(0,0,0,0.95), 0 5px 36px rgba(0,0,0,0.70)",
+            }}
           >
             {song.title}
           </div>
-          <div className="text-xs uppercase tracking-[0.22em] text-amber-200/80">{song.labelName}</div>
+
+          {/* Divider — placeholder only */}
+          {!hasCover && (
+            <div
+              style={{
+                width: "44px",
+                height: "2px",
+                background: "rgba(205,155,25,0.55)",
+                borderRadius: "1px",
+                flexShrink: 0,
+              }}
+            />
+          )}
+
+          {/* Label name */}
+          {song.labelName && (
+            <div
+              style={{
+                fontSize: "clamp(0.57rem, 1.8vw, 0.72rem)",
+                letterSpacing: "0.30em",
+                textTransform: "uppercase",
+                color: hasCover ? "rgba(255,255,255,0.65)" : "rgba(225,185,85,0.72)",
+                textShadow: "0 1px 8px rgba(0,0,0,0.85)",
+              }}
+            >
+              {song.labelName}
+            </div>
+          )}
         </div>
       </div>
 

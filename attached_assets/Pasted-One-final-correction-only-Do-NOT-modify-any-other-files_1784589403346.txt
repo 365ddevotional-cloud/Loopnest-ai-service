@@ -1,0 +1,80 @@
+One final correction only.
+
+Do NOT modify any other files, layouts, colors, donation flow, payment order, or functionality.
+
+Everything else is working correctly.
+
+==================================================
+1. CASH APP DISPLAY
+==================================================
+
+The Cash App card still displays the old Cashtag:
+
+$MuzAfo
+
+Replace every visible reference to:
+
+$MuzAfo
+
+with:
+
+$365dailydevotional
+
+Requirements:
+
+• Update every visible Cash App label on:
+  - the /donate page
+  - the song "Support the Ministry" modal
+  - any tooltip, subtitle, helper text, fallback text, or confirmation text that still references the old Cashtag.
+
+• Keep the Cash App destination:
+
+https://cash.app/$365dailydevotional
+
+• Do not change PayPal.
+• Do not change Venmo.
+• Do not change OPay.
+• Do not change Give Once / Support Monthly.
+• Do not change the donation confirmation flow.
+
+After replacing the old Cashtag, search the project for:
+
+$MuzAfo
+
+There should be zero remaining occurrences.
+
+==================================================
+2. IMPROVE THE SONG PLACEHOLDER / COVER ART
+==================================================
+
+The current placeholder artwork shown when viewing a song (for example, "The Lord Is My Shepherd") looks too plain and does not have the polished appearance of a modern music app.
+
+Improve ONLY the default song artwork/placeholder.
+
+Requirements:
+
+• Keep the existing warm gold/brown ministry branding.
+• Use a clean, professional album-cover layout.
+• Make the song title much more prominent.
+• Use elegant typography with strong contrast.
+• Improve spacing, alignment, and visual hierarchy.
+• Add subtle depth (soft gradients, tasteful texture, or shadow) while keeping the design clean.
+• Keep "SpiritTone Records" as a smaller secondary line beneath the song title.
+• Preserve rounded corners and responsive sizing.
+• Ensure the artwork looks high-quality on phones and tablets.
+• Do not use AI-style effects, excessive decorations, or busy backgrounds.
+• Do not change any uploaded custom artwork. Only improve the default placeholder used when a song does not have its own cover image.
+• Keep the artwork lightweight and optimized for fast loading.
+
+Do NOT redesign the rest of the song page.
+
+==================================================
+RETURN
+==================================================
+
+Return only:
+
+1. Files changed.
+2. Number of Cash App replacements made.
+3. Confirmation that "$MuzAfo" no longer exists anywhere in the project.
+4. Confirmation that the default song placeholder artwork has been upgraded.
