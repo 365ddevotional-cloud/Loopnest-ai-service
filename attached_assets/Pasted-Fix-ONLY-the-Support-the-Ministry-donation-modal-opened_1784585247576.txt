@@ -1,0 +1,178 @@
+Fix ONLY the “Support the Ministry” donation modal opened from the song details page.
+
+Do not redesign, refactor, or inspect unrelated pages or files.
+Do not remove or replace the completed /donate page.
+Make the smallest possible change.
+
+CURRENT PROBLEM:
+When a user taps “Support the Ministry” on a song page, the DonationModal opens but displays:
+
+“No giving options are currently configured.”
+
+The modal must instead show the ministry’s actual donation options.
+
+==================================================
+1. CONNECT THE MODAL TO THE DONATION OPTIONS
+==================================================
+
+Update the existing DonationModal component so that it displays working donation choices even if no admin donation configuration currently exists.
+
+Use these current donation details:
+
+VENMO
+Username:
+@dailydevotional
+
+Link:
+https://venmo.com/u/dailydevotional
+
+Button text:
+Donate with Venmo
+
+Open the Venmo app when supported, otherwise open the link in the browser.
+
+--------------------------------------------------
+
+OPAY BANK TRANSFER — NIGERIA
+
+Account Name:
+MOSES AFOLABI
+
+Bank:
+OPay
+
+Account Number:
+8054611168
+
+Add a “Copy Account Number” button.
+
+When tapped:
+- Copy 8054611168
+- Show:
+“Account number copied.”
+
+==================================================
+2. OTHER PAYMENT METHODS
+==================================================
+
+Do not display PayPal or Cash App unless valid account links have already been saved somewhere in the existing project.
+
+If valid PayPal or Cash App details already exist in the project’s current donation settings, display them.
+
+If they do not exist:
+- Do not invent links or usernames.
+- Do not show empty PayPal or Cash App buttons.
+- Keep the modal ready to display them later when configured.
+
+==================================================
+3. GIVING FREQUENCY
+==================================================
+
+Add two clear options inside the modal:
+
+• Give Once
+• Support Monthly
+
+Default:
+Give Once
+
+When “Support Monthly” is selected, show:
+
+“Thank you for choosing to support 365 Daily Devotional every month. Your faithful partnership helps us continue sharing God’s Word around the world.”
+
+For Venmo monthly support, change the button text to:
+
+Set Up Monthly Support on Venmo
+
+Keep opening:
+
+https://venmo.com/u/dailydevotional
+
+Display this instruction:
+
+“In the Venmo app, enter your support amount, tap Schedule, select Monthly, and choose your preferred payment date.”
+
+For OPay monthly support, display:
+
+“You may save these account details and send your chosen support each month. Where available, you may also create a monthly standing instruction through your banking app.”
+
+Do not claim that this app automatically creates recurring bank payments.
+
+==================================================
+4. DONATION CONFIRMATION
+==================================================
+
+Below the payment options, add a button:
+
+I Have Donated
+
+When tapped, either:
+
+A. Open the existing donation confirmation form if it was already created,
+
+OR
+
+B. Navigate to the donation page confirmation section.
+
+Do not create a duplicate confirmation system.
+
+The donor must be able to submit their name, contact method, amount, payment method, giving type, and optional prayer request so the admin can send a thank-you message.
+
+==================================================
+5. MODAL UI
+==================================================
+
+Preserve the existing modal heading and introductory message:
+
+“Were you blessed by this song?”
+
+Keep this statement visible:
+
+“Giving is optional. You receive the same song access whether or not you give.”
+
+Replace the “No giving options are currently configured” message with the actual Venmo and OPay options.
+
+Requirements:
+- Mobile responsive
+- Scrollable when content is taller than the phone screen
+- Close button must remain visible
+- Large readable buttons
+- Match the current cream, brown, and orange app design
+- Do not collect card information
+- Payment links open externally
+- Do not modify song playback, favorites, library, sharing, credits, or downloads
+
+==================================================
+6. REUSE AND CONSISTENCY
+==================================================
+
+Where practical, reuse the same donation data or shared donation option component used by the completed /donate page so the details are not duplicated in multiple files.
+
+However:
+- Do not perform a broad refactor.
+- Do not rebuild the donation system.
+- Make only the minimum safe shared change needed.
+
+==================================================
+7. TEST
+==================================================
+
+Test only this flow:
+
+1. Open any song details page
+2. Tap “Support the Ministry”
+3. Confirm Venmo appears
+4. Confirm OPay details appear
+5. Confirm Copy Account Number works
+6. Confirm Give Once works
+7. Confirm Support Monthly works
+8. Confirm the modal scrolls on mobile
+9. Confirm the close button works
+10. Confirm “I Have Donated” opens the existing confirmation flow
+
+Return only:
+
+1. Files changed
+2. What caused the problem
+3. Test results
+4. Whether PayPal or Cash App details already existed

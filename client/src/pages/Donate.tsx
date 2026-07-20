@@ -296,7 +296,7 @@ function DonationModal({ open, onClose }: { open: boolean; onClose: () => void }
   );
 }
 
-function ConfirmationModal({ open, onClose, defaultGivingType }: {
+export function ConfirmationModal({ open, onClose, defaultGivingType }: {
   open: boolean;
   onClose: () => void;
   defaultGivingType: string;
@@ -576,7 +576,7 @@ export default function Donate() {
             <SiVenmo className="w-5 h-5 text-[#008CFF]" />
             <span className="font-mono text-lg font-bold text-foreground tracking-wide">@dailydevotional</span>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base text-muted-foreground leading-relaxed">
             {frequency === "monthly"
               ? "Tap the button below to open Venmo. You can then schedule monthly payments from within the app."
               : "Tap the button below to open Venmo and send your gift. If Venmo is installed on your device it will open automatically."}
@@ -584,15 +584,15 @@ export default function Donate() {
           <a href={VENMO_LINK} target="_blank" rel="noopener noreferrer"
             data-testid="link-venmo-donate" className="block">
             <Button size="lg"
-              className="w-full gap-2 text-base bg-[#008CFF] hover:bg-[#0079e0] text-white border-0"
+              className="w-full gap-2 text-lg font-bold bg-[#008CFF] hover:bg-[#0079e0] text-white border-0 h-14"
               data-testid="button-venmo-donate">
-              <SiVenmo className="w-5 h-5" />
+              <SiVenmo className="w-6 h-6" />
               {frequency === "monthly" ? "Set Up Monthly Support on Venmo" : "Donate via Venmo"}
               <ExternalLink className="w-4 h-4" />
             </Button>
           </a>
           {frequency === "monthly" && (
-            <p className="text-xs text-muted-foreground leading-relaxed bg-muted/30 rounded-lg px-4 py-3 border border-primary/10">
+            <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 rounded-lg px-4 py-3 border border-primary/10">
               To make this monthly, open the Venmo app, enter your support amount, tap{" "}
               <strong>Schedule</strong>, select <strong>Monthly</strong>, and choose your preferred
               payment date.
@@ -614,28 +614,28 @@ export default function Donate() {
         </div>
         <div className="px-6 py-6 space-y-5">
           <div className="bg-muted/40 rounded-xl border border-primary/10 divide-y divide-primary/10 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-sm text-muted-foreground font-medium">Account Name</span>
-              <span className="text-sm font-bold text-foreground tracking-wide">MOSES AFOLABI</span>
+            <div className="flex items-center justify-between px-4 py-4">
+              <span className="text-base text-muted-foreground font-medium">Account Name</span>
+              <span className="text-base font-bold text-foreground tracking-wide">MOSES AFOLABI</span>
             </div>
-            <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-sm text-muted-foreground font-medium">Bank</span>
-              <span className="text-sm font-bold text-foreground">OPay</span>
+            <div className="flex items-center justify-between px-4 py-4">
+              <span className="text-base text-muted-foreground font-medium">Bank</span>
+              <span className="text-base font-bold text-foreground">OPay</span>
             </div>
-            <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-sm text-muted-foreground font-medium">Account Number</span>
-              <span className="font-mono text-base font-bold text-foreground tracking-widest">{OPAY_ACCOUNT_NUMBER}</span>
+            <div className="flex items-center justify-between px-4 py-4">
+              <span className="text-base text-muted-foreground font-medium">Account Number</span>
+              <span className="font-mono text-lg font-bold text-foreground tracking-widest">{OPAY_ACCOUNT_NUMBER}</span>
             </div>
           </div>
           {frequency === "monthly" && (
-            <p className="text-xs text-muted-foreground leading-relaxed bg-muted/30 rounded-lg px-4 py-3 border border-primary/10">
+            <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 rounded-lg px-4 py-3 border border-primary/10">
               For monthly support by bank transfer, you may save these account details and send your
               chosen amount each month. Where available, you may also create a monthly standing
               instruction through your banking app.
             </p>
           )}
           <Button size="lg" variant="outline"
-            className="w-full gap-2 text-base border-green-600/40 hover:bg-green-600/5 hover:border-green-600/70"
+            className="w-full gap-2 text-lg font-bold border-green-600/40 hover:bg-green-600/5 hover:border-green-600/70 h-14"
             onClick={handleCopyOpay} data-testid="button-copy-opay-account">
             {opaycopied ? (
               <><Check className="w-5 h-5 text-green-600" /> Account number copied</>
@@ -654,15 +654,15 @@ export default function Donate() {
           </div>
           <div>
             <h2 className="font-serif text-xl font-bold text-foreground mb-1">Have You Donated?</h2>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
+            <p className="text-base text-muted-foreground leading-relaxed max-w-md mx-auto">
               Please let us know after making your donation so we can acknowledge your gift and
               personally thank you.
             </p>
           </div>
           <Button size="lg" variant="outline"
-            className="gap-2 text-base border-primary/30 hover:border-primary/60 hover:bg-primary/5"
+            className="gap-2 text-lg font-bold border-primary/30 hover:border-primary/60 hover:bg-primary/5 h-14"
             onClick={() => setConfirmOpen(true)} data-testid="button-confirm-donation">
-            <Send className="w-4 h-4" />
+            <Send className="w-5 h-5" />
             Confirm My Donation
           </Button>
         </div>

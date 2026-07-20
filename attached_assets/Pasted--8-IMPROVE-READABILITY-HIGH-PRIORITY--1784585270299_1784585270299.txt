@@ -1,0 +1,96 @@
+==================================================
+8. IMPROVE READABILITY (HIGH PRIORITY)
+==================================================
+
+The current font sizes throughout the donation experience are too small and difficult to read on mobile.
+
+Increase readability across BOTH:
+
+• The DonationModal (opened from song pages)
+• The /donate page
+
+Requirements:
+
+• Increase the base font size throughout the donation experience.
+• Use larger, bold headings.
+• Increase paragraph font size.
+• Increase button text size.
+• Increase spacing between paragraphs.
+• Increase line height for easier reading.
+• Increase padding inside cards.
+• Make important information (account number, bank name, Venmo username, instructions) bold and highly visible.
+• Ensure text remains responsive on phones, tablets, and desktops.
+
+Typography should feel similar to modern reading apps such as ChatGPT:
+- Large
+- Clean
+- Bold where appropriate
+- High contrast
+- Easy to scan
+- Comfortable for older users
+
+Suggested minimum sizes:
+
+Main Heading:
+34–38px
+Weight: Bold (700–800)
+
+Section Titles:
+24–28px
+Weight: Bold
+
+Body Text:
+18–20px
+Weight: 400–500
+
+Important Information:
+20–22px
+Weight: Bold
+
+Buttons:
+18–20px
+Weight: Bold
+
+Labels:
+18px
+
+Increase button height and touch targets to at least 48px.
+
+Do NOT simply zoom the page.
+Use proper typography styling.
+
+==================================================
+9. GLOBAL APP TYPOGRAPHY REVIEW
+==================================================
+
+After completing the donation page improvements, inspect the entire 365 Daily Devotional app for text that is unusually small.
+
+Without changing the layout or design, increase readability wherever necessary by using the same typography standards.
+
+Focus especially on:
+
+• Daily devotionals
+• Bible verses
+• Songs
+• Song lyrics
+• Prayer section
+• Promise section
+• Donation pages
+• Settings
+• Menus
+• Notifications
+• Chat/messages
+• Library
+• Search results
+• Forms
+• Admin pages
+
+Do not redesign the app.
+
+Only improve typography, spacing, readability, and accessibility while preserving the existing theme.
+
+Return:
+1. Files changed
+2. Components updated
+3. Typography scale applied
+4. Screenshots of the updated donation modal and one devotional page

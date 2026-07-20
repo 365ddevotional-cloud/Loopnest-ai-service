@@ -192,7 +192,7 @@ export default function SundaySchoolLessonPage() {
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground text-base">
             <GraduationCap className="w-4 h-4" />
             <span>Sunday School</span>
           </div>
@@ -209,7 +209,7 @@ export default function SundaySchoolLessonPage() {
 
         <Card data-testid="card-scripture">
           <CardContent className="pt-6 space-y-3">
-            <div className="flex items-center gap-2 text-primary font-semibold text-sm uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-primary font-semibold text-base uppercase tracking-wider">
               <BookOpen className="w-4 h-4" />
               Scripture Reading
             </div>
@@ -224,7 +224,7 @@ export default function SundaySchoolLessonPage() {
 
         <Card data-testid="card-lesson-content">
           <CardContent className="pt-6 space-y-3">
-            <div className="flex items-center gap-2 text-primary font-semibold text-sm uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-primary font-semibold text-base uppercase tracking-wider">
               <BookOpen className="w-4 h-4" />
               Lesson Content
             </div>
@@ -236,7 +236,7 @@ export default function SundaySchoolLessonPage() {
 
         <Card data-testid="card-discussion">
           <CardContent className="pt-6 space-y-3">
-            <div className="flex items-center gap-2 text-primary font-semibold text-sm uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-primary font-semibold text-base uppercase tracking-wider">
               <MessageCircle className="w-4 h-4" />
               Discussion Questions
             </div>
@@ -252,7 +252,7 @@ export default function SundaySchoolLessonPage() {
 
         <Card data-testid="card-prayer-focus">
           <CardContent className="pt-6 space-y-3">
-            <div className="flex items-center gap-2 text-primary font-semibold text-sm uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-primary font-semibold text-base uppercase tracking-wider">
               <Target className="w-4 h-4" />
               Prayer Focus
             </div>
@@ -264,7 +264,7 @@ export default function SundaySchoolLessonPage() {
 
         <Card data-testid="card-assignment">
           <CardContent className="pt-6 space-y-3">
-            <div className="flex items-center gap-2 text-primary font-semibold text-sm uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-primary font-semibold text-base uppercase tracking-wider">
               <ClipboardList className="w-4 h-4" />
               Weekly Assignment
             </div>
