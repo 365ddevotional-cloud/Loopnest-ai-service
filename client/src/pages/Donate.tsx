@@ -2,13 +2,15 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Heart, ExternalLink, CreditCard, X } from "lucide-react";
-import { SiPaypal, SiCashapp } from "react-icons/si";
+import { Heart, ExternalLink, CreditCard, X, Copy, Check } from "lucide-react";
+import { SiPaypal, SiCashapp, SiVenmo } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 
 const PAYPAL_LINK = import.meta.env.VITE_PAYPAL_DONATION_LINK || "https://www.paypal.com/donate/?hosted_button_id=Y9PAZK36FKT8L";
 const CASHAPP_TAG = import.meta.env.VITE_CASHTAG || "$MuzAfo";
 const CASHAPP_LINK = `https://cash.app/${CASHAPP_TAG}`;
+const VENMO_LINK = "https://venmo.com/u/dailydevotional";
+const OPAY_ACCOUNT_NUMBER = "8054611168";
 
 const SUGGESTED_AMOUNTS = [
   { amount: 5, label: "Help someone read today's devotional" },
@@ -290,6 +292,19 @@ function DonationModal({ open, onClose }: { open: boolean; onClose: () => void }
 
 export default function Donate() {
   const [modalOpen, setModalOpen] = useState(false);
+  const [opaycopied, setOpayCopied] = useState(false);
+  const { toast } = useToast();
+
+  const handleCopyOpay = async () => {
+    try {
+      await navigator.clipboard.writeText(OPAY_ACCOUNT_NUMBER);
+      setOpayCopied(true);
+      toast({ title: "Account number copied" });
+      setTimeout(() => setOpayCopied(false), 2500);
+    } catch {
+      toast({ title: "Account number copied", description: OPAY_ACCOUNT_NUMBER });
+    }
+  };
 
   return (
     <div id="donate" className="max-w-4xl mx-auto py-8">
@@ -321,8 +336,8 @@ export default function Donate() {
           </div>
 
           <p>
-            Your generous support helps us continue our mission of spreading God's Word daily.
-            Every contribution, no matter the size, makes a meaningful difference in our ability to serve believers around the world.
+            Your generous support helps us continue sharing God's Word through daily devotionals, Bible teachings, prayer, worship, and encouragement around the world.
+            Every contribution, no matter the size, makes a meaningful difference in our ability to serve believers everywhere.
           </p>
 
           <div className="bg-muted/30 p-6 rounded-xl border border-primary/10">
@@ -356,32 +371,79 @@ export default function Donate() {
               Donate Now
             </Button>
 
-            <div className="flex flex-col sm:flex-row justify-center gap-4 mt-4">
-              <a
-                href={PAYPAL_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="link-paypal-donate"
-              >
-                <Button variant="outline" size="lg" className="w-full sm:w-auto gap-2">
-                  <SiPaypal className="w-5 h-5" />
-                  PayPal Donation
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
-              </a>
+            <div className="space-y-4 mt-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">🇺🇸 United States</p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <a
+                  href={PAYPAL_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="link-paypal-donate"
+                >
+                  <Button variant="outline" size="lg" className="w-full sm:w-auto gap-2">
+                    <SiPaypal className="w-5 h-5" />
+                    PayPal Donation
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
+                </a>
 
-              <a
-                href={CASHAPP_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="link-cashapp-donate"
-              >
-                <Button variant="outline" size="lg" className="w-full sm:w-auto gap-2">
-                  <SiCashapp className="w-5 h-5" />
-                  Cash App ({CASHAPP_TAG})
-                  <ExternalLink className="w-4 h-4" />
+                <a
+                  href={CASHAPP_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="link-cashapp-donate"
+                >
+                  <Button variant="outline" size="lg" className="w-full sm:w-auto gap-2">
+                    <SiCashapp className="w-5 h-5" />
+                    Cash App ({CASHAPP_TAG})
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
+                </a>
+
+                <a
+                  href={VENMO_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="link-venmo-donate"
+                >
+                  <Button variant="outline" size="lg" className="w-full sm:w-auto gap-2">
+                    <SiVenmo className="w-5 h-5 text-[#008CFF]" />
+                    Donate with Venmo
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
+                </a>
+              </div>
+
+              <Separator className="bg-primary/10" />
+
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">🇳🇬 Nigeria</p>
+              <div className="bg-muted/30 rounded-xl border border-primary/10 p-5 text-left space-y-3 font-sans max-w-sm mx-auto">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-foreground">OPay</span>
+                  <span className="text-xs text-muted-foreground">Bank Transfer</span>
+                </div>
+                <div className="space-y-1 text-sm text-foreground">
+                  <div><span className="text-muted-foreground">Bank:</span> <span className="font-medium">OPay</span></div>
+                  <div><span className="text-muted-foreground">Account Name:</span> <span className="font-medium">MOSES AFOLABI</span></div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Account Number:</span>
+                    <span className="font-mono font-bold tracking-wider">{OPAY_ACCOUNT_NUMBER}</span>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 w-full"
+                  onClick={handleCopyOpay}
+                  data-testid="button-copy-opay-account"
+                >
+                  {opaycopied ? (
+                    <><Check className="w-4 h-4 text-green-600" /> Account number copied</>
+                  ) : (
+                    <><Copy className="w-4 h-4" /> Copy Account Number</>
+                  )}
                 </Button>
-              </a>
+              </div>
             </div>
           </div>
         </div>
