@@ -1082,6 +1082,8 @@ function PrayerInbox() {
     
     if (filter === "all") return true;
     if (filter === "unreplied") return r.status === "new";
+    if (filter === "being_prayed") return r.status === "replied";
+    if (filter === "answered") return r.status === "answered";
     if (filter === "urgent") return r.priority?.includes("urgent");
     if (filter === "counseling") return r.priority?.includes("counseling");
     if (filter === "anonymous") return r.isAnonymous;
@@ -1126,6 +1128,8 @@ function PrayerInbox() {
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
               <SelectItem value="unreplied">Unreplied</SelectItem>
+              <SelectItem value="being_prayed">Being Prayed For</SelectItem>
+              <SelectItem value="answered">Answered</SelectItem>
               <SelectItem value="urgent">Urgent Only</SelectItem>
               <SelectItem value="counseling">Counseling Only</SelectItem>
               <SelectItem value="anonymous">Anonymous</SelectItem>

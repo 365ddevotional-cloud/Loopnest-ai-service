@@ -233,6 +233,7 @@ export default function PrayerCounseling() {
       isAnonymous: false,
       priority: "prayer_normal",
       category: "other",
+      privacy: "private",
     });
   };
 

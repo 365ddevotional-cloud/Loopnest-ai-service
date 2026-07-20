@@ -10,7 +10,7 @@ import { Link } from "wouter";
 import type { Song, Devotional, PrayerRequest } from "@shared/schema";
 import { ShareButton } from "@/components/ShareButton";
 import { format, parseISO } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface LibraryEntry {
   id: number;
@@ -677,6 +677,14 @@ function PrayerCard({
     enabled: showTestimony,
   });
 
+  // Pre-populate form fields once the query resolves
+  useEffect(() => {
+    if (existingTestimony && showTestimony) {
+      setTestimonyName(existingTestimony.name ?? "");
+      setTestimonyText(existingTestimony.message ?? "");
+    }
+  }, [existingTestimony, showTestimony]);
+
   const saveTestimonyMutation = useMutation({
     mutationFn: async () => {
       if (!testimonyText.trim()) throw new Error("Testimony text required");
@@ -709,10 +717,6 @@ function PrayerCard({
 
   const handleOpenTestimony = () => {
     setShowTestimony(true);
-    if (existingTestimony) {
-      setTestimonyName(existingTestimony.name ?? "");
-      setTestimonyText(existingTestimony.message ?? "");
-    }
   };
 
   return (
