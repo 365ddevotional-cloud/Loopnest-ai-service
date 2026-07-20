@@ -131,6 +131,9 @@ export const prayerRequests = pgTable("prayer_requests", {
   status: text("status").default("new").notNull(),
   isRead: boolean("is_read").default(false),
   createdAt: timestamp("created_at").defaultNow(),
+  firebaseUid: text("firebase_uid"),
+  answeredAt: timestamp("answered_at"),
+  answerNote: text("answer_note"),
 });
 
 export const insertPrayerRequestSchema = createInsertSchema(prayerRequests).omit({

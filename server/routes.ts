@@ -787,10 +787,22 @@ export async function registerRoutes(
         });
       }
       
+      // Optionally link to Firebase UID if user is signed in
+      let firebaseUid: string | null = null;
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith("Bearer ")) {
+        try {
+          firebaseUid = await verifyFirebaseToken(authHeader.slice(7));
+        } catch {
+          // token invalid or expired — continue as guest
+        }
+      }
+
       // Ensure smsEnabled is false if no valid phone number
       const sanitizedInput = {
         ...input,
         smsEnabled: input.smsEnabled && !!input.phoneNumber && isValidE164PhoneNumber(input.phoneNumber),
+        ...(firebaseUid ? { firebaseUid } : {}),
       };
       
       const prayerRequest = await storage.createPrayerRequest(sanitizedInput);
@@ -2555,6 +2567,64 @@ export async function registerRoutes(
       res.json({ success: true });
     } catch {
       res.status(500).json({ message: "Failed to delete note" });
+    }
+  });
+
+  // ─── Phase G: User Prayer Routes ──────────────────────────────────────────
+
+  // GET /api/user/prayers — signed-in user's own prayer requests
+  app.get("/api/user/prayers", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const prayers = await storage.getPrayerRequestsByUid(uid);
+      res.json(prayers);
+    } catch {
+      res.status(500).json({ message: "Failed to fetch prayers" });
+    }
+  });
+
+  // POST /api/user/prayers/:id/answered — mark as answered (owner only)
+  app.post("/api/user/prayers/:id/answered", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid id" });
+      const { answerNote } = req.body;
+      const updated = await storage.markPrayerAnswered(id, uid, answerNote || undefined);
+      if (!updated) return res.status(404).json({ message: "Prayer request not found or not owned by you" });
+      res.json(updated);
+    } catch {
+      res.status(500).json({ message: "Failed to mark prayer as answered" });
+    }
+  });
+
+  // DELETE /api/user/prayers/:id — withdraw (owner only, only if status is new)
+  app.delete("/api/user/prayers/:id", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid id" });
+      const updated = await storage.withdrawPrayerRequest(id, uid);
+      if (!updated) return res.status(404).json({ message: "Prayer request not found, not owned by you, or no longer withdrawable" });
+      res.json(updated);
+    } catch {
+      res.status(500).json({ message: "Failed to withdraw prayer request" });
+    }
+  });
+
+  // PATCH /api/user/prayers/:id — edit subject/message (owner only, status must be new)
+  app.patch("/api/user/prayers/:id", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid id" });
+      const { subject, message } = req.body;
+      if (!message?.trim()) return res.status(400).json({ message: "Message is required" });
+      const updated = await storage.updatePrayerRequestByUser(id, uid, { subject: subject || undefined, message: message.trim() });
+      if (!updated) return res.status(404).json({ message: "Prayer request not found, not owned by you, or no longer editable" });
+      res.json(updated);
+    } catch {
+      res.status(500).json({ message: "Failed to update prayer request" });
     }
   });
 

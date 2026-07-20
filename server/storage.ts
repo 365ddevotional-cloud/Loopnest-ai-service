@@ -109,7 +109,14 @@ export interface IStorage {
   
   // Prayer Requests by Email
   getPrayerRequestsByEmail(email: string): Promise<PrayerRequest[]>;
-  
+
+  // Prayer Requests by Firebase UID (user account)
+  getPrayerRequestsByUid(uid: string): Promise<PrayerRequest[]>;
+  linkPrayerToUid(id: number, uid: string): Promise<void>;
+  markPrayerAnswered(id: number, uid: string, answerNote?: string): Promise<PrayerRequest>;
+  withdrawPrayerRequest(id: number, uid: string): Promise<PrayerRequest>;
+  updatePrayerRequestByUser(id: number, uid: string, data: { subject?: string; message?: string }): Promise<PrayerRequest>;
+
   // Prayer Request Status
   updatePrayerRequestStatus(id: number, status: string): Promise<PrayerRequest>;
   updatePrayerRequestCategory(id: number, category: string): Promise<PrayerRequest>;
@@ -429,6 +436,48 @@ export class DatabaseStorage implements IStorage {
       .from(prayerRequests)
       .where(ilike(prayerRequests.email, email))
       .orderBy(desc(prayerRequests.createdAt));
+  }
+
+  async getPrayerRequestsByUid(uid: string): Promise<PrayerRequest[]> {
+    return await db
+      .select()
+      .from(prayerRequests)
+      .where(eq(prayerRequests.firebaseUid, uid))
+      .orderBy(desc(prayerRequests.createdAt));
+  }
+
+  async linkPrayerToUid(id: number, uid: string): Promise<void> {
+    await db
+      .update(prayerRequests)
+      .set({ firebaseUid: uid })
+      .where(and(eq(prayerRequests.id, id), isNull(prayerRequests.firebaseUid)));
+  }
+
+  async markPrayerAnswered(id: number, uid: string, answerNote?: string): Promise<PrayerRequest> {
+    const [updated] = await db
+      .update(prayerRequests)
+      .set({ status: "answered", answeredAt: new Date(), answerNote: answerNote ?? null })
+      .where(and(eq(prayerRequests.id, id), eq(prayerRequests.firebaseUid, uid)))
+      .returning();
+    return updated;
+  }
+
+  async withdrawPrayerRequest(id: number, uid: string): Promise<PrayerRequest> {
+    const [updated] = await db
+      .update(prayerRequests)
+      .set({ status: "closed" })
+      .where(and(eq(prayerRequests.id, id), eq(prayerRequests.firebaseUid, uid), eq(prayerRequests.status, "new")))
+      .returning();
+    return updated;
+  }
+
+  async updatePrayerRequestByUser(id: number, uid: string, data: { subject?: string; message?: string }): Promise<PrayerRequest> {
+    const [updated] = await db
+      .update(prayerRequests)
+      .set(data)
+      .where(and(eq(prayerRequests.id, id), eq(prayerRequests.firebaseUid, uid), eq(prayerRequests.status, "new")))
+      .returning();
+    return updated;
   }
 
   // Prayer Request Status

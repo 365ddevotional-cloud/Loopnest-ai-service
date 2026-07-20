@@ -1,0 +1,107 @@
+Proceed with the next limited phase only:
+
+PHASE G — Prayer Center Account Sync and Private Prayer History.
+
+Phases A, B, C, D, E, and F are complete.
+
+Do not rebuild, repeat, replace, or broadly review those phases.
+
+==================================================
+BUILD NOW — PHASE G ONLY
+==================================================
+
+1. REUSE THE EXISTING PRAYER SYSTEM
+
+Inspect and reuse the current Prayer section, prayer-request form, admin prayer tools, existing authentication, and Firebase UID.
+
+Do not create a second prayer system.
+
+Preserve all current prayer functionality.
+
+Guests must still be able to:
+
+- Read prayer resources
+- View public prayer encouragement
+- Submit a prayer request if the current app already allows guest submission
+
+Do not force sign-in merely to open the Prayer section.
+
+==================================================
+2. PRIVATE PRAYER REQUEST ACCOUNT LINKING
+==================================================
+
+For signed-in users, link newly submitted prayer requests to their Firebase UID.
+
+Required behavior:
+
+- Signed-in users can view their own submitted prayer requests.
+- One user must never see another user’s private prayer requests.
+- Existing guest prayer submission must continue working if it already exists.
+- Do not expose private prayer requests publicly.
+- Do not expose the user’s email address in public views.
+- Do not rewrite or delete old prayer requests.
+
+If the current prayer-request table already supports a user ID, reuse it.
+
+Add only the smallest additive field or relationship if needed.
+
+==================================================
+3. “MY PRAYERS” SECTION
+==================================================
+
+Add a new section inside My Library or the existing account area named:
+
+“My Prayers”
+
+Do not add another main navigation item unless necessary.
+
+The section should show the signed-in user’s prayer requests with:
+
+- Request title or short summary
+- Submission date
+- Current status
+- Private/Public indicator if that choice exists
+- Open
+- Edit, only while still allowed
+- Delete or Withdraw, only if safe and appropriate
+- Mark as Answered
+- Add Testimony
+
+Use clear statuses such as:
+
+- Submitted
+- Being Prayed For
+- Answered
+- Closed
+
+Do not expose internal admin notes to the user unless the existing design already intends that.
+
+==================================================
+4. MARK PRAYER AS ANSWERED
+==================================================
+
+Allow a signed-in user to mark their own prayer request as answered.
+
+When marked answered:
+
+- Update the prayer status.
+- Record the answered date.
+- Offer an optional testimony field.
+- Do not automatically publish the testimony.
+- Keep the testimony private until the user explicitly chooses to submit it for ministry review, if public testimony moderation already exists.
+
+Suggested wording:
+
+“God has answered this prayer.”
+
+Do not use rewards, points, badges, or competitive counts.
+
+==================================================
+5. PRAYER TESTIMONIES
+==================================================
+
+Reuse the existing testimony system where practical.
+
+A signed-in user should be able to:
+
+- Add a testimony connected to their

@@ -12,6 +12,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useState, useRef } from "react";
 import { Loader2, Send, CheckCircle, AlertTriangle, Paperclip, X, FileText, Image, Star, HandHeart } from "lucide-react";
 import type { AutoReplyTemplate, PrayerRequest } from "@shared/schema";
+import { useUser } from "@/contexts/UserContext";
 
 const PRIORITY_OPTIONS = [
   { value: "prayer_normal", label: "Prayer Request (Normal)" },
@@ -44,6 +45,7 @@ interface UploadedFile {
 
 export default function PrayerCounseling() {
   const { toast } = useToast();
+  const { user, getIdToken } = useUser();
   const [submitted, setSubmitted] = useState(false);
   const [submittedRequest, setSubmittedRequest] = useState<PrayerRequest | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -114,7 +116,15 @@ export default function PrayerCounseling() {
         priority: data.priority,
         category: data.category,
       };
-      const response = await apiRequest("POST", "/api/prayer-requests", payload);
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (user) {
+        try {
+          const token = await getIdToken();
+          if (token) headers["Authorization"] = `Bearer ${token}`;
+        } catch { /* proceed as guest */ }
+      }
+      const response = await fetch("/api/prayer-requests", { method: "POST", headers, body: JSON.stringify(payload) });
+      if (!response.ok) throw new Error("Request failed");
       return response.json();
     },
     onSuccess: async (data) => {
