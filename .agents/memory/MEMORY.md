@@ -1,2 +1,3 @@
 - [Firebase user auth architecture](firebase-user-auth.md) — Firebase email/password for user accounts, separate from admin session auth; UID stored in PostgreSQL.
 - [Phase D user library tables](phase-d-schema.md) — user_saved_songs, user_favorite_songs, user_download_history keyed by firebase_uid.
+- [Phase F devotional sync](phase-f-devotional-sync.md) — local saves use key "devotional-saves"; streak uses "devotional-reading-streak"; merge fires on Firebase sign-in; notes are sign-in only.

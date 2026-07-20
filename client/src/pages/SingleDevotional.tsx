@@ -81,7 +81,7 @@ export default function SingleDevotional() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4 }}
       >
-        <DevotionalCard devotional={data.devotional} />
+        <DevotionalCard devotional={data.devotional} showNotes={true} />
       </motion.div>
     </div>
   );

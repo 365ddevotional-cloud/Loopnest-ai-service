@@ -1,0 +1,323 @@
+Proceed with the next limited phase only:
+
+PHASE F — Daily Devotional Account Sync.
+
+Phases A, B, C, D, and E are complete.
+
+Do not rebuild, repeat, replace, or broadly review those phases.
+
+==================================================
+BUILD NOW — PHASE F ONLY
+==================================================
+
+1. REUSE THE EXISTING ACCOUNT SYSTEM
+
+Reuse the Firebase email/password authentication and existing user identity from Phase D.
+
+Do not create another account system.
+
+Users must still be able to:
+
+- Read Today’s Message without signing in
+- Browse the Archive without signing in
+- Share devotionals without signing in
+- Use the app normally as a guest
+
+Sign-in should only be required for cloud synchronization.
+
+==================================================
+2. SYNC DEVOTIONAL FAVORITES
+==================================================
+
+Preserve the existing devotional Favorite feature.
+
+Required behavior:
+
+- Signed-out users may continue saving devotional favorites locally.
+- Signed-in users should have devotional favorites stored in their account.
+- Devotional favorites must synchronize across devices.
+- Existing local devotional favorites must be preserved.
+- On first sign-in, merge local devotional favorites into the user’s account.
+- Prevent duplicate favorite records.
+- Do not mix devotional favorites with song favorites.
+- Removing a devotional favorite must not delete the devotional itself.
+
+==================================================
+3. ADD SAVED DEVOTIONALS TO MY LIBRARY
+==================================================
+
+Expand the existing My Library page carefully.
+
+Add a separate section named:
+
+“Saved Devotionals”
+
+Each saved devotional card should show:
+
+- Date
+- Title
+- Scripture reference
+- Short preview
+- Open
+- Share
+- Remove from Saved Devotionals
+
+Keep the existing song sections unchanged.
+
+Do not redesign the entire My Library page.
+
+==================================================
+4. READING HISTORY
+==================================================
+
+Add lightweight devotional reading history.
+
+Record only when a devotional is actually opened.
+
+Store:
+
+- User ID
+- Devotional ID or date
+- First opened date
+- Most recent opened date
+- Read status
+
+Required behavior:
+
+- Do not create repeated duplicate records every time the same devotional opens.
+- Update the existing record instead.
+- Limit the visible Recent Devotionals section to the most recent 20.
+- Do not count background loading or previews as a read.
+- Signed-out reading history may remain local only.
+
+==================================================
+5. RECENTLY READ
+==================================================
+
+Add a small “Recently Read” section inside My Library.
+
+Show up to 20 recent devotionals.
+
+Each card should include:
+
+- Date
+- Title
+- Scripture
+- Open Devotional
+
+Do not place this section on Today’s Message.
+
+==================================================
+6. READING STREAK
+==================================================
+
+Add a simple devotional reading streak.
+
+Count one completed devotional reading per calendar day.
+
+Display:
+
+- Current streak
+- Longest streak
+- Last reading date
+
+Rules:
+
+- Opening the same devotional repeatedly on one day must count only once.
+- Do not award points, badges, money, prizes, or donor benefits.
+- Use the user’s local date carefully to avoid duplicate days.
+- Signed-out users may have a local streak.
+- Signed-in users should have their streak synchronized.
+
+Keep the streak display modest and encouraging.
+
+Suggested wording:
+
+“Keep growing in God’s Word.”
+
+Do not turn the app into a competitive rewards system.
+
+==================================================
+7. OPTIONAL PERSONAL NOTES
+==================================================
+
+Add a simple private note field on the full devotional page.
+
+Label it:
+
+“My Personal Note”
+
+Required behavior:
+
+- Only signed-in users may save cloud notes.
+- Signed-out users may be invited to sign in before saving.
+- Notes are private to the user.
+- One user must never see another user’s notes.
+- Users can create, edit, and delete their own note.
+- Do not allow public comments.
+- Do not add rich-text editing.
+- Plain text only.
+- Apply a reasonable character limit.
+
+Do not modify the ministry-authored devotional content.
+
+==================================================
+8. BOOKMARK OR SAVE ACTION
+==================================================
+
+Use one clear action for devotionals:
+
+“Save Devotional”
+
+Do not add several duplicate buttons such as Bookmark, Save, Favorite, and Add to Library unless those features already exist separately.
+
+Where practical:
+
+- Reuse the existing devotional Favorite action as Save Devotional.
+- Preserve old favorite data.
+- Avoid confusing the user with duplicate actions.
+
+==================================================
+9. DATABASE AND SECURITY
+==================================================
+
+Use the smallest safe additive structure necessary for:
+
+- User saved devotionals
+- Devotional reading history
+- Reading streak
+- Private devotional notes
+
+Reuse existing devotional identifiers and Firebase UID.
+
+Security requirements:
+
+- A user may read and modify only their own saved records, history, streak, and notes.
+- Regular users must never edit master devotional content.
+- Admin devotional management must continue working.
+- Do not expose user email addresses.
+- Do not create public write access.
+- Do not log private notes, authentication tokens, or passwords.
+- Preserve existing database records.
+
+==================================================
+10. DATA SAFETY
+==================================================
+
+The app contains existing devotional content.
+
+Do not:
+
+- Reseed the devotional table
+- Delete devotional records
+- Rewrite existing devotional text
+- Change devotional dates
+- Change Bible translations
+- Replace ministry content
+- Modify Sunday School content
+- Alter the Archive structure unnecessarily
+
+All changes must be additive and user-specific.
+
+==================================================
+11. PERFORMANCE
+==================================================
+
+- Store devotional references, not duplicate full devotional content.
+- Do not preload the entire Archive.
+- Do not create a database write on every scroll.
+- Record a read only after the devotional page actually opens.
+- Debounce note saving or use an explicit Save button.
+- Update only the relevant user queries after saving or removing.
+- Do not clear song, prayer, counseling, Bible, or notification caches.
+
+==================================================
+DO NOT BUILD YET
+==================================================
+
+Do not implement:
+
+- Prayer-request synchronization
+- Counseling-history synchronization
+- Bible highlights
+- Bible notes
+- Bible reading plans
+- Public devotional comments
+- Social feeds
+- Leaderboards
+- Paid subscriptions
+- Books
+- Playlists
+- AI recommendations
+- New notification systems
+- Broad profile redesign
+
+==================================================
+CRITICAL SAFETY AND COST RULES
+==================================================
+
+- Create a checkpoint before editing.
+- Modify only files directly required for devotional account synchronization.
+- Reuse the existing devotional pages, Archive, My Library, Firebase authentication, user context, database, and styling.
+- Do not perform a broad project audit.
+- Do not inspect or modify unrelated files.
+- Do not fix unrelated pre-existing TypeScript errors in this task.
+- Do not refactor working song, donation, prayer, counseling, Bible, Sunday School, Inbox, notification, or admin systems.
+- Preserve dark mode and mobile responsiveness.
+- Do not publish or deploy automatically.
+- Test only Phase F.
+- Stop after completion and wait for approval.
+
+==================================================
+REQUIRED TESTING
+==================================================
+
+Verify:
+
+1. A checkpoint was created.
+2. Today’s Message still opens for signed-out users.
+3. Archive still works for signed-out users.
+4. Existing devotional favorites are preserved.
+5. Signed-out devotional favorites continue working locally.
+6. Local devotional favorites merge safely after sign-in.
+7. Signed-in devotional favorites synchronize across devices.
+8. Song favorites remain separate and still work.
+9. Saved Devotionals appears in My Library.
+10. Removing a saved devotional does not delete the master devotional.
+11. Reading history records only opened devotionals.
+12. Duplicate history records are prevented.
+13. Recently Read shows no more than 20 devotionals.
+14. Reading streak counts only once per local calendar day.
+15. Current and longest streak values update correctly.
+16. Private notes can be created, edited, and deleted.
+17. One user cannot access another user’s notes or history.
+18. Admin devotional management still works.
+19. Existing devotional text and dates remain unchanged.
+20. Mobile layout and dark mode still work.
+21. No Phase F files introduce new TypeScript errors.
+22. No unrelated system was modified.
+
+==================================================
+FINAL RESPONSE REQUIRED
+==================================================
+
+When finished, report only:
+
+1. Confirmation that a checkpoint was created.
+2. Exact files changed.
+3. How devotional favorites synchronize.
+4. How old local favorites were preserved.
+5. Where Saved Devotionals appears.
+6. How reading history works.
+7. How the streak is calculated.
+8. How private notes are secured.
+9. Database tables or relationships added or reused.
+10. Confirmation that song features were not modified.
+11. Confirmation that prayer, counseling, Bible, Sunday School, and devotional master content were not modified.
+12. Manual testing steps.
+13. Any unresolved limitation.
+
+Do not publish.
+Do not deploy.
+Do not start another phase.
+Stop and wait for approval.

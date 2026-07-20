@@ -5,9 +5,11 @@ import { useUser } from "@/contexts/UserContext";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, BookMarked, Heart, Download, Play, ExternalLink, Trash2, Music2, UserCircle, Clock } from "lucide-react";
+import { Loader2, BookMarked, Heart, Download, Play, ExternalLink, Trash2, Music2, UserCircle, Clock, BookOpen, Flame, Share2, Bookmark } from "lucide-react";
 import { Link } from "wouter";
-import type { Song } from "@shared/schema";
+import type { Song, Devotional } from "@shared/schema";
+import { ShareButton } from "@/components/ShareButton";
+import { format, parseISO } from "date-fns";
 
 interface LibraryEntry {
   id: number;
@@ -144,6 +146,44 @@ export default function MyLibrary() {
     enabled: !!user && emailVerified,
   });
 
+  const { data: savedDevotionals = [], isLoading: savedDevsLoading } = useQuery<(any & { devotional: Devotional })[]>({
+    queryKey: ["/api/user/devotional/saved"],
+    queryFn: async () => {
+      const res = await authedFetch("/api/user/devotional/saved", getIdToken);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!user && emailVerified,
+  });
+
+  const { data: devHistory = [], isLoading: devHistoryLoading } = useQuery<(any & { devotional: Devotional })[]>({
+    queryKey: ["/api/user/devotional/history"],
+    queryFn: async () => {
+      const res = await authedFetch("/api/user/devotional/history", getIdToken);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!user && emailVerified,
+  });
+
+  const { data: streakData } = useQuery<{ currentStreak: number; longestStreak: number; lastReadDate: string | null }>({
+    queryKey: ["/api/user/devotional/streak"],
+    queryFn: async () => {
+      const res = await authedFetch("/api/user/devotional/streak", getIdToken);
+      if (!res.ok) return { currentStreak: 0, longestStreak: 0, lastReadDate: null };
+      return res.json();
+    },
+    enabled: !!user && emailVerified,
+  });
+
+  const unsaveDevMutation = useMutation({
+    mutationFn: async (devotionalId: number) => {
+      const res = await authedFetch(`/api/user/devotional/saved/${devotionalId}`, getIdToken, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed");
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/user/devotional/saved"] }),
+  });
+
   const unsaveMutation = useMutation({
     mutationFn: async (songId: number) => {
       const res = await authedFetch(`/api/user/library/saved/${songId}`, getIdToken, { method: "DELETE" });
@@ -202,6 +242,26 @@ export default function MyLibrary() {
           Sign Out
         </Button>
       </div>
+
+      {/* Reading Streak */}
+      {streakData && (streakData.currentStreak ?? 0) > 0 && (
+        <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200/60 dark:border-amber-800/40" data-testid="section-reading-streak">
+          <div className="flex items-center gap-2">
+            <Flame className="w-5 h-5 text-orange-500" />
+            <div>
+              <div className="font-bold text-lg text-orange-700 dark:text-orange-400 leading-none">{streakData.currentStreak} {streakData.currentStreak === 1 ? "day" : "days"}</div>
+              <div className="text-xs text-muted-foreground">Current streak</div>
+            </div>
+          </div>
+          {(streakData.longestStreak ?? 0) > 1 && (
+            <div className="border-l border-amber-200/60 dark:border-amber-800/40 pl-4">
+              <div className="font-semibold text-sm text-foreground">{streakData.longestStreak} days</div>
+              <div className="text-xs text-muted-foreground">Longest streak</div>
+            </div>
+          )}
+          <p className="ml-auto text-xs text-muted-foreground italic hidden sm:block">Keep growing in God's Word.</p>
+        </div>
+      )}
 
       {isLoading && (
         <div className="flex items-center justify-center py-10">
@@ -291,6 +351,51 @@ export default function MyLibrary() {
         )}
       </section>
 
+      {/* Saved Devotionals */}
+      <section data-testid="section-saved-devotionals">
+        <div className="flex items-center gap-2 mb-3">
+          <Bookmark className="w-4 h-4 text-primary" />
+          <h2 className="font-serif text-lg text-foreground">Saved Devotionals</h2>
+          {savedDevotionals.length > 0 && (
+            <Badge variant="secondary" className="text-xs">{savedDevotionals.length}</Badge>
+          )}
+        </div>
+        {savedDevsLoading ? (
+          <div className="flex items-center gap-2 py-4"><Loader2 className="w-4 h-4 animate-spin text-primary" /></div>
+        ) : savedDevotionals.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6 border border-dashed border-border/40 rounded-xl">
+            No saved devotionals yet. Tap "Save" on any devotional to keep it here.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {savedDevotionals.map((entry: any) => (
+              <SavedDevotionalCard
+                key={entry.id}
+                entry={entry}
+                onRemove={() => unsaveDevMutation.mutate(entry.devotionalId)}
+                removePending={unsaveDevMutation.isPending && unsaveDevMutation.variables === entry.devotionalId}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Recently Read Devotionals */}
+      {devHistory.length > 0 && (
+        <section data-testid="section-recently-read">
+          <div className="flex items-center gap-2 mb-3">
+            <BookOpen className="w-4 h-4 text-secondary" />
+            <h2 className="font-serif text-lg text-foreground">Recently Read</h2>
+            <Badge variant="secondary" className="text-xs">{Math.min(devHistory.length, 20)}</Badge>
+          </div>
+          <div className="space-y-2">
+            {devHistory.slice(0, 20).map((entry: any) => (
+              <RecentlyReadCard key={entry.id} entry={entry} />
+            ))}
+          </div>
+        </section>
+      )}
+
       <RecentlyPlayedSection />
 
       <p className="text-[11px] text-muted-foreground/50 text-center">
@@ -351,5 +456,98 @@ function RecentlyPlayedSection() {
         ))}
       </div>
     </section>
+  );
+}
+
+function SavedDevotionalCard({
+  entry,
+  onRemove,
+  removePending,
+}: {
+  entry: any & { devotional: Devotional };
+  onRemove: () => void;
+  removePending: boolean;
+}) {
+  const [, setLocation] = useLocation();
+  const dev = entry.devotional as Devotional;
+  const preview = dev.content?.slice(0, 100) + (dev.content?.length > 100 ? "…" : "");
+
+  return (
+    <div
+      className="flex flex-col gap-2 p-4 rounded-xl border border-border/40 bg-card hover:bg-muted/10 transition-colors"
+      data-testid={`card-saved-devotional-${dev.id}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="text-xs text-primary/70 font-semibold uppercase tracking-wide mb-0.5">
+            {format(parseISO(dev.date), "MMMM d, yyyy")}
+          </div>
+          <div className="font-serif font-semibold text-foreground truncate">{dev.title}</div>
+          <div className="text-xs text-muted-foreground mt-0.5">{dev.scriptureReference}</div>
+          <div className="text-xs text-muted-foreground/70 mt-1 line-clamp-2">{preview}</div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap">
+        <Button
+          size="sm"
+          variant="outline"
+          className="text-xs gap-1"
+          onClick={() => setLocation(`/devotional/${dev.date}`)}
+          data-testid={`button-open-saved-devotional-${dev.id}`}
+        >
+          <BookOpen className="w-3 h-3" />
+          Open
+        </Button>
+        <ShareButton
+          title={dev.title}
+          text={`${dev.title}\n${dev.scriptureReference}\n\n${dev.content}`}
+          className="text-xs h-8 px-3 gap-1"
+        />
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-xs gap-1 text-muted-foreground hover:text-destructive ml-auto"
+          onClick={onRemove}
+          disabled={removePending}
+          data-testid={`button-remove-saved-devotional-${dev.id}`}
+        >
+          {removePending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+          Remove
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function RecentlyReadCard({ entry }: { entry: any & { devotional: Devotional } }) {
+  const [, setLocation] = useLocation();
+  const dev = entry.devotional as Devotional;
+
+  const timeAgo = (() => {
+    const diff = Date.now() - new Date(entry.lastOpenedAt).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  })();
+
+  return (
+    <div
+      className="flex items-center gap-3 p-3 rounded-xl border border-border/40 bg-card hover:bg-muted/20 transition-colors cursor-pointer"
+      onClick={() => setLocation(`/devotional/${dev.date}`)}
+      data-testid={`card-recently-read-${dev.id}`}
+    >
+      <div className="w-10 h-10 rounded-lg flex-shrink-0 bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center border border-primary/10">
+        <BookOpen className="w-4 h-4 text-primary/50" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-xs text-primary/60 font-medium">{format(parseISO(dev.date), "MMM d, yyyy")}</div>
+        <div className="font-semibold text-sm text-foreground truncate">{dev.title}</div>
+        <div className="text-xs text-muted-foreground">{dev.scriptureReference} · {timeAgo}</div>
+      </div>
+      <ExternalLink className="w-3.5 h-3.5 text-muted-foreground/40 flex-shrink-0" />
+    </div>
   );
 }

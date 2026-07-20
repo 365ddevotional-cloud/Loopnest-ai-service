@@ -606,3 +606,54 @@ export const givingMethods = pgTable("giving_methods", {
 export const insertGivingMethodSchema = createInsertSchema(givingMethods).omit({ id: true });
 export type GivingMethod = typeof givingMethods.$inferSelect;
 export type InsertGivingMethod = z.infer<typeof insertGivingMethodSchema>;
+
+// ── Phase F: Devotional Account Sync ──────────────────────────────────────────
+
+// User Saved Devotionals — "Save Devotional" action, per Firebase UID
+export const userSavedDevotionals = pgTable("user_saved_devotionals", {
+  id: serial("id").primaryKey(),
+  firebaseUid: text("firebase_uid").notNull(),
+  devotionalId: integer("devotional_id").notNull().references(() => devotionals.id, { onDelete: "cascade" }),
+  savedAt: timestamp("saved_at").defaultNow(),
+}, (t) => ({
+  uniqueSavedDev: unique().on(t.firebaseUid, t.devotionalId),
+}));
+
+export type UserSavedDevotional = typeof userSavedDevotionals.$inferSelect;
+
+// User Devotional Reading History — upsert on open; one record per (uid, devotional)
+export const userDevotionalHistory = pgTable("user_devotional_history", {
+  id: serial("id").primaryKey(),
+  firebaseUid: text("firebase_uid").notNull(),
+  devotionalId: integer("devotional_id").notNull().references(() => devotionals.id, { onDelete: "cascade" }),
+  firstOpenedAt: timestamp("first_opened_at").defaultNow(),
+  lastOpenedAt: timestamp("last_opened_at").defaultNow(),
+}, (t) => ({
+  uniqueDevHistory: unique().on(t.firebaseUid, t.devotionalId),
+}));
+
+export type UserDevotionalHistory = typeof userDevotionalHistory.$inferSelect;
+
+// User Devotional Reading Streak — one row per Firebase UID
+export const userDevotionalStreak = pgTable("user_devotional_streak", {
+  id: serial("id").primaryKey(),
+  firebaseUid: text("firebase_uid").notNull().unique(),
+  currentStreak: integer("current_streak").default(0),
+  longestStreak: integer("longest_streak").default(0),
+  lastReadDate: text("last_read_date"), // "YYYY-MM-DD"
+});
+
+export type UserDevotionalStreak = typeof userDevotionalStreak.$inferSelect;
+
+// User Devotional Notes — private, one note per (uid, devotional)
+export const userDevotionalNotes = pgTable("user_devotional_notes", {
+  id: serial("id").primaryKey(),
+  firebaseUid: text("firebase_uid").notNull(),
+  devotionalId: integer("devotional_id").notNull().references(() => devotionals.id, { onDelete: "cascade" }),
+  noteText: text("note_text").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => ({
+  uniqueDevNote: unique().on(t.firebaseUid, t.devotionalId),
+}));
+
+export type UserDevotionalNote = typeof userDevotionalNotes.$inferSelect;

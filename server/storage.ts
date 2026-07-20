@@ -25,6 +25,10 @@ import {
   userDownloadHistory,
   userPlaybackHistory,
   userMusicSettings,
+  userSavedDevotionals,
+  userDevotionalHistory,
+  userDevotionalStreak,
+  userDevotionalNotes,
   type Devotional,
   type InsertDevotional,
   type UpdateDevotionalRequest,
@@ -70,6 +74,10 @@ import {
   type UserDownloadRecord,
   type UserPlaybackHistory,
   type UserMusicSettings,
+  type UserSavedDevotional,
+  type UserDevotionalHistory,
+  type UserDevotionalStreak,
+  type UserDevotionalNote,
   type InsertSongTestimony,
 } from "@shared/schema";
 import { eq, desc, and, isNull, or, ilike, lte, notInArray, sql } from "drizzle-orm";
@@ -212,6 +220,20 @@ export interface IStorage {
   upsertPlaybackPosition(uid: string, songId: number, lastPosition: number, durationSecs: number, progressPercent: number): Promise<void>;
   getUserMusicSettings(uid: string): Promise<UserMusicSettings | null>;
   upsertUserMusicSettings(uid: string, settings: Partial<Pick<UserMusicSettings, "autoplayNext" | "rememberPosition" | "defaultSpeed" | "repeatMode" | "shuffle">>): Promise<UserMusicSettings>;
+
+  // Phase F: Devotional Account Sync
+  getSavedDevotionals(uid: string): Promise<(UserSavedDevotional & { devotional: Devotional })[]>;
+  saveDevotional(uid: string, devotionalId: number): Promise<void>;
+  unsaveDevotional(uid: string, devotionalId: number): Promise<void>;
+  isDevotionalSaved(uid: string, devotionalId: number): Promise<boolean>;
+  mergeLocalDevotionalSaves(uid: string, devotionalIds: number[]): Promise<void>;
+  recordDevotionalRead(uid: string, devotionalId: number): Promise<void>;
+  getDevotionalHistory(uid: string): Promise<(UserDevotionalHistory & { devotional: Devotional })[]>;
+  getDevotionalStreak(uid: string): Promise<UserDevotionalStreak | null>;
+  upsertDevotionalStreak(uid: string, currentStreak: number, longestStreak: number, lastReadDate: string): Promise<UserDevotionalStreak>;
+  getDevotionalNote(uid: string, devotionalId: number): Promise<UserDevotionalNote | null>;
+  upsertDevotionalNote(uid: string, devotionalId: number, noteText: string): Promise<void>;
+  deleteDevotionalNote(uid: string, devotionalId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1106,6 +1128,93 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return row;
+  }
+
+  // ── Phase F: Devotional Account Sync ────────────────────────────────────────
+
+  async getSavedDevotionals(uid: string): Promise<(UserSavedDevotional & { devotional: Devotional })[]> {
+    const rows = await db
+      .select({ saved: userSavedDevotionals, devotional: devotionals })
+      .from(userSavedDevotionals)
+      .innerJoin(devotionals, eq(userSavedDevotionals.devotionalId, devotionals.id))
+      .where(and(eq(userSavedDevotionals.firebaseUid, uid), or(eq(devotionals.isDeleted, false), isNull(devotionals.isDeleted))))
+      .orderBy(desc(userSavedDevotionals.savedAt));
+    return rows.map(r => ({ ...r.saved, devotional: r.devotional }));
+  }
+
+  async saveDevotional(uid: string, devotionalId: number): Promise<void> {
+    await db.insert(userSavedDevotionals).values({ firebaseUid: uid, devotionalId }).onConflictDoNothing();
+  }
+
+  async unsaveDevotional(uid: string, devotionalId: number): Promise<void> {
+    await db.delete(userSavedDevotionals).where(and(eq(userSavedDevotionals.firebaseUid, uid), eq(userSavedDevotionals.devotionalId, devotionalId)));
+  }
+
+  async isDevotionalSaved(uid: string, devotionalId: number): Promise<boolean> {
+    const [row] = await db.select({ id: userSavedDevotionals.id }).from(userSavedDevotionals)
+      .where(and(eq(userSavedDevotionals.firebaseUid, uid), eq(userSavedDevotionals.devotionalId, devotionalId)));
+    return !!row;
+  }
+
+  async mergeLocalDevotionalSaves(uid: string, devotionalIds: number[]): Promise<void> {
+    if (!devotionalIds.length) return;
+    const values = devotionalIds.map(devotionalId => ({ firebaseUid: uid, devotionalId }));
+    await db.insert(userSavedDevotionals).values(values).onConflictDoNothing();
+  }
+
+  async recordDevotionalRead(uid: string, devotionalId: number): Promise<void> {
+    await db.insert(userDevotionalHistory)
+      .values({ firebaseUid: uid, devotionalId, firstOpenedAt: new Date(), lastOpenedAt: new Date() })
+      .onConflictDoUpdate({
+        target: [userDevotionalHistory.firebaseUid, userDevotionalHistory.devotionalId],
+        set: { lastOpenedAt: new Date() },
+      });
+  }
+
+  async getDevotionalHistory(uid: string): Promise<(UserDevotionalHistory & { devotional: Devotional })[]> {
+    const rows = await db
+      .select({ history: userDevotionalHistory, devotional: devotionals })
+      .from(userDevotionalHistory)
+      .innerJoin(devotionals, eq(userDevotionalHistory.devotionalId, devotionals.id))
+      .where(and(eq(userDevotionalHistory.firebaseUid, uid), or(eq(devotionals.isDeleted, false), isNull(devotionals.isDeleted))))
+      .orderBy(desc(userDevotionalHistory.lastOpenedAt))
+      .limit(20);
+    return rows.map(r => ({ ...r.history, devotional: r.devotional }));
+  }
+
+  async getDevotionalStreak(uid: string): Promise<UserDevotionalStreak | null> {
+    const [row] = await db.select().from(userDevotionalStreak).where(eq(userDevotionalStreak.firebaseUid, uid));
+    return row ?? null;
+  }
+
+  async upsertDevotionalStreak(uid: string, currentStreak: number, longestStreak: number, lastReadDate: string): Promise<UserDevotionalStreak> {
+    const [row] = await db.insert(userDevotionalStreak)
+      .values({ firebaseUid: uid, currentStreak, longestStreak, lastReadDate })
+      .onConflictDoUpdate({
+        target: userDevotionalStreak.firebaseUid,
+        set: { currentStreak, longestStreak, lastReadDate },
+      })
+      .returning();
+    return row;
+  }
+
+  async getDevotionalNote(uid: string, devotionalId: number): Promise<UserDevotionalNote | null> {
+    const [row] = await db.select().from(userDevotionalNotes)
+      .where(and(eq(userDevotionalNotes.firebaseUid, uid), eq(userDevotionalNotes.devotionalId, devotionalId)));
+    return row ?? null;
+  }
+
+  async upsertDevotionalNote(uid: string, devotionalId: number, noteText: string): Promise<void> {
+    await db.insert(userDevotionalNotes)
+      .values({ firebaseUid: uid, devotionalId, noteText, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: [userDevotionalNotes.firebaseUid, userDevotionalNotes.devotionalId],
+        set: { noteText, updatedAt: new Date() },
+      });
+  }
+
+  async deleteDevotionalNote(uid: string, devotionalId: number): Promise<void> {
+    await db.delete(userDevotionalNotes).where(and(eq(userDevotionalNotes.firebaseUid, uid), eq(userDevotionalNotes.devotionalId, devotionalId)));
   }
 }
 

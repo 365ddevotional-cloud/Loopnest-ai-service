@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
 import { type DevotionalResponse } from "@shared/schema";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,9 +11,10 @@ import { useScriptureText } from "@/hooks/use-scripture";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useFontSize } from "@/contexts/FontSizeContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { Loader2, Sun, Moon, Share2, Shield, Quote, Flame, Volume2 } from "lucide-react";
+import { Loader2, Sun, Moon, Share2, Shield, Quote, Flame, Volume2, Bookmark, BookmarkCheck, PenLine, Trash2, Save } from "lucide-react";
 import { useAudioReader } from "@/hooks/useAudioReader";
 import { useI18n } from "@/hooks/useI18n";
+import { useDevotionalAccount } from "@/hooks/useDevotionalAccount";
 
 const fontSizeClasses = {
   "small": {
@@ -39,9 +41,10 @@ const fontSizeClasses = {
 
 interface DevotionalCardProps {
   devotional: DevotionalResponse;
+  showNotes?: boolean;
 }
 
-export function DevotionalCard({ devotional }: DevotionalCardProps) {
+export function DevotionalCard({ devotional, showNotes = false }: DevotionalCardProps) {
   const { translation } = useTranslation();
   const { fontSize } = useFontSize();
   const { resolvedTheme, setTheme } = useTheme();
@@ -52,6 +55,34 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
     devotional.scriptureReference,
     devotional.scriptureText
   );
+
+  const {
+    isSignedIn,
+    isSaved,
+    savePending,
+    toggleSave,
+    noteText,
+    setNoteText,
+    notePending,
+    noteLoaded,
+    saveNote,
+    deleteNote,
+    recordRead,
+    NOTE_MAX,
+  } = useDevotionalAccount(devotional.id);
+
+  const [localNote, setLocalNote] = useState("");
+  const [noteSavedMsg, setNoteSavedMsg] = useState(false);
+
+  // Sync loaded note text to localNote for editing
+  useEffect(() => {
+    setLocalNote(noteText);
+  }, [noteText]);
+
+  // Record read on mount
+  useEffect(() => {
+    recordRead();
+  }, [recordRead]);
 
   const faithItems = devotional.faithDeclarations || [];
   const quoteItems = devotional.christianQuotes
@@ -82,6 +113,17 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
     ``,
     `— ${t("sharedFrom")}`,
   ].join('\n');
+
+  const handleSaveNote = async () => {
+    await saveNote(localNote);
+    setNoteSavedMsg(true);
+    setTimeout(() => setNoteSavedMsg(false), 2500);
+  };
+
+  const handleDeleteNote = async () => {
+    await deleteNote();
+    setLocalNote("");
+  };
 
   return (
     <article className="max-w-4xl mx-auto bg-card shadow-xl shadow-primary/10 rounded-none md:rounded-xl overflow-hidden border border-card-border">
@@ -127,6 +169,21 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
             >
               <Volume2 className="w-3.5 h-3.5" />
               {t("listen")}
+            </Button>
+            <Button
+              size="sm"
+              variant={isSaved ? "default" : "outline"}
+              onClick={toggleSave}
+              disabled={savePending}
+              className="rounded-full text-xs font-bold tracking-wide uppercase shadow-md gap-1"
+              data-testid="button-save-devotional"
+              title={isSaved ? "Remove from Saved" : "Save Devotional"}
+            >
+              {isSaved ? (
+                <><BookmarkCheck className="w-3.5 h-3.5" /> Saved</>
+              ) : (
+                <><Bookmark className="w-3.5 h-3.5" /> Save</>
+              )}
             </Button>
             <ShareButton
               title={devotional.title}
@@ -259,6 +316,65 @@ export function DevotionalCard({ devotional }: DevotionalCardProps) {
             {t("writtenBy")} {devotional.author}
           </span>
         </div>
+
+        {/* Personal Notes — shown only on full devotional view */}
+        {showNotes && (
+          <div className="mt-4 pt-6 border-t border-border/40" data-testid="section-personal-note">
+            <div className="flex items-center gap-2 mb-3">
+              <PenLine className="w-4 h-4 text-primary/60" />
+              <h3 className="font-serif text-lg font-semibold text-foreground">My Personal Note</h3>
+            </div>
+
+            {!isSignedIn ? (
+              <p className="text-sm text-muted-foreground italic border border-dashed border-border/40 rounded-xl p-4">
+                Sign in to save a private note for this devotional. Your notes are only visible to you.
+              </p>
+            ) : !noteLoaded ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading...
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <textarea
+                  value={localNote}
+                  onChange={e => setLocalNote(e.target.value.slice(0, NOTE_MAX))}
+                  placeholder="Write your personal reflection here... (private, only you can see this)"
+                  className="w-full min-h-[120px] rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 transition"
+                  data-testid="textarea-personal-note"
+                />
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-xs text-muted-foreground/50">{localNote.length}/{NOTE_MAX}</span>
+                  <div className="flex gap-2">
+                    {noteText && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleDeleteNote}
+                        disabled={notePending}
+                        className="text-xs gap-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+                        data-testid="button-delete-note"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Delete
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={handleSaveNote}
+                      disabled={notePending || !localNote.trim()}
+                      className="text-xs gap-1"
+                      data-testid="button-save-note"
+                    >
+                      {notePending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                      {noteSavedMsg ? "Saved!" : "Save Note"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </article>
   );

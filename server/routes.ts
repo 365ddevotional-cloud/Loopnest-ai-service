@@ -2408,6 +2408,156 @@ export async function registerRoutes(
     }
   });
 
+  // ── Phase F: Devotional Account Sync ────────────────────────────────────────
+
+  // Saved Devotionals
+  app.get("/api/user/devotional/saved", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const saved = await storage.getSavedDevotionals(uid);
+      res.json(saved);
+    } catch {
+      res.status(500).json({ message: "Failed to get saved devotionals" });
+    }
+  });
+
+  app.post("/api/user/devotional/saved", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const { devotionalId } = req.body;
+      if (!devotionalId || typeof devotionalId !== "number") return res.status(400).json({ message: "Invalid devotionalId" });
+      await storage.saveDevotional(uid, devotionalId);
+      res.json({ success: true });
+    } catch {
+      res.status(500).json({ message: "Failed to save devotional" });
+    }
+  });
+
+  app.delete("/api/user/devotional/saved/:devotionalId", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const devotionalId = parseInt(req.params.devotionalId);
+      if (isNaN(devotionalId)) return res.status(400).json({ message: "Invalid devotionalId" });
+      await storage.unsaveDevotional(uid, devotionalId);
+      res.json({ success: true });
+    } catch {
+      res.status(500).json({ message: "Failed to unsave devotional" });
+    }
+  });
+
+  app.get("/api/user/devotional/saved/:devotionalId/status", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const devotionalId = parseInt(req.params.devotionalId);
+      if (isNaN(devotionalId)) return res.status(400).json({ saved: false });
+      const saved = await storage.isDevotionalSaved(uid, devotionalId);
+      res.json({ saved });
+    } catch {
+      res.status(500).json({ saved: false });
+    }
+  });
+
+  app.post("/api/user/devotional/saved/merge", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const { devotionalIds } = req.body;
+      if (!Array.isArray(devotionalIds)) return res.status(400).json({ message: "devotionalIds must be an array" });
+      const ids = devotionalIds.filter((id): id is number => typeof id === "number");
+      await storage.mergeLocalDevotionalSaves(uid, ids);
+      res.json({ success: true, merged: ids.length });
+    } catch {
+      res.status(500).json({ message: "Failed to merge devotional saves" });
+    }
+  });
+
+  // Reading History
+  app.post("/api/user/devotional/history", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const { devotionalId } = req.body;
+      if (!devotionalId || typeof devotionalId !== "number") return res.status(400).json({ message: "Invalid devotionalId" });
+      await storage.recordDevotionalRead(uid, devotionalId);
+      res.json({ success: true });
+    } catch {
+      res.status(500).json({ message: "Failed to record read" });
+    }
+  });
+
+  app.get("/api/user/devotional/history", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const history = await storage.getDevotionalHistory(uid);
+      res.json(history);
+    } catch {
+      res.status(500).json({ message: "Failed to get reading history" });
+    }
+  });
+
+  // Reading Streak
+  app.get("/api/user/devotional/streak", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const streak = await storage.getDevotionalStreak(uid);
+      res.json(streak ?? { currentStreak: 0, longestStreak: 0, lastReadDate: null });
+    } catch {
+      res.status(500).json({ message: "Failed to get streak" });
+    }
+  });
+
+  app.put("/api/user/devotional/streak", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const { currentStreak, longestStreak, lastReadDate } = req.body;
+      if (typeof currentStreak !== "number" || typeof longestStreak !== "number" || typeof lastReadDate !== "string") {
+        return res.status(400).json({ message: "Invalid streak data" });
+      }
+      const streak = await storage.upsertDevotionalStreak(uid, currentStreak, longestStreak, lastReadDate);
+      res.json(streak);
+    } catch {
+      res.status(500).json({ message: "Failed to save streak" });
+    }
+  });
+
+  // Private Notes
+  app.get("/api/user/devotional/note/:devotionalId", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const devotionalId = parseInt(req.params.devotionalId);
+      if (isNaN(devotionalId)) return res.status(400).json({ message: "Invalid devotionalId" });
+      const note = await storage.getDevotionalNote(uid, devotionalId);
+      res.json(note ?? null);
+    } catch {
+      res.status(500).json({ message: "Failed to get note" });
+    }
+  });
+
+  app.put("/api/user/devotional/note/:devotionalId", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const devotionalId = parseInt(req.params.devotionalId);
+      if (isNaN(devotionalId)) return res.status(400).json({ message: "Invalid devotionalId" });
+      const { noteText } = req.body;
+      if (typeof noteText !== "string" || noteText.trim().length === 0) return res.status(400).json({ message: "noteText required" });
+      if (noteText.length > 1000) return res.status(400).json({ message: "Note exceeds 1000 character limit" });
+      await storage.upsertDevotionalNote(uid, devotionalId, noteText.trim());
+      res.json({ success: true });
+    } catch {
+      res.status(500).json({ message: "Failed to save note" });
+    }
+  });
+
+  app.delete("/api/user/devotional/note/:devotionalId", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const devotionalId = parseInt(req.params.devotionalId);
+      if (isNaN(devotionalId)) return res.status(400).json({ message: "Invalid devotionalId" });
+      await storage.deleteDevotionalNote(uid, devotionalId);
+      res.json({ success: true });
+    } catch {
+      res.status(500).json({ message: "Failed to delete note" });
+    }
+  });
+
   return httpServer;
 }
 

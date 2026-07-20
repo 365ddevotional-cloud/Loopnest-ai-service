@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 const LOCAL_SONG_FAV_KEY = "spirittone-song-favorites";
+export const LOCAL_DEV_SAVE_KEY = "devotional-saves"; // array of devotional IDs
 
 interface UserContextType {
   user: User | null;
@@ -65,18 +66,44 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const mergeLocalDevotionalSaves = useCallback(async (firebaseUser: User) => {
+    try {
+      const raw = localStorage.getItem(LOCAL_DEV_SAVE_KEY);
+      if (!raw) return;
+      const localIds: number[] = JSON.parse(raw);
+      if (!Array.isArray(localIds) || localIds.length === 0) return;
+
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch("/api/user/devotional/saved/merge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ devotionalIds: localIds }),
+      });
+      if (res.ok) {
+        localStorage.removeItem(LOCAL_DEV_SAVE_KEY);
+        queryClient.invalidateQueries({ queryKey: ["/api/user/devotional/saved"] });
+      }
+    } catch {
+      // silently ignore — local saves preserved
+    }
+  }, []);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
       if (firebaseUser) {
         await mergeLocalFavorites(firebaseUser);
+        await mergeLocalDevotionalSaves(firebaseUser);
         queryClient.invalidateQueries({ queryKey: ["/api/user/library/saved"] });
         queryClient.invalidateQueries({ queryKey: ["/api/user/library/favorites"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/user/devotional/saved"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/user/devotional/history"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/user/devotional/streak"] });
       }
     });
     return unsubscribe;
-  }, [mergeLocalFavorites]);
+  }, [mergeLocalFavorites, mergeLocalDevotionalSaves]);
 
   const getIdToken = useCallback(async (): Promise<string | null> => {
     if (!user) return null;
@@ -129,6 +156,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
     queryClient.invalidateQueries({ queryKey: ["/api/user/library/saved"] });
     queryClient.invalidateQueries({ queryKey: ["/api/user/library/favorites"] });
     queryClient.invalidateQueries({ queryKey: ["/api/user/library/downloads"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/user/devotional/saved"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/user/devotional/history"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/user/devotional/streak"] });
   }, []);
 
   const resetPassword = useCallback(async (email: string) => {
