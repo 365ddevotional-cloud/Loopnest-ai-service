@@ -60,6 +60,7 @@ export default function PrayerCounseling() {
     isAnonymous: false,
     priority: "prayer_normal",
     category: "other",
+    privacy: "private",
   });
 
   const { data: autoReplyTemplate } = useQuery<AutoReplyTemplate>({
@@ -115,6 +116,7 @@ export default function PrayerCounseling() {
         isAnonymous: data.isAnonymous,
         priority: data.priority,
         category: data.category,
+        privacy: data.privacy || "private",
       };
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (user) {
@@ -433,6 +435,24 @@ export default function PrayerCounseling() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="privacy">Privacy *</Label>
+            <Select
+              value={formData.privacy}
+              onValueChange={(value) => setFormData({ ...formData, privacy: value })}
+            >
+              <SelectTrigger data-testid="select-privacy">
+                <SelectValue placeholder="Select privacy" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="private">Private — only visible to ministry team</SelectItem>
+                <SelectItem value="anonymous">Anonymous Public — shared without your name</SelectItem>
+                <SelectItem value="public">Public With Name — shared with your name</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">Default is Private. Your email, phone, and personal details are never shared publicly.</p>
           </div>
 
           <div className="space-y-2">

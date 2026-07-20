@@ -2628,6 +2628,51 @@ export async function registerRoutes(
     }
   });
 
+  // GET /api/user/prayers/:id/testimony — get user's testimony draft for a prayer request
+  app.get("/api/user/prayers/:id/testimony", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid id" });
+      const testimony = await storage.getUserTestimony(id, uid);
+      res.json(testimony ?? null);
+    } catch {
+      res.status(500).json({ message: "Failed to fetch testimony" });
+    }
+  });
+
+  // PUT /api/user/prayers/:id/testimony — save testimony draft
+  app.put("/api/user/prayers/:id/testimony", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid id" });
+      const { name, message } = req.body;
+      if (!message?.trim()) return res.status(400).json({ message: "Message is required" });
+      if (message.trim().length > 2000) return res.status(400).json({ message: "Testimony must be under 2000 characters" });
+      const testimony = await storage.upsertUserTestimony(id, uid, { name: name?.trim() || undefined, message: message.trim() });
+      res.json(testimony);
+    } catch {
+      res.status(500).json({ message: "Failed to save testimony" });
+    }
+  });
+
+  // POST /api/user/prayers/:id/testimony/submit — submit testimony for ministry review
+  app.post("/api/user/prayers/:id/testimony/submit", requireUser, async (req, res) => {
+    try {
+      const uid = (req as any).uid as string;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid id" });
+      const testimony = await storage.getUserTestimony(id, uid);
+      if (!testimony) return res.status(404).json({ message: "No testimony draft found for this prayer request" });
+      if (!testimony.isDraft) return res.status(400).json({ message: "Testimony already submitted for review" });
+      const updated = await storage.submitTestimonyForReview(testimony.id, uid);
+      res.json(updated);
+    } catch {
+      res.status(500).json({ message: "Failed to submit testimony for review" });
+    }
+  });
+
   return httpServer;
 }
 

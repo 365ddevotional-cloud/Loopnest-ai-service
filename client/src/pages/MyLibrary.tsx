@@ -634,6 +634,12 @@ const PRAYER_STATUS_LABELS: Record<string, { label: string; color: string }> = {
   closed: { label: "Closed", color: "text-muted-foreground bg-muted/40" },
 };
 
+const PRIVACY_LABELS: Record<string, { label: string; icon: string }> = {
+  private: { label: "Private", icon: "🔒" },
+  anonymous: { label: "Anonymous Public", icon: "👤" },
+  public: { label: "Public", icon: "🌐" },
+};
+
 function PrayerCard({
   prayer,
   onAnswer,
@@ -651,17 +657,63 @@ function PrayerCard({
   withdrawPending: boolean;
   editPending: boolean;
 }) {
+  const { getIdToken } = useUser();
   const [showAnswerForm, setShowAnswerForm] = useState(false);
   const [answerNote, setAnswerNote] = useState("");
   const [showEdit, setShowEdit] = useState(false);
   const [editSubject, setEditSubject] = useState(prayer.subject ?? "");
   const [editMessage, setEditMessage] = useState(prayer.message);
+  const [showTestimony, setShowTestimony] = useState(false);
+  const [testimonyName, setTestimonyName] = useState("");
+  const [testimonyText, setTestimonyText] = useState("");
+
+  const { data: existingTestimony, refetch: refetchTestimony } = useQuery({
+    queryKey: ["/api/user/prayers", prayer.id, "testimony"],
+    queryFn: async () => {
+      const res = await authedFetch(`/api/user/prayers/${prayer.id}/testimony`, getIdToken);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: showTestimony,
+  });
+
+  const saveTestimonyMutation = useMutation({
+    mutationFn: async () => {
+      if (!testimonyText.trim()) throw new Error("Testimony text required");
+      const res = await authedFetch(`/api/user/prayers/${prayer.id}/testimony`, getIdToken, {
+        method: "PUT",
+        body: JSON.stringify({ name: testimonyName.trim() || undefined, message: testimonyText.trim() }),
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      return res.json();
+    },
+    onSuccess: () => { refetchTestimony(); },
+  });
+
+  const submitTestimonyMutation = useMutation({
+    mutationFn: async () => {
+      const res = await authedFetch(`/api/user/prayers/${prayer.id}/testimony/submit`, getIdToken, { method: "POST" });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
+      return res.json();
+    },
+    onSuccess: () => { refetchTestimony(); },
+  });
 
   const statusInfo = PRAYER_STATUS_LABELS[prayer.status] ?? PRAYER_STATUS_LABELS.closed;
+  const privacyInfo = PRIVACY_LABELS[(prayer as any).privacy ?? "private"] ?? PRIVACY_LABELS.private;
   const canEdit = prayer.status === "new";
   const canWithdraw = prayer.status === "new";
   const canAnswer = prayer.status !== "answered" && prayer.status !== "closed";
+  const canAddTestimony = prayer.status === "answered";
   const summary = prayer.subject || prayer.message.slice(0, 80) + (prayer.message.length > 80 ? "…" : "");
+
+  const handleOpenTestimony = () => {
+    setShowTestimony(true);
+    if (existingTestimony) {
+      setTestimonyName(existingTestimony.name ?? "");
+      setTestimonyText(existingTestimony.message ?? "");
+    }
+  };
 
   return (
     <div
@@ -676,7 +728,7 @@ function PrayerCard({
           </div>
           <div className="font-semibold text-sm text-foreground">{summary}</div>
           {prayer.category && (
-            <div className="text-xs text-muted-foreground/70 capitalize mt-0.5">{prayer.category}</div>
+            <div className="text-xs text-muted-foreground/70 capitalize mt-0.5">{prayer.category} · <span title="Privacy">{privacyInfo.icon} {privacyInfo.label}</span></div>
           )}
         </div>
         <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${statusInfo.color}`}>
@@ -754,7 +806,7 @@ function PrayerCard({
       )}
 
       {/* Action buttons */}
-      {!showEdit && !showAnswerForm && (
+      {!showEdit && !showAnswerForm && !showTestimony && (
         <div className="flex items-center gap-2 flex-wrap border-t border-border/20 pt-2">
           <Link href="/prayer">
             <Button size="sm" variant="outline" className="text-xs gap-1 h-7" data-testid={`button-open-prayer-${prayer.id}`}>
@@ -772,6 +824,18 @@ function PrayerCard({
             >
               <CheckCircle2 className="w-3 h-3" />
               Answered
+            </Button>
+          )}
+          {canAddTestimony && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-xs gap-1 h-7 text-emerald-600 hover:text-emerald-700"
+              onClick={handleOpenTestimony}
+              data-testid={`button-testimony-prayer-${prayer.id}`}
+            >
+              <BookOpen className="w-3 h-3" />
+              {existingTestimony && !existingTestimony.isDraft ? "View Testimony" : "Add Testimony"}
             </Button>
           )}
           {canEdit && (
@@ -798,6 +862,74 @@ function PrayerCard({
               {withdrawPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
               Withdraw
             </Button>
+          )}
+        </div>
+      )}
+
+      {/* Testimony form */}
+      {showTestimony && (
+        <div className="space-y-2 border-t border-border/30 pt-3" data-testid={`section-testimony-${prayer.id}`}>
+          {existingTestimony && !existingTestimony.isDraft ? (
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                <BookOpen className="w-3 h-3" /> Testimony submitted for review
+              </div>
+              <div className="text-xs text-foreground/80 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg px-3 py-2 italic">
+                "{existingTestimony.message}"
+              </div>
+              <p className="text-xs text-muted-foreground">Your testimony is pending ministry approval before it appears publicly.</p>
+              <Button size="sm" variant="ghost" className="text-xs" onClick={() => setShowTestimony(false)}>Close</Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Share how God answered your prayer</div>
+              <input
+                className="w-full text-sm border border-border/50 rounded-lg px-3 py-1.5 bg-background"
+                placeholder="Your name (optional, leave blank to share anonymously)"
+                value={testimonyName}
+                onChange={e => setTestimonyName(e.target.value)}
+                data-testid={`input-testimony-name-${prayer.id}`}
+              />
+              <textarea
+                className="w-full text-sm border border-border/50 rounded-lg px-3 py-2 bg-background resize-none"
+                rows={4}
+                placeholder="Share how God worked in your situation… (max 2000 characters)"
+                value={testimonyText}
+                onChange={e => setTestimonyText(e.target.value)}
+                maxLength={2000}
+                data-testid={`textarea-testimony-${prayer.id}`}
+              />
+              <p className="text-xs text-muted-foreground text-right">{testimonyText.length}/2000</p>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs gap-1"
+                  disabled={saveTestimonyMutation.isPending || !testimonyText.trim()}
+                  onClick={() => saveTestimonyMutation.mutate()}
+                  data-testid={`button-save-testimony-${prayer.id}`}
+                >
+                  {saveTestimonyMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                  Save Draft
+                </Button>
+                {(existingTestimony?.isDraft || saveTestimonyMutation.isSuccess) && (
+                  <Button
+                    size="sm"
+                    className="text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    disabled={submitTestimonyMutation.isPending}
+                    onClick={() => submitTestimonyMutation.mutate()}
+                    data-testid={`button-submit-testimony-${prayer.id}`}
+                  >
+                    {submitTestimonyMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <BookOpen className="w-3 h-3" />}
+                    Submit for Ministry Review
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" className="text-xs" onClick={() => setShowTestimony(false)}>Cancel</Button>
+              </div>
+              {submitTestimonyMutation.isError && (
+                <p className="text-xs text-destructive">{(submitTestimonyMutation.error as Error).message}</p>
+              )}
+            </div>
           )}
         </div>
       )}

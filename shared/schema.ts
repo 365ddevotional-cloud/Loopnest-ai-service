@@ -134,6 +134,7 @@ export const prayerRequests = pgTable("prayer_requests", {
   firebaseUid: text("firebase_uid"),
   answeredAt: timestamp("answered_at"),
   answerNote: text("answer_note"),
+  privacy: text("privacy").default("private"),
 });
 
 export const insertPrayerRequestSchema = createInsertSchema(prayerRequests).omit({
@@ -379,6 +380,8 @@ export const testimonies = pgTable("testimonies", {
   photoUrl: text("photo_url"),
   isApproved: boolean("is_approved").default(false),
   createdAt: timestamp("created_at").defaultNow(),
+  firebaseUid: text("firebase_uid"),
+  isDraft: boolean("is_draft").default(true),
 });
 
 export const insertTestimonySchema = createInsertSchema(testimonies).omit({

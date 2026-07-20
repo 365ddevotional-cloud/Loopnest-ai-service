@@ -156,6 +156,10 @@ export interface IStorage {
   createTestimony(testimony: InsertTestimony): Promise<Testimony>;
   approveTestimony(id: number): Promise<Testimony>;
   deleteTestimony(id: number): Promise<void>;
+  // User-linked testimony workflow
+  getUserTestimony(prayerRequestId: number, uid: string): Promise<Testimony | undefined>;
+  upsertUserTestimony(prayerRequestId: number, uid: string, data: { name?: string; message: string }): Promise<Testimony>;
+  submitTestimonyForReview(id: number, uid: string): Promise<Testimony>;
 
   // Prayer Follow-Ups
   getFollowUpsForRequest(requestId: number): Promise<PrayerFollowUp[]>;
@@ -711,6 +715,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(testimonies)
+      .where(or(eq(testimonies.isDraft, false), isNull(testimonies.isDraft)))
       .orderBy(desc(testimonies.createdAt));
   }
 
@@ -733,6 +738,40 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTestimony(id: number): Promise<void> {
     await db.delete(testimonies).where(eq(testimonies.id, id));
+  }
+
+  async getUserTestimony(prayerRequestId: number, uid: string): Promise<Testimony | undefined> {
+    const [t] = await db
+      .select()
+      .from(testimonies)
+      .where(and(eq(testimonies.requestId, prayerRequestId), eq(testimonies.firebaseUid, uid)));
+    return t;
+  }
+
+  async upsertUserTestimony(prayerRequestId: number, uid: string, data: { name?: string; message: string }): Promise<Testimony> {
+    const existing = await this.getUserTestimony(prayerRequestId, uid);
+    if (existing) {
+      const [updated] = await db
+        .update(testimonies)
+        .set({ name: data.name ?? existing.name, message: data.message })
+        .where(eq(testimonies.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db
+      .insert(testimonies)
+      .values({ requestId: prayerRequestId, firebaseUid: uid, name: data.name ?? null, message: data.message, isDraft: true })
+      .returning();
+    return created;
+  }
+
+  async submitTestimonyForReview(id: number, uid: string): Promise<Testimony> {
+    const [updated] = await db
+      .update(testimonies)
+      .set({ isDraft: false })
+      .where(and(eq(testimonies.id, id), eq(testimonies.firebaseUid, uid)))
+      .returning();
+    return updated;
   }
 
   async getFollowUpsForRequest(requestId: number): Promise<PrayerFollowUp[]> {

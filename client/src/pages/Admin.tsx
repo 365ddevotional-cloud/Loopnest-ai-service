@@ -30,7 +30,8 @@ const PRIORITY_LABELS: Record<string, string> = {
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   new: { label: "New", color: "bg-blue-100 text-blue-800" },
-  replied: { label: "Replied", color: "bg-green-100 text-green-800" },
+  replied: { label: "Being Prayed For", color: "bg-green-100 text-green-800" },
+  answered: { label: "Answered", color: "bg-amber-100 text-amber-800" },
   closed: { label: "Closed", color: "bg-gray-100 text-gray-800" },
 };
 
@@ -1347,7 +1348,7 @@ function PrayerInbox() {
                     )}
                     Send Reply
                   </Button>
-                  {selectedRequest.status !== "replied" && (
+                  {selectedRequest.status !== "replied" && selectedRequest.status !== "answered" && (
                     <Button
                       variant="outline"
                       onClick={() => updateStatusMutation.mutate({ requestId: selectedRequest.id, status: "replied" })}
@@ -1355,7 +1356,18 @@ function PrayerInbox() {
                       data-testid="button-mark-replied"
                     >
                       <CheckCircle className="w-4 h-4 mr-2" />
-                      Mark as Replied
+                      Being Prayed For
+                    </Button>
+                  )}
+                  {selectedRequest.status !== "answered" && (
+                    <Button
+                      variant="outline"
+                      onClick={() => updateStatusMutation.mutate({ requestId: selectedRequest.id, status: "answered" })}
+                      disabled={updateStatusMutation.isPending}
+                      data-testid="button-mark-answered"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Mark Answered
                     </Button>
                   )}
                   {selectedRequest.status !== "closed" ? (
