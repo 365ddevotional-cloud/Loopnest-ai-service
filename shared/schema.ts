@@ -875,4 +875,93 @@ export const churchActivityLog = pgTable("church_activity_log", {
 });
 export const insertChurchActivitySchema = createInsertSchema(churchActivityLog).omit({ id: true, createdAt: true });
 export type ChurchActivity = typeof churchActivityLog.$inferSelect;
+
+// ── Church Giving Settings ────────────────────────────────────────────────────
+export const churchGivingSettings = pgTable("church_giving_settings", {
+  id: serial("id").primaryKey(),
+  churchId: integer("church_id").notNull().unique().references(() => churches.id, { onDelete: "cascade" }),
+  isEnabled: boolean("is_enabled").notNull().default(false),
+  currency: text("currency").notNull().default("USD"),
+  platformFeeAccepted: boolean("platform_fee_accepted").notNull().default(false),
+  givingStatement: text("giving_statement"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertChurchGivingSettingsSchema = createInsertSchema(churchGivingSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export type ChurchGivingSettings = typeof churchGivingSettings.$inferSelect;
+
+// ── Church Giving Categories ──────────────────────────────────────────────────
+export const churchGivingCategories = pgTable("church_giving_categories", {
+  id: serial("id").primaryKey(),
+  churchId: integer("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertChurchGivingCategorySchema = createInsertSchema(churchGivingCategories).omit({ id: true, createdAt: true });
+export type ChurchGivingCategory = typeof churchGivingCategories.$inferSelect;
+
+// ── Church Payout Config ──────────────────────────────────────────────────────
+export const churchPayoutConfigs = pgTable("church_payout_configs", {
+  id: serial("id").primaryKey(),
+  churchId: integer("church_id").notNull().unique().references(() => churches.id, { onDelete: "cascade" }),
+  country: text("country"),
+  currency: text("currency"),
+  legalName: text("legal_name"),
+  publicName: text("public_name"),
+  accountHolderName: text("account_holder_name"),
+  bankName: text("bank_name"),
+  accountNumber: text("account_number"),
+  routingNumber: text("routing_number"),
+  swiftBic: text("swift_bic"),
+  mobileMoneyProvider: text("mobile_money_provider"),
+  mobileMoneyNumber: text("mobile_money_number"),
+  contactEmail: text("contact_email"),
+  contactPhone: text("contact_phone"),
+  verificationStatus: text("verification_status").notNull().default("unverified"),
+  isAuthorizedToReceive: boolean("is_authorized_to_receive").notNull().default(false),
+  updatedBy: text("updated_by"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertChurchPayoutConfigSchema = createInsertSchema(churchPayoutConfigs).omit({ id: true, createdAt: true, updatedAt: true });
+export type ChurchPayoutConfig = typeof churchPayoutConfigs.$inferSelect;
+
+// ── Church Transactions ───────────────────────────────────────────────────────
+export const churchTransactions = pgTable("church_transactions", {
+  id: serial("id").primaryKey(),
+  churchId: integer("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  categoryId: integer("category_id").references(() => churchGivingCategories.id),
+  categoryName: text("category_name").notNull(),
+  donorFirebaseUid: text("donor_firebase_uid"),
+  donorName: text("donor_name"),
+  donorEmail: text("donor_email"),
+  isAnonymous: boolean("is_anonymous").notNull().default(false),
+  note: text("note"),
+  currency: text("currency").notNull().default("USD"),
+  grossAmount: integer("gross_amount").notNull(),
+  platformFeeAmount: integer("platform_fee_amount").notNull().default(0),
+  providerFeeAmount: integer("provider_fee_amount").notNull().default(0),
+  churchNetAmount: integer("church_net_amount").notNull(),
+  status: text("status").notNull().default("pending"),
+  payoutStatus: text("payout_status").notNull().default("pending"),
+  stripeSessionId: text("stripe_session_id"),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  reference: text("reference").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertChurchTransactionSchema = createInsertSchema(churchTransactions).omit({ id: true, createdAt: true });
+export type ChurchTransaction = typeof churchTransactions.$inferSelect;
+
+// ── Global Giving Settings ────────────────────────────────────────────────────
+export const globalGivingSettings = pgTable("global_giving_settings", {
+  id: serial("id").primaryKey(),
+  settingKey: text("setting_key").notNull().unique(),
+  settingValue: text("setting_value").notNull(),
+  updatedBy: text("updated_by"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+export type GlobalGivingSetting = typeof globalGivingSettings.$inferSelect;
 export type InsertChurchActivity = z.infer<typeof insertChurchActivitySchema>;

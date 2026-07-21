@@ -12,18 +12,21 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
   Settings, Copy, Trash2, Plus, Loader2, AlertCircle,
-  Users, Calendar, Mic2, Megaphone, Heart, BarChart3, Link as LinkIcon
+  Users, Calendar, Mic2, Megaphone, Heart, BarChart3, Link as LinkIcon,
+  HandCoins, Upload, ImageIcon, X, DollarSign, ToggleLeft, ToggleRight,
+  Building2, CreditCard, ArrowDownToLine
 } from "lucide-react";
-import type { Church, ChurchInvitation, ChurchSermon, ChurchAnnouncement, ChurchMember, ChurchPrayerRequest, ChurchActivity } from "@shared/schema";
+import type { Church, ChurchInvitation, ChurchSermon, ChurchAnnouncement, ChurchMember, ChurchPrayerRequest, ChurchActivity, ChurchGivingSettings, ChurchGivingCategory, ChurchPayoutConfig, ChurchTransaction } from "@shared/schema";
 import { CHURCH_ROLE_LABELS, CHURCH_ROLES, type ChurchRole } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 interface MyRole { role: string | null; memberId: number | null; status: string | null; }
 
 const ADMIN_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor"];
 const PROD_URL = "https://365dailydevotional.com";
 
-type AdminTab = "settings" | "invitations" | "sermons" | "announcements" | "members" | "prayer" | "insights";
+type AdminTab = "settings" | "invitations" | "sermons" | "announcements" | "members" | "prayer" | "insights" | "giving";
 
 const roleColors: Record<string, string> = {
   owner: "bg-amber-100 text-amber-800 border-amber-300",
@@ -64,6 +67,18 @@ export default function ChurchAdminPage() {
   // Announcement form state
   const [annForm, setAnnForm] = useState({ title: "", body: "", isPinned: false, expiresAt: "" });
   const [showAnnForm, setShowAnnForm] = useState(false);
+
+  // Logo upload state
+  const [logoUploading, setLogoUploading] = useState(false);
+
+  // Giving state
+  const [givingSettingsForm, setGivingSettingsForm] = useState<Partial<ChurchGivingSettings>>({});
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatDesc, setNewCatDesc] = useState("");
+  const [addingCat, setAddingCat] = useState(false);
+  const [payoutForm, setPayoutForm] = useState<Partial<ChurchPayoutConfig>>({});
+  const [savingPayout, setSavingPayout] = useState(false);
+  const [savingGivingSettings, setSavingGivingSettings] = useState(false);
 
   const { data: church, isLoading: churchLoading } = useQuery<Church>({
     queryKey: ["/api/churches/slug", slug],
@@ -142,8 +157,172 @@ export default function ChurchAdminPage() {
     enabled: !!church?.id && activeTab === "insights",
   });
 
+  const { data: givingSettings } = useQuery<ChurchGivingSettings>({
+    queryKey: ["/api/churches", church?.id, "giving", "settings"],
+    queryFn: async () => {
+      const token = await getIdToken(); if (!token || !church?.id) throw new Error();
+      const r = await fetch(`/api/churches/${church.id}/giving/settings`, { headers: { Authorization: `Bearer ${token}` } });
+      return r.ok ? r.json() : null;
+    },
+    enabled: !!church?.id && activeTab === "giving",
+  });
+
+  const { data: givingCategories, refetch: refetchCategories } = useQuery<ChurchGivingCategory[]>({
+    queryKey: ["/api/churches", church?.id, "giving", "categories"],
+    queryFn: async () => {
+      const token = await getIdToken(); if (!token || !church?.id) return [];
+      const r = await fetch(`/api/churches/${church.id}/giving/categories`, { headers: { Authorization: `Bearer ${token}` } });
+      return r.ok ? r.json() : [];
+    },
+    enabled: !!church?.id && activeTab === "giving",
+  });
+
+  const { data: payoutConfig, refetch: refetchPayout } = useQuery<ChurchPayoutConfig | null>({
+    queryKey: ["/api/churches", church?.id, "payout-config"],
+    queryFn: async () => {
+      const token = await getIdToken(); if (!token || !church?.id) return null;
+      const r = await fetch(`/api/churches/${church.id}/payout-config`, { headers: { Authorization: `Bearer ${token}` } });
+      return r.ok ? r.json() : null;
+    },
+    enabled: !!church?.id && activeTab === "giving",
+  });
+
+  const { data: transactions } = useQuery<ChurchTransaction[]>({
+    queryKey: ["/api/churches", church?.id, "giving", "transactions"],
+    queryFn: async () => {
+      const token = await getIdToken(); if (!token || !church?.id) return [];
+      const r = await fetch(`/api/churches/${church.id}/giving/transactions`, { headers: { Authorization: `Bearer ${token}` } });
+      return r.ok ? r.json() : [];
+    },
+    enabled: !!church?.id && activeTab === "giving",
+  });
+
   const isAuthorized = ADMIN_ROLES.includes(myRole?.role ?? "");
   const formVal = (field: keyof Church) => (field in form ? form[field] : church?.[field]) as string ?? "";
+
+  // Logo upload handler
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !church?.id) return;
+    setLogoUploading(true);
+    try {
+      const token = await getIdToken();
+      // Step 1: get presigned URL
+      const urlRes = await fetch("/api/uploads/request-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+      });
+      if (!urlRes.ok) throw new Error("Could not get upload URL");
+      const { uploadURL, objectPath } = await urlRes.json();
+      // Step 2: upload file directly
+      const uploadRes = await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      // Step 3: save logo URL to church
+      const saveRes = await fetch(`/api/churches/${church.id}/logo`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ logoUrl: objectPath }),
+      });
+      if (!saveRes.ok) throw new Error((await saveRes.json()).message ?? "Save failed");
+      qc.invalidateQueries({ queryKey: ["/api/churches/slug", slug] });
+      toast({ title: "Logo updated successfully" });
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
+  // Save giving settings
+  const saveGivingSettings = async () => {
+    if (!church?.id) return;
+    setSavingGivingSettings(true);
+    try {
+      const token = await getIdToken();
+      const current = givingSettings ?? {};
+      const merged = { ...current, ...givingSettingsForm };
+      const r = await fetch(`/api/churches/${church.id}/giving/settings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(merged),
+      });
+      if (!r.ok) throw new Error((await r.json()).message);
+      qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "giving", "settings"] });
+      setGivingSettingsForm({});
+      toast({ title: "Giving settings saved" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setSavingGivingSettings(false); }
+  };
+
+  // Add giving category
+  const addCategory = async () => {
+    if (!church?.id || !newCatName.trim()) return;
+    setAddingCat(true);
+    try {
+      const token = await getIdToken();
+      const r = await fetch(`/api/churches/${church.id}/giving/categories`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: newCatName.trim(), description: newCatDesc.trim() || undefined }),
+      });
+      if (!r.ok) throw new Error((await r.json()).message);
+      setNewCatName(""); setNewCatDesc("");
+      refetchCategories();
+      toast({ title: "Category added" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setAddingCat(false); }
+  };
+
+  const toggleCategory = async (cat: ChurchGivingCategory) => {
+    if (!church?.id) return;
+    try {
+      const token = await getIdToken();
+      await fetch(`/api/churches/${church.id}/giving/categories/${cat.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ isActive: !cat.isActive }),
+      });
+      refetchCategories();
+    } catch { toast({ title: "Error updating category", variant: "destructive" }); }
+  };
+
+  const deleteCategory = async (catId: number) => {
+    if (!church?.id) return;
+    try {
+      const token = await getIdToken();
+      await fetch(`/api/churches/${church.id}/giving/categories/${catId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      refetchCategories();
+      toast({ title: "Category removed" });
+    } catch { toast({ title: "Error", variant: "destructive" }); }
+  };
+
+  // Save payout config
+  const savePayout = async () => {
+    if (!church?.id) return;
+    setSavingPayout(true);
+    try {
+      const token = await getIdToken();
+      const current = payoutConfig ?? {};
+      const merged = { ...current, ...payoutForm };
+      const r = await fetch(`/api/churches/${church.id}/payout-config`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(merged),
+      });
+      if (!r.ok) throw new Error((await r.json()).message);
+      refetchPayout();
+      setPayoutForm({});
+      toast({ title: "Payout details saved" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setSavingPayout(false); }
+  };
 
   // Save settings
   const saveSettings = useMutation({
@@ -336,6 +515,7 @@ export default function ChurchAdminPage() {
     { key: "announcements", label: "Announcements", icon: Megaphone },
     { key: "members", label: "Members", icon: Users },
     { key: "prayer", label: "Prayer", icon: Heart },
+    { key: "giving", label: "Giving", icon: HandCoins },
     { key: "insights", label: "Insights", icon: BarChart3 },
   ];
 
@@ -361,12 +541,12 @@ export default function ChurchAdminPage() {
         </div>
 
         {/* Tab bar */}
-        <div className="flex overflow-x-auto gap-0 border-b" style={{ borderColor: "#e0dcd8" }}>
+        <div className="flex overflow-x-auto gap-0 border-b scrollbar-hide" style={{ borderColor: "#e0dcd8" }}>
           {tabs.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 flex-shrink-0 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 flex-shrink-0 transition-colors"
               style={{ borderColor: activeTab === key ? "#b8962e" : "transparent", color: activeTab === key ? "#b8962e" : "#7a7570" }}
               data-testid={`tab-admin-${key}`}
             >
@@ -378,25 +558,64 @@ export default function ChurchAdminPage() {
 
         {/* Settings Tab */}
         {activeTab === "settings" && church && (
-          <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
-            <CardHeader className="pb-3"><CardTitle className="text-base" style={{ color: "#1a2744" }}>Church Identity</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-1.5"><Label>Church Name</Label>
-                <Input value={formVal("name")} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} data-testid="input-admin-church-name" /></div>
-              <div className="space-y-1.5"><Label>Denomination</Label>
-                <Input value={formVal("denomination") as string} onChange={e => setForm(f => ({ ...f, denomination: e.target.value || null }))} placeholder="e.g. Baptist, Pentecostal, Non-denominational" /></div>
-              <div className="space-y-1.5"><Label>Description</Label>
-                <Textarea value={formVal("description") as string} onChange={e => setForm(f => ({ ...f, description: e.target.value || null }))} rows={3} /></div>
-              <div className="space-y-1.5"><Label>Address</Label>
-                <Input value={formVal("address") as string} onChange={e => setForm(f => ({ ...f, address: e.target.value || null }))} /></div>
-              <div className="space-y-1.5"><Label>Website URL</Label>
-                <Input type="url" value={formVal("websiteUrl") as string} onChange={e => setForm(f => ({ ...f, websiteUrl: e.target.value || null }))} /></div>
-              <Button onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending || Object.keys(form).length === 0}
-                style={{ backgroundColor: "#1a2744" }} data-testid="button-save-church-settings">
-                {saveSettings.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : "Save Changes"}
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="space-y-5">
+            {/* Church Logo */}
+            <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2" style={{ color: "#1a2744" }}>
+                  <ImageIcon className="w-4 h-4" />Church Logo
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-5">
+                  <div className="w-20 h-20 rounded-xl flex-shrink-0 overflow-hidden border-2 flex items-center justify-center"
+                    style={{ borderColor: "#e8e3dc", backgroundColor: "#f8f4ee" }}>
+                    {church.logoUrl ? (
+                      <img src={church.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="w-8 h-8" style={{ color: "#c9b990" }} />
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm" style={{ color: "#4a4540" }}>
+                      Upload a square image (PNG or JPG, minimum 256×256px).
+                    </p>
+                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                      style={{ backgroundColor: "#1a2744", color: "#fff" }}
+                      data-testid="button-upload-logo">
+                      {logoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      {logoUploading ? "Uploading…" : "Upload Logo"}
+                      <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={logoUploading} />
+                    </label>
+                    {church.logoUrl && (
+                      <p className="text-xs" style={{ color: "#9a9080" }}>Logo is currently set. Upload a new image to replace it.</p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Church Identity */}
+            <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+              <CardHeader className="pb-3"><CardTitle className="text-base" style={{ color: "#1a2744" }}>Church Identity</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-1.5"><Label>Church Name</Label>
+                  <Input value={formVal("name")} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} data-testid="input-admin-church-name" /></div>
+                <div className="space-y-1.5"><Label>Denomination</Label>
+                  <Input value={formVal("denomination") as string} onChange={e => setForm(f => ({ ...f, denomination: e.target.value || null }))} placeholder="e.g. Baptist, Pentecostal, Non-denominational" /></div>
+                <div className="space-y-1.5"><Label>Description</Label>
+                  <Textarea value={formVal("description") as string} onChange={e => setForm(f => ({ ...f, description: e.target.value || null }))} rows={3} /></div>
+                <div className="space-y-1.5"><Label>Address</Label>
+                  <Input value={formVal("address") as string} onChange={e => setForm(f => ({ ...f, address: e.target.value || null }))} /></div>
+                <div className="space-y-1.5"><Label>Website URL</Label>
+                  <Input type="url" value={formVal("websiteUrl") as string} onChange={e => setForm(f => ({ ...f, websiteUrl: e.target.value || null }))} /></div>
+                <Button onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending || Object.keys(form).length === 0}
+                  style={{ backgroundColor: "#1a2744" }} data-testid="button-save-church-settings">
+                  {saveSettings.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : "Save Changes"}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* Invitations Tab */}
@@ -721,6 +940,301 @@ export default function ChurchAdminPage() {
             </div>
           </div>
         )}
+        {/* Giving Tab */}
+        {activeTab === "giving" && church && (
+          <div className="space-y-6">
+
+            {/* Online Giving Settings */}
+            <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2" style={{ color: "#1a2744" }}>
+                  <HandCoins className="w-4 h-4" />Online Giving Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: "#f8f4ee" }}>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>Enable Online Giving</p>
+                    <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>Allow members and visitors to give online via this church page</p>
+                  </div>
+                  <button
+                    onClick={() => setGivingSettingsForm(f => ({ ...f, isEnabled: !(givingSettingsForm.isEnabled ?? givingSettings?.isEnabled ?? false) }))}
+                    data-testid="toggle-giving-enabled"
+                  >
+                    {(givingSettingsForm.isEnabled ?? givingSettings?.isEnabled ?? false)
+                      ? <ToggleRight className="w-8 h-8" style={{ color: "#b8962e" }} />
+                      : <ToggleLeft className="w-8 h-8" style={{ color: "#9a9080" }} />
+                    }
+                  </button>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Currency</Label>
+                  <select
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    style={{ borderColor: "#e8e3dc" }}
+                    value={givingSettingsForm.currency ?? givingSettings?.currency ?? "USD"}
+                    onChange={e => setGivingSettingsForm(f => ({ ...f, currency: e.target.value }))}
+                    data-testid="select-giving-currency"
+                  >
+                    <option value="USD">USD — US Dollar</option>
+                    <option value="GBP">GBP — British Pound</option>
+                    <option value="EUR">EUR — Euro</option>
+                    <option value="NGN">NGN — Nigerian Naira</option>
+                    <option value="KES">KES — Kenyan Shilling</option>
+                    <option value="GHS">GHS — Ghanaian Cedi</option>
+                    <option value="ZAR">ZAR — South African Rand</option>
+                  </select>
+                  <p className="text-xs" style={{ color: "#9a9080" }}>Payments are processed in USD by Stripe. Other currencies shown as approximate.</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Giving Statement <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                  <Textarea
+                    placeholder="e.g. Your generosity helps us fulfill our mission. All gifts are tax-deductible."
+                    value={givingSettingsForm.givingStatement ?? givingSettings?.givingStatement ?? ""}
+                    onChange={e => setGivingSettingsForm(f => ({ ...f, givingStatement: e.target.value || null }))}
+                    rows={2}
+                    data-testid="input-giving-statement"
+                  />
+                </div>
+
+                <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "#fffbf0", border: "1px solid #b8962e30" }}>
+                  <p className="font-semibold" style={{ color: "#92400e" }}>Platform Fee</p>
+                  <p className="mt-1" style={{ color: "#92400e" }}>A small platform fee (configured by the platform admin) is deducted from each gift, along with the Stripe processing fee. Your church receives the remainder. Automatic bank transfer requires Stripe Connect setup — contact support to enable it.</p>
+                </div>
+
+                <Button
+                  onClick={saveGivingSettings}
+                  disabled={savingGivingSettings}
+                  style={{ backgroundColor: "#1a2744" }}
+                  data-testid="button-save-giving-settings"
+                >
+                  {savingGivingSettings ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : "Save Settings"}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Giving Categories */}
+            <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2" style={{ color: "#1a2744" }}>
+                  <DollarSign className="w-4 h-4" />Giving Categories
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {!givingCategories?.length ? (
+                  <p className="text-sm py-2" style={{ color: "#7a7570" }}>No categories yet. Add categories like "Tithe", "Building Fund", "Missions", etc.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {givingCategories.map(cat => (
+                      <div key={cat.id} className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: "#f8f4ee" }}>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>{cat.name}</p>
+                          {cat.description && <p className="text-xs mt-0.5 truncate" style={{ color: "#7a7570" }}>{cat.description}</p>}
+                        </div>
+                        <Badge variant={cat.isActive ? "default" : "secondary"} className="text-xs flex-shrink-0">
+                          {cat.isActive ? "Active" : "Hidden"}
+                        </Badge>
+                        <button onClick={() => toggleCategory(cat)} className="text-xs px-2 py-1 rounded"
+                          style={{ color: "#7a7570", border: "1px solid #e8e3dc" }}
+                          data-testid={`button-toggle-category-${cat.id}`}>
+                          {cat.isActive ? "Hide" : "Show"}
+                        </button>
+                        <button onClick={() => deleteCategory(cat.id)}
+                          className="p-1 rounded hover:bg-red-50 transition-colors"
+                          data-testid={`button-delete-category-${cat.id}`}>
+                          <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="border-t pt-4 space-y-3" style={{ borderColor: "#e8e3dc" }}>
+                  <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>Add Category</p>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Name <span className="text-red-500">*</span></Label>
+                      <Input value={newCatName} onChange={e => setNewCatName(e.target.value)}
+                        placeholder="e.g. Tithe, Building Fund" data-testid="input-category-name" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Description <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                      <Input value={newCatDesc} onChange={e => setNewCatDesc(e.target.value)}
+                        placeholder="Brief description" data-testid="input-category-desc" />
+                    </div>
+                  </div>
+                  <Button onClick={addCategory} disabled={addingCat || !newCatName.trim()} variant="outline"
+                    style={{ borderColor: "#1a2744", color: "#1a2744" }} data-testid="button-add-category">
+                    {addingCat ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
+                    Add Category
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Payout Configuration */}
+            <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2" style={{ color: "#1a2744" }}>
+                  <Building2 className="w-4 h-4" />Payout Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "#f0f8ff", border: "1px solid #3b82f620" }}>
+                  <p style={{ color: "#1e40af" }}>These details are used by the platform admin to process payouts to your church. Your account number is masked after saving and stored securely.</p>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Legal Name (of church)</Label>
+                    <Input value={payoutForm.legalName ?? payoutConfig?.legalName ?? ""}
+                      onChange={e => setPayoutForm(f => ({ ...f, legalName: e.target.value }))}
+                      placeholder="Registered legal name" data-testid="input-payout-legal-name" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Country</Label>
+                    <select className="w-full border rounded-md px-3 py-2 text-sm" style={{ borderColor: "#e8e3dc" }}
+                      value={payoutForm.country ?? payoutConfig?.country ?? ""}
+                      onChange={e => setPayoutForm(f => ({ ...f, country: e.target.value }))}
+                      data-testid="select-payout-country">
+                      <option value="">Select country…</option>
+                      <option value="US">United States</option>
+                      <option value="GB">United Kingdom</option>
+                      <option value="NG">Nigeria</option>
+                      <option value="KE">Kenya</option>
+                      <option value="GH">Ghana</option>
+                      <option value="ZA">South Africa</option>
+                      <option value="CA">Canada</option>
+                      <option value="AU">Australia</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Bank Name</Label>
+                    <Input value={payoutForm.bankName ?? payoutConfig?.bankName ?? ""}
+                      onChange={e => setPayoutForm(f => ({ ...f, bankName: e.target.value }))}
+                      placeholder="e.g. Chase, GTBank" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Account Holder Name</Label>
+                    <Input value={payoutForm.accountHolderName ?? payoutConfig?.accountHolderName ?? ""}
+                      onChange={e => setPayoutForm(f => ({ ...f, accountHolderName: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Account Number</Label>
+                    <Input value={payoutForm.accountNumber ?? (payoutConfig?.accountNumber ? "" : "")}
+                      onChange={e => setPayoutForm(f => ({ ...f, accountNumber: e.target.value }))}
+                      placeholder={payoutConfig?.accountNumber ?? "Enter account number"}
+                      type="password" autoComplete="off" />
+                    {payoutConfig?.accountNumber && !payoutForm.accountNumber && (
+                      <p className="text-xs mt-0.5" style={{ color: "#9a9080" }}>Masked: {payoutConfig.accountNumber} — enter new value to replace</p>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Routing / Sort Code</Label>
+                    <Input value={payoutForm.routingNumber ?? payoutConfig?.routingNumber ?? ""}
+                      onChange={e => setPayoutForm(f => ({ ...f, routingNumber: e.target.value }))}
+                      placeholder="ACH routing or sort code" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>SWIFT / BIC <span className="text-muted-foreground text-xs">(international)</span></Label>
+                    <Input value={payoutForm.swiftBic ?? payoutConfig?.swiftBic ?? ""}
+                      onChange={e => setPayoutForm(f => ({ ...f, swiftBic: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Contact Email</Label>
+                    <Input type="email" value={payoutForm.contactEmail ?? payoutConfig?.contactEmail ?? ""}
+                      onChange={e => setPayoutForm(f => ({ ...f, contactEmail: e.target.value }))} />
+                  </div>
+                </div>
+                <div className="border-t pt-3 space-y-3" style={{ borderColor: "#e8e3dc" }}>
+                  <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>Mobile Money <span className="font-normal text-muted-foreground text-xs">(Africa)</span></p>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label>Provider</Label>
+                      <Input value={payoutForm.mobileMoneyProvider ?? payoutConfig?.mobileMoneyProvider ?? ""}
+                        onChange={e => setPayoutForm(f => ({ ...f, mobileMoneyProvider: e.target.value }))}
+                        placeholder="e.g. M-Pesa, MTN MoMo, Airtel" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Mobile Number</Label>
+                      <Input value={payoutForm.mobileMoneyNumber ?? payoutConfig?.mobileMoneyNumber ?? ""}
+                        onChange={e => setPayoutForm(f => ({ ...f, mobileMoneyNumber: e.target.value }))}
+                        placeholder="+234..." />
+                    </div>
+                  </div>
+                </div>
+                <Button onClick={savePayout} disabled={savingPayout} style={{ backgroundColor: "#1a2744" }}
+                  data-testid="button-save-payout">
+                  {savingPayout ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : "Save Payout Details"}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Transaction History */}
+            <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2" style={{ color: "#1a2744" }}>
+                  <ArrowDownToLine className="w-4 h-4" />Transaction History
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {!transactions?.length ? (
+                  <p className="text-sm py-4 text-center" style={{ color: "#7a7570" }}>No transactions yet. Once giving is enabled and gifts are received, they will appear here.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid #e8e3dc" }}>
+                          <th className="text-left py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>Date</th>
+                          <th className="text-left py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>Category</th>
+                          <th className="text-left py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>Donor</th>
+                          <th className="text-right py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>Amount</th>
+                          <th className="text-right py-2 text-xs font-semibold" style={{ color: "#7a7570" }}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {transactions.slice(0, 100).map(txn => (
+                          <tr key={txn.id} style={{ borderBottom: "1px solid #f0ece6" }}>
+                            <td className="py-2 pr-4 text-xs" style={{ color: "#7a7570" }}>
+                              {new Date(txn.createdAt!).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                            </td>
+                            <td className="py-2 pr-4 text-xs font-medium" style={{ color: "#1a2744" }}>{txn.categoryName}</td>
+                            <td className="py-2 pr-4 text-xs" style={{ color: "#4a4540" }}>
+                              {txn.isAnonymous ? "Anonymous" : (txn.donorName ?? txn.donorEmail ?? "—")}
+                            </td>
+                            <td className="py-2 pr-4 text-xs text-right font-semibold" style={{ color: "#1a2744" }}>
+                              ${(txn.grossAmount / 100).toFixed(2)}
+                            </td>
+                            <td className="py-2 text-right">
+                              <Badge variant={txn.status === "completed" ? "default" : txn.status === "failed" ? "destructive" : "secondary"}
+                                className="text-xs">
+                                {txn.status}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {transactions.length > 0 && (
+                      <div className="mt-4 pt-3 border-t" style={{ borderColor: "#e8e3dc" }}>
+                        <div className="flex justify-between text-sm font-semibold" style={{ color: "#1a2744" }}>
+                          <span>Total received ({transactions.filter(t => t.status === "completed").length} gifts)</span>
+                          <span>${(transactions.filter(t => t.status === "completed").reduce((s, t) => s + t.grossAmount, 0) / 100).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs mt-1" style={{ color: "#7a7570" }}>
+                          <span>Church net (after fees)</span>
+                          <span>${(transactions.filter(t => t.status === "completed").reduce((s, t) => s + t.churchNetAmount, 0) / 100).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
       </div>
     </ChurchModeShell>
   );

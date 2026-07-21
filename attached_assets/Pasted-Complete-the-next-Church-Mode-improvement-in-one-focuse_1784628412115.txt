@@ -1,0 +1,562 @@
+Complete the next Church Mode improvement in one focused build.
+
+Do not perform another broad audit or rebuild.
+
+Do not modify unrelated devotionals, songs, Sunday School, downloads, existing ministry donations, Firebase authentication, or other working areas.
+
+The current Church Mode functionality is working, but the typography, header appearance, church branding, and church giving system need immediate correction.
+
+==================================================
+1. MAKE ALL CHURCH MODE TEXT LARGE AND READABLE
+==================================================
+
+CURRENT PROBLEM
+
+The Church Mode text is too small, faint, dull, and difficult to read on mobile.
+
+The user should never need to strain their eyes.
+
+Use the large, bold, highly readable appearance shown in the supplied reference screenshot where “365 Daily Devotional” is displayed prominently.
+
+Do not copy the ChatGPT interface itself. Use its strong readability as the typography reference.
+
+Apply this consistently throughout every Church Mode page:
+
+• Church Home
+• Sermons
+• Announcements
+• Groups
+• Prayer
+• Members
+• Administration
+• Church Settings
+• Invitations
+• Insights
+• Giving
+• Counseling
+• Messages
+• All forms, tabs, cards, buttons, empty states, and metadata
+
+Minimum mobile font sizes:
+
+• Church name in main header: 34–40px, bold
+• Main page headings: 32–38px, bold
+• Section headings: 25–30px, bold
+• Card titles: 22–25px, bold
+• Navigation labels: 18–20px, bold
+• Body text: 18–20px
+• Form labels: 18px, semibold or bold
+• Form input text: 19–20px
+• Buttons: 18–20px, bold
+• Supporting text: 16–18px
+• Metadata: never below 16px
+
+Use responsive sizing, but do not allow mobile text to shrink below these readable ranges.
+
+Use stronger font weights:
+
+• Main headings: 700–800
+• Card headings: 700
+• Navigation: 650–700
+• Body text: 500–600
+• Buttons: 700
+
+Do not use faint, pale gray lettering for important information.
+
+==================================================
+2. BRIGHTEN THE CHURCH MODE HEADER
+==================================================
+
+CURRENT PROBLEM
+
+The Church Mode header is too dark and many labels look dull or disabled.
+
+Improve it immediately.
+
+Keep Church Mode visually distinct, but replace the excessively dark appearance with a more balanced, mature header.
+
+Use:
+
+• Refined medium/deep navy rather than near-black
+• Very clear white text
+• Muted gold only for active navigation and small accents
+• Strong visible icons
+• Clear borders and spacing
+• No dull gray primary navigation labels
+
+All inactive header navigation labels should still be clearly visible in white or near-white.
+
+Active navigation may use:
+
+• Warm gold text
+• Gold underline
+• Strong active icon
+
+Church name must appear boldly in white.
+
+Church role, denomination, and Church Mode badge must remain readable.
+
+The Home/Return button must be clearly visible.
+
+Do not make the header excessively tall.
+
+On mobile, allow the navigation row to scroll horizontally without cutting off labels.
+
+==================================================
+3. IMPROVE CARD AND PAGE CONTRAST
+==================================================
+
+Continue using the warm cream or linen page background, but ensure:
+
+• White cards have dark readable text
+• Dark cards use bright white text
+• No low-contrast gray-on-white text
+• No dark navy icons disappearing on navy backgrounds
+• No gold pattern crossing through important wording
+• Important buttons use clear contrasting colors
+• Empty-state text remains large and readable
+
+The redesigned Church Mode should feel mature, premium, pastoral, and professional.
+
+==================================================
+4. CHURCH LOGO UPLOAD AND MANAGEMENT
+==================================================
+
+Each church must be able to upload and change its own logo.
+
+Add Church Logo controls under:
+
+Church Administration → Church Settings → Church Branding
+
+Authorized roles:
+
+• Church Owner
+• Lead Pastor
+• Church Administrator, only when permitted
+
+Functions:
+
+• Upload logo from device
+• Take a photo where supported
+• Preview before saving
+• Replace logo
+• Remove logo
+• Restore professional default church emblem
+• Crop or center image using existing lightweight tools only
+• Validate file type
+• Validate reasonable maximum file size
+• Compress large images before upload where the existing app supports it
+
+Accepted types:
+
+• JPG
+• JPEG
+• PNG
+• WEBP
+
+Do not accept executable or unsafe file types.
+
+Recommended display:
+
+• Square logo
+• Minimum 300 × 300
+• Store one optimized version where practical
+• Do not install a heavy image-processing package
+
+The church logo must display on:
+
+• Church header
+• Church Home identity card
+• Invitation preview
+• Member joining preview
+• Sermons where church identity appears
+• Church messages and announcements
+• Giving page
+• Global church moderation listing
+
+Do not allow one church to modify another church’s logo.
+
+==================================================
+5. ADD CHURCH GIVING
+==================================================
+
+Add a complete but cost-conscious Church Giving module.
+
+Churches should be able to receive:
+
+• Tithes
+• General Offering
+• Thanksgiving Offering
+• Missions
+• Building Fund
+• Welfare
+• Youth Ministry
+• Special Project
+• Custom Giving Category
+
+Do not hold church funds inside a platform wallet.
+
+The intended payment structure is:
+
+1. A member chooses a church and giving category.
+2. The payment provider processes the transaction.
+3. The church receives its net amount directly into its connected payout account.
+4. A small transparent platform service fee is automatically allocated to 365 Daily Devotional where the payment provider supports split payments, subaccounts, connected accounts, or application fees.
+
+Do not collect the full church payment into the platform’s own bank account before manually forwarding it.
+
+==================================================
+6. COUNTRY-AWARE CHURCH PAYOUT SETUP
+==================================================
+
+Under:
+
+Church Administration → Giving → Payout Setup
+
+allow the Church Owner to configure the church’s receiving method according to its country.
+
+Required fields:
+
+• Country
+• Currency
+• Legal church or ministry name
+• Public church name
+• Account holder name
+• Bank name
+• Account number or IBAN where applicable
+• Routing, sort, branch, or bank code where applicable
+• SWIFT/BIC where applicable
+• Mobile money provider and number where applicable
+• Payment-provider subaccount or connected-account status
+• Contact email
+• Contact phone
+• Verification status
+• Confirmation that the church is authorized to receive donations
+
+For Nigeria, support fields such as:
+
+• Bank name
+• Account name
+• Account number
+• Optional Paystack subaccount or payment-recipient configuration
+
+For the United States, support fields such as:
+
+• Connected payment-provider account
+• Routing/account setup handled securely by the provider
+• Do not store raw sensitive bank credentials when the provider offers hosted onboarding
+
+For other countries:
+
+• Show only fields relevant to that selected country
+• Use supported providers already available in the project
+• If automatic split payment is unavailable, clearly mark the method as unavailable rather than pretending it works
+
+Do not add a new paid payment provider without approval.
+
+==================================================
+7. PLATFORM SERVICE FEE
+==================================================
+
+The platform fee must be:
+
+• Small
+• Transparent
+• Configurable only by the authorized global 365 Daily Devotional administrator
+• Applied to successful payments only
+• Calculated server-side
+• Visible to the church before it enables giving
+• Visible in transaction records
+• Not editable by the church or donor
+• Not hidden
+
+Do not assume or hardcode a final percentage without an existing confirmed setting.
+
+Create a global configurable setting such as:
+
+church_giving_platform_fee_percent
+
+The global administrator can set or change the percentage.
+
+Before a church activates giving, show:
+
+“365 Daily Devotional applies a small platform service fee to successful donations processed through Church Giving. Your church receives the remaining amount directly through the connected payment provider.”
+
+Also show the current exact percentage before activation.
+
+Example calculation fields:
+
+• gross_amount
+• payment_provider_fee
+• platform_service_fee
+• church_net_amount
+• currency
+
+Calculate these on the server.
+
+Never trust totals sent by the client.
+
+==================================================
+8. DIRECT SPLIT PAYMENT ARCHITECTURE
+==================================================
+
+Use provider-native split-payment architecture where supported.
+
+Examples of acceptable models:
+
+• Provider subaccounts
+• Connected accounts
+• Split settlement
+• Application fee
+• Transfer recipient
+• Marketplace submerchant
+
+Requirements:
+
+• Church receives its share directly
+• Platform receives only its disclosed fee
+• Payment provider fees are recorded separately
+• No manual calculation by the browser
+• No client-side manipulation
+• Payment webhook verifies successful payment
+• Duplicate webhook events must not create duplicate records
+• Use idempotency
+• Keep an auditable transaction record
+• Record refund and reversal status where supported
+
+If the currently connected payment provider does not support automatic split settlement in a country, do not fake the feature.
+
+Instead show:
+
+“Automatic Church Giving is not yet available for this country or payment method.”
+
+==================================================
+9. CHURCH GIVING PAGE
+==================================================
+
+Create a beautiful member-facing Giving page inside each church.
+
+Display prominently:
+
+• Church logo
+• Church name
+• “Give to Your Church”
+• Giving category
+• Amount
+• Currency
+• Optional donor name
+• Optional note
+• Anonymous-giving option, where legally and technically appropriate
+• Payment method
+• Fee disclosure
+• Final confirmation
+
+Suggested message:
+
+“Each one should give what they have decided in their heart to give, not reluctantly or under compulsion, for God loves a cheerful giver.”
+— 2 Corinthians 9:7
+
+Do not imply that giving is required for Church Mode membership.
+
+After successful payment show:
+
+• Thank-you message
+• Church name
+• Amount
+• Giving category
+• Transaction reference
+• Date
+• Receipt or confirmation
+• Church net amount only to authorized church finance roles
+• Platform fee only within church administration and global administration reports
+
+==================================================
+10. CHURCH FINANCE ADMINISTRATION
+==================================================
+
+Add:
+
+Church Administration → Giving
+
+Authorized church access:
+
+• Church Owner
+• Lead Pastor
+• Church Administrator with finance permission
+• Treasurer role, if added
+
+Include:
+
+• Giving overview
+• Total received
+• Church net received
+• Platform service fees
+• Provider fees
+• Recent donations
+• Giving by category
+• Date filters
+• Currency
+• Payout status
+• Transaction reference
+• Export CSV using existing lightweight utilities
+• Payout account status
+• Enable/disable giving
+• Add/edit giving categories
+
+Do not expose donors’ private details to ordinary church members.
+
+Provide receipt access only to the donor and authorized church finance roles.
+
+==================================================
+11. GLOBAL ADMIN GIVING OVERSIGHT
+==================================================
+
+Inside the existing global 365 Daily Devotional Admin Dashboard, add:
+
+Churches → Giving Oversight
+
+The authorized global administrator can view:
+
+• Church
+• Country
+• Currency
+• Gross transaction amount
+• Provider fee
+• Platform service fee
+• Church net amount
+• Payment status
+• Refund/reversal status
+• Date
+• Transaction reference
+• Payout status
+
+Allow the global administrator to:
+
+• Configure the platform-fee percentage
+• Disable giving for a church under review
+• View failed payment events
+• View webhook status
+• Suspend fraudulent or inappropriate giving activity
+• Export summary reports
+
+The global administrator must not be able to silently change the church payout account without a documented protected process.
+
+==================================================
+12. SECURITY AND COMPLIANCE
+==================================================
+
+Requirements:
+
+• Verify all payment webhooks
+• Use server-side calculations
+• Never store complete card details
+• Never store CVV
+• Do not expose bank details publicly
+• Mask sensitive account numbers
+• Restrict payout-account viewing
+• Log payout-setting changes
+• Require reauthentication before changing payout details
+• Require confirmation before disabling giving
+• Preserve church isolation
+• Prevent one church from viewing another church’s finances
+• Prevent users from changing the platform fee
+• Prevent churches from editing transaction totals
+• Record who changed payout details and when
+• Add clear Terms and privacy acknowledgement before activation
+
+Do not call ordinary charitable giving “tax deductible” unless the church independently qualifies and provides the appropriate documentation.
+
+Do not promise that 365 Daily Devotional is the legal donation recipient.
+
+==================================================
+13. INVITATION COPY LINK REGRESSION CHECK
+==================================================
+
+Confirm the previously fixed Copy Link function still works after this update.
+
+Test:
+
+• Generate invitation
+• Tap Copy Link on iPhone Safari
+• Confirm the complete production URL is copied
+• Paste it into a new browser
+• Confirm the correct church preview opens
+
+Do not display a success message if nothing was copied.
+
+==================================================
+14. TESTING
+==================================================
+
+TYPOGRAPHY AND DESIGN
+
+1. Church name is large, bold, and immediately visible.
+2. All main labels are readable without zooming.
+3. Header text is white, bold, and clear.
+4. Inactive navigation remains clearly readable.
+5. No important wording uses faint gray text.
+6. No dark icon disappears into the header.
+7. Mobile screens have no horizontal overflow.
+8. Cards are bright, mature, and professional.
+
+LOGO
+
+1. Church Owner uploads a logo.
+2. Logo appears on Church Home and header.
+3. Logo can be replaced.
+4. Logo can be removed.
+5. Unauthorized member cannot change it.
+6. Invalid file type is rejected.
+
+GIVING
+
+1. Church configures payout details.
+2. Sensitive data is masked.
+3. Church enables giving after seeing the current fee.
+4. Member selects a giving category.
+5. Server calculates all amounts.
+6. Payment-provider callback/webhook is verified.
+7. Church net and platform fee are recorded separately.
+8. Duplicate callback does not duplicate the transaction.
+9. Church sees its net transaction.
+10. Global administrator sees the platform fee.
+11. One church cannot access another church’s giving records.
+12. Unsupported country/payment flow is clearly blocked.
+
+Run the existing build and TypeScript validation only.
+
+Do not install a new testing framework.
+
+==================================================
+DEPLOYMENT
+==================================================
+
+Do not deploy automatically.
+
+After implementation and targeted testing, return whether the update is ready to publish.
+
+==================================================
+RETURN ONLY
+==================================================
+
+Return only:
+
+1. Files changed
+2. Database tables, fields, indexes, and migrations added
+3. Typography and contrast changes
+4. Header redesign
+5. Church logo upload result
+6. Giving categories implemented
+7. Country-aware payout setup implemented
+8. Payment provider and split-payment method used
+9. Platform-fee configuration implemented
+10. Transaction and webhook security implemented
+11. Church finance dashboard result
+12. Global giving-oversight result
+13. Invitation Copy Link regression result
+14. Mobile test result
+15. Any country or payment-method limitation
+16. Confirmation that existing church data was preserved
+17. Confirmation that unrelated features were not modified
+18. Confirmation that Firebase secrets were not changed
+19. Confirmation that nothing was deployed automatically

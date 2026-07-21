@@ -23,6 +23,11 @@ import {
   userSavedSongs,
   userFavoriteSongs,
   userDownloadHistory,
+  churchGivingSettings,
+  churchGivingCategories,
+  churchPayoutConfigs,
+  churchTransactions,
+  globalGivingSettings,
   userPlaybackHistory,
   userMusicSettings,
   userSavedDevotionals,
@@ -109,6 +114,11 @@ import {
   type InsertChurchPrayerRequest,
   type ChurchActivity,
   type InsertChurchActivity,
+  type ChurchGivingSettings,
+  type ChurchGivingCategory,
+  type ChurchPayoutConfig,
+  type ChurchTransaction,
+  type GlobalGivingSetting,
 } from "@shared/schema";
 import { eq, desc, and, isNull, or, ilike, lte, notInArray, sql } from "drizzle-orm";
 
@@ -1645,6 +1655,125 @@ export class DatabaseStorage implements IStorage {
   async updateChurchStatus(id: number, status: string): Promise<Church> {
     const [row] = await db.update(churches).set({ status }).where(eq(churches.id, id)).returning();
     return row;
+  }
+
+  // ── Church Logo ──────────────────────────────────────────────────────────────
+  async updateChurchLogoUrl(churchId: number, logoUrl: string): Promise<Church> {
+    const [row] = await db.update(churches).set({ logoUrl }).where(eq(churches.id, churchId)).returning();
+    return row;
+  }
+
+  // ── Church Giving Settings ───────────────────────────────────────────────────
+  async getChurchGivingSettings(churchId: number): Promise<ChurchGivingSettings | undefined> {
+    const [row] = await db.select().from(churchGivingSettings).where(eq(churchGivingSettings.churchId, churchId));
+    return row;
+  }
+  async upsertChurchGivingSettings(churchId: number, data: Partial<ChurchGivingSettings>): Promise<ChurchGivingSettings> {
+    const existing = await this.getChurchGivingSettings(churchId);
+    if (existing) {
+      const [row] = await db.update(churchGivingSettings)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(churchGivingSettings.churchId, churchId))
+        .returning();
+      return row;
+    }
+    const [row] = await db.insert(churchGivingSettings)
+      .values({ churchId, ...data })
+      .returning();
+    return row;
+  }
+
+  // ── Church Giving Categories ─────────────────────────────────────────────────
+  async getChurchGivingCategories(churchId: number): Promise<ChurchGivingCategory[]> {
+    return await db.select().from(churchGivingCategories)
+      .where(eq(churchGivingCategories.churchId, churchId))
+      .orderBy(churchGivingCategories.displayOrder, churchGivingCategories.id);
+  }
+  async createChurchGivingCategory(data: { churchId: number; name: string; description?: string; isActive?: boolean; displayOrder?: number }): Promise<ChurchGivingCategory> {
+    const [row] = await db.insert(churchGivingCategories).values(data).returning();
+    return row;
+  }
+  async updateChurchGivingCategory(id: number, data: Partial<ChurchGivingCategory>): Promise<ChurchGivingCategory> {
+    const [row] = await db.update(churchGivingCategories).set(data).where(eq(churchGivingCategories.id, id)).returning();
+    return row;
+  }
+  async deleteChurchGivingCategory(id: number): Promise<void> {
+    await db.delete(churchGivingCategories).where(eq(churchGivingCategories.id, id));
+  }
+
+  // ── Church Payout Config ─────────────────────────────────────────────────────
+  async getChurchPayoutConfig(churchId: number): Promise<ChurchPayoutConfig | undefined> {
+    const [row] = await db.select().from(churchPayoutConfigs).where(eq(churchPayoutConfigs.churchId, churchId));
+    return row;
+  }
+  async upsertChurchPayoutConfig(churchId: number, data: Partial<ChurchPayoutConfig>, updatedBy: string): Promise<ChurchPayoutConfig> {
+    const existing = await this.getChurchPayoutConfig(churchId);
+    if (existing) {
+      const [row] = await db.update(churchPayoutConfigs)
+        .set({ ...data, updatedBy, updatedAt: new Date() })
+        .where(eq(churchPayoutConfigs.churchId, churchId))
+        .returning();
+      return row;
+    }
+    const [row] = await db.insert(churchPayoutConfigs)
+      .values({ churchId, updatedBy, ...data })
+      .returning();
+    return row;
+  }
+
+  // ── Church Transactions ──────────────────────────────────────────────────────
+  async createChurchTransaction(data: Omit<ChurchTransaction, "id" | "createdAt">): Promise<ChurchTransaction> {
+    const [row] = await db.insert(churchTransactions).values(data).returning();
+    return row;
+  }
+  async getChurchTransactionByReference(reference: string): Promise<ChurchTransaction | undefined> {
+    const [row] = await db.select().from(churchTransactions).where(eq(churchTransactions.reference, reference));
+    return row;
+  }
+  async getChurchTransactionByStripeSession(sessionId: string): Promise<ChurchTransaction | undefined> {
+    const [row] = await db.select().from(churchTransactions).where(eq(churchTransactions.stripeSessionId, sessionId));
+    return row;
+  }
+  async updateChurchTransactionStatus(id: number, status: string, stripePaymentIntentId?: string): Promise<ChurchTransaction> {
+    const [row] = await db.update(churchTransactions)
+      .set({ status, ...(stripePaymentIntentId ? { stripePaymentIntentId } : {}) })
+      .where(eq(churchTransactions.id, id))
+      .returning();
+    return row;
+  }
+  async getChurchTransactions(churchId: number, limit = 100): Promise<ChurchTransaction[]> {
+    return await db.select().from(churchTransactions)
+      .where(eq(churchTransactions.churchId, churchId))
+      .orderBy(desc(churchTransactions.createdAt))
+      .limit(limit);
+  }
+  async getAllGivingTransactions(limit = 200): Promise<ChurchTransaction[]> {
+    return await db.select().from(churchTransactions)
+      .orderBy(desc(churchTransactions.createdAt))
+      .limit(limit);
+  }
+
+  // ── Global Giving Settings ───────────────────────────────────────────────────
+  async getGlobalGivingSetting(key: string): Promise<string | null> {
+    const [row] = await db.select().from(globalGivingSettings).where(eq(globalGivingSettings.settingKey, key));
+    return row?.settingValue ?? null;
+  }
+  async setGlobalGivingSetting(key: string, value: string, updatedBy?: string): Promise<GlobalGivingSetting> {
+    const existing = await this.getGlobalGivingSetting(key);
+    if (existing !== null) {
+      const [row] = await db.update(globalGivingSettings)
+        .set({ settingValue: value, updatedBy: updatedBy ?? null, updatedAt: new Date() })
+        .where(eq(globalGivingSettings.settingKey, key))
+        .returning();
+      return row;
+    }
+    const [row] = await db.insert(globalGivingSettings)
+      .values({ settingKey: key, settingValue: value, updatedBy: updatedBy ?? null })
+      .returning();
+    return row;
+  }
+  async getAllGlobalGivingSettings(): Promise<GlobalGivingSetting[]> {
+    return await db.select().from(globalGivingSettings);
   }
 }
 

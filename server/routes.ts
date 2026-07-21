@@ -12,7 +12,7 @@ import { seedAllDevotionals } from "./seed-devotionals";
 import { getOrCreateTranslation, isAllowedLanguage, getCachedTranslationsForLanguage } from "./translationService";
 import { getCurrentPromise, getNextPromise, advancePromise, resetRotation, toggleEnabled, getTotalPromises, startPromiseScheduler } from "./promiseEngine";
 import { generateAIEncouragement } from "./inbox-ai";
-import { promiseAmens, INBOX_CATEGORIES, insertDonationConfirmationSchema } from "@shared/schema";
+import { promiseAmens, INBOX_CATEGORIES, insertDonationConfirmationSchema, churchTransactions } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, desc, gte } from "drizzle-orm";
 
@@ -3296,6 +3296,294 @@ export async function registerRoutes(
       if (!["active", "inactive", "suspended"].includes(status)) return res.status(400).json({ message: "Invalid status" });
       res.json(await storage.updateChurchStatus(id, status));
     } catch { res.status(500).json({ message: "Failed to update church status" }); }
+  });
+
+  // ── Church Logo Upload ────────────────────────────────────────────────────────
+  app.post("/api/churches/:id/logo", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const church = await storage.getChurch(churchId);
+      if (!church) return res.status(404).json({ message: "Church not found" });
+      const members = await storage.getChurchMembers(churchId);
+      const member = members.find(m => m.firebaseUid === uid);
+      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Not authorized" });
+      const { logoUrl } = req.body;
+      if (!logoUrl || typeof logoUrl !== "string") return res.status(400).json({ message: "logoUrl is required" });
+      res.json(await storage.updateChurchLogoUrl(churchId, logoUrl));
+    } catch { res.status(500).json({ message: "Failed to update logo" }); }
+  });
+
+  // ── Church Giving Settings ────────────────────────────────────────────────────
+  app.get("/api/churches/:id/giving/settings", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const members = await storage.getChurchMembers(churchId);
+      if (!members.find(m => m.firebaseUid === uid)) return res.status(403).json({ message: "Not a member" });
+      const settings = await storage.getChurchGivingSettings(churchId);
+      res.json(settings ?? { churchId, isEnabled: false, currency: "USD", platformFeeAccepted: false });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/churches/:id/giving/settings", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const members = await storage.getChurchMembers(churchId);
+      const member = members.find(m => m.firebaseUid === uid);
+      if (!member || !["owner", "lead_pastor", "administrator", "associate_pastor"].includes(member.role)) return res.status(403).json({ message: "Not authorized" });
+      const { isEnabled, currency, platformFeeAccepted, givingStatement } = req.body;
+      res.json(await storage.upsertChurchGivingSettings(churchId, { isEnabled, currency, platformFeeAccepted, givingStatement }));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Church Giving Public Info + Categories ────────────────────────────────────
+  app.get("/api/churches/slug/:slug/giving", async (req, res) => {
+    try {
+      const church = await storage.getChurchBySlug(req.params.slug);
+      if (!church) return res.status(404).json({ message: "Church not found" });
+      const [settings, categories, platformFeeStr] = await Promise.all([
+        storage.getChurchGivingSettings(church.id),
+        storage.getChurchGivingCategories(church.id),
+        storage.getGlobalGivingSetting("platform_fee_percent"),
+      ]);
+      res.json({ church, settings, categories: categories.filter(c => c.isActive), platformFeePercent: platformFeeStr ? parseFloat(platformFeeStr) : 2.5 });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.get("/api/churches/:id/giving/categories", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const members = await storage.getChurchMembers(churchId);
+      if (!members.find(m => m.firebaseUid === uid)) return res.status(403).json({ message: "Not a member" });
+      res.json(await storage.getChurchGivingCategories(churchId));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/churches/:id/giving/categories", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const members = await storage.getChurchMembers(churchId);
+      const member = members.find(m => m.firebaseUid === uid);
+      if (!member || !["owner", "lead_pastor", "administrator", "associate_pastor"].includes(member.role)) return res.status(403).json({ message: "Not authorized" });
+      const { name, description, displayOrder } = req.body;
+      if (!name?.trim()) return res.status(400).json({ message: "Name is required" });
+      res.json(await storage.createChurchGivingCategory({ churchId, name: name.trim(), description, displayOrder: displayOrder ?? 0 }));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.patch("/api/churches/:id/giving/categories/:catId", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const members = await storage.getChurchMembers(churchId);
+      const member = members.find(m => m.firebaseUid === uid);
+      if (!member || !["owner", "lead_pastor", "administrator", "associate_pastor"].includes(member.role)) return res.status(403).json({ message: "Not authorized" });
+      const { name, description, isActive, displayOrder } = req.body;
+      res.json(await storage.updateChurchGivingCategory(Number(req.params.catId), { name, description, isActive, displayOrder }));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.delete("/api/churches/:id/giving/categories/:catId", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const members = await storage.getChurchMembers(churchId);
+      const member = members.find(m => m.firebaseUid === uid);
+      if (!member || !["owner", "lead_pastor", "administrator", "associate_pastor"].includes(member.role)) return res.status(403).json({ message: "Not authorized" });
+      await storage.deleteChurchGivingCategory(Number(req.params.catId));
+      res.json({ ok: true });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Church Payout Config ──────────────────────────────────────────────────────
+  app.get("/api/churches/:id/payout-config", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const members = await storage.getChurchMembers(churchId);
+      const member = members.find(m => m.firebaseUid === uid);
+      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Not authorized" });
+      const config = await storage.getChurchPayoutConfig(churchId);
+      if (config?.accountNumber) {
+        res.json({ ...config, accountNumber: config.accountNumber.replace(/.(?=.{4})/g, "•") });
+      } else {
+        res.json(config ?? null);
+      }
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/churches/:id/payout-config", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const members = await storage.getChurchMembers(churchId);
+      const member = members.find(m => m.firebaseUid === uid);
+      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Not authorized" });
+      const config = await storage.upsertChurchPayoutConfig(churchId, req.body, uid);
+      const masked = config.accountNumber ? config.accountNumber.replace(/.(?=.{4})/g, "•") : null;
+      res.json({ ...config, accountNumber: masked });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Church Transactions ───────────────────────────────────────────────────────
+  app.get("/api/churches/:id/giving/transactions", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const members = await storage.getChurchMembers(churchId);
+      const member = members.find(m => m.firebaseUid === uid);
+      if (!member || !["owner", "lead_pastor", "administrator", "associate_pastor"].includes(member.role)) return res.status(403).json({ message: "Not authorized" });
+      res.json(await storage.getChurchTransactions(churchId));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Church Giving — Stripe Checkout ──────────────────────────────────────────
+  app.post("/api/churches/slug/:slug/giving/create-session", async (req, res) => {
+    try {
+      const stripeKey = process.env.STRIPE_SECRET_KEY;
+      if (!stripeKey) return res.status(503).json({ message: "Card payments are not currently configured." });
+      const church = await storage.getChurchBySlug(req.params.slug);
+      if (!church) return res.status(404).json({ message: "Church not found" });
+      const settings = await storage.getChurchGivingSettings(church.id);
+      if (!settings?.isEnabled) return res.status(403).json({ message: "Online giving is not enabled for this church." });
+      const { amount, categoryId, categoryName, donorName, donorEmail, isAnonymous, note, donorFirebaseUid } = req.body;
+      if (!amount || isNaN(Number(amount)) || Number(amount) < 1) return res.status(400).json({ message: "Enter a valid amount (minimum $1)." });
+      if (!categoryName) return res.status(400).json({ message: "Giving category is required." });
+      const grossCents = Math.round(Number(amount) * 100);
+      const platformFeeStr = await storage.getGlobalGivingSetting("platform_fee_percent");
+      const platformFeePercent = platformFeeStr ? parseFloat(platformFeeStr) : 2.5;
+      const platformFeeCents = Math.round(grossCents * (platformFeePercent / 100));
+      const providerFeeCents = Math.round(grossCents * 0.029 + 30);
+      const churchNetCents = grossCents - platformFeeCents - providerFeeCents;
+      const reference = `cg-${church.id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const txn = await storage.createChurchTransaction({
+        churchId: church.id,
+        categoryId: categoryId ? Number(categoryId) : null,
+        categoryName: categoryName || "General",
+        donorFirebaseUid: donorFirebaseUid ?? null,
+        donorName: isAnonymous ? null : (donorName ?? null),
+        donorEmail: isAnonymous ? null : (donorEmail ?? null),
+        isAnonymous: !!isAnonymous,
+        note: note ?? null,
+        currency: settings.currency ?? "USD",
+        grossAmount: grossCents,
+        platformFeeAmount: platformFeeCents,
+        providerFeeAmount: providerFeeCents,
+        churchNetAmount: churchNetCents,
+        status: "pending",
+        payoutStatus: "pending",
+        stripeSessionId: null,
+        stripePaymentIntentId: null,
+        reference,
+      });
+      const stripe = (await import("stripe")).default;
+      const stripeClient = new stripe(stripeKey);
+      const protocol = req.headers["x-forwarded-proto"] || "https";
+      const host = req.headers.host;
+      const baseUrl = `${protocol}://${host}`;
+      const description = `${categoryName} — ${church.name}${!isAnonymous && donorName ? ` — From: ${donorName}` : ""}${note ? ` — "${note}"` : ""}`;
+      const session = await stripeClient.checkout.sessions.create({
+        payment_method_types: ["card"],
+        mode: "payment",
+        line_items: [{
+          price_data: {
+            currency: (settings.currency ?? "USD").toLowerCase(),
+            product_data: { name: `${church.name} — ${categoryName}`, description },
+            unit_amount: grossCents,
+          },
+          quantity: 1,
+        }],
+        metadata: { reference, txnId: String(txn.id), churchId: String(church.id) },
+        customer_email: !isAnonymous && donorEmail ? donorEmail : undefined,
+        success_url: `${baseUrl}/church/${church.slug}/giving/success?ref=${reference}`,
+        cancel_url: `${baseUrl}/church/${church.slug}/giving`,
+      });
+      await db.update(churchTransactions).set({ stripeSessionId: session.id }).where(eq(churchTransactions.id, txn.id));
+      res.json({ checkoutUrl: session.url, reference });
+    } catch (err: any) {
+      console.error("[ChurchGiving] Stripe error:", err.message || err);
+      res.status(500).json({ message: "Payment could not be started. Please try again." });
+    }
+  });
+
+  // ── Church Giving Success Confirmation ────────────────────────────────────────
+  app.get("/api/churches/slug/:slug/giving/confirm", async (req, res) => {
+    try {
+      const { ref } = req.query;
+      if (!ref || typeof ref !== "string") return res.status(400).json({ message: "Reference required" });
+      const txn = await storage.getChurchTransactionByReference(ref);
+      if (!txn) return res.status(404).json({ message: "Transaction not found" });
+      res.json(txn);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Stripe Webhook for Church Giving ─────────────────────────────────────────
+  app.post("/api/church-giving-webhook", async (req, res) => {
+    try {
+      const stripeKey = process.env.STRIPE_SECRET_KEY;
+      if (!stripeKey) return res.status(503).end();
+      const stripe = (await import("stripe")).default;
+      const stripeClient = new stripe(stripeKey);
+      const sig = req.headers["stripe-signature"];
+      const webhookSecret = process.env.STRIPE_GIVING_WEBHOOK_SECRET;
+      let event: any;
+      if (webhookSecret && sig) {
+        try {
+          event = stripeClient.webhooks.constructEvent(req.body, sig, webhookSecret);
+        } catch { return res.status(400).send("Webhook signature verification failed."); }
+      } else {
+        event = req.body;
+      }
+      if (event.type === "checkout.session.completed") {
+        const session = event.data.object;
+        const txn = await storage.getChurchTransactionByStripeSession(session.id);
+        if (txn) {
+          await storage.updateChurchTransactionStatus(txn.id, "completed", session.payment_intent);
+        }
+      } else if (event.type === "checkout.session.expired") {
+        const session = event.data.object;
+        const txn = await storage.getChurchTransactionByStripeSession(session.id);
+        if (txn && txn.status === "pending") {
+          await storage.updateChurchTransactionStatus(txn.id, "failed");
+        }
+      }
+      res.json({ received: true });
+    } catch (err: any) {
+      console.error("[GivingWebhook] Error:", err.message);
+      res.status(500).end();
+    }
+  });
+
+  // ── Admin: Global Giving Platform Settings ────────────────────────────────────
+  app.get("/api/admin/giving/platform-settings", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const fee = await storage.getGlobalGivingSetting("platform_fee_percent");
+      res.json({ platform_fee_percent: fee ?? "2.5" });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.patch("/api/admin/giving/platform-settings", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const { platform_fee_percent } = req.body;
+      const val = parseFloat(platform_fee_percent);
+      if (isNaN(val) || val < 0 || val > 20) return res.status(400).json({ message: "Fee must be between 0 and 20%" });
+      await storage.setGlobalGivingSetting("platform_fee_percent", String(val), "admin");
+      res.json({ platform_fee_percent: String(val) });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.get("/api/admin/giving/transactions", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const txns = await storage.getAllGivingTransactions(200);
+      res.json(txns);
+    } catch { res.status(500).json({ message: "Server error" }); }
   });
 
   return httpServer;
