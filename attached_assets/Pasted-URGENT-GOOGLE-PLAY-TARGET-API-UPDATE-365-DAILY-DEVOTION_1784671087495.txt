@@ -1,0 +1,168 @@
+URGENT GOOGLE PLAY TARGET API UPDATE — 365 DAILY DEVOTIONAL ONLY
+
+Google Play has notified us that the Android version of 365 Daily Devotional targets an outdated Android API level.
+
+Starting August 31, 2026, app updates submitted to Google Play must target Android 16, API level 36 or higher.
+
+Complete the Android compliance update for 365 Daily Devotional only.
+
+STRICT SCOPE
+
+Do not redesign the website.
+Do not modify Church Mode.
+Do not modify devotionals, songs, Sunday School, Bible Reader, prayer, giving, messaging, admin tools, Firebase authentication, database records, server routes, or unrelated web features.
+Do not rebuild the application from scratch.
+Do not change the Android application ID/package name.
+Do not change or remove the existing signing configuration.
+Do not create a new Android app or a second Android project.
+Do not touch CovenantHub or VaultPro in this task.
+Use the smallest safe changes necessary.
+
+FIRST: IDENTIFY THE ANDROID WRAPPER
+
+Inspect only the files related to the existing Android wrapper, such as:
+
+• android/
+• capacitor.config.*
+• package.json
+• android/app/build.gradle or build.gradle.kts
+• android/build.gradle
+• android/variables.gradle
+• gradle-wrapper.properties
+• AndroidManifest.xml
+
+Confirm whether the Android app uses Capacitor, Cordova, Trusted Web Activity, or another wrapper.
+
+REQUIRED TARGET
+
+Update the existing Android project to:
+
+• compileSdk = 36
+• targetSdk = 36
+
+Preserve the current minSdk unless a required dependency makes a change unavoidable.
+
+DEPENDENCIES AND BUILD TOOLS
+
+Update only the Android dependencies and build tools required to compile safely with API 36.
+
+Check and minimally update, where necessary:
+
+• Android Gradle Plugin
+• Gradle wrapper
+• Capacitor Android packages
+• AndroidX dependencies
+• Kotlin version
+• Java/JDK compatibility
+• compile options
+• namespace configuration
+
+Do not perform broad dependency upgrades. Do not upgrade unrelated JavaScript packages.
+
+ANDROID 16 COMPATIBILITY REVIEW
+
+Check the existing Android wrapper for behavior changes that may affect an app targeting API 36, including:
+
+• edge-to-edge display and safe-area handling
+• status bar and navigation bar visibility
+• back-button navigation
+• notification permission behavior
+• file, photo, camera, and media permissions
+• downloads and file sharing
+• external links
+• Firebase authentication redirects
+• deep links and app links
+• WebView behavior
+• foreground services, if any
+• broadcast receivers and exported components
+• pending intents
+• orientation and screen resizing
+• splash screen
+• network security configuration
+
+Make only changes genuinely required by this app.
+
+MANIFEST AND PERMISSIONS
+
+Review AndroidManifest.xml and:
+
+• remove obsolete permissions only when clearly safe
+• retain permissions required by existing features
+• verify android:exported values
+• verify launcher activity configuration
+• verify internet access
+• verify deep-link and Firebase authentication configuration
+• do not add unnecessary sensitive permissions
+
+VERSIONING
+
+Preserve the existing applicationId/package name.
+
+Read the currently published versionCode and versionName from the Android project.
+
+Increase versionCode by exactly 1.
+
+Increase versionName minimally and appropriately for this compliance release.
+
+Do not reset or lower either value.
+
+WEB CONTENT
+
+Synchronize the current production web build into the existing Android wrapper using the project’s established Capacitor/Cordova workflow.
+
+Do not replace the production URL, package identity, icons, splash assets, Firebase project, or existing application behavior.
+
+BUILD AND TEST
+
+Run the appropriate commands to:
+
+1. Install only required dependencies.
+2. Build the web application.
+3. Synchronize the Android wrapper.
+4. Clean the Android build.
+5. Compile the Android release project.
+6. Run lint or equivalent Android checks.
+7. Confirm compileSdk 36.
+8. Confirm targetSdk 36.
+9. Confirm the application ID is unchanged.
+10. Confirm versionCode was increased.
+11. Confirm there are no new blocking errors.
+
+Generate a release Android App Bundle (.aab) only if the existing signing configuration is available and can be used safely.
+
+Never create a new signing key.
+
+Never overwrite, expose, print, or delete the current keystore or signing secrets.
+
+If signing information is unavailable, create an unsigned release bundle or complete the build validation and clearly state the single remaining signing step.
+
+OUTPUT LOCATION
+
+Place any generated release bundle in a clearly identified location, preferably:
+
+android/app/build/outputs/bundle/release/
+
+FINAL REPORT
+
+Provide a concise report containing:
+
+• Android wrapper type
+• previous compileSdk
+• new compileSdk
+• previous targetSdk
+• new targetSdk
+• previous and new versionCode
+• previous and new versionName
+• Android/Gradle/Capacitor files changed
+• compatibility fixes made
+• build and lint results
+• exact path of the generated .aab
+• whether the bundle is signed
+• whether it is ready for Google Play Console
+• any single manual step still required
+
+Do not deploy or publish the website as part of this task.
+
+Do not upload anything to Google Play Console.
+
+Stop after producing and verifying the Android build.
