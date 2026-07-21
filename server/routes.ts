@@ -77,16 +77,16 @@ async function getFirebaseCerts(): Promise<Record<string, string>> {
   return certs;
 }
 
+const FIREBASE_PROJECT_ID = "loopnest-app";
+
 async function verifyFirebaseToken(idToken: string): Promise<string> {
-  const projectId = process.env.VITE_FIREBASE_PROJECT_ID;
-  if (!projectId) throw new Error("VITE_FIREBASE_PROJECT_ID not set");
   const certs = await getFirebaseCerts();
   const client = new OAuth2Client();
   const ticket = await (client as any).verifySignedJwtWithCertsAsync(
     idToken,
     certs,
-    projectId,
-    [`https://securetoken.google.com/${projectId}`]
+    FIREBASE_PROJECT_ID,
+    [`https://securetoken.google.com/${FIREBASE_PROJECT_ID}`]
   );
   const payload = ticket.getPayload() as Record<string, any>;
   return payload.sub as string;
@@ -95,7 +95,7 @@ async function verifyFirebaseToken(idToken: string): Promise<string> {
 function requireUser(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Authentication required" });
+    return res.status(401).json({ message: "Your sign-in session was not included. Please refresh the page and try again." });
   }
   const token = header.slice(7);
   verifyFirebaseToken(token)
@@ -103,7 +103,7 @@ function requireUser(req: Request, res: Response, next: NextFunction) {
       (req as any).uid = uid;
       next();
     })
-    .catch(() => res.status(401).json({ message: "Invalid or expired token" }));
+    .catch(() => res.status(401).json({ message: "Your session has expired. Please sign in again." }));
 }
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -2798,10 +2798,18 @@ export async function registerRoutes(
 
   // ── Church Mode Routes — Phase 2A ────────────────────────────────────────────
 
-  async function getUid(req: Request): Promise<string | null> {
+  async function getUid(req: Request, res?: Response): Promise<string | null> {
     const h = req.headers.authorization;
-    if (!h?.startsWith("Bearer ")) return null;
-    try { return await verifyFirebaseToken(h.slice(7)); } catch { return null; }
+    if (!h?.startsWith("Bearer ")) {
+      if (res) res.status(401).json({ message: "Your sign-in session was not included. Please refresh the page and try again." });
+      return null;
+    }
+    try {
+      return await verifyFirebaseToken(h.slice(7));
+    } catch {
+      if (res) res.status(401).json({ message: "Your session has expired. Please sign in again." });
+      return null;
+    }
   }
   function churchSlug(name: string) {
     return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").substring(0, 40)
@@ -2827,8 +2835,8 @@ export async function registerRoutes(
 
   // Auth: create a church
   app.post("/api/churches", async (req, res) => {
-    const uid = await getUid(req);
-    if (!uid) return res.status(401).json({ message: "Authentication required" });
+    const uid = await getUid(req, res);
+    if (!uid) return;
     try {
       const { name, description, denomination, address, websiteUrl, email, displayName } = req.body;
       if (!name?.trim()) return res.status(400).json({ message: "Church name is required" });
@@ -2842,15 +2850,15 @@ export async function registerRoutes(
 
   // Auth: get user's church memberships
   app.get("/api/churches/my", async (req, res) => {
-    const uid = await getUid(req);
-    if (!uid) return res.status(401).json({ message: "Authentication required" });
+    const uid = await getUid(req, res);
+    if (!uid) return;
     try { res.json(await storage.getUserChurches(uid)); } catch { res.status(500).json({ message: "Server error" }); }
   });
 
   // Auth: join a church via invite code
   app.post("/api/churches/join", async (req, res) => {
-    const uid = await getUid(req);
-    if (!uid) return res.status(401).json({ message: "Authentication required" });
+    const uid = await getUid(req, res);
+    if (!uid) return;
     try {
       const { inviteCode: code, email, displayName } = req.body;
       if (!code?.trim()) return res.status(400).json({ message: "Invite code is required" });
@@ -2877,7 +2885,7 @@ export async function registerRoutes(
 
   // Auth: get current user's role in a church
   app.get("/api/churches/slug/:slug/my-role", async (req, res) => {
-    const uid = await getUid(req);
+    const uid = await getUid(req); // intentionally permissive — returns null role for unauthenticated
     if (!uid) return res.json({ role: null });
     try {
       const church = await storage.getChurchBySlug(req.params.slug);
@@ -2889,8 +2897,8 @@ export async function registerRoutes(
 
   // Auth: update church (owner/admin/lead_pastor)
   app.patch("/api/churches/:id", async (req, res) => {
-    const uid = await getUid(req);
-    if (!uid) return res.status(401).json({ message: "Authentication required" });
+    const uid = await getUid(req, res);
+    if (!uid) return;
     try {
       const id = Number(req.params.id);
       const church = await storage.getChurch(id);
@@ -2904,8 +2912,8 @@ export async function registerRoutes(
 
   // Auth: get members (any active member)
   app.get("/api/churches/:id/members", async (req, res) => {
-    const uid = await getUid(req);
-    if (!uid) return res.status(401).json({ message: "Authentication required" });
+    const uid = await getUid(req, res);
+    if (!uid) return;
     try {
       const id = Number(req.params.id);
       const m = await storage.getChurchMember(id, uid);
@@ -2916,8 +2924,8 @@ export async function registerRoutes(
 
   // Auth: update member role/status (owner/admin)
   app.patch("/api/churches/:id/members/:memberId", async (req, res) => {
-    const uid = await getUid(req);
-    if (!uid) return res.status(401).json({ message: "Authentication required" });
+    const uid = await getUid(req, res);
+    if (!uid) return;
     try {
       const id = Number(req.params.id);
       const memberId = Number(req.params.memberId);
@@ -2934,8 +2942,8 @@ export async function registerRoutes(
 
   // Auth: remove a member (owner/admin or self-leave)
   app.delete("/api/churches/:id/members/:memberId", async (req, res) => {
-    const uid = await getUid(req);
-    if (!uid) return res.status(401).json({ message: "Authentication required" });
+    const uid = await getUid(req, res);
+    if (!uid) return;
     try {
       const id = Number(req.params.id);
       const memberId = Number(req.params.memberId);
@@ -2953,8 +2961,8 @@ export async function registerRoutes(
 
   // Auth: create invitation (owner/admin/lead_pastor)
   app.post("/api/churches/:id/invitations", async (req, res) => {
-    const uid = await getUid(req);
-    if (!uid) return res.status(401).json({ message: "Authentication required" });
+    const uid = await getUid(req, res);
+    if (!uid) return;
     try {
       const id = Number(req.params.id);
       const m = await storage.getChurchMember(id, uid);
@@ -2968,8 +2976,8 @@ export async function registerRoutes(
 
   // Auth: list invitations
   app.get("/api/churches/:id/invitations", async (req, res) => {
-    const uid = await getUid(req);
-    if (!uid) return res.status(401).json({ message: "Authentication required" });
+    const uid = await getUid(req, res);
+    if (!uid) return;
     try {
       const id = Number(req.params.id);
       const m = await storage.getChurchMember(id, uid);
@@ -2980,8 +2988,8 @@ export async function registerRoutes(
 
   // Auth: deactivate an invitation
   app.delete("/api/churches/:id/invitations/:invId", async (req, res) => {
-    const uid = await getUid(req);
-    if (!uid) return res.status(401).json({ message: "Authentication required" });
+    const uid = await getUid(req, res);
+    if (!uid) return;
     try {
       const id = Number(req.params.id);
       const invId = Number(req.params.invId);

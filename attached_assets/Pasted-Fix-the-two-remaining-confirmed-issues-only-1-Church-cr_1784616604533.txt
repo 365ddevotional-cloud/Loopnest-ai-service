@@ -1,0 +1,271 @@
+Fix the two remaining confirmed issues only:
+
+1. Church creation fails with “Authentication required.”
+2. Firebase verification emails display “loopnest-app” instead of 365 Daily Devotional.
+
+Do not modify Firebase secrets again.
+Do not redesign Church Mode.
+Do not modify songs, devotionals, donations, global admin, or unrelated features.
+
+==================================================
+ISSUE 1 — CREATE CHURCH RETURNS “AUTHENTICATION REQUIRED”
+==================================================
+
+CONFIRMED USER FLOW
+
+• The user successfully created an account on:
+  https://365dailydevotional.com
+• The verification email was received.
+• The email address was successfully verified.
+• The user entered Church Mode while signed in.
+• Church Mode correctly displayed:
+  “You are not part of any church yet.”
+• The user opened Create a Church Space.
+• The form loaded and accepted the church information.
+• When Create Church Space was submitted, the page returned:
+
+Error
+Authentication required
+
+This proves Firebase signup works. Do not investigate signup again.
+
+Diagnose the actual Church creation request.
+
+--------------------------------------------------
+CLIENT-SIDE AUTH CHECK
+--------------------------------------------------
+
+Inspect the ChurchCreate page and the exact API request used when the user taps:
+
+Create Church Space
+
+Confirm that it:
+
+1. Waits until Firebase authentication initialization is complete.
+2. Confirms there is a current authenticated user.
+3. Retrieves a current Firebase ID token using the same Firebase Auth instance used by UserContext.
+4. Sends the token in the request header exactly as:
+
+Authorization: Bearer <Firebase-ID-token>
+
+5. Does not send:
+   • a Firebase UID instead of a token
+   • an email address instead of a token
+   • “Bearer undefined”
+   • an expired cached token
+   • a token from a second Firebase app instance
+
+Use the existing UserContext getIdToken method where appropriate.
+
+Do not create another authentication system.
+
+If auth is still initializing, disable the submit button temporarily and show:
+
+“Confirming your secure sign-in…”
+
+Do not allow the request to be submitted before authentication is ready.
+
+If the authenticated user is unexpectedly null, show:
+
+“Your sign-in session was not detected. Please sign in again.”
+
+Do not send the church creation request in that state.
+
+--------------------------------------------------
+SERVER-SIDE TOKEN VERIFICATION
+--------------------------------------------------
+
+Inspect the exact backend route handling church creation.
+
+Confirm that it:
+
+1. Reads the Authorization header.
+2. Requires the “Bearer ” prefix.
+3. Extracts the ID token correctly.
+4. Verifies the token using the Firebase Admin SDK connected to the same Firebase project:
+   loopnest-app
+5. Uses the verified token UID as the authenticated user ID.
+6. Does not trust a user ID supplied in the request body.
+7. Returns clear development logging without exposing the token.
+
+Check whether the backend Firebase Admin configuration is missing, stale, or connected to a different Firebase project.
+
+Do not place service-account credentials in source code.
+
+Use the project’s existing secure server configuration.
+
+--------------------------------------------------
+AUTHENTICATION ERROR HANDLING
+--------------------------------------------------
+
+Distinguish these failures:
+
+Missing Authorization header:
+“Your sign-in session was not included. Please refresh the page and try again.”
+
+Invalid or expired token:
+“Your session has expired. Please sign in again.”
+
+Unverified email, only if Church creation intentionally requires verification:
+“Please verify your email before creating a church space.”
+
+Server authentication configuration failure:
+“We could not verify your account right now. Please contact support.”
+
+Do not return only the generic phrase “Authentication required.”
+
+If email verification is required, check the verified Firebase token claim or reload the current user before submission.
+
+--------------------------------------------------
+REAL PUBLIC-SITE TEST
+--------------------------------------------------
+
+Test on the actual public site:
+
+https://365dailydevotional.com
+
+Do not test only on localhost, preview, REST, or Playwright against an internal host.
+
+Use a temporary verified Firebase account.
+
+Verify:
+
+1. Sign in through the public site.
+2. Open Church Mode.
+3. Open Create a Church Space.
+4. Submit a valid church form.
+5. Confirm the Authorization header is present.
+6. Confirm the backend verifies the token.
+7. Confirm the church database record is created.
+8. Confirm the authenticated user becomes Church Owner.
+9. Confirm the user also receives the intended Lead Pastor role.
+10. Confirm the created church opens successfully.
+11. Confirm the church appears on the Church Mode landing page.
+12. Remove the temporary test church and test account afterward.
+
+Do not claim this is fixed unless the actual church record is created through the public browser flow.
+
+==================================================
+ISSUE 2 — BRAND THE VERIFICATION EMAIL
+==================================================
+
+CURRENT PROBLEM
+
+The verification email currently says:
+
+“Verify your email for loopnest-app”
+
+The sender appears only as:
+
+noreply
+
+The verification link uses:
+
+loopnest-app.firebaseapp.com
+
+The email went to Spam.
+
+The email must clearly represent 365 Daily Devotional.
+
+--------------------------------------------------
+FIREBASE EMAIL TEMPLATE
+--------------------------------------------------
+
+Update the Firebase Authentication email verification template where access permits.
+
+Use this branding:
+
+Sender name:
+365 Daily Devotional
+
+Subject:
+Verify Your Email for 365 Daily Devotional
+
+Suggested email body:
+
+Hello,
+
+Thank you for creating your free 365 Daily Devotional account.
+
+Please verify your email address by selecting the button or link below. After verification, you will be able to save resources, access Church Mode, and use your account across supported devices.
+
+Verify My Email
+
+If you did not create this account, you may safely ignore this email.
+
+With blessings,
+365 Daily Devotional
+https://365dailydevotional.com
+
+Keep the verification link generated securely by Firebase.
+
+Do not expose raw verification codes.
+
+--------------------------------------------------
+CUSTOM ACTION URL AND DOMAIN
+--------------------------------------------------
+
+Where supported, configure the verification email action to return users to:
+
+https://365dailydevotional.com
+
+Prefer a branded verification experience instead of exposing the internal Firebase project name.
+
+Use Firebase’s supported email-template or custom-action-handler settings.
+
+Do not break verification links.
+
+If a custom email domain is supported by the current Firebase plan and configuration, report the exact DNS records and console steps required before changing it.
+
+Do not falsely promise that an email will never enter Spam.
+
+--------------------------------------------------
+SPAM AND DELIVERABILITY
+--------------------------------------------------
+
+Improve legitimate deliverability without using unsafe shortcuts:
+
+• Use the 365 Daily Devotional sender name.
+• Use the branded subject and body.
+• Use a verified custom email domain if available.
+• Avoid misleading wording.
+• Keep the email concise.
+• Keep the secure Firebase action link.
+
+Do not add third-party bulk email services during this task.
+Do not add paid services.
+Do not add SMTP credentials.
+
+If Firebase Console changes require manual action, provide the exact path:
+
+Firebase Console
+→ Authentication
+→ Templates
+→ Email address verification
+→ Edit template
+
+Also state whether a custom action URL or custom email domain requires a separate manual step.
+
+Firebase supports editing Authentication email templates and configuring a custom action handler; it also supports using a custom domain for Authentication emails after domain verification.  [oai_citation:1‡Firebase](https://firebase.google.com/docs/auth/custom-email-handler?utm_source=chatgpt.com)
+
+==================================================
+RETURN ONLY
+==================================================
+
+Return only:
+
+1. Exact reason Church creation returned “Authentication required”
+2. Whether the client sent an Authorization header
+3. Whether the Firebase ID token was valid
+4. Whether the server Firebase Admin project matched loopnest-app
+5. Files changed
+6. Public-site Church creation test result
+7. Whether a church record was actually created
+8. Whether Church Owner and Lead Pastor roles were assigned
+9. Verification email template changes completed
+10. Manual Firebase Console steps still required
+11. Custom action URL status
+12. Custom email-domain status
+13. Confirmation that no Firebase secrets were changed
+14. Confirmation that no unrelated feature was modified
+15. Confirmation that nothing was deployed automatically
