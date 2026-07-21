@@ -1,0 +1,132 @@
+Church Mode is now feature-rich enough that I want to shift development to the next major feature.
+
+DO NOT modify existing Church Mode functionality.
+
+DO NOT refactor unrelated files.
+
+DO NOT break any existing Church Mode, Devotional, Bible Reader, Songs, Sunday School, Prayer, Giving, Messaging, Departments, or Admin features.
+
+Build a complete PUBLIC CHURCH WEBSITE system.
+
+GOAL
+
+Every church automatically receives its own professional website hosted inside the 365 Daily Devotional platform.
+
+Examples:
+
+365dailydevotional.com/church/grace-baptist
+
+365dailydevotional.com/church/rccg-lagos
+
+365dailydevotional.com/church/faith-center
+
+or custom domain support later.
+
+The public website should automatically display:
+
+• Church logo
+• Church banner
+• Church name
+• Denomination
+• Pastor name
+• Church address
+• Phone
+• Email
+• Website
+• Service times
+• About the church
+• Mission statement
+• Vision
+• Upcoming events
+• Latest announcements
+• Latest sermons
+• Recent photos
+• Ministries/Departments
+• Prayer request form
+• Visitor information
+• Contact page
+• Giving page
+• Join Church button
+• Invitation verification
+• Bible verse section
+• Map/location
+• Social media links
+
+Visitors should be able to:
+
+• Watch sermons
+• Listen to sermons
+• Download sermon notes
+• Submit prayer requests
+• Join the church
+• Give online
+• Contact church leaders
+• View upcoming events
+• Share the church website
+
+ADMIN
+
+Church admins should be able to customize:
+
+• Homepage layout
+• Colors
+• Fonts
+• Hero image
+• Backgrounds
+• Homepage sections
+• Footer
+• Navigation
+• Homepage welcome message
+
+Add a simple drag-and-drop homepage arrangement for future expansion if possible.
+
+SEO
+
+Automatically generate:
+
+• Meta title
+• Meta description
+• Open Graph image
+• Church structured data
+• Sitemap inclusion
+
+PERFORMANCE
+
+• Mobile-first
+• Fast loading
+• Lazy loading
+• Responsive
+• Accessible
+
+DATABASE
+
+Reuse all existing church data.
+
+Do not duplicate information already stored.
+
+Use existing branding, sermons, announcements, events, giving, and departments.
+
+TESTING
+
+Verify:
+
+✓ Homepage
+✓ About page
+✓ Sermons
+✓ Events
+✓ Departments
+✓ Giving
+✓ Prayer
+✓ Join Church
+✓ Mobile responsiveness
+✓ SEO metadata
+
+After completion provide a concise implementation report listing:
+
+• New pages
+• New APIs
+• New database fields
+• Files changed
+• Tests performed
+
+Confirm that all previous Church Mode functionality remains fully operational.

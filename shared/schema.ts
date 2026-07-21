@@ -735,6 +735,21 @@ export const churches = pgTable("churches", {
   bannerUrl: text("banner_url"),
   themeColor: text("theme_color"),
   createdAt: timestamp("created_at").defaultNow(),
+  // Public website fields
+  pastorName: text("pastor_name"),
+  phone: text("phone"),
+  email: text("email"),
+  serviceTimes: jsonb("service_times").$type<Array<{ day: string; time: string; type: string }>>(),
+  missionStatement: text("mission_statement"),
+  vision: text("vision"),
+  welcomeMessage: text("welcome_message"),
+  socialLinks: jsonb("social_links").$type<{ facebook?: string; instagram?: string; youtube?: string; twitter?: string; whatsapp?: string }>(),
+  publicPhotos: text("public_photos").array(),
+  publicWebsiteEnabled: boolean("public_website_enabled").notNull().default(true),
+  mapEmbedUrl: text("map_embed_url"),
+  visitorInfo: text("visitor_info"),
+  websiteHeroImage: text("website_hero_image"),
+  homepageSections: jsonb("homepage_sections").$type<Array<{ id: string; enabled: boolean; order: number }>>(),
 });
 
 export const insertChurchSchema = createInsertSchema(churches).omit({

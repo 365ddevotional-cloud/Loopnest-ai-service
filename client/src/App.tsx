@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -8,7 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Header } from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { UserProvider } from "@/contexts/UserContext";
+import { UserProvider, useUser } from "@/contexts/UserContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
 import { MenuTransitionProvider, useMenuTransition } from "@/contexts/MenuTransitionContext";
@@ -84,6 +84,15 @@ const ChurchMessaging = lazy(() => import("@/pages/ChurchMessaging"));
 const ChurchMemberProfilePage = lazy(() => import("@/pages/ChurchMemberProfile"));
 const ChurchDepartments = lazy(() => import("@/pages/ChurchDepartments"));
 const ChurchDepartmentView = lazy(() => import("@/pages/ChurchDepartmentView"));
+const ChurchPublicHome = lazy(() => import("@/pages/ChurchPublicHome"));
+const ChurchPublicAbout = lazy(() => import("@/pages/ChurchPublicAbout"));
+const ChurchPublicWatch = lazy(() => import("@/pages/ChurchPublicWatch"));
+const ChurchPublicEvents = lazy(() => import("@/pages/ChurchPublicEvents"));
+const ChurchPublicMinistries = lazy(() => import("@/pages/ChurchPublicMinistries"));
+const ChurchPublicGive = lazy(() => import("@/pages/ChurchPublicGive"));
+const ChurchPublicContact = lazy(() => import("@/pages/ChurchPublicContact"));
+const ChurchPublicJoin = lazy(() => import("@/pages/ChurchPublicJoin"));
+const ChurchPublicVisit = lazy(() => import("@/pages/ChurchPublicVisit"));
 
 function ChurchPageFallback() {
   return (
@@ -91,6 +100,28 @@ function ChurchPageFallback() {
       <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#b8962e" }} />
     </div>
   );
+}
+
+function ChurchGateway() {
+  const [location] = useLocation();
+  const slug = location.split("/")[2] ?? "";
+  const { user, emailVerified, getIdToken } = useUser();
+  const [membership, setMembership] = useState<"loading" | "member" | "visitor">("loading");
+
+  useEffect(() => {
+    if (!user || !emailVerified) { setMembership("visitor"); return; }
+    getIdToken().then(token => {
+      if (!token) { setMembership("visitor"); return; }
+      fetch(`/api/churches/slug/${slug}/my-role`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.json())
+        .then(d => setMembership(d.status === "active" ? "member" : "visitor"))
+        .catch(() => setMembership("visitor"));
+    });
+  }, [slug, user, emailVerified]);
+
+  if (membership === "loading") return <ChurchPageFallback />;
+  if (membership === "member") return <Suspense fallback={<ChurchPageFallback />}><ChurchHome /></Suspense>;
+  return <Suspense fallback={<ChurchPageFallback />}><ChurchPublicHome /></Suspense>;
 }
 
 function Router() {
@@ -111,7 +142,17 @@ function Router() {
       <Route path="/church/:slug/departments/:deptSlug" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchDepartmentView /></Suspense>} />
       <Route path="/church/:slug/departments" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchDepartments /></Suspense>} />
       <Route path="/church/:slug/admin" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchAdminPage /></Suspense>} />
-      <Route path="/church/:slug" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchHome /></Suspense>} />
+      {/* Public website sub-routes — no auth required */}
+      <Route path="/church/:slug/about" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchPublicAbout /></Suspense>} />
+      <Route path="/church/:slug/watch" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchPublicWatch /></Suspense>} />
+      <Route path="/church/:slug/events" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchPublicEvents /></Suspense>} />
+      <Route path="/church/:slug/ministries" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchPublicMinistries /></Suspense>} />
+      <Route path="/church/:slug/give-online" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchPublicGive /></Suspense>} />
+      <Route path="/church/:slug/contact" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchPublicContact /></Suspense>} />
+      <Route path="/church/:slug/join-us" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchPublicJoin /></Suspense>} />
+      <Route path="/church/:slug/visit" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchPublicVisit /></Suspense>} />
+      {/* Smart gateway: members see ChurchHome, visitors see ChurchPublicHome */}
+      <Route path="/church/:slug" component={ChurchGateway} />
       <Route path="/church" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchLanding /></Suspense>} />
       <Route path="/" component={Home} />
       <Route path="/archive" component={Archive} />

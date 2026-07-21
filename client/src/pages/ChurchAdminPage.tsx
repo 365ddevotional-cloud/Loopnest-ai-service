@@ -14,7 +14,7 @@ import {
   Settings, Copy, Trash2, Plus, Loader2, AlertCircle,
   Users, Calendar, Mic2, Megaphone, Heart, BarChart3, Link as LinkIcon,
   HandCoins, Upload, ImageIcon, X, DollarSign, ToggleLeft, ToggleRight,
-  Building2, CreditCard, ArrowDownToLine, Share2, Tag, CheckCircle2, XCircle,
+  Building2, CreditCard, ArrowDownToLine, Share2, Tag, CheckCircle2, XCircle, Globe, ExternalLink,
   ClockIcon
 } from "lucide-react";
 import type { Church, ChurchInvitation, ChurchSermon, ChurchAnnouncement, ChurchMember, ChurchPrayerRequest, ChurchActivity, ChurchGivingSettings, ChurchGivingCategory, ChurchPayoutConfig, ChurchTransaction } from "@shared/schema";
@@ -131,7 +131,7 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
 const ADMIN_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor"];
 const PROD_URL = "https://365dailydevotional.com";
 
-type AdminTab = "settings" | "branding" | "invitations" | "sermons" | "announcements" | "members" | "prayer" | "giving" | "reports" | "insights" | "departments";
+type AdminTab = "settings" | "branding" | "invitations" | "sermons" | "announcements" | "members" | "prayer" | "giving" | "reports" | "insights" | "departments" | "website";
 
 const roleColors: Record<string, string> = {
   owner: "bg-amber-100 text-amber-800 border-amber-300",
@@ -182,6 +182,17 @@ export default function ChurchAdminPage() {
   // Branding form state
   const [brandingForm, setBrandingForm] = useState({ logoUrl: "", bannerUrl: "", themeColor: "" });
   const [savingBranding, setSavingBranding] = useState(false);
+
+  // Website settings form state
+  const [websiteForm, setWebsiteForm] = useState({
+    pastorName: "", phone: "", email: "", welcomeMessage: "",
+    missionStatement: "", vision: "", visitorInfo: "",
+    mapEmbedUrl: "", websiteHeroImage: "",
+    publicWebsiteEnabled: true,
+    facebookUrl: "", instagramUrl: "", youtubeUrl: "", twitterUrl: "", whatsappNumber: "",
+    serviceTimesRaw: "", publicPhotosRaw: "",
+  });
+  const [savingWebsite, setSavingWebsite] = useState(false);
 
   // Giving state
   const [givingSettingsForm, setGivingSettingsForm] = useState<Partial<ChurchGivingSettings>>({});
@@ -487,6 +498,57 @@ export default function ChurchAdminPage() {
     } finally { setSavingBranding(false); }
   };
 
+  // Save website settings
+  const saveWebsite = async () => {
+    if (!church?.id) return;
+    setSavingWebsite(true);
+    try {
+      const token = await getIdToken();
+      let serviceTimes: Array<{ day: string; time: string; type: string }> = [];
+      if (websiteForm.serviceTimesRaw.trim()) {
+        serviceTimes = websiteForm.serviceTimesRaw.split("\n").map(line => {
+          const parts = line.split("|").map(p => p.trim());
+          return { day: parts[0] ?? "", time: parts[1] ?? "", type: parts[2] ?? "" };
+        }).filter(s => s.day && s.time);
+      }
+      let publicPhotos: string[] = [];
+      if (websiteForm.publicPhotosRaw.trim()) {
+        publicPhotos = websiteForm.publicPhotosRaw.split("\n").map(l => l.trim()).filter(Boolean);
+      }
+      const socialLinks: Record<string, string> = {};
+      if (websiteForm.facebookUrl) socialLinks.facebook = websiteForm.facebookUrl;
+      if (websiteForm.instagramUrl) socialLinks.instagram = websiteForm.instagramUrl;
+      if (websiteForm.youtubeUrl) socialLinks.youtube = websiteForm.youtubeUrl;
+      if (websiteForm.twitterUrl) socialLinks.twitter = websiteForm.twitterUrl;
+      if (websiteForm.whatsappNumber) socialLinks.whatsapp = websiteForm.whatsappNumber;
+      const update: Record<string, any> = {
+        pastorName: websiteForm.pastorName || null,
+        phone: websiteForm.phone || null,
+        email: websiteForm.email || null,
+        welcomeMessage: websiteForm.welcomeMessage || null,
+        missionStatement: websiteForm.missionStatement || null,
+        vision: websiteForm.vision || null,
+        visitorInfo: websiteForm.visitorInfo || null,
+        mapEmbedUrl: websiteForm.mapEmbedUrl || null,
+        websiteHeroImage: websiteForm.websiteHeroImage || null,
+        publicWebsiteEnabled: websiteForm.publicWebsiteEnabled,
+        socialLinks: Object.keys(socialLinks).length > 0 ? socialLinks : null,
+        serviceTimes: serviceTimes.length > 0 ? serviceTimes : null,
+        publicPhotos: publicPhotos.length > 0 ? publicPhotos : null,
+      };
+      const r = await fetch(`/api/churches/${church.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(update),
+      });
+      if (!r.ok) throw new Error((await r.json()).message);
+      qc.invalidateQueries({ queryKey: ["/api/churches/slug", slug] });
+      toast({ title: "✅ Website settings saved" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setSavingWebsite(false); }
+  };
+
   // Save settings
   const saveSettings = useMutation({
     mutationFn: async () => {
@@ -729,6 +791,7 @@ export default function ChurchAdminPage() {
     { key: "prayer", label: "Prayer", icon: Heart },
     { key: "giving", label: "Giving", icon: HandCoins },
     { key: "departments", label: "Departments", icon: Building2 },
+    { key: "website", label: "Website", icon: Globe },
     { key: "reports", label: "Reports", icon: BarChart3 },
     { key: "insights", label: "Insights", icon: BarChart3 },
   ];
@@ -1982,6 +2045,205 @@ export default function ChurchAdminPage() {
             ) : (
               <AdminDepartmentsPanel church={church} getIdToken={getIdToken} />
             )}
+          </div>
+        )}
+
+        {/* Website Settings Tab */}
+        {activeTab === "website" && (
+          <div className="space-y-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold" style={{ color: "#1a2744" }}>Public Church Website</h3>
+                <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>
+                  Customize your church's public website at{" "}
+                  <a href={`/church/${church?.slug ?? ""}`} target="_blank" rel="noopener noreferrer"
+                    className="font-medium underline" style={{ color: "#b8962e" }}>
+                    /church/{church?.slug}
+                  </a>
+                </p>
+              </div>
+              {church?.slug && (
+                <a href={`/church/${church.slug}`} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border"
+                  style={{ borderColor: "#b8962e30", color: "#b8962e" }}
+                  data-testid="button-view-public-website">
+                  <ExternalLink className="w-3.5 h-3.5" /> View Website
+                </a>
+              )}
+            </div>
+
+            {/* Enable/disable toggle */}
+            <Card className="border-0 shadow-sm">
+              <CardContent className="pt-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>Public Website</p>
+                    <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>Enable your church's public website</p>
+                  </div>
+                  <button onClick={() => setWebsiteForm(f => ({ ...f, publicWebsiteEnabled: !f.publicWebsiteEnabled }))}
+                    data-testid="toggle-public-website">
+                    {websiteForm.publicWebsiteEnabled
+                      ? <ToggleRight className="w-8 h-8" style={{ color: "#b8962e" }} />
+                      : <ToggleLeft className="w-8 h-8" style={{ color: "#c0b8b0" }} />}
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Contact Info */}
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base" style={{ color: "#1a2744" }}>Contact Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>Pastor / Leader Name</label>
+                  <Input value={websiteForm.pastorName} onChange={e => setWebsiteForm(f => ({ ...f, pastorName: e.target.value }))}
+                    placeholder="e.g. Pastor John Smith" data-testid="input-website-pastor-name" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>Phone</label>
+                    <Input value={websiteForm.phone} onChange={e => setWebsiteForm(f => ({ ...f, phone: e.target.value }))}
+                      placeholder="+1 555 000 0000" data-testid="input-website-phone" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>Email</label>
+                    <Input value={websiteForm.email} onChange={e => setWebsiteForm(f => ({ ...f, email: e.target.value }))}
+                      placeholder="church@email.com" type="email" data-testid="input-website-email" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Welcome & Content */}
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base" style={{ color: "#1a2744" }}>Content & Messaging</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>Welcome Message (Hero)</label>
+                  <Textarea value={websiteForm.welcomeMessage} onChange={e => setWebsiteForm(f => ({ ...f, welcomeMessage: e.target.value }))}
+                    placeholder="A warm welcome message shown on the homepage hero..." rows={2}
+                    data-testid="input-website-welcome" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>Mission Statement</label>
+                  <Textarea value={websiteForm.missionStatement} onChange={e => setWebsiteForm(f => ({ ...f, missionStatement: e.target.value }))}
+                    placeholder="Our mission is to..." rows={2} data-testid="input-website-mission" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>Vision</label>
+                  <Textarea value={websiteForm.vision} onChange={e => setWebsiteForm(f => ({ ...f, vision: e.target.value }))}
+                    placeholder="We envision a world where..." rows={2} data-testid="input-website-vision" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>Visitor Information</label>
+                  <Textarea value={websiteForm.visitorInfo} onChange={e => setWebsiteForm(f => ({ ...f, visitorInfo: e.target.value }))}
+                    placeholder="What to expect when you visit us for the first time..." rows={3}
+                    data-testid="input-website-visitor-info" />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Service Times */}
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base" style={{ color: "#1a2744" }}>Service Times</CardTitle>
+                <p className="text-xs" style={{ color: "#7a7570" }}>One per line: Day | Time | Type (e.g. "Sunday | 9:00 AM | Main Service")</p>
+              </CardHeader>
+              <CardContent>
+                <Textarea value={websiteForm.serviceTimesRaw} onChange={e => setWebsiteForm(f => ({ ...f, serviceTimesRaw: e.target.value }))}
+                  placeholder={"Sunday | 9:00 AM | Morning Service\nSunday | 11:00 AM | Main Service\nWednesday | 7:00 PM | Bible Study"}
+                  rows={4} className="font-mono text-xs" data-testid="input-website-service-times" />
+              </CardContent>
+            </Card>
+
+            {/* Hero Image & Map */}
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base" style={{ color: "#1a2744" }}>Media & Location</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>Hero Image URL</label>
+                  <Input value={websiteForm.websiteHeroImage} onChange={e => setWebsiteForm(f => ({ ...f, websiteHeroImage: e.target.value }))}
+                    placeholder="https://..." data-testid="input-website-hero-image" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>Google Maps Embed URL</label>
+                  <Input value={websiteForm.mapEmbedUrl} onChange={e => setWebsiteForm(f => ({ ...f, mapEmbedUrl: e.target.value }))}
+                    placeholder="https://www.google.com/maps/embed?..." data-testid="input-website-map-url" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>
+                    Gallery Photos (one URL per line)
+                  </label>
+                  <Textarea value={websiteForm.publicPhotosRaw} onChange={e => setWebsiteForm(f => ({ ...f, publicPhotosRaw: e.target.value }))}
+                    placeholder={"https://example.com/photo1.jpg\nhttps://example.com/photo2.jpg"}
+                    rows={3} className="font-mono text-xs" data-testid="input-website-photos" />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Social Links */}
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base" style={{ color: "#1a2744" }}>Social Media Links</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {[
+                  { key: "facebookUrl", label: "Facebook", placeholder: "https://facebook.com/yourchurch" },
+                  { key: "instagramUrl", label: "Instagram", placeholder: "https://instagram.com/yourchurch" },
+                  { key: "youtubeUrl", label: "YouTube", placeholder: "https://youtube.com/@yourchurch" },
+                  { key: "twitterUrl", label: "Twitter/X", placeholder: "https://twitter.com/yourchurch" },
+                  { key: "whatsappNumber", label: "WhatsApp Number", placeholder: "+1234567890" },
+                ].map(({ key, label, placeholder }) => (
+                  <div key={key}>
+                    <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>{label}</label>
+                    <Input value={(websiteForm as any)[key]} onChange={e => setWebsiteForm(f => ({ ...f, [key]: e.target.value }))}
+                      placeholder={placeholder} data-testid={`input-website-${key}`} />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Load current values helper */}
+            {church && (
+              <div className="p-4 rounded-xl border" style={{ borderColor: "#ece8e0", backgroundColor: "#fafaf8" }}>
+                <p className="text-xs font-medium mb-2" style={{ color: "#7a7570" }}>Load current values from database</p>
+                <Button size="sm" variant="outline"
+                  onClick={() => setWebsiteForm({
+                    pastorName: church.pastorName ?? "",
+                    phone: church.phone ?? "",
+                    email: church.email ?? "",
+                    welcomeMessage: church.welcomeMessage ?? "",
+                    missionStatement: church.missionStatement ?? "",
+                    vision: church.vision ?? "",
+                    visitorInfo: church.visitorInfo ?? "",
+                    mapEmbedUrl: church.mapEmbedUrl ?? "",
+                    websiteHeroImage: church.websiteHeroImage ?? "",
+                    publicWebsiteEnabled: church.publicWebsiteEnabled ?? true,
+                    facebookUrl: church.socialLinks?.facebook ?? "",
+                    instagramUrl: church.socialLinks?.instagram ?? "",
+                    youtubeUrl: church.socialLinks?.youtube ?? "",
+                    twitterUrl: church.socialLinks?.twitter ?? "",
+                    whatsappNumber: church.socialLinks?.whatsapp ?? "",
+                    serviceTimesRaw: church.serviceTimes?.map(s => `${s.day} | ${s.time} | ${s.type}`).join("\n") ?? "",
+                    publicPhotosRaw: church.publicPhotos?.join("\n") ?? "",
+                  })}
+                  data-testid="button-load-website-values">
+                  Load Current Values
+                </Button>
+              </div>
+            )}
+
+            <Button onClick={saveWebsite} disabled={savingWebsite}
+              className="w-full text-white" style={{ backgroundColor: "#1a2744" }}
+              data-testid="button-save-website-settings">
+              {savingWebsite ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : <><Globe className="w-4 h-4 mr-2" />Save Website Settings</>}
+            </Button>
           </div>
         )}
 

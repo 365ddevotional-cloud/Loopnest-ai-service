@@ -2966,6 +2966,92 @@ export async function registerRoutes(
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 
+  // ── Public Church Website API (no auth required) ────────────────────────────
+
+  // GET /api/public/churches/:slug — full public church data bundle
+  app.get("/api/public/churches/:slug", async (req, res) => {
+    try {
+      const church = await storage.getChurchBySlug(req.params.slug);
+      if (!church || church.status !== "active" || church.publicWebsiteEnabled === false) {
+        return res.status(404).json({ message: "Church not found" });
+      }
+      const [sermons, announcements, departments] = await Promise.all([
+        storage.getChurchSermons(church.id),
+        storage.getChurchAnnouncements(church.id),
+        storage.getDepartments(church.id),
+      ]);
+      const recentSermons = sermons.filter((s: any) => s.isPublished).slice(0, 6);
+      const recentAnnouncements = announcements.slice(0, 6);
+      res.json({ church, recentSermons, recentAnnouncements, departments });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // GET /api/public/churches/:slug/sermons — all published sermons
+  app.get("/api/public/churches/:slug/sermons", async (req, res) => {
+    try {
+      const church = await storage.getChurchBySlug(req.params.slug);
+      if (!church || church.status !== "active") return res.status(404).json({ message: "Church not found" });
+      const sermons = await storage.getChurchSermons(church.id);
+      res.json({ sermons: sermons.filter((s: any) => s.isPublished) });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // GET /api/public/churches/:slug/events — upcoming department events
+  app.get("/api/public/churches/:slug/events", async (req, res) => {
+    try {
+      const church = await storage.getChurchBySlug(req.params.slug);
+      if (!church || church.status !== "active") return res.status(404).json({ message: "Church not found" });
+      const departments = await storage.getDepartments(church.id);
+      const eventArrays = await Promise.all(departments.map(d => storage.getDepartmentEvents(d.id)));
+      const events = eventArrays.flat().sort((a: any, b: any) =>
+        new Date(a.startDate ?? 0).getTime() - new Date(b.startDate ?? 0).getTime()
+      );
+      res.json({ events });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // POST /api/public/churches/:slug/prayer — public prayer request (no auth)
+  app.post("/api/public/churches/:slug/prayer", async (req, res) => {
+    try {
+      const church = await storage.getChurchBySlug(req.params.slug);
+      if (!church || church.status !== "active") return res.status(404).json({ message: "Church not found" });
+      const { name, email, request } = req.body;
+      if (!name?.trim() || !request?.trim()) return res.status(400).json({ message: "Name and request are required" });
+      const prayer = await storage.createChurchPrayerRequest({
+        churchId: church.id,
+        firebaseUid: `public_${Date.now()}`,
+        displayName: `${name.trim()}${email ? ` <${email}>` : ""} (Public)`,
+        title: "Public Prayer Request",
+        body: request.trim(),
+        isConfidential: false,
+        status: "active",
+      });
+      res.json({ success: true, id: prayer.id });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // POST /api/public/churches/:slug/contact — public contact message
+  app.post("/api/public/churches/:slug/contact", async (req, res) => {
+    try {
+      const church = await storage.getChurchBySlug(req.params.slug);
+      if (!church || church.status !== "active") return res.status(404).json({ message: "Church not found" });
+      const { name, email, subject, message } = req.body;
+      if (!name?.trim() || !email?.trim() || !message?.trim()) {
+        return res.status(400).json({ message: "Name, email and message are required" });
+      }
+      await storage.createChurchPrayerRequest({
+        churchId: church.id,
+        firebaseUid: `contact_${Date.now()}`,
+        displayName: `${name.trim()} <${email.trim()}> (Contact)`,
+        title: subject?.trim() || "Website Contact Message",
+        body: message.trim(),
+        isConfidential: false,
+        status: "active",
+      });
+      res.json({ success: true });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
   // Auth: get current user's role in a church
   app.get("/api/churches/slug/:slug/my-role", async (req, res) => {
     const uid = await getUid(req); // intentionally permissive — returns null role for unauthenticated
@@ -2988,8 +3074,34 @@ export async function registerRoutes(
       if (!church) return res.status(404).json({ message: "Church not found" });
       const m = await storage.getChurchMember(id, uid);
       if (!m || !["owner", "administrator", "lead_pastor"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
-      const { name, description, denomination, address, websiteUrl, logoUrl } = req.body;
-      res.json(await storage.updateChurch(id, { name, description, denomination, address, websiteUrl, logoUrl }));
+      const {
+        name, description, denomination, address, websiteUrl, logoUrl,
+        // Website settings fields
+        pastorName, phone, email, welcomeMessage, missionStatement, vision,
+        visitorInfo, mapEmbedUrl, websiteHeroImage, publicWebsiteEnabled,
+        socialLinks, serviceTimes, publicPhotos,
+      } = req.body;
+      const update: Record<string, any> = {};
+      if (name !== undefined) update.name = name;
+      if (description !== undefined) update.description = description;
+      if (denomination !== undefined) update.denomination = denomination;
+      if (address !== undefined) update.address = address;
+      if (websiteUrl !== undefined) update.websiteUrl = websiteUrl;
+      if (logoUrl !== undefined) update.logoUrl = logoUrl;
+      if (pastorName !== undefined) update.pastorName = pastorName;
+      if (phone !== undefined) update.phone = phone;
+      if (email !== undefined) update.email = email;
+      if (welcomeMessage !== undefined) update.welcomeMessage = welcomeMessage;
+      if (missionStatement !== undefined) update.missionStatement = missionStatement;
+      if (vision !== undefined) update.vision = vision;
+      if (visitorInfo !== undefined) update.visitorInfo = visitorInfo;
+      if (mapEmbedUrl !== undefined) update.mapEmbedUrl = mapEmbedUrl;
+      if (websiteHeroImage !== undefined) update.websiteHeroImage = websiteHeroImage;
+      if (publicWebsiteEnabled !== undefined) update.publicWebsiteEnabled = publicWebsiteEnabled;
+      if (socialLinks !== undefined) update.socialLinks = socialLinks;
+      if (serviceTimes !== undefined) update.serviceTimes = serviceTimes;
+      if (publicPhotos !== undefined) update.publicPhotos = publicPhotos;
+      res.json(await storage.updateChurch(id, update));
     } catch { res.status(500).json({ message: "Failed to update church" }); }
   });
 
