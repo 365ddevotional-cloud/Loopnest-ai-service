@@ -131,6 +131,10 @@ import {
   churchConversationParticipants,
   churchMessages,
   churchMessageReads,
+  churchSermonBookmarks,
+  churchSermonNotes,
+  type ChurchSermonBookmark,
+  type ChurchSermonNote,
 } from "@shared/schema";
 import { eq, desc, and, isNull, or, ilike, lte, notInArray, sql } from "drizzle-orm";
 
@@ -340,11 +344,19 @@ export interface IStorage {
   getChurchMessages(conversationId: number, limit?: number, offset?: number): Promise<ChurchMessage[]>;
   markMessagesRead(conversationId: number, firebaseUid: string): Promise<void>;
   getUnreadMessageCount(churchId: number, firebaseUid: string): Promise<number>;
+  // Church Branding
+  updateChurchBranding(churchId: number, data: { logoUrl?: string; bannerUrl?: string; themeColor?: string }): Promise<Church>;
   // Church Sermons
   createChurchSermon(data: InsertChurchSermon): Promise<ChurchSermon>;
   getChurchSermons(churchId: number): Promise<ChurchSermon[]>;
   updateChurchSermon(id: number, data: Partial<InsertChurchSermon>): Promise<ChurchSermon>;
   deleteChurchSermon(id: number): Promise<void>;
+  // Sermon Bookmarks
+  toggleSermonBookmark(sermonId: number, churchId: number, firebaseUid: string): Promise<boolean>;
+  getSermonBookmarks(churchId: number, firebaseUid: string): Promise<number[]>;
+  // Sermon Notes
+  upsertSermonNote(sermonId: number, churchId: number, firebaseUid: string, body: string): Promise<ChurchSermonNote>;
+  getSermonNote(sermonId: number, firebaseUid: string): Promise<ChurchSermonNote | undefined>;
   // Church Announcements
   createChurchAnnouncement(data: InsertChurchAnnouncement): Promise<ChurchAnnouncement>;
   getChurchAnnouncements(churchId: number): Promise<ChurchAnnouncement[]>;
@@ -1828,9 +1840,51 @@ export class DatabaseStorage implements IStorage {
     return row;
   }
 
-  // ── Church Logo ──────────────────────────────────────────────────────────────
+  // ── Church Branding ──────────────────────────────────────────────────────────
   async updateChurchLogoUrl(churchId: number, logoUrl: string): Promise<Church> {
     const [row] = await db.update(churches).set({ logoUrl }).where(eq(churches.id, churchId)).returning();
+    return row;
+  }
+  async updateChurchBranding(churchId: number, data: { logoUrl?: string; bannerUrl?: string; themeColor?: string }): Promise<Church> {
+    const [row] = await db.update(churches).set(data as any).where(eq(churches.id, churchId)).returning();
+    return row;
+  }
+
+  // ── Sermon Bookmarks ──────────────────────────────────────────────────────────
+  async toggleSermonBookmark(sermonId: number, churchId: number, firebaseUid: string): Promise<boolean> {
+    const [existing] = await db.select().from(churchSermonBookmarks)
+      .where(and(eq(churchSermonBookmarks.sermonId, sermonId), eq(churchSermonBookmarks.firebaseUid, firebaseUid)));
+    if (existing) {
+      await db.delete(churchSermonBookmarks).where(eq(churchSermonBookmarks.id, existing.id));
+      return false;
+    }
+    await db.insert(churchSermonBookmarks).values({ sermonId, churchId, firebaseUid });
+    return true;
+  }
+  async getSermonBookmarks(churchId: number, firebaseUid: string): Promise<number[]> {
+    const rows = await db.select({ sermonId: churchSermonBookmarks.sermonId })
+      .from(churchSermonBookmarks)
+      .where(and(eq(churchSermonBookmarks.churchId, churchId), eq(churchSermonBookmarks.firebaseUid, firebaseUid)));
+    return rows.map(r => r.sermonId);
+  }
+
+  // ── Sermon Notes ──────────────────────────────────────────────────────────────
+  async upsertSermonNote(sermonId: number, churchId: number, firebaseUid: string, body: string): Promise<ChurchSermonNote> {
+    const [existing] = await db.select().from(churchSermonNotes)
+      .where(and(eq(churchSermonNotes.sermonId, sermonId), eq(churchSermonNotes.firebaseUid, firebaseUid)));
+    if (existing) {
+      const [row] = await db.update(churchSermonNotes)
+        .set({ body, updatedAt: new Date() })
+        .where(eq(churchSermonNotes.id, existing.id))
+        .returning();
+      return row;
+    }
+    const [row] = await db.insert(churchSermonNotes).values({ sermonId, churchId, firebaseUid, body }).returning();
+    return row;
+  }
+  async getSermonNote(sermonId: number, firebaseUid: string): Promise<ChurchSermonNote | undefined> {
+    const [row] = await db.select().from(churchSermonNotes)
+      .where(and(eq(churchSermonNotes.sermonId, sermonId), eq(churchSermonNotes.firebaseUid, firebaseUid)));
     return row;
   }
 

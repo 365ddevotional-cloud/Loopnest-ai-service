@@ -1,0 +1,249 @@
+Excellent work. Church Mode is becoming a major feature of the platform.
+
+Before we begin adding more features, complete the following final improvements to make Church Mode production-ready.
+
+========================
+1. SERVER-SIDE PRIVACY HARDENING
+========================
+
+Complete the remaining privacy improvement noted in your deployment report.
+
+Do NOT return member email addresses from the API unless the authenticated requester is an authorized church leader.
+
+Move this protection from client-side hiding to server-side filtering.
+
+Ordinary members should never receive another member's email in the API response.
+
+This should not change any existing functionality.
+
+========================
+2. CHURCH PROFILE & BRANDING
+========================
+
+Allow every church to upload and change:
+
+• Church Logo
+• Church Banner (optional)
+• Church Theme Color (optional)
+
+The logo should appear consistently throughout Church Mode:
+
+• Home
+• Join page
+• Invitation page
+• Messages
+• Sermons
+• Announcements
+• Giving
+• Member profile
+
+If no logo exists, display a professional default church icon.
+
+========================
+3. CHURCH GIVING
+========================
+
+Create a Giving section.
+
+Each church can configure payment details according to its country.
+
+Examples:
+
+Nigeria
+- Bank Name
+- Account Name
+- Account Number
+
+United States
+- Stripe Connect
+- PayPal
+- Cash App
+- Venmo
+- Zelle
+
+Other countries should be expandable later.
+
+IMPORTANT:
+
+Money must go directly to the church.
+
+365 Daily Devotional never holds church money.
+
+Instead, automatically calculate and collect the agreed platform service fee during payment processing.
+
+Display this transparently inside Church Settings:
+
+"365 Daily Devotional Service Fee"
+
+Show:
+
+• Gross donation
+• Platform service fee
+• Net received by church
+
+Church admins should always know exactly how the calculation works.
+
+========================
+4. GIVING REPORTS
+========================
+
+Church admins should see:
+
+Today's Giving
+
+This Week
+
+This Month
+
+This Year
+
+Total Donations
+
+Platform Fees
+
+Net Received
+
+Export CSV
+
+========================
+5. SERMON CENTER
+========================
+
+Create a complete Sermon Center.
+
+Pastor can:
+
+Create sermon
+
+Edit sermon
+
+Delete sermon
+
+Schedule sermon
+
+Upload sermon audio
+
+Upload sermon PDF notes
+
+Upload sermon outline
+
+Upload sermon image
+
+Members can:
+
+Read sermon
+
+Listen to audio
+
+Download outline
+
+Bookmark
+
+Take personal notes
+
+Highlight text
+
+Personal notes must remain private to each member.
+
+========================
+6. ANNOUNCEMENTS
+========================
+
+Announcements should support:
+
+Images
+
+PDF attachments
+
+External links
+
+Pinned announcements
+
+Expiry dates
+
+Push notification to church members
+
+========================
+7. CHURCH DASHBOARD
+========================
+
+Improve dashboard with:
+
+Total Members
+
+Visitors this month
+
+Prayer Requests
+
+Unread Messages
+
+New Members
+
+Pending Approvals
+
+Today's Giving
+
+Upcoming Events
+
+Recent Sermons
+
+Recent Announcements
+
+========================
+8. PERFORMANCE
+========================
+
+Lazy-load large lists.
+
+Optimize database queries.
+
+Maintain existing responsive mobile layout.
+
+Do not redesign pages unnecessarily.
+
+========================
+9. SAFETY
+========================
+
+Do NOT modify:
+
+365 Daily Devotional
+
+Daily Devotionals
+
+Songs
+
+Downloads
+
+Sunday School
+
+Admin Dashboard
+
+Donation System
+
+Authentication
+
+unless absolutely required.
+
+========================
+10. FINAL REPORT
+========================
+
+When finished, provide only:
+
+✅ Features completed
+
+✅ Database changes
+
+✅ APIs added
+
+✅ Mobile tests
+
+✅ Security improvements
+
+✅ Files changed
+
+✅ Anything still recommended for future work
+
+Do not perform unrelated refactoring.
+Keep implementation minimal, clean, and production-ready.

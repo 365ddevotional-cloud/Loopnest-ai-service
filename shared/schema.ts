@@ -732,6 +732,8 @@ export const churches = pgTable("churches", {
   status: text("status").notNull().default("active"), // "active" | "inactive"
   approvalMode: text("approval_mode").notNull().default("require_approval"), // "require_approval" | "auto_approve"
   memberDirectoryEnabled: boolean("member_directory_enabled").notNull().default(false),
+  bannerUrl: text("banner_url"),
+  themeColor: text("theme_color"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -902,8 +904,12 @@ export const churchSermons = pgTable("church_sermons", {
   speakerName: text("speaker_name"),
   videoUrl: text("video_url"),
   audioUrl: text("audio_url"),
+  pdfNotesUrl: text("pdf_notes_url"),
+  outlineUrl: text("outline_url"),
+  imageUrl: text("image_url"),
   bibleReference: text("bible_reference"),
   sermonDate: timestamp("sermon_date"),
+  scheduledDate: timestamp("scheduled_date"),
   isPublished: boolean("is_published").notNull().default(true),
   createdBy: text("created_by").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -911,6 +917,31 @@ export const churchSermons = pgTable("church_sermons", {
 export const insertChurchSermonSchema = createInsertSchema(churchSermons).omit({ id: true, createdAt: true });
 export type ChurchSermon = typeof churchSermons.$inferSelect;
 export type InsertChurchSermon = z.infer<typeof insertChurchSermonSchema>;
+
+// ── Church Sermon Bookmarks ───────────────────────────────────────────────────
+export const churchSermonBookmarks = pgTable("church_sermon_bookmarks", {
+  id: serial("id").primaryKey(),
+  sermonId: integer("sermon_id").notNull().references(() => churchSermons.id, { onDelete: "cascade" }),
+  churchId: integer("church_id").notNull(),
+  firebaseUid: text("firebase_uid").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => ({
+  uniqueBookmark: unique().on(t.sermonId, t.firebaseUid),
+}));
+export type ChurchSermonBookmark = typeof churchSermonBookmarks.$inferSelect;
+
+// ── Church Sermon Notes (private per member) ──────────────────────────────────
+export const churchSermonNotes = pgTable("church_sermon_notes", {
+  id: serial("id").primaryKey(),
+  sermonId: integer("sermon_id").notNull().references(() => churchSermons.id, { onDelete: "cascade" }),
+  churchId: integer("church_id").notNull(),
+  firebaseUid: text("firebase_uid").notNull(),
+  body: text("body").notNull().default(""),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => ({
+  uniqueNote: unique().on(t.sermonId, t.firebaseUid),
+}));
+export type ChurchSermonNote = typeof churchSermonNotes.$inferSelect;
 
 // ── Church Announcements ──────────────────────────────────────────────────────
 export const churchAnnouncements = pgTable("church_announcements", {
@@ -920,6 +951,9 @@ export const churchAnnouncements = pgTable("church_announcements", {
   body: text("body").notNull(),
   isPinned: boolean("is_pinned").notNull().default(false),
   expiresAt: timestamp("expires_at"),
+  imageUrl: text("image_url"),
+  pdfUrl: text("pdf_url"),
+  externalLink: text("external_link"),
   createdBy: text("created_by").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });

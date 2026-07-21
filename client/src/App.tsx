@@ -67,38 +67,48 @@ import SignIn from "@/pages/SignIn";
 import MyLibrary from "@/pages/MyLibrary";
 import PromisePopup from "@/components/PromisePopup";
 import NotFound from "@/pages/not-found";
-import ChurchLanding from "@/pages/ChurchLanding";
-import ChurchCreate from "@/pages/ChurchCreate";
-import ChurchJoin from "@/pages/ChurchJoin";
-import ChurchHome from "@/pages/ChurchHome";
-import ChurchMembers from "@/pages/ChurchMembers";
-import ChurchAdminPage from "@/pages/ChurchAdminPage";
-import ChurchSermons from "@/pages/ChurchSermons";
-import ChurchAnnouncements from "@/pages/ChurchAnnouncements";
-import ChurchGroups from "@/pages/ChurchGroups";
-import ChurchPrayer from "@/pages/ChurchPrayer";
-import ChurchGiving from "@/pages/ChurchGiving";
-import ChurchMessaging from "@/pages/ChurchMessaging";
-import ChurchMemberProfilePage from "@/pages/ChurchMemberProfile";
+import { lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
+const ChurchLanding = lazy(() => import("@/pages/ChurchLanding"));
+const ChurchCreate = lazy(() => import("@/pages/ChurchCreate"));
+const ChurchJoin = lazy(() => import("@/pages/ChurchJoin"));
+const ChurchHome = lazy(() => import("@/pages/ChurchHome"));
+const ChurchMembers = lazy(() => import("@/pages/ChurchMembers"));
+const ChurchAdminPage = lazy(() => import("@/pages/ChurchAdminPage"));
+const ChurchSermons = lazy(() => import("@/pages/ChurchSermons"));
+const ChurchAnnouncements = lazy(() => import("@/pages/ChurchAnnouncements"));
+const ChurchGroups = lazy(() => import("@/pages/ChurchGroups"));
+const ChurchPrayer = lazy(() => import("@/pages/ChurchPrayer"));
+const ChurchGiving = lazy(() => import("@/pages/ChurchGiving"));
+const ChurchMessaging = lazy(() => import("@/pages/ChurchMessaging"));
+const ChurchMemberProfilePage = lazy(() => import("@/pages/ChurchMemberProfile"));
+
+function ChurchPageFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#b8962e" }} />
+    </div>
+  );
+}
 
 function Router() {
   return (
     <Switch>
-      <Route path="/church/create" component={ChurchCreate} />
-      <Route path="/church/join/:code" component={ChurchJoin} />
-      <Route path="/church/join" component={ChurchJoin} />
-      <Route path="/church/:slug/sermons" component={ChurchSermons} />
-      <Route path="/church/:slug/announcements" component={ChurchAnnouncements} />
-      <Route path="/church/:slug/groups" component={ChurchGroups} />
-      <Route path="/church/:slug/prayer" component={ChurchPrayer} />
-      <Route path="/church/:slug/giving/success" component={ChurchGiving} />
-      <Route path="/church/:slug/giving" component={ChurchGiving} />
-      <Route path="/church/:slug/messages" component={ChurchMessaging} />
-      <Route path="/church/:slug/members" component={ChurchMembers} />
-      <Route path="/church/:slug/profile" component={ChurchMemberProfilePage} />
-      <Route path="/church/:slug/admin" component={ChurchAdminPage} />
-      <Route path="/church/:slug" component={ChurchHome} />
-      <Route path="/church" component={ChurchLanding} />
+      <Route path="/church/create" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchCreate /></Suspense>} />
+      <Route path="/church/join/:code" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchJoin /></Suspense>} />
+      <Route path="/church/join" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchJoin /></Suspense>} />
+      <Route path="/church/:slug/sermons" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchSermons /></Suspense>} />
+      <Route path="/church/:slug/announcements" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchAnnouncements /></Suspense>} />
+      <Route path="/church/:slug/groups" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchGroups /></Suspense>} />
+      <Route path="/church/:slug/prayer" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchPrayer /></Suspense>} />
+      <Route path="/church/:slug/giving/success" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchGiving /></Suspense>} />
+      <Route path="/church/:slug/giving" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchGiving /></Suspense>} />
+      <Route path="/church/:slug/messages" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchMessaging /></Suspense>} />
+      <Route path="/church/:slug/members" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchMembers /></Suspense>} />
+      <Route path="/church/:slug/profile" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchMemberProfilePage /></Suspense>} />
+      <Route path="/church/:slug/admin" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchAdminPage /></Suspense>} />
+      <Route path="/church/:slug" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchHome /></Suspense>} />
+      <Route path="/church" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchLanding /></Suspense>} />
       <Route path="/" component={Home} />
       <Route path="/archive" component={Archive} />
       <Route path="/admin" component={Admin} />

@@ -3001,7 +3001,16 @@ export async function registerRoutes(
       const id = Number(req.params.id);
       const m = await storage.getChurchMember(id, uid);
       if (!m || m.status !== "active") return res.status(403).json({ message: "Not a member of this church" });
-      res.json(await storage.getChurchMembers(id));
+      const LEADER_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor", "counselor", "ministry_leader", "group_leader", "prayer_team"];
+      const isLeader = LEADER_ROLES.includes(m.role);
+      const members = await storage.getChurchMembers(id);
+      // Server-side privacy: strip email from non-leaders
+      const safe = members.map(mb => {
+        if (isLeader) return mb;
+        const { email: _omit, ...rest } = mb as any;
+        return { ...rest, email: undefined };
+      });
+      res.json(safe);
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 
@@ -3361,13 +3370,17 @@ export async function registerRoutes(
       const id = Number(req.params.id);
       const m = await storage.getChurchMember(id, uid);
       if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor", "ministry_leader"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
-      const { title, description, speakerName, videoUrl, audioUrl, bibleReference, sermonDate } = req.body;
+      const { title, description, speakerName, videoUrl, audioUrl, pdfNotesUrl, outlineUrl, imageUrl, bibleReference, sermonDate, scheduledDate, isPublished } = req.body;
       if (!title?.trim()) return res.status(400).json({ message: "Title required" });
       res.status(201).json(await storage.createChurchSermon({
         churchId: id, title: title.trim(), description: description?.trim() || null,
         speakerName: speakerName?.trim() || null, videoUrl: videoUrl?.trim() || null,
-        audioUrl: audioUrl?.trim() || null, bibleReference: bibleReference?.trim() || null,
-        sermonDate: sermonDate ? new Date(sermonDate) : null, isPublished: true, createdBy: uid,
+        audioUrl: audioUrl?.trim() || null, pdfNotesUrl: pdfNotesUrl?.trim() || null,
+        outlineUrl: outlineUrl?.trim() || null, imageUrl: imageUrl?.trim() || null,
+        bibleReference: bibleReference?.trim() || null,
+        sermonDate: sermonDate ? new Date(sermonDate) : null,
+        scheduledDate: scheduledDate ? new Date(scheduledDate) : null,
+        isPublished: isPublished !== false, createdBy: uid,
       }));
     } catch { res.status(500).json({ message: "Failed to create sermon" }); }
   });
@@ -3380,8 +3393,13 @@ export async function registerRoutes(
       const sermonId = Number(req.params.sermonId);
       const m = await storage.getChurchMember(id, uid);
       if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor", "ministry_leader"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
-      const { title, description, speakerName, videoUrl, audioUrl, bibleReference, sermonDate, isPublished } = req.body;
-      res.json(await storage.updateChurchSermon(sermonId, { title, description, speakerName, videoUrl, audioUrl, bibleReference, sermonDate: sermonDate ? new Date(sermonDate) : undefined, isPublished }));
+      const { title, description, speakerName, videoUrl, audioUrl, pdfNotesUrl, outlineUrl, imageUrl, bibleReference, sermonDate, scheduledDate, isPublished } = req.body;
+      res.json(await storage.updateChurchSermon(sermonId, {
+        title, description, speakerName, videoUrl, audioUrl, pdfNotesUrl, outlineUrl, imageUrl,
+        bibleReference, isPublished,
+        sermonDate: sermonDate !== undefined ? (sermonDate ? new Date(sermonDate) : null) : undefined,
+        scheduledDate: scheduledDate !== undefined ? (scheduledDate ? new Date(scheduledDate) : null) : undefined,
+      }));
     } catch { res.status(500).json({ message: "Failed to update sermon" }); }
   });
 
@@ -3417,11 +3435,13 @@ export async function registerRoutes(
       const id = Number(req.params.id);
       const m = await storage.getChurchMember(id, uid);
       if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
-      const { title, body, isPinned, expiresAt } = req.body;
+      const { title, body, isPinned, expiresAt, imageUrl, pdfUrl, externalLink } = req.body;
       if (!title?.trim() || !body?.trim()) return res.status(400).json({ message: "Title and body required" });
       res.status(201).json(await storage.createChurchAnnouncement({
         churchId: id, title: title.trim(), body: body.trim(),
-        isPinned: !!isPinned, expiresAt: expiresAt ? new Date(expiresAt) : null, createdBy: uid,
+        isPinned: !!isPinned, expiresAt: expiresAt ? new Date(expiresAt) : null,
+        imageUrl: imageUrl?.trim() || null, pdfUrl: pdfUrl?.trim() || null,
+        externalLink: externalLink?.trim() || null, createdBy: uid,
       }));
     } catch { res.status(500).json({ message: "Failed to create announcement" }); }
   });
@@ -3434,8 +3454,14 @@ export async function registerRoutes(
       const annId = Number(req.params.annId);
       const m = await storage.getChurchMember(id, uid);
       if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
-      const { title, body, isPinned, expiresAt } = req.body;
-      res.json(await storage.updateChurchAnnouncement(annId, { title, body, isPinned, expiresAt: expiresAt ? new Date(expiresAt) : undefined }));
+      const { title, body, isPinned, expiresAt, imageUrl, pdfUrl, externalLink } = req.body;
+      res.json(await storage.updateChurchAnnouncement(annId, {
+        title, body, isPinned,
+        expiresAt: expiresAt !== undefined ? (expiresAt ? new Date(expiresAt) : null) : undefined,
+        imageUrl: imageUrl !== undefined ? (imageUrl?.trim() || null) : undefined,
+        pdfUrl: pdfUrl !== undefined ? (pdfUrl?.trim() || null) : undefined,
+        externalLink: externalLink !== undefined ? (externalLink?.trim() || null) : undefined,
+      }));
     } catch { res.status(500).json({ message: "Failed to update announcement" }); }
   });
 
@@ -3654,6 +3680,136 @@ export async function registerRoutes(
       if (!logoUrl || typeof logoUrl !== "string") return res.status(400).json({ message: "logoUrl is required" });
       res.json(await storage.updateChurchLogoUrl(churchId, logoUrl));
     } catch { res.status(500).json({ message: "Failed to update logo" }); }
+  });
+
+  // ── Church Branding (logo + banner + theme color) ─────────────────────────────
+  app.patch("/api/churches/:id/branding", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m || !["owner", "lead_pastor", "administrator"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      const { logoUrl, bannerUrl, themeColor } = req.body;
+      const update: Record<string, string | null> = {};
+      if (logoUrl !== undefined) update.logoUrl = logoUrl?.trim() || null;
+      if (bannerUrl !== undefined) update.bannerUrl = bannerUrl?.trim() || null;
+      if (themeColor !== undefined) update.themeColor = themeColor?.trim() || null;
+      res.json(await storage.updateChurchBranding(churchId, update));
+    } catch { res.status(500).json({ message: "Failed to update branding" }); }
+  });
+
+  // ── Sermon Bookmarks ──────────────────────────────────────────────────────────
+  app.post("/api/churches/:id/sermons/:sermonId/bookmark", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const sermonId = Number(req.params.sermonId);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not a member" });
+      const isBookmarked = await storage.toggleSermonBookmark(sermonId, churchId, uid);
+      res.json({ isBookmarked });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.get("/api/churches/:id/bookmarks", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not a member" });
+      const sermonIds = await storage.getSermonBookmarks(churchId, uid);
+      res.json({ sermonIds });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Sermon Notes ──────────────────────────────────────────────────────────────
+  app.get("/api/churches/:id/sermons/:sermonId/note", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const sermonId = Number(req.params.sermonId);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not a member" });
+      const note = await storage.getSermonNote(sermonId, uid);
+      res.json({ body: note?.body ?? "" });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.put("/api/churches/:id/sermons/:sermonId/note", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const sermonId = Number(req.params.sermonId);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not a member" });
+      const { body } = req.body;
+      const note = await storage.upsertSermonNote(sermonId, churchId, uid, body ?? "");
+      res.json(note);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Giving Reports ─────────────────────────────────────────────────────────────
+  app.get("/api/churches/:id/giving/reports", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const members = await storage.getChurchMembers(churchId);
+      const member = members.find(m => m.firebaseUid === uid);
+      if (!member || !["owner", "lead_pastor", "administrator", "associate_pastor"].includes(member.role)) return res.status(403).json({ message: "Not authorized" });
+      const txns = await storage.getChurchTransactions(churchId, 5000);
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startOfWeek = new Date(startOfDay); startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      const completed = txns.filter(t => t.status === "completed");
+      const sum = (arr: typeof completed) => ({
+        gross: arr.reduce((s, t) => s + t.grossAmount, 0),
+        fee: arr.reduce((s, t) => s + t.platformFeeAmount, 0),
+        net: arr.reduce((s, t) => s + t.churchNetAmount, 0),
+        count: arr.length,
+      });
+      const filterByDate = (d: Date) => completed.filter(t => t.createdAt && new Date(t.createdAt) >= d);
+      res.json({
+        today: sum(filterByDate(startOfDay)),
+        week: sum(filterByDate(startOfWeek)),
+        month: sum(filterByDate(startOfMonth)),
+        year: sum(filterByDate(startOfYear)),
+        all: sum(completed),
+        recent: txns.slice(0, 20),
+      });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Giving CSV Export ─────────────────────────────────────────────────────────
+  app.get("/api/churches/:id/giving/export-csv", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const members = await storage.getChurchMembers(churchId);
+      const member = members.find(m => m.firebaseUid === uid);
+      if (!member || !["owner", "lead_pastor", "administrator", "associate_pastor"].includes(member.role)) return res.status(403).json({ message: "Not authorized" });
+      const txns = await storage.getChurchTransactions(churchId, 5000);
+      const header = "Date,Reference,Category,Donor,Email,Anonymous,Gross,Platform Fee,Net,Status";
+      const fmt = (cents: number) => (cents / 100).toFixed(2);
+      const escape = (v: string | null | undefined) => `"${(v ?? "").replace(/"/g, '""')}"`;
+      const rows = txns.map(t => [
+        t.createdAt ? new Date(t.createdAt).toISOString().split("T")[0] : "",
+        escape(t.reference),
+        escape(t.categoryName),
+        escape(t.isAnonymous ? "Anonymous" : t.donorName),
+        escape(t.isAnonymous ? "" : t.donorEmail),
+        t.isAnonymous ? "Yes" : "No",
+        fmt(t.grossAmount),
+        fmt(t.platformFeeAmount),
+        fmt(t.churchNetAmount),
+        t.status,
+      ].join(",")).join("\n");
+      const csv = header + "\n" + rows;
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename="giving-report-${churchId}.csv"`);
+      res.send(csv);
+    } catch { res.status(500).json({ message: "Server error" }); }
   });
 
   // ── Church Giving Settings ────────────────────────────────────────────────────

@@ -27,7 +27,7 @@ interface MyRole { role: string | null; memberId: number | null; status: string 
 const ADMIN_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor"];
 const PROD_URL = "https://365dailydevotional.com";
 
-type AdminTab = "settings" | "invitations" | "sermons" | "announcements" | "members" | "prayer" | "insights" | "giving";
+type AdminTab = "settings" | "branding" | "invitations" | "sermons" | "announcements" | "members" | "prayer" | "giving" | "reports" | "insights";
 
 const roleColors: Record<string, string> = {
   owner: "bg-amber-100 text-amber-800 border-amber-300",
@@ -64,16 +64,20 @@ export default function ChurchAdminPage() {
   const [showInvForm, setShowInvForm] = useState(false);
 
   // Sermon form state
-  const [sermonForm, setSermonForm] = useState({ title: "", description: "", speakerName: "", videoUrl: "", audioUrl: "", bibleReference: "", sermonDate: "" });
+  const [sermonForm, setSermonForm] = useState({ title: "", description: "", speakerName: "", videoUrl: "", audioUrl: "", audioUrl2: "", pdfNotesUrl: "", outlineUrl: "", imageUrl: "", bibleReference: "", sermonDate: "", scheduledDate: "", isPublished: true });
   const [addingSermon, setAddingSermon] = useState(false);
   const [showSermonForm, setShowSermonForm] = useState(false);
 
   // Announcement form state
-  const [annForm, setAnnForm] = useState({ title: "", body: "", isPinned: false, expiresAt: "" });
+  const [annForm, setAnnForm] = useState({ title: "", body: "", isPinned: false, expiresAt: "", imageUrl: "", pdfUrl: "", externalLink: "" });
   const [showAnnForm, setShowAnnForm] = useState(false);
 
   // Logo upload state
   const [logoUploading, setLogoUploading] = useState(false);
+
+  // Branding form state
+  const [brandingForm, setBrandingForm] = useState({ logoUrl: "", bannerUrl: "", themeColor: "" });
+  const [savingBranding, setSavingBranding] = useState(false);
 
   // Giving state
   const [givingSettingsForm, setGivingSettingsForm] = useState<Partial<ChurchGivingSettings>>({});
@@ -211,6 +215,23 @@ export default function ChurchAdminPage() {
     enabled: !!church?.id && activeTab === "giving",
   });
 
+  const { data: givingReports } = useQuery<{
+    today: { gross: number; fee: number; net: number; count: number };
+    week: { gross: number; fee: number; net: number; count: number };
+    month: { gross: number; fee: number; net: number; count: number };
+    year: { gross: number; fee: number; net: number; count: number };
+    all: { gross: number; fee: number; net: number; count: number };
+    recent: ChurchTransaction[];
+  }>({
+    queryKey: ["/api/churches", church?.id, "giving", "reports"],
+    queryFn: async () => {
+      const token = await getIdToken(); if (!token || !church?.id) return null;
+      const r = await fetch(`/api/churches/${church.id}/giving/reports`, { headers: { Authorization: `Bearer ${token}` } });
+      return r.ok ? r.json() : null;
+    },
+    enabled: !!church?.id && activeTab === "reports",
+  });
+
   const isAuthorized = ADMIN_ROLES.includes(myRole?.role ?? "");
   const formVal = (field: keyof Church) => (field in form ? form[field] : church?.[field]) as string ?? "";
 
@@ -338,6 +359,30 @@ export default function ChurchAdminPage() {
     } finally { setSavingPayout(false); }
   };
 
+  // Save branding
+  const saveBranding = async () => {
+    if (!church?.id) return;
+    setSavingBranding(true);
+    try {
+      const token = await getIdToken();
+      const update: Record<string, string | null> = {};
+      if (brandingForm.logoUrl !== undefined) update.logoUrl = brandingForm.logoUrl || null;
+      if (brandingForm.bannerUrl !== undefined) update.bannerUrl = brandingForm.bannerUrl || null;
+      if (brandingForm.themeColor !== undefined) update.themeColor = brandingForm.themeColor || null;
+      const r = await fetch(`/api/churches/${church.id}/branding`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(update),
+      });
+      if (!r.ok) throw new Error((await r.json()).message);
+      qc.invalidateQueries({ queryKey: ["/api/churches/slug", slug] });
+      setBrandingForm({ logoUrl: "", bannerUrl: "", themeColor: "" });
+      toast({ title: "Branding updated" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setSavingBranding(false); }
+  };
+
   // Save settings
   const saveSettings = useMutation({
     mutationFn: async () => {
@@ -448,14 +493,15 @@ export default function ChurchAdminPage() {
     setAddingSermon(true);
     try {
       const token = await getIdToken();
+      const { audioUrl2: _, ...payload } = sermonForm;
       const r = await fetch(`/api/churches/${church.id}/sermons`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(sermonForm),
+        body: JSON.stringify({ ...payload, sermonDate: payload.sermonDate || null, scheduledDate: payload.scheduledDate || null }),
       });
       if (!r.ok) throw new Error((await r.json()).message);
       qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "sermons"] });
-      setSermonForm({ title: "", description: "", speakerName: "", videoUrl: "", audioUrl: "", bibleReference: "", sermonDate: "" });
+      setSermonForm({ title: "", description: "", speakerName: "", videoUrl: "", audioUrl: "", audioUrl2: "", pdfNotesUrl: "", outlineUrl: "", imageUrl: "", bibleReference: "", sermonDate: "", scheduledDate: "", isPublished: true });
       setShowSermonForm(false);
       toast({ title: "Sermon added" });
     } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
@@ -480,11 +526,17 @@ export default function ChurchAdminPage() {
       const r = await fetch(`/api/churches/${church.id}/announcements`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(annForm),
+        body: JSON.stringify({
+          ...annForm,
+          expiresAt: annForm.expiresAt || null,
+          imageUrl: annForm.imageUrl || null,
+          pdfUrl: annForm.pdfUrl || null,
+          externalLink: annForm.externalLink || null,
+        }),
       });
       if (!r.ok) throw new Error((await r.json()).message);
       qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "announcements"] });
-      setAnnForm({ title: "", body: "", isPinned: false, expiresAt: "" });
+      setAnnForm({ title: "", body: "", isPinned: false, expiresAt: "", imageUrl: "", pdfUrl: "", externalLink: "" });
       setShowAnnForm(false);
       toast({ title: "Announcement published" });
     } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
@@ -565,12 +617,14 @@ export default function ChurchAdminPage() {
 
   const tabs: { key: AdminTab; label: string; icon: typeof Settings }[] = [
     { key: "settings", label: "Settings", icon: Settings },
+    { key: "branding", label: "Branding", icon: ImageIcon },
     { key: "invitations", label: "Invitations", icon: LinkIcon },
     { key: "sermons", label: "Sermons", icon: Mic2 },
     { key: "announcements", label: "Announcements", icon: Megaphone },
     { key: "members", label: "Members", icon: Users },
     { key: "prayer", label: "Prayer", icon: Heart },
     { key: "giving", label: "Giving", icon: HandCoins },
+    { key: "reports", label: "Reports", icon: BarChart3 },
     { key: "insights", label: "Insights", icon: BarChart3 },
   ];
 
@@ -667,6 +721,96 @@ export default function ChurchAdminPage() {
                 <Button onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending || Object.keys(form).length === 0}
                   style={{ backgroundColor: "#1a2744" }} data-testid="button-save-church-settings">
                   {saveSettings.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : "Save Changes"}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Branding Tab */}
+        {activeTab === "branding" && church && (
+          <div className="space-y-5">
+            <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2" style={{ color: "#1a2744" }}>
+                  <ImageIcon className="w-4 h-4" />Church Branding
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                {/* Logo */}
+                <div>
+                  <p className="text-sm font-medium mb-2" style={{ color: "#1a2744" }}>Logo</p>
+                  <div className="flex items-center gap-5 mb-3">
+                    <div className="w-20 h-20 rounded-xl flex-shrink-0 overflow-hidden border-2 flex items-center justify-center"
+                      style={{ borderColor: "#e8e3dc", backgroundColor: "#f8f4ee" }}>
+                      {church.logoUrl ? (
+                        <img src={church.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                      ) : (
+                        <ImageIcon className="w-8 h-8" style={{ color: "#c9b990" }} />
+                      )}
+                    </div>
+                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+                      style={{ backgroundColor: "#1a2744", color: "#fff" }} data-testid="button-upload-logo">
+                      {logoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      {logoUploading ? "Uploading…" : "Upload Logo"}
+                      <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={logoUploading} />
+                    </label>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Or enter Logo URL directly</Label>
+                    <Input value={brandingForm.logoUrl} onChange={e => setBrandingForm(f => ({ ...f, logoUrl: e.target.value }))} placeholder="https://..." data-testid="input-branding-logo-url" />
+                  </div>
+                </div>
+
+                {/* Banner */}
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Banner Image URL</Label>
+                  <p className="text-xs" style={{ color: "#7a7570" }}>A wide image shown at the top of the church header (optional).</p>
+                  {church.bannerUrl && (
+                    <div className="h-20 rounded-lg overflow-hidden border" style={{ borderColor: "#e8e3dc" }}>
+                      <img src={church.bannerUrl} alt="Banner" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <Input value={brandingForm.bannerUrl} onChange={e => setBrandingForm(f => ({ ...f, bannerUrl: e.target.value }))} placeholder="https://..." data-testid="input-branding-banner-url" />
+                </div>
+
+                {/* Theme Color */}
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Header Theme Color</Label>
+                  <p className="text-xs" style={{ color: "#7a7570" }}>Sets the background color of the church navigation header.</p>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={brandingForm.themeColor || church.themeColor || "#1d3461"}
+                      onChange={e => setBrandingForm(f => ({ ...f, themeColor: e.target.value }))}
+                      className="w-12 h-10 rounded-lg border cursor-pointer"
+                      style={{ borderColor: "#e8e3dc" }}
+                      data-testid="input-branding-theme-color"
+                    />
+                    <Input
+                      value={brandingForm.themeColor || church.themeColor || ""}
+                      onChange={e => setBrandingForm(f => ({ ...f, themeColor: e.target.value }))}
+                      placeholder="#1d3461"
+                      className="w-32 font-mono"
+                      data-testid="input-branding-theme-hex"
+                    />
+                    <button onClick={() => setBrandingForm(f => ({ ...f, themeColor: "" }))} className="text-xs px-2 py-1 rounded" style={{ color: "#7a7570" }}>
+                      Reset
+                    </button>
+                  </div>
+                  <div className="flex gap-2 flex-wrap mt-2">
+                    {["#1d3461", "#7a1520", "#1a5276", "#145a32", "#784212", "#4a235a"].map(c => (
+                      <button key={c} onClick={() => setBrandingForm(f => ({ ...f, themeColor: c }))}
+                        className="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110"
+                        style={{ backgroundColor: c, borderColor: brandingForm.themeColor === c ? "#fff" : "transparent", outline: brandingForm.themeColor === c ? `2px solid ${c}` : "none" }}
+                        title={c}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <Button onClick={saveBranding} disabled={savingBranding} style={{ backgroundColor: "#1a2744", color: "#fff" }} data-testid="button-save-branding">
+                  {savingBranding ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : "Save Branding"}
                 </Button>
               </CardContent>
             </Card>
@@ -828,9 +972,21 @@ export default function ChurchAdminPage() {
                       <Input type="url" value={sermonForm.videoUrl} onChange={e => setSermonForm(f => ({ ...f, videoUrl: e.target.value }))} placeholder="YouTube, Vimeo, etc." /></div>
                     <div className="space-y-1.5"><Label>Audio URL</Label>
                       <Input type="url" value={sermonForm.audioUrl} onChange={e => setSermonForm(f => ({ ...f, audioUrl: e.target.value }))} /></div>
+                    <div className="space-y-1.5"><Label>PDF Notes URL</Label>
+                      <Input value={sermonForm.pdfNotesUrl} onChange={e => setSermonForm(f => ({ ...f, pdfNotesUrl: e.target.value }))} placeholder="Link to sermon notes PDF" /></div>
+                    <div className="space-y-1.5"><Label>Outline URL</Label>
+                      <Input value={sermonForm.outlineUrl} onChange={e => setSermonForm(f => ({ ...f, outlineUrl: e.target.value }))} placeholder="Link to outline document" /></div>
+                    <div className="space-y-1.5"><Label>Cover Image URL</Label>
+                      <Input value={sermonForm.imageUrl} onChange={e => setSermonForm(f => ({ ...f, imageUrl: e.target.value }))} placeholder="https://..." /></div>
+                    <div className="space-y-1.5"><Label>Scheduled Date</Label>
+                      <Input type="date" value={sermonForm.scheduledDate} onChange={e => setSermonForm(f => ({ ...f, scheduledDate: e.target.value }))} /></div>
                   </div>
                   <div className="space-y-1.5"><Label>Description / Notes</Label>
                     <Textarea value={sermonForm.description} onChange={e => setSermonForm(f => ({ ...f, description: e.target.value }))} rows={3} /></div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={sermonForm.isPublished} onChange={e => setSermonForm(f => ({ ...f, isPublished: e.target.checked }))} className="rounded" />
+                    <span className="text-sm">Published (visible to members)</span>
+                  </label>
                   <Button onClick={createSermon} disabled={addingSermon || !sermonForm.title.trim()} style={{ backgroundColor: "#1a2744" }}>
                     {addingSermon ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Adding…</> : "Add Sermon"}
                   </Button>
@@ -879,12 +1035,18 @@ export default function ChurchAdminPage() {
                   <div className="space-y-1.5"><Label>Body *</Label>
                     <Textarea value={annForm.body} onChange={e => setAnnForm(f => ({ ...f, body: e.target.value }))} rows={4} data-testid="input-ann-body" /></div>
                   <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5"><Label>Image URL <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                      <Input value={annForm.imageUrl} onChange={e => setAnnForm(f => ({ ...f, imageUrl: e.target.value }))} placeholder="https://..." /></div>
+                    <div className="space-y-1.5"><Label>PDF URL <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                      <Input value={annForm.pdfUrl} onChange={e => setAnnForm(f => ({ ...f, pdfUrl: e.target.value }))} placeholder="Link to PDF" /></div>
+                    <div className="space-y-1.5"><Label>External Link <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                      <Input value={annForm.externalLink} onChange={e => setAnnForm(f => ({ ...f, externalLink: e.target.value }))} placeholder="https://..." /></div>
                     <div className="space-y-1.5"><Label>Expiry Date <span className="text-muted-foreground text-xs">(optional)</span></Label>
                       <Input type="datetime-local" value={annForm.expiresAt} onChange={e => setAnnForm(f => ({ ...f, expiresAt: e.target.value }))} /></div>
-                    <div className="flex items-center gap-2 pt-6">
-                      <input type="checkbox" id="pin-ann" checked={annForm.isPinned} onChange={e => setAnnForm(f => ({ ...f, isPinned: e.target.checked }))} className="rounded" />
-                      <Label htmlFor="pin-ann">Pin to top</Label>
-                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input type="checkbox" id="pin-ann" checked={annForm.isPinned} onChange={e => setAnnForm(f => ({ ...f, isPinned: e.target.checked }))} className="rounded" />
+                    <Label htmlFor="pin-ann">Pin to top</Label>
                   </div>
                   <Button onClick={createAnnouncement} disabled={!annForm.title.trim() || !annForm.body.trim()} style={{ backgroundColor: "#1a2744" }}>
                     Publish Announcement
@@ -1408,6 +1570,120 @@ export default function ChurchAdminPage() {
                 )}
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {/* Giving Reports Tab */}
+        {activeTab === "reports" && (
+          <div className="space-y-5">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <h3 className="font-semibold" style={{ color: "#1a2744" }}>Giving Reports</h3>
+              {church && (
+                <a
+                  href={`/api/churches/${church.id}/giving/export-csv`}
+                  className="flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-lg"
+                  style={{ backgroundColor: "#1a2744", color: "#fff" }}
+                  data-testid="button-export-csv"
+                >
+                  <ArrowDownToLine className="w-4 h-4" />
+                  Export CSV
+                </a>
+              )}
+            </div>
+
+            {!givingReports ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#b8962e" }} />
+              </div>
+            ) : (
+              <>
+                {/* Summary cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { label: "Today", data: givingReports.today },
+                    { label: "This Week", data: givingReports.week },
+                    { label: "This Month", data: givingReports.month },
+                    { label: "This Year", data: givingReports.year },
+                  ].map(({ label, data }) => (
+                    <Card key={label} className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+                      <CardContent className="pt-4 pb-4 px-4">
+                        <p className="text-xs font-semibold" style={{ color: "#7a7570" }}>{label}</p>
+                        <p className="text-xl font-bold mt-1" style={{ color: "#1a2744" }}>${(data.gross / 100).toFixed(2)}</p>
+                        <p className="text-xs mt-1" style={{ color: "#22c55e" }}>Net: ${(data.net / 100).toFixed(2)}</p>
+                        <p className="text-xs" style={{ color: "#9a9080" }}>{data.count} gift{data.count !== 1 ? "s" : ""}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* All-time totals */}
+                <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+                  <CardContent className="pt-5 pb-5 px-5">
+                    <p className="text-sm font-semibold mb-4" style={{ color: "#1a2744" }}>All-Time Totals</p>
+                    <div className="grid sm:grid-cols-3 gap-4 text-center">
+                      <div>
+                        <p className="text-2xl font-bold" style={{ color: "#1a2744" }}>${(givingReports.all.gross / 100).toFixed(2)}</p>
+                        <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>Total Received</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold" style={{ color: "#22c55e" }}>${(givingReports.all.net / 100).toFixed(2)}</p>
+                        <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>Church Net</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold" style={{ color: "#b8962e" }}>{givingReports.all.count}</p>
+                        <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>Total Gifts</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 pt-3 border-t text-xs text-center" style={{ borderColor: "#e8e3dc", color: "#9a9080" }}>
+                      Platform fees: ${(givingReports.all.fee / 100).toFixed(2)}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Recent transactions */}
+                {givingReports.recent.length > 0 && (
+                  <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm" style={{ color: "#1a2744" }}>Recent Gifts</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr style={{ borderBottom: "1px solid #e8e3dc" }}>
+                              <th className="text-left py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>Date</th>
+                              <th className="text-left py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>Category</th>
+                              <th className="text-left py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>Donor</th>
+                              <th className="text-right py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>Gross</th>
+                              <th className="text-right py-2 text-xs font-semibold" style={{ color: "#7a7570" }}>Net</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {givingReports.recent.map(txn => (
+                              <tr key={txn.id} style={{ borderBottom: "1px solid #f0ece6" }}>
+                                <td className="py-2 pr-4 text-xs" style={{ color: "#7a7570" }}>
+                                  {txn.createdAt ? new Date(txn.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
+                                </td>
+                                <td className="py-2 pr-4 text-xs" style={{ color: "#4a4540" }}>{txn.categoryName ?? "—"}</td>
+                                <td className="py-2 pr-4 text-xs" style={{ color: "#4a4540" }}>
+                                  {txn.isAnonymous ? "Anonymous" : (txn.donorName ?? txn.donorEmail ?? "—")}
+                                </td>
+                                <td className="py-2 pr-4 text-xs text-right font-medium" style={{ color: "#1a2744" }}>
+                                  ${(txn.grossAmount / 100).toFixed(2)}
+                                </td>
+                                <td className="py-2 text-xs text-right font-medium" style={{ color: "#22c55e" }}>
+                                  ${(txn.churchNetAmount / 100).toFixed(2)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
           </div>
         )}
 

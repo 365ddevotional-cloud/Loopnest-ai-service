@@ -26,6 +26,15 @@ function DefaultEmblem({ size = 52 }: { size?: number }) {
 const ADMIN_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor"];
 const LEADER_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor", "counselor", "ministry_leader", "group_leader", "prayer_team"];
 
+function hexIsBright(hex: string): boolean {
+  const c = hex.replace("#", "");
+  if (c.length !== 6) return false;
+  const r = parseInt(c.slice(0, 2), 16);
+  const g = parseInt(c.slice(2, 4), 16);
+  const b = parseInt(c.slice(4, 6), 16);
+  return (r * 299 + g * 587 + b * 114) / 1000 > 155;
+}
+
 export function ChurchModeShell({ church, currentRole, children, unreadMessages = 0 }: ChurchModeShellProps) {
   const [location, setLocation] = useLocation();
 
@@ -41,13 +50,9 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
     { label: "Groups", path: `/church/${slug}/groups`, icon: Users },
     { label: "Prayer", path: `/church/${slug}/prayer`, icon: Heart },
     { label: "Giving", path: `/church/${slug}/giving`, icon: HandCoins },
-    // Messages — visible to all active members
     { label: "Messages", path: `/church/${slug}/messages`, icon: MessageSquare, badge: unreadMessages > 0 ? unreadMessages : 0 },
-    // Members directory — show to leaders always, or to all members when directory is enabled
     ...(isLeader || church?.memberDirectoryEnabled ? [{ label: "Members", path: `/church/${slug}/members`, icon: Users }] : []),
-    // My Profile — visible to all active members
     { label: "My Profile", path: `/church/${slug}/profile`, icon: UserCircle },
-    // Admin — only full admins
     ...(isAdmin ? [{ label: "Admin", path: `/church/${slug}/admin`, icon: Settings }] : []),
   ] : [];
 
@@ -57,6 +62,16 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
     if (path === `/church/${slug}`) return location === path;
     return location.startsWith(path);
   };
+
+  // Theme color support
+  const headerBg = church?.themeColor ?? "#1d3461";
+  const bright = hexIsBright(headerBg);
+  const headerText = bright ? "#1a2744" : "#ffffff";
+  const headerTextSecondary = bright ? "#1a274488" : "#ffffffcc";
+  const headerAccent = bright ? "#b8962e" : "#d4a83a";
+  const headerBorder = bright ? "#1a274418" : "#ffffff1a";
+  const navActiveColor = headerAccent;
+  const navInactiveColor = headerTextSecondary;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#f8f4ee" }}>
@@ -71,7 +86,14 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
       />
 
       {/* Header */}
-      <header className="relative z-10" style={{ backgroundColor: "#1d3461" }}>
+      <header className="relative z-10" style={{ backgroundColor: headerBg }}>
+        {/* Banner image (if set) */}
+        {church?.bannerUrl && (
+          <div className="w-full h-24 overflow-hidden opacity-30">
+            <img src={church.bannerUrl} alt="" className="w-full h-full object-cover" />
+          </div>
+        )}
+
         {/* Top strip */}
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3.5 min-w-0">
@@ -80,7 +102,7 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
                 src={church.logoUrl}
                 alt={church.name}
                 className="w-14 h-14 rounded-xl object-cover flex-shrink-0 shadow-md border-2"
-                style={{ borderColor: "#ffffff22" }}
+                style={{ borderColor: bright ? "#00000018" : "#ffffff22" }}
               />
             ) : (
               <div className="flex-shrink-0"><DefaultEmblem size={52} /></div>
@@ -89,25 +111,25 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h1
                   className="font-serif font-bold leading-tight tracking-tight"
-                  style={{ color: "#ffffff", fontSize: "clamp(22px, 4vw, 34px)" }}
+                  style={{ color: headerText, fontSize: "clamp(22px, 4vw, 34px)" }}
                   data-testid="text-church-name"
                 >
                   {church?.name ?? "Church Mode"}
                 </h1>
                 <span
                   className="text-xs px-2.5 py-0.5 rounded-full font-semibold flex-shrink-0 hidden sm:inline-flex"
-                  style={{ backgroundColor: "#b8962e28", color: "#d4a83a", border: "1px solid #b8962e50" }}
+                  style={{ backgroundColor: `${headerAccent}28`, color: headerAccent, border: `1px solid ${headerAccent}50` }}
                 >
                   Church Mode
                 </span>
               </div>
               {church?.denomination && (
-                <p className="text-sm mt-0.5 truncate font-medium" style={{ color: "#d4a83a" }}>
+                <p className="text-sm mt-0.5 truncate font-medium" style={{ color: headerAccent }}>
                   {church.denomination}
                 </p>
               )}
               {roleLabel && !church?.denomination && (
-                <p className="text-xs mt-0.5 truncate" style={{ color: "#d4a83aaa" }}>{roleLabel}</p>
+                <p className="text-xs mt-0.5 truncate" style={{ color: `${headerAccent}aa` }}>{roleLabel}</p>
               )}
             </div>
           </div>
@@ -115,9 +137,9 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
           <button
             onClick={() => setLocation("/")}
             className="flex-shrink-0 flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-lg transition-all"
-            style={{ color: "#ffffffcc", border: "1px solid #ffffff28", backgroundColor: "transparent" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "#ffffff15"; (e.currentTarget as HTMLElement).style.color = "#ffffff"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLElement).style.color = "#ffffffcc"; }}
+            style={{ color: headerTextSecondary, border: `1px solid ${headerBorder}`, backgroundColor: "transparent" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = bright ? "#1a274410" : "#ffffff15"; (e.currentTarget as HTMLElement).style.color = headerText; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLElement).style.color = headerTextSecondary; }}
             data-testid="button-return-to-365"
           >
             <ChevronRight className="w-4 h-4 rotate-180" />
@@ -128,7 +150,7 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
 
         {/* Navigation bar */}
         {navItems.length > 0 && (
-          <div className="border-t" style={{ borderColor: "#ffffff1a" }}>
+          <div className="border-t" style={{ borderColor: headerBorder }}>
             <nav className="max-w-5xl mx-auto px-2 flex items-center overflow-x-auto scrollbar-hide" data-testid="nav-church-mode">
               {navItems.map(item => {
                 const active = isNavActive(item.path);
@@ -140,11 +162,14 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
                     onClick={() => setLocation(item.path)}
                     className={cn(
                       "relative flex items-center gap-2 px-3.5 py-3.5 text-sm font-semibold transition-all duration-150 border-b-2 flex-shrink-0 whitespace-nowrap",
-                      active ? "border-[#d4a83a]" : "border-transparent"
+                      active ? "" : "border-transparent"
                     )}
-                    style={{ color: active ? "#d4a83a" : "#ffffffcc" }}
-                    onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "#ffffff"; }}
-                    onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "#ffffffcc"; }}
+                    style={{
+                      borderBottomColor: active ? navActiveColor : "transparent",
+                      color: active ? navActiveColor : navInactiveColor,
+                    }}
+                    onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = headerText; }}
+                    onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = navInactiveColor; }}
                     data-testid={`link-church-nav-${item.label.toLowerCase()}`}
                   >
                     <Icon className="w-4 h-4 flex-shrink-0" />
