@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import type { Church } from "@shared/schema";
 import { CHURCH_ROLE_LABELS, type ChurchRole } from "@shared/schema";
-import { Home, Mic2, Megaphone, Users, Heart, Shield, Settings, ChevronRight, HandCoins, MessageSquare } from "lucide-react";
+import { Home, Mic2, Megaphone, Users, Heart, Shield, Settings, ChevronRight, HandCoins, MessageSquare, UserCircle } from "lucide-react";
 
 interface ChurchModeShellProps {
   church: Church | null;
@@ -43,8 +43,10 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
     { label: "Giving", path: `/church/${slug}/giving`, icon: HandCoins },
     // Messages — visible to all active members
     { label: "Messages", path: `/church/${slug}/messages`, icon: MessageSquare, badge: unreadMessages > 0 ? unreadMessages : 0 },
-    // Members directory — only leaders can see the full directory
-    ...(isLeader ? [{ label: "Members", path: `/church/${slug}/members`, icon: Shield }] : []),
+    // Members directory — show to leaders always, or to all members when directory is enabled
+    ...(isLeader || church?.memberDirectoryEnabled ? [{ label: "Members", path: `/church/${slug}/members`, icon: Users }] : []),
+    // My Profile — visible to all active members
+    { label: "My Profile", path: `/church/${slug}/profile`, icon: UserCircle },
     // Admin — only full admins
     ...(isAdmin ? [{ label: "Admin", path: `/church/${slug}/admin`, icon: Settings }] : []),
   ] : [];

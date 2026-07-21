@@ -3,3 +3,4 @@
 - [Phase F devotional sync](phase-f-devotional-sync.md) — local saves use key "devotional-saves"; streak uses "devotional-reading-streak"; merge fires on Firebase sign-in; notes are sign-in only.
 - [Church Mode architecture](church-mode-architecture.md) — church slug routes use ChurchModeShell (no global Header/Footer); gateway pages use normal layout; routes ordered carefully in App.tsx.
 - [Church Mode messaging + invitations](church-mode-v2.md) — readable invite codes "AXJ-4823", approvalMode on churches, approvedUses on invitations, pending member approval workflow, private messaging tables, Insert* types must be exported from schema alongside the zod schemas.
+- [Church Mode member profile + nav](church-mode-profile.md) — /church/:slug/profile route for ChurchMemberProfile page; My Profile in nav for all members; Members nav conditional on isLeader||memberDirectoryEnabled; email hidden from ordinary members in ChurchMembers.

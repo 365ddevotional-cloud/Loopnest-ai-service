@@ -33,6 +33,7 @@ const roleIcon = (role: string) => {
 };
 
 const ADMIN_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor"];
+const LEADER_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor", "counselor", "ministry_leader", "group_leader", "prayer_team"];
 
 export default function ChurchMembers() {
   const [, params] = useRoute("/church/:slug/members");
@@ -71,6 +72,7 @@ export default function ChurchMembers() {
   });
 
   const isAdmin = ADMIN_ROLES.includes(myRole?.role ?? "");
+  const isLeader = LEADER_ROLES.includes(myRole?.role ?? "");
 
   const roleUpdate = useMutation({
     mutationFn: async ({ memberId, role }: { memberId: number; role: string }) => {
@@ -104,6 +106,12 @@ export default function ChurchMembers() {
     leadership: members.filter(m => ADMIN_ROLES.includes(m.role) || ["ministry_leader", "group_leader", "counselor", "prayer_team"].includes(m.role)),
     congregation: members.filter(m => m.role === "member"),
   } : { leadership: [], congregation: [] };
+
+  // Display name — never show email to non-leaders
+  const getDisplayName = (m: ChurchMember) => {
+    if (isLeader) return m.displayName ?? m.email;
+    return m.displayName ?? "Member";
+  };
 
   return (
     <ChurchModeShell church={church ?? null} currentRole={myRole?.role ?? null}>
@@ -148,15 +156,18 @@ export default function ChurchMembers() {
                       <CardContent className="pt-4 pb-4 flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold"
                           style={{ backgroundColor: "#1a274418", color: "#1a2744" }}>
-                          {(m.displayName ?? m.email)[0]?.toUpperCase() ?? "?"}
+                          {getDisplayName(m)[0]?.toUpperCase() ?? "?"}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {roleIcon(m.role)}
-                            <span className="font-medium text-sm truncate" style={{ color: "#1a2744" }}>{m.displayName ?? m.email}</span>
+                            <span className="font-medium text-sm truncate" style={{ color: "#1a2744" }}>{getDisplayName(m)}</span>
                             {isCurrentUser && <Badge variant="outline" className="text-xs py-0 px-1.5 flex-shrink-0">You</Badge>}
                           </div>
-                          <p className="text-xs truncate mt-0.5" style={{ color: "#7a7570" }}>{m.email}</p>
+                          {/* Only leaders/admins see email */}
+                          {isLeader && m.email && (
+                            <p className="text-xs truncate mt-0.5" style={{ color: "#7a7570" }}>{m.email}</p>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           {canManage ? (
@@ -177,7 +188,7 @@ export default function ChurchMembers() {
                           )}
                           {canManage && (
                             <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                              onClick={() => { if (confirm(`Remove ${m.displayName ?? m.email} from this church?`)) removeMember.mutate(m.id); }}
+                              onClick={() => { if (confirm(`Remove ${getDisplayName(m)} from this church?`)) removeMember.mutate(m.id); }}
                               data-testid={`button-remove-member-${m.id}`}>
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>
@@ -205,13 +216,17 @@ export default function ChurchMembers() {
                       <CardContent className="pt-3.5 pb-3.5 flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
                           style={{ backgroundColor: "#1a274410", color: "#1a2744" }}>
-                          {(m.displayName ?? m.email)[0]?.toUpperCase() ?? "?"}
+                          {getDisplayName(m)[0]?.toUpperCase() ?? "?"}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-medium text-sm truncate" style={{ color: "#1a2744" }}>{m.displayName ?? m.email}</span>
+                            <span className="font-medium text-sm truncate" style={{ color: "#1a2744" }}>{getDisplayName(m)}</span>
                             {isCurrentUser && <Badge variant="outline" className="text-xs py-0 px-1.5 flex-shrink-0">You</Badge>}
                           </div>
+                          {/* Only leaders/admins see email */}
+                          {isLeader && m.email && (
+                            <p className="text-xs truncate mt-0.5" style={{ color: "#7a7570" }}>{m.email}</p>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           {canManage ? (
@@ -232,7 +247,7 @@ export default function ChurchMembers() {
                           )}
                           {canManage && (
                             <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                              onClick={() => { if (confirm(`Remove ${m.displayName ?? m.email}?`)) removeMember.mutate(m.id); }}
+                              onClick={() => { if (confirm(`Remove ${getDisplayName(m)}?`)) removeMember.mutate(m.id); }}
                               data-testid={`button-remove-member-${m.id}`}>
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>

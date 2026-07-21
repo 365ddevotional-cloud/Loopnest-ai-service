@@ -3042,6 +3042,40 @@ export async function registerRoutes(
     } catch { res.status(500).json({ message: "Failed to remove member" }); }
   });
 
+  // Auth: get my church member profile
+  app.get("/api/churches/:id/my-profile", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not an active member" });
+      const profile = await storage.getChurchMemberProfile(id, uid);
+      res.json({ member: m, profile: profile ?? null });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // Auth: update my church member profile
+  app.put("/api/churches/:id/my-profile", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not an active member" });
+      const { fullName, phone, country, city, bio, photoUrl, showInDirectory, allowMemberMessages, allowLeaderContact, showPhoneToLeadersOnly } = req.body;
+      const profile = await storage.upsertChurchMemberProfile({
+        churchId: id, firebaseUid: uid,
+        fullName: fullName ?? null, phone: phone ?? null,
+        country: country ?? null, city: city ?? null,
+        bio: bio ?? null, photoUrl: photoUrl ?? null,
+        showInDirectory: showInDirectory ?? true,
+        allowMemberMessages: allowMemberMessages ?? true,
+        allowLeaderContact: allowLeaderContact ?? true,
+        showPhoneToLeadersOnly: showPhoneToLeadersOnly ?? true,
+      });
+      res.json(profile);
+    } catch { res.status(500).json({ message: "Failed to update profile" }); }
+  });
+
   // Auth: create invitation (owner/admin/lead_pastor)
   app.post("/api/churches/:id/invitations", async (req, res) => {
     const uid = await getUid(req, res); if (!uid) return;
