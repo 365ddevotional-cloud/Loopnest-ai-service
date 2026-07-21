@@ -1627,7 +1627,7 @@ export async function registerRoutes(
     try {
       const song = await storage.getSong(id);
       if (!song) return res.status(404).json({ message: "Song not found" });
-      if (song.downloadStatus !== "free") {
+      if (song.downloadStatus === "disabled") {
         return res.status(403).json({ message: "Download is not available for this song" });
       }
       if (!song.audioUrl) {

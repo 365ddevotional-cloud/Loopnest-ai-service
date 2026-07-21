@@ -264,6 +264,7 @@ export default function SongDetail() {
   const [showLyrics, setShowLyrics] = useState(false);
   const [showMusicSettings, setShowMusicSettings] = useState(false);
   const [localFav, setLocalFav] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
 
   const { data: song, isLoading, error } = useQuery<Song>({
     queryKey: ["/api/songs/by-slug", slug],
@@ -409,6 +410,23 @@ export default function SongDetail() {
     } catch {}
   };
 
+  const triggerDownload = () => {
+    if (!song) return;
+    handleDownloadClick();
+    setShowDownloadModal(false);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    if (isIOS) {
+      window.open(`/api/songs/${song.id}/download`, "_blank");
+    } else {
+      const a = document.createElement("a");
+      a.href = `/api/songs/${song.id}/download`;
+      a.setAttribute("download", "");
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -431,10 +449,7 @@ export default function SongDetail() {
   }
 
   const hasCover = !!song.coverImageUrl;
-  const downloadLabel =
-    song.downloadStatus === "disabled"
-      ? "Downloads Disabled"
-      : "Download Coming Soon";
+  const downloadEnabled = song.downloadStatus !== "disabled" && !!song.audioUrl;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-12">
@@ -669,19 +684,17 @@ export default function SongDetail() {
         </Button>
 
         {/* Download button */}
-        {song.downloadStatus === "free" && song.audioUrl ? (
-          <a href={`/api/songs/${song.id}/download`} download onClick={handleDownloadClick} data-testid="button-download-song">
-            <Button variant="outline" size="sm">
-              <Download className="w-4 h-4 mr-1.5" />
-              Free Download
-            </Button>
-          </a>
-        ) : song.downloadStatus !== "disabled" ? (
-          <Button variant="outline" size="sm" disabled className="opacity-60" data-testid="button-download-coming-soon">
+        {downloadEnabled ? (
+          <Button variant="outline" size="sm" onClick={() => setShowDownloadModal(true)} data-testid="button-download-song">
             <Download className="w-4 h-4 mr-1.5" />
-            {downloadLabel}
+            Download Song
           </Button>
-        ) : null}
+        ) : (
+          <Button variant="outline" size="sm" disabled className="opacity-50" data-testid="button-download-unavailable">
+            <Download className="w-4 h-4 mr-1.5" />
+            Download Unavailable
+          </Button>
+        )}
 
         {/* Support the Ministry — voluntary only */}
         <Button
@@ -800,6 +813,55 @@ export default function SongDetail() {
         onClose={() => setConfirmOpen(false)}
         defaultGivingType="One-Time Donation"
       />
+
+      {/* Download Encouragement Modal */}
+      <Dialog open={showDownloadModal} onOpenChange={(v) => !v && setShowDownloadModal(false)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+              <Download className="w-6 h-6" />
+              Your Song Is Ready
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-foreground/80 leading-relaxed">
+              Thank you for listening to music from SpiritTone Records and 365 Daily Devotional. You may download this song freely. Your voluntary support helps us continue producing Scripture-based songs, devotionals, Bible teaching, prayer resources, and counseling encouragement.
+            </p>
+            <div className="rounded-lg bg-primary/5 border border-primary/15 p-4 space-y-1">
+              <p className="text-sm italic text-foreground/80 leading-relaxed">
+                "Each of you should give what you have decided in your heart to give, not reluctantly or under compulsion, for God loves a cheerful giver."
+              </p>
+              <p className="text-xs font-semibold text-primary">— 2 Corinthians 9:7</p>
+            </div>
+            <p className="text-xs text-muted-foreground font-medium text-center">
+              Giving is completely optional. You may continue your download whether or not you give.
+            </p>
+            {/iPad|iPhone|iPod/.test(navigator.userAgent) && (
+              <p className="text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 rounded-md px-3 py-2 text-center">
+                On iPhone: Tap the Share icon after the file opens, then choose <strong>Save to Files</strong>.
+              </p>
+            )}
+            <div className="flex flex-col gap-2 pt-1">
+              <Button onClick={triggerDownload} className="w-full" data-testid="button-confirm-download">
+                <Download className="w-4 h-4 mr-2" />
+                Continue to Download
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full border-amber-500/50 text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                onClick={() => { setShowDownloadModal(false); setShowSupport(true); }}
+                data-testid="button-download-modal-support"
+              >
+                <Gift className="w-4 h-4 mr-2" />
+                Support the Ministry
+              </Button>
+              <Button variant="ghost" className="w-full text-muted-foreground" onClick={() => setShowDownloadModal(false)} data-testid="button-download-modal-cancel">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

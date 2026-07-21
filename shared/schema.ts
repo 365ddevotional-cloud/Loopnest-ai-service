@@ -501,7 +501,7 @@ export const songs = pgTable("songs", {
   featuredWeekEnd: date("featured_week_end"),
   releaseYear: integer("release_year"),
   copyrightNotice: text("copyright_notice"),
-  downloadStatus: text("download_status").default("coming_soon").notNull(),
+  downloadStatus: text("download_status").default("free").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

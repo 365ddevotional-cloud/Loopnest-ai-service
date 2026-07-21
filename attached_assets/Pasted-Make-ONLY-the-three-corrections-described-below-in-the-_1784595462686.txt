@@ -1,0 +1,407 @@
+Make ONLY the three corrections described below in the 365 Daily Devotional app.
+
+Do NOT redesign the app.
+Do NOT refactor unrelated files.
+Do NOT modify the donation payment methods.
+Do NOT change PayPal, Cash App, Venmo, OPay, recurring support, donation confirmations, or the thank-you workflow.
+Do NOT change existing songs, devotionals, prayer requests, users, database records, or authentication.
+Do NOT add any paid service, paid storage provider, paid library, or subscription.
+Reuse the project’s existing database, file storage, components, icons, styles, and APIs.
+
+Everything else is currently working and must remain untouched.
+
+==================================================
+1. FIX THE ADMIN DASHBOARD MENU / TAB BAR
+==================================================
+
+CURRENT PROBLEM:
+
+On mobile, the Admin Dashboard menu items are clustered on top of one another and cannot be read or tapped properly.
+
+Fix ONLY the Admin Dashboard navigation.
+
+Requirements:
+
+• Each admin menu item must be fully readable.
+• Menu labels must never overlap.
+• Each menu item must have a clear individual tap area.
+• Use the existing app colors and typography.
+• Keep the text bold and readable.
+• Minimum touch height: 48px.
+• Preserve every existing admin section and route.
+• Do not remove, rename, merge, or break any admin section.
+
+For mobile screens:
+
+Use a horizontally scrollable tab bar OR a clean wrapped grid if that fits the existing design better.
+
+Preferred mobile behavior:
+
+• One horizontal row
+• Swipe left and right to see additional tabs
+• Active tab remains clearly highlighted
+• Add comfortable spacing between tabs
+• Do not compress all labels into one screen
+• Do not allow text to overlap
+
+For desktop/tablet:
+
+• Keep the navigation neat and properly spaced
+• Use available width without creating excessive empty space
+
+Test the navigation at common mobile widths, including approximately:
+
+• 320px
+• 375px
+• 390px
+• 430px
+
+Confirm that every admin tab is readable and tappable.
+
+==================================================
+2. ENABLE SONG DOWNLOADS NOW
+==================================================
+
+CURRENT PROBLEM:
+
+The public song page shows:
+
+“Download Coming Soon”
+
+Downloads must now be available.
+
+Replace every user-facing “Download Coming Soon” state with a working download experience when downloading is enabled for that song.
+
+--------------------------------------------------
+ADMIN DOWNLOAD CONTROL
+--------------------------------------------------
+
+Inside the existing song upload/edit form, add or restore a clear setting:
+
+Download:
+
+• Enabled
+• Disabled
+
+Use a toggle, checkbox, or select control that matches the existing admin design.
+
+Default for NEW songs:
+
+Download Enabled
+
+For EXISTING songs:
+
+Do not alter their saved setting unless it is currently missing.
+
+If an existing song has no download-setting value, treat it as Download Enabled so the current music becomes downloadable.
+
+The admin must be able to change the setting for each song later.
+
+Display the current status clearly in the admin song list:
+
+• Download Enabled
+or
+• Download Disabled
+
+Do not use confusing language such as “promotional download.”
+
+--------------------------------------------------
+PUBLIC SONG DOWNLOAD BUTTON
+--------------------------------------------------
+
+When Download Enabled:
+
+Show an active button:
+
+Download Song
+
+When tapped:
+
+1. Open a polished download encouragement modal.
+2. Do not force the user to donate.
+3. Clearly state that the download is free and giving is voluntary.
+4. Offer the user these actions:
+
+   • Continue to Download
+   • Support the Ministry
+   • Cancel
+
+“Continue to Download” must start the actual audio-file download.
+
+“Support the Ministry” must open the existing donation experience containing:
+
+• PayPal
+• Cash App
+• Venmo
+• OPay
+
+Do not create a separate or duplicate donation system.
+
+Use this modal content:
+
+Title:
+Your Song Is Ready
+
+Message:
+
+“Thank you for listening to music from SpiritTone Records and 365 Daily Devotional. You may download this song freely. Your voluntary support helps us continue producing Scripture-based songs, devotionals, Bible teaching, prayer resources, and counseling encouragement.”
+
+Add this Scripture:
+
+“Each of you should give what you have decided in your heart to give, not reluctantly or under compulsion, for God loves a cheerful giver.”
+— 2 Corinthians 9:7
+
+Add this statement clearly:
+
+“Giving is completely optional. You may continue your download whether or not you give.”
+
+Buttons:
+
+Primary:
+Continue to Download
+
+Secondary:
+Support the Ministry
+
+Tertiary:
+Cancel
+
+The download must not be blocked by donation.
+
+When Download Disabled:
+
+Show a disabled button:
+
+Download Unavailable
+
+Do not show “Coming Soon.”
+
+Optionally show this short helper text:
+
+“This song is currently available for streaming only.”
+
+--------------------------------------------------
+DOWNLOAD TECHNICAL REQUIREMENTS
+--------------------------------------------------
+
+• Use the existing uploaded audio file.
+• Do not duplicate the audio file in storage.
+• Do not create a paid download service.
+• Do not require sign-in unless the app already requires it.
+• Preserve the original filename where practical.
+• Use a safe filename based on the song title.
+• Prevent the download button from triggering repeatedly from rapid taps.
+• Do not interfere with audio playback.
+• Do not reduce audio quality.
+• Do not expose private server paths.
+• Use the existing secure file URL or download endpoint.
+
+Test on:
+
+• iPhone/Safari
+• Android/Chrome
+• Desktop browser behavior where supported
+
+If iPhone Safari cannot directly save the audio because of browser limitations, open the audio file in a way that allows the user to use the iPhone Share/Save to Files action, and show one short instruction:
+
+“Tap the Share icon, then choose Save to Files.”
+
+Do not claim a file was downloaded unless the browser actually initiated or opened the file.
+
+==================================================
+3. ALLOW MULTIPLE SONG UPLOADS AT ONCE
+==================================================
+
+CURRENT PROBLEM:
+
+The admin upload area currently appears limited and does not provide a proper way to upload any chosen number of songs in one operation.
+
+Update ONLY the existing Song of the Week / music upload workflow.
+
+The admin must be able to upload:
+
+• 1 song
+• 2 songs
+• 7 songs
+• Or another reasonable number in one batch
+
+Do not hard-code the form to exactly two songs.
+
+--------------------------------------------------
+MULTI-SONG UPLOAD EXPERIENCE
+--------------------------------------------------
+
+When the admin taps:
+
+Upload New Song
+
+Provide two choices:
+
+• Upload One Song
+• Upload Multiple Songs
+
+For Upload Multiple Songs:
+
+Allow the admin to select multiple audio files using one file picker.
+
+Use:
+
+multiple file selection
+
+After files are selected, create one editable upload card or row for each selected song.
+
+Each song must have its own fields:
+
+• Audio File
+• Song Title
+• Scripture Reference
+• Scripture Text
+• Artist / Record Label
+• Producer
+• Composer
+• Lyricist
+• Language
+• Year
+• Release Date
+• Short Description
+• Lyrics
+• Cover Image — optional
+• Download Enabled / Disabled
+• Active / Draft status
+• Any other song field already required by the existing upload form
+
+Auto-fill the song title from the filename when possible, but allow the admin to edit it.
+
+Add these batch actions:
+
+• Upload All Songs
+• Save All as Drafts
+• Cancel Batch
+
+Also allow:
+
+• Remove one song from the batch
+• Edit one song before upload
+• Retry only a failed song
+• See upload progress for each song
+
+--------------------------------------------------
+SAFE UPLOAD BEHAVIOR
+--------------------------------------------------
+
+• Do not submit the same song twice from repeated taps.
+• Disable Upload All Songs while the batch is actively uploading.
+• Upload songs safely one at a time or with a small controlled concurrency.
+• Do not start all large uploads simultaneously if that could overload the server.
+• Recommended maximum concurrency: 2 uploads at a time.
+• Continue processing the remaining songs if one upload fails.
+• Clearly mark each song as:
+  - Waiting
+  - Uploading
+  - Completed
+  - Failed
+
+• Preserve successfully uploaded songs if another song fails.
+• Show a final summary:
+  - Number completed
+  - Number failed
+  - Retry Failed button
+
+Do not create duplicate database records.
+
+--------------------------------------------------
+COST AND FILE-SIZE PROTECTION
+--------------------------------------------------
+
+Use the project’s EXISTING storage and upload system.
+
+Do not subscribe to or configure a new storage service.
+
+Before uploading, validate:
+
+• Supported audio file type
+• Existing project file-size limit
+• Required metadata
+
+If there is no current file-size limit, apply a reasonable client-side limit based on what the existing server/storage safely accepts.
+
+Do not compress or convert audio unless the project already has that capability.
+
+Do not install FFmpeg or another large dependency just for this task.
+
+If the existing server cannot safely accept an unlimited number of files, allow the admin to select many songs but process them in small groups automatically.
+
+==================================================
+4. PRESERVE CURRENT FUNCTIONALITY
+==================================================
+
+Do not break or change:
+
+• Existing uploaded songs
+• Song playback
+• Favorites
+• Save to Library
+• Sharing
+• Song credits
+• Song lyrics
+• Song artwork
+• Song of the Week display
+• Testimonials
+• Donation methods
+• Donation confirmation form
+• Admin thank-you workflow
+• Prayer and counseling inbox
+• Devotionals
+• Sunday School
+• Login and authentication
+• Existing database migrations
+• Current mobile design
+
+Do not delete any current songs or test data.
+
+Do not modify unrelated global typography.
+
+==================================================
+5. TESTING
+==================================================
+
+Test ONLY these changed areas:
+
+ADMIN MENU:
+1. Every admin tab is readable on mobile.
+2. No labels overlap.
+3. Every tab opens the correct existing section.
+4. Active tab is visible.
+5. Horizontal scrolling works where used.
+
+DOWNLOAD:
+1. Download Enabled shows “Download Song.”
+2. Clicking it opens the encouragement modal.
+3. Continue to Download starts or opens the actual audio download.
+4. Donation remains optional.
+5. Support the Ministry opens the existing donation flow.
+6. Download Disabled shows “Download Unavailable.”
+7. Audio playback still works.
+
+MULTI-UPLOAD:
+1. Upload one song.
+2. Upload two songs together.
+3. Upload at least three test entries together if safe.
+4. Metadata stays attached to the correct song.
+5. One failed item does not erase successful uploads.
+6. Retry Failed works.
+7. Existing songs remain unchanged.
+
+==================================================
+6. RETURN ONLY
+==================================================
+
+Return only:
+
+1. Files changed
+2. Database field or migration added, if any
+3. How the admin navigation was fixed
+4. How download enable/disable works
+5. How the multi-song batch upload works
+6. Test results
+7. Any limitation caused by the current storage or browser
