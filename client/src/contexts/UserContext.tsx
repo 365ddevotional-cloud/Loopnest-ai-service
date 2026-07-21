@@ -164,7 +164,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     // Step 2: Send verification email — failure here does NOT mean account creation failed
     try {
-      await sendEmailVerification(cred.user);
+      await sendEmailVerification(cred.user, {
+        url: "https://365dailydevotional.com",
+        handleCodeInApp: false,
+      });
     } catch (err: any) {
       if (import.meta.env.DEV) {
         console.error("[signUp] sendEmailVerification error:", err?.code, err?.message);
@@ -188,7 +191,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = useCallback(async (email: string) => {
     try {
-      await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(auth, email, {
+        url: "https://365dailydevotional.com",
+        handleCodeInApp: false,
+      });
       return { success: true };
     } catch (err: any) {
       const code = err?.code ?? "";
@@ -203,7 +209,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const resendVerification = useCallback(async () => {
     if (user && !user.emailVerified) {
       try {
-        await sendEmailVerification(user);
+        await sendEmailVerification(user, {
+          url: "https://365dailydevotional.com",
+          handleCodeInApp: false,
+        });
         toast({ title: "Verification email sent", description: "Check your inbox." });
       } catch {
         toast({ title: "Could not resend email", variant: "destructive" });
