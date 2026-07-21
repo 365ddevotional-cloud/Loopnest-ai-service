@@ -1,0 +1,461 @@
+Build Phase 2A — Church Mode Foundation for the 365 Daily Devotional app.
+
+This is a NEW, separate module.
+
+PHASE 1 IS COMPLETE AND LOCKED.
+
+Two carefully controlled interface improvements are included in this task:
+
+1. Create a visually distinct, mature Church Mode environment.
+2. Organize the existing long hamburger menu into clear collapsible groups.
+
+Do not make any other global redesign or unrelated change.
+
+==================================================
+CRITICAL DESIGN DIRECTION — CHURCH MODE ENVIRONMENT
+==================================================
+
+Church Mode must not feel like another ordinary page inside 365 Daily Devotional.
+
+When a user enters Church Mode, they should immediately feel that they have entered a distinct, refined church ministry environment.
+
+The transition should be clear but graceful.
+
+Church Mode must feel:
+
+• Mature
+• Beautiful
+• Professional
+• Trustworthy
+• Peaceful
+• Reverent
+• Organized
+• Suitable for pastors and established churches
+• Appropriate for both small ministries and large congregations
+
+Pastors should feel proud and confident using it with their members.
+
+Do not make it childish, flashy, crowded, overly colorful, or similar to a social-media entertainment app.
+
+Do not use cartoon church illustrations, excessive animations, bright rainbow colors, oversized decorative icons, or cheap-looking gradients.
+
+--------------------------------------------------
+CHURCH MODE VISUAL IDENTITY
+--------------------------------------------------
+
+Create a dedicated Church Mode visual shell that is different from the normal 365 Daily Devotional environment.
+
+Use a sophisticated church-oriented palette such as:
+
+Primary:
+• Deep navy
+• Midnight blue
+• Deep burgundy
+• Rich charcoal
+
+Supporting colors:
+• Warm ivory
+• Soft cream
+• Muted gold
+• Subtle bronze
+• Gentle stone gray
+
+Accent colors should be used carefully.
+
+Avoid excessive gold, excessive darkness, or low-contrast text.
+
+The final design must remain highly readable in daylight and on mobile devices.
+
+Suggested visual character:
+
+• Deep navy or refined burgundy header
+• Warm ivory or soft cream page background
+• Muted gold accents for selected items, dividers, and important actions
+• Clean white or cream content cards
+• Soft shadows
+• Refined borders
+• Generous spacing
+• Strong but elegant typography
+• Restrained ministry-related visual details
+
+A very subtle background texture or pattern may be used, such as:
+
+• Faint architectural lines
+• Subtle stained-glass-inspired geometry
+• Very faint cross pattern
+• Soft sanctuary-light effect
+
+Any pattern must remain subtle and must never interfere with readability.
+
+Do not use a photograph as the general background.
+
+--------------------------------------------------
+CHURCH MODE HEADER
+--------------------------------------------------
+
+Create a dedicated Church Mode header.
+
+It should include:
+
+• Church Mode title or the current church name
+• Church logo when available
+• Professional default church emblem when no logo exists
+• Clear way to return to the main 365 Daily Devotional environment
+• User role where appropriate, such as:
+  - Church Owner
+  - Lead Pastor
+  - Administrator
+  - Ministry Leader
+  - Member
+
+The header should make it clear that the user is now inside their church space.
+
+Possible small label:
+
+“Church Mode”
+
+Possible supporting phrase:
+
+“A dedicated space for your church community”
+
+Do not make the header unnecessarily tall.
+
+On mobile, keep it clean, compact, and easy to navigate.
+
+--------------------------------------------------
+CHURCH MODE NAVIGATION
+--------------------------------------------------
+
+Church Mode should have its own internal navigation.
+
+Do not place every future Church Mode feature in the main 365 hamburger menu.
+
+For Phase 2A, the Church Mode navigation should include only features that actually exist:
+
+• Church Home
+• Members
+• Join or Invitation Tools
+• Church Administration — authorized roles only
+• Return to 365 Daily Devotional
+
+Do not show empty navigation links for features that have not been built.
+
+Later Church Mode features such as sermons, bulletins, giving, and church communication will be added inside this dedicated environment rather than making the main app menu longer.
+
+--------------------------------------------------
+VISUAL CONSISTENCY
+--------------------------------------------------
+
+Church Mode must feel distinct, but it should still belong to the 365 Daily Devotional family.
+
+Retain:
+
+• Existing accessibility standards
+• Familiar button behavior
+• Existing account identity
+• Existing authentication
+• Existing toast and modal behavior where suitable
+• Existing font family unless a compatible existing font creates a more refined Church Mode appearance
+
+Do not load a large new font package merely for Church Mode.
+
+Use typography, spacing, color, borders, and layout to create the different atmosphere.
+
+Do not globally change the colors of the existing 365 Daily Devotional pages.
+
+The special visual theme applies only while the user is inside Church Mode.
+
+==================================================
+ORGANIZE THE EXISTING HAMBURGER MENU
+==================================================
+
+CURRENT PROBLEM:
+
+The existing hamburger menu has become too long because many destinations are displayed in one continuous list.
+
+Reorganize the existing hamburger menu into mature, clearly labeled collapsible groups.
+
+This change is for organization only.
+
+Do not:
+
+• Delete any existing menu destination
+• Break any route
+• Change permissions
+• Change the function of any page
+• Create duplicate links
+• Rename the actual routes
+• Modify the pages linked from the menu
+• Add unfinished features
+
+Use an accordion-style menu.
+
+When the hamburger menu first opens:
+
+• Show the major group names.
+• Allow the user to tap a group to expand its links.
+• Allow the group to collapse again.
+• Keep the menu short and uncluttered.
+• Use clear chevron indicators.
+• Use smooth, restrained expansion.
+• Do not use excessive animation.
+• Only one group may remain open at a time on small screens if that provides a cleaner experience.
+• Highlight the group containing the current page.
+• Keep the current page visibly selected.
+
+Important high-frequency destinations may remain immediately visible above the groups only when truly necessary, such as:
+
+• Home
+• Today’s Devotional
+• Church Mode
+
+Do not keep many ungrouped links above the accordion.
+
+--------------------------------------------------
+SUGGESTED MENU GROUPS
+--------------------------------------------------
+
+Group the app’s EXISTING menu links according to their actual purpose.
+
+Use the current menu items found in the project. Do not create links merely because they appear in the examples below.
+
+Suggested structure:
+
+1. DAILY FAITH
+
+Possible existing links:
+
+• Today’s Devotional
+• Bible or Scripture
+• Sunday School
+• Daily Promise
+• Reading resources
+
+2. WORSHIP & MEDIA
+
+Possible existing links:
+
+• Songs
+• Videos
+• Music Library
+• Favorites
+• Saved resources
+• Downloads
+
+3. PRAYER & COMMUNITY
+
+Possible existing links:
+
+• Prayer
+• Counseling
+• Testimonies
+• Messages or Inbox
+• Community-related pages
+
+4. CHURCH & MINISTRY
+
+Possible existing links:
+
+• Church Mode
+• Ministry resources
+• Support the Ministry
+• Giving or Donations
+
+Church Mode should also remain easy to discover. It may appear as a featured entry before the groups or as the first item inside Church & Ministry.
+
+Do not display it twice.
+
+5. MY ACCOUNT
+
+Possible existing links:
+
+• Profile
+• Notifications
+• Settings
+• Account preferences
+• Sign out
+
+6. ADMINISTRATION
+
+Show this group only to users who already possess the relevant global administrative permission.
+
+Possible existing links:
+
+• Existing Admin Dashboard
+• Content management
+• Existing administrative tools
+
+Church Administration must not be placed in this global group.
+
+Church Administration belongs inside the user’s Church Mode environment and must appear only to authorized church leaders.
+
+--------------------------------------------------
+MENU DESIGN REQUIREMENTS
+--------------------------------------------------
+
+The reorganized hamburger menu must be:
+
+• Clean
+• Mature
+• Easy to scan
+• Mobile-friendly
+• Keyboard accessible
+• Screen-reader friendly
+• Large enough to tap
+• Free from overlapping text
+
+Requirements:
+
+• Minimum 48px touch height
+• Clear group headings
+• Comfortable spacing
+• Visible active state
+• Strong text contrast
+• Chevron or arrow showing expanded and collapsed state
+• Preserve existing logout behavior
+• Preserve existing permission checks
+• Preserve existing notification badges
+• Preserve existing icons where appropriate
+• Do not overcrowd each row with unnecessary decoration
+
+The hamburger menu should continue using the normal 365 Daily Devotional theme.
+
+Do not apply the Church Mode navy, burgundy, or gold theme to the entire global hamburger menu.
+
+A small refined Church Mode icon or accent may identify the Church Mode entry.
+
+--------------------------------------------------
+NAVIGATION SAFETY
+--------------------------------------------------
+
+Before changing the hamburger menu:
+
+• Identify every existing menu destination.
+• Preserve every destination exactly once.
+• Preserve route paths.
+• Preserve role-based visibility.
+• Preserve external links.
+• Preserve click behavior.
+• Preserve active-state behavior.
+
+After reorganizing it, verify that every former menu item can still be found and opened.
+
+Do not interpret this as permission to redesign the pages behind the menu links.
+
+==================================================
+PHASE 1 PROTECTION
+==================================================
+
+Apart from reorganizing the hamburger menu, do NOT modify, refactor, rename, redesign, or rebuild any existing Phase 1 feature unless absolutely required for safe navigation into Church Mode.
+
+Do NOT modify:
+
+• Daily devotionals
+• Music and song pages
+• Audio or MP4 downloads
+• Existing global Admin Dashboard
+• Sunday School content
+• Prayer and counseling functionality
+• Favorites
+• Library
+• Sharing
+• Testimonials
+• Notifications
+• Existing donation system
+• PayPal
+• Cash App
+• Venmo
+• OPay
+• Existing users or existing database records
+
+Do not add any paid service, paid API, paid package, or new storage provider.
+
+Use the project’s existing:
+
+• Authentication
+• Database
+• File storage
+• Styling system
+• Form components
+• Toast notifications
+• Modal components
+• Routing system
+
+Make only the smallest safe additions needed for Church Mode Foundation and menu organization.
+
+==================================================
+CONTINUE WITH THE COMPLETE PHASE 2A REQUIREMENTS
+==================================================
+
+Now continue with all the remaining Phase 2A requirements previously provided, including:
+
+• Main Church Mode entry
+• Create a Church Space
+• Church Identity page
+• Church roles
+• Join a Church
+• Invitation and consent
+• Separate Church Administration area
+• Local-device storage preparation
+• Church data separation and security
+• Minimum database structure
+• Accessibility
+• Features not to build yet
+• Targeted testing
+• Final report requirements
+
+All previous Phase 2A requirements remain unchanged unless this updated opening specifically improves or clarifies them.
+
+==================================================
+ADDITIONAL TARGETED TESTING
+==================================================
+
+In addition to the original Phase 2A tests, verify:
+
+CHURCH MODE VISUAL ENVIRONMENT
+
+1. Entering Church Mode visibly changes the application environment.
+2. The Church Mode theme appears only inside Church Mode.
+3. Returning to the main app restores the normal 365 Daily Devotional appearance.
+4. Church Mode looks mature on mobile, tablet, and desktop.
+5. Text remains clear against every background.
+6. No decorative pattern interferes with readability.
+7. Church logo and default church emblem display correctly.
+8. Church Mode does not look unfinished when the church has no published content.
+
+HAMBURGER MENU
+
+1. Every existing menu link remains available exactly once.
+2. Every existing route still works.
+3. Groups expand and collapse correctly.
+4. Group labels clearly describe their contents.
+5. The menu is significantly shorter when groups are collapsed.
+6. Active page and active group are clearly indicated.
+7. Admin links remain visible only to authorized global administrators.
+8. Church Administration does not appear as a global admin link.
+9. Notification badges and permission rules remain working.
+10. The menu works correctly at 320px, 375px, 390px, and 430px widths.
+11. No label overlaps or becomes unreadable.
+12. Existing pages were not redesigned.
+
+==================================================
+RETURN ONLY
+==================================================
+
+Return only:
+
+1. Files changed
+2. Database tables, fields, indexes, and migrations added
+3. Routes added
+4. Church Mode visual system implemented
+5. Exact Church Mode colors or design tokens used
+6. How the Church Mode environment remains separate from the main app
+7. Hamburger menu groups created
+8. Every existing menu destination preserved
+9. How church codes and invitation links work
+10. Church roles and permissions implemented
+11. Security and church data separation implemented
+12. Targeted preview test results
+13. Any genuine limitation
+14. Confirmation that no unrelated Phase 1 feature was modified
+15. Confirmation that nothing was deployed automatically

@@ -67,10 +67,23 @@ import SignIn from "@/pages/SignIn";
 import MyLibrary from "@/pages/MyLibrary";
 import PromisePopup from "@/components/PromisePopup";
 import NotFound from "@/pages/not-found";
+import ChurchLanding from "@/pages/ChurchLanding";
+import ChurchCreate from "@/pages/ChurchCreate";
+import ChurchJoin from "@/pages/ChurchJoin";
+import ChurchHome from "@/pages/ChurchHome";
+import ChurchMembers from "@/pages/ChurchMembers";
+import ChurchAdminPage from "@/pages/ChurchAdminPage";
 
 function Router() {
   return (
     <Switch>
+      <Route path="/church/create" component={ChurchCreate} />
+      <Route path="/church/join/:code" component={ChurchJoin} />
+      <Route path="/church/join" component={ChurchJoin} />
+      <Route path="/church/:slug/members" component={ChurchMembers} />
+      <Route path="/church/:slug/admin" component={ChurchAdminPage} />
+      <Route path="/church/:slug" component={ChurchHome} />
+      <Route path="/church" component={ChurchLanding} />
       <Route path="/" component={Home} />
       <Route path="/archive" component={Archive} />
       <Route path="/admin" component={Admin} />
@@ -137,6 +150,12 @@ function AppContent() {
         <Router />
       </LoopNestAuthProvider>
     );
+  }
+
+  // Church mode shell routes (have their own header/layout)
+  const churchSlugPath = location.startsWith("/church/") && !["create", "join"].includes(location.split("/")[2] ?? "");
+  if (churchSlugPath) {
+    return <Router />;
   }
 
   if (isPublicRoute) {

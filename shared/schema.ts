@@ -696,3 +696,78 @@ export const insertDonationConfirmationSchema = createInsertSchema(donationConfi
 
 export type DonationConfirmation = typeof donationConfirmations.$inferSelect;
 export type InsertDonationConfirmation = z.infer<typeof insertDonationConfirmationSchema>;
+
+// ── Church Mode — Phase 2A Foundation ──────────────────────────────────────────
+
+export const CHURCH_ROLES = ["owner", "lead_pastor", "administrator", "ministry_leader", "member"] as const;
+export type ChurchRole = typeof CHURCH_ROLES[number];
+
+export const CHURCH_ROLE_LABELS: Record<ChurchRole, string> = {
+  owner: "Church Owner",
+  lead_pastor: "Lead Pastor",
+  administrator: "Administrator",
+  ministry_leader: "Ministry Leader",
+  member: "Member",
+};
+
+export const churches = pgTable("churches", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description"),
+  logoUrl: text("logo_url"),
+  websiteUrl: text("website_url"),
+  address: text("address"),
+  denomination: text("denomination"),
+  ownerId: text("owner_id").notNull(), // firebase_uid of the creator
+  status: text("status").notNull().default("active"), // "active" | "inactive"
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertChurchSchema = createInsertSchema(churches).omit({
+  id: true,
+  createdAt: true,
+});
+export type Church = typeof churches.$inferSelect;
+export type InsertChurch = z.infer<typeof insertChurchSchema>;
+
+export const churchMembers = pgTable("church_members", {
+  id: serial("id").primaryKey(),
+  churchId: integer("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  firebaseUid: text("firebase_uid").notNull(),
+  email: text("email").notNull(),
+  displayName: text("display_name"),
+  role: text("role").notNull().default("member"), // ChurchRole
+  status: text("status").notNull().default("active"), // "active" | "pending" | "suspended"
+  joinedAt: timestamp("joined_at").defaultNow(),
+}, (t) => ({
+  uniqueMemberChurch: unique().on(t.churchId, t.firebaseUid),
+}));
+
+export const insertChurchMemberSchema = createInsertSchema(churchMembers).omit({
+  id: true,
+  joinedAt: true,
+});
+export type ChurchMember = typeof churchMembers.$inferSelect;
+export type InsertChurchMember = z.infer<typeof insertChurchMemberSchema>;
+
+export const churchInvitations = pgTable("church_invitations", {
+  id: serial("id").primaryKey(),
+  churchId: integer("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  inviteCode: text("invite_code").notNull().unique(),
+  createdBy: text("created_by").notNull(), // firebase_uid
+  expiresAt: timestamp("expires_at"),
+  maxUses: integer("max_uses"),
+  usedCount: integer("used_count").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  label: text("label"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertChurchInvitationSchema = createInsertSchema(churchInvitations).omit({
+  id: true,
+  usedCount: true,
+  createdAt: true,
+});
+export type ChurchInvitation = typeof churchInvitations.$inferSelect;
+export type InsertChurchInvitation = z.infer<typeof insertChurchInvitationSchema>;

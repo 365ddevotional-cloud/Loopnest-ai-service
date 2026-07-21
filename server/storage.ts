@@ -82,6 +82,15 @@ import {
   type DonationConfirmation,
   type InsertDonationConfirmation,
   donationConfirmations,
+  churches,
+  churchMembers,
+  churchInvitations,
+  type Church,
+  type InsertChurch,
+  type ChurchMember,
+  type InsertChurchMember,
+  type ChurchInvitation,
+  type InsertChurchInvitation,
 } from "@shared/schema";
 import { eq, desc, and, isNull, or, ilike, lte, notInArray, sql } from "drizzle-orm";
 
@@ -254,6 +263,26 @@ export interface IStorage {
   createDonationConfirmation(data: InsertDonationConfirmation): Promise<DonationConfirmation>;
   getDonationConfirmations(): Promise<DonationConfirmation[]>;
   updateDonationConfirmationThankYouStatus(id: number, status: string): Promise<DonationConfirmation>;
+
+  // Church Mode — Phase 2A
+  createChurch(data: InsertChurch): Promise<Church>;
+  getChurch(id: number): Promise<Church | undefined>;
+  getChurchBySlug(slug: string): Promise<Church | undefined>;
+  getChurchesByOwner(ownerId: string): Promise<Church[]>;
+  updateChurch(id: number, data: Partial<InsertChurch>): Promise<Church>;
+  deleteChurch(id: number): Promise<void>;
+  addChurchMember(data: InsertChurchMember): Promise<ChurchMember>;
+  getChurchMembers(churchId: number): Promise<ChurchMember[]>;
+  getChurchMember(churchId: number, firebaseUid: string): Promise<ChurchMember | undefined>;
+  getUserChurches(firebaseUid: string): Promise<(ChurchMember & { church: Church })[]>;
+  updateChurchMemberRole(id: number, role: string): Promise<ChurchMember>;
+  updateChurchMemberStatus(id: number, status: string): Promise<ChurchMember>;
+  removeChurchMember(churchId: number, firebaseUid: string): Promise<void>;
+  createChurchInvitation(data: InsertChurchInvitation): Promise<ChurchInvitation>;
+  getChurchInvitation(inviteCode: string): Promise<ChurchInvitation | undefined>;
+  getChurchInvitations(churchId: number): Promise<ChurchInvitation[]>;
+  useChurchInvitation(inviteCode: string): Promise<ChurchInvitation>;
+  deactivateChurchInvitation(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1339,6 +1368,110 @@ export class DatabaseStorage implements IStorage {
       .where(eq(donationConfirmations.id, id))
       .returning();
     return row;
+  }
+
+  // ── Church Mode — Phase 2A ──────────────────────────────────────────────────
+
+  async createChurch(data: InsertChurch): Promise<Church> {
+    const [row] = await db.insert(churches).values(data).returning();
+    return row;
+  }
+
+  async getChurch(id: number): Promise<Church | undefined> {
+    const [row] = await db.select().from(churches).where(eq(churches.id, id));
+    return row;
+  }
+
+  async getChurchBySlug(slug: string): Promise<Church | undefined> {
+    const [row] = await db.select().from(churches).where(eq(churches.slug, slug));
+    return row;
+  }
+
+  async getChurchesByOwner(ownerId: string): Promise<Church[]> {
+    return await db.select().from(churches).where(eq(churches.ownerId, ownerId)).orderBy(desc(churches.createdAt));
+  }
+
+  async updateChurch(id: number, data: Partial<InsertChurch>): Promise<Church> {
+    const [row] = await db.update(churches).set(data).where(eq(churches.id, id)).returning();
+    return row;
+  }
+
+  async deleteChurch(id: number): Promise<void> {
+    await db.delete(churches).where(eq(churches.id, id));
+  }
+
+  async addChurchMember(data: InsertChurchMember): Promise<ChurchMember> {
+    const [row] = await db.insert(churchMembers).values(data)
+      .onConflictDoUpdate({
+        target: [churchMembers.churchId, churchMembers.firebaseUid],
+        set: { role: data.role, status: data.status ?? "active" },
+      })
+      .returning();
+    return row;
+  }
+
+  async getChurchMembers(churchId: number): Promise<ChurchMember[]> {
+    return await db.select().from(churchMembers)
+      .where(eq(churchMembers.churchId, churchId))
+      .orderBy(churchMembers.joinedAt);
+  }
+
+  async getChurchMember(churchId: number, firebaseUid: string): Promise<ChurchMember | undefined> {
+    const [row] = await db.select().from(churchMembers)
+      .where(and(eq(churchMembers.churchId, churchId), eq(churchMembers.firebaseUid, firebaseUid)));
+    return row;
+  }
+
+  async getUserChurches(firebaseUid: string): Promise<(ChurchMember & { church: Church })[]> {
+    const rows = await db
+      .select({ member: churchMembers, church: churches })
+      .from(churchMembers)
+      .innerJoin(churches, eq(churchMembers.churchId, churches.id))
+      .where(and(eq(churchMembers.firebaseUid, firebaseUid), eq(churchMembers.status, "active")))
+      .orderBy(desc(churchMembers.joinedAt));
+    return rows.map(r => ({ ...r.member, church: r.church }));
+  }
+
+  async updateChurchMemberRole(id: number, role: string): Promise<ChurchMember> {
+    const [row] = await db.update(churchMembers).set({ role }).where(eq(churchMembers.id, id)).returning();
+    return row;
+  }
+
+  async updateChurchMemberStatus(id: number, status: string): Promise<ChurchMember> {
+    const [row] = await db.update(churchMembers).set({ status }).where(eq(churchMembers.id, id)).returning();
+    return row;
+  }
+
+  async removeChurchMember(churchId: number, firebaseUid: string): Promise<void> {
+    await db.delete(churchMembers).where(and(eq(churchMembers.churchId, churchId), eq(churchMembers.firebaseUid, firebaseUid)));
+  }
+
+  async createChurchInvitation(data: InsertChurchInvitation): Promise<ChurchInvitation> {
+    const [row] = await db.insert(churchInvitations).values(data).returning();
+    return row;
+  }
+
+  async getChurchInvitation(inviteCode: string): Promise<ChurchInvitation | undefined> {
+    const [row] = await db.select().from(churchInvitations).where(eq(churchInvitations.inviteCode, inviteCode));
+    return row;
+  }
+
+  async getChurchInvitations(churchId: number): Promise<ChurchInvitation[]> {
+    return await db.select().from(churchInvitations)
+      .where(eq(churchInvitations.churchId, churchId))
+      .orderBy(desc(churchInvitations.createdAt));
+  }
+
+  async useChurchInvitation(inviteCode: string): Promise<ChurchInvitation> {
+    const [row] = await db.update(churchInvitations)
+      .set({ usedCount: sql`${churchInvitations.usedCount} + 1` })
+      .where(eq(churchInvitations.inviteCode, inviteCode))
+      .returning();
+    return row;
+  }
+
+  async deactivateChurchInvitation(id: number): Promise<void> {
+    await db.update(churchInvitations).set({ isActive: false }).where(eq(churchInvitations.id, id));
   }
 }
 
