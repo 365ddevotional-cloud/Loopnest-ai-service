@@ -1,0 +1,58 @@
+The Church Mode membership, invitation, profile, and private messaging update is complete in development.
+
+Proceed with a controlled production deployment now.
+
+Before publishing:
+
+1. Run the existing build and TypeScript validation.
+2. Confirm all database migrations completed successfully.
+3. Confirm existing churches, members, invitations, groups, sermons, prayer requests, giving records, and user accounts remain intact.
+4. Confirm Firebase configuration and secrets are unchanged.
+5. Confirm unrelated devotionals, songs, downloads, Sunday School, and ministry donation features are untouched.
+
+Then publish the current tested version to production.
+
+After deployment, test the actual public site:
+
+https://365dailydevotional.com
+
+Verify these live flows:
+
+1. Church Owner generates an unlimited invitation.
+2. Invitation card shows Church name, invitation purpose, code, uses, expiry, Copy Code, Copy Link, and Share.
+3. Copy Code works on iPhone Safari.
+4. Copy Link copies the full production URL.
+5. A logged-out visitor opens the invitation.
+6. The invitation survives sign-in or account creation.
+7. A new member profile is created.
+8. Membership becomes Pending when approval is required.
+9. Church Owner approves the member.
+10. The approved member appears in the correct group.
+11. Ordinary member navigation does not show Admin.
+12. Ordinary member cannot directly open the Admin route.
+13. Pastor can send a private message to one member.
+14. Member can send a private message to the pastor.
+15. Another member cannot read that conversation.
+16. An assigned pastoral assistant can access the conversation only after being added.
+17. The member can see that the assistant was added.
+18. Member-directory privacy settings work.
+19. Refreshing Church Mode routes does not show “Cannot GET.”
+20. Mobile layout has no horizontal overflow or hidden controls.
+
+If a production-only issue appears, fix only that confirmed issue and redeploy.
+
+Return only:
+
+• Deployment result
+• Build result
+• Migration result
+• Public invitation test result
+• Member signup and join result
+• Membership approval result
+• Admin restriction result
+• Private messaging result
+• Directory privacy result
+• Mobile test result
+• Existing data preservation result
+• Any genuine remaining limitation
+• Files changed after deployment, if any
