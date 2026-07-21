@@ -2,3 +2,4 @@
 - [Phase D user library tables](phase-d-schema.md) — user_saved_songs, user_favorite_songs, user_download_history keyed by firebase_uid.
 - [Phase F devotional sync](phase-f-devotional-sync.md) — local saves use key "devotional-saves"; streak uses "devotional-reading-streak"; merge fires on Firebase sign-in; notes are sign-in only.
 - [Church Mode architecture](church-mode-architecture.md) — church slug routes use ChurchModeShell (no global Header/Footer); gateway pages use normal layout; routes ordered carefully in App.tsx.
+- [Church Mode messaging + invitations](church-mode-v2.md) — readable invite codes "AXJ-4823", approvalMode on churches, approvedUses on invitations, pending member approval workflow, private messaging tables, Insert* types must be exported from schema alongside the zod schemas.

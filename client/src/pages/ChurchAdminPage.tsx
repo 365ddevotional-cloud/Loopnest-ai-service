@@ -14,7 +14,8 @@ import {
   Settings, Copy, Trash2, Plus, Loader2, AlertCircle,
   Users, Calendar, Mic2, Megaphone, Heart, BarChart3, Link as LinkIcon,
   HandCoins, Upload, ImageIcon, X, DollarSign, ToggleLeft, ToggleRight,
-  Building2, CreditCard, ArrowDownToLine
+  Building2, CreditCard, ArrowDownToLine, Share2, Tag, CheckCircle2, XCircle,
+  ClockIcon
 } from "lucide-react";
 import type { Church, ChurchInvitation, ChurchSermon, ChurchAnnouncement, ChurchMember, ChurchPrayerRequest, ChurchActivity, ChurchGivingSettings, ChurchGivingCategory, ChurchPayoutConfig, ChurchTransaction } from "@shared/schema";
 import { CHURCH_ROLE_LABELS, CHURCH_ROLES, type ChurchRole } from "@shared/schema";
@@ -57,7 +58,10 @@ export default function ChurchAdminPage() {
   const [invLabel, setInvLabel] = useState("");
   const [invExpiry, setInvExpiry] = useState("");
   const [invMaxUses, setInvMaxUses] = useState("");
+  const [invType, setInvType] = useState("membership");
+  const [invGroupId, setInvGroupId] = useState("");
   const [creatingInv, setCreatingInv] = useState(false);
+  const [showInvForm, setShowInvForm] = useState(false);
 
   // Sermon form state
   const [sermonForm, setSermonForm] = useState({ title: "", description: "", speakerName: "", videoUrl: "", audioUrl: "", bibleReference: "", sermonDate: "" });
@@ -105,6 +109,16 @@ export default function ChurchAdminPage() {
       return r.ok ? r.json() : [];
     },
     enabled: !!church?.id && !!myRole?.role && activeTab === "invitations",
+  });
+
+  const { data: groups } = useQuery<Array<{ id: number; name: string }>>({
+    queryKey: ["/api/churches", church?.id, "groups"],
+    queryFn: async () => {
+      const token = await getIdToken(); if (!token || !church?.id) return [];
+      const r = await fetch(`/api/churches/${church.id}/groups`, { headers: { Authorization: `Bearer ${token}` } });
+      return r.ok ? r.json() : [];
+    },
+    enabled: !!church?.id && activeTab === "invitations",
   });
 
   const { data: sermons } = useQuery<ChurchSermon[]>({
@@ -349,11 +363,18 @@ export default function ChurchAdminPage() {
       const r = await fetch(`/api/churches/${church.id}/invitations`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ label: invLabel || undefined, expiresAt: invExpiry || undefined, maxUses: invMaxUses ? Number(invMaxUses) : undefined }),
+        body: JSON.stringify({
+          label: invLabel || undefined,
+          expiresAt: invExpiry || undefined,
+          maxUses: invMaxUses ? Number(invMaxUses) : undefined,
+          invitationType: invType,
+          targetGroupId: invGroupId ? Number(invGroupId) : undefined,
+        }),
       });
       if (!r.ok) throw new Error((await r.json()).message);
       qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "invitations"] });
-      setInvLabel(""); setInvExpiry(""); setInvMaxUses("");
+      setInvLabel(""); setInvExpiry(""); setInvMaxUses(""); setInvType("membership"); setInvGroupId("");
+      setShowInvForm(false);
       toast({ title: "Invitation created" });
     } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
     finally { setCreatingInv(false); }
@@ -369,22 +390,56 @@ export default function ChurchAdminPage() {
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  const deleteInv = useMutation({
+    mutationFn: async (invId: number) => {
+      const token = await getIdToken();
+      const r = await fetch(`/api/churches/${church!.id}/invitations/${invId}?permanent=true`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      if (!r.ok) throw new Error((await r.json()).message);
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "invitations"] }); toast({ title: "Invitation deleted" }); },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const approveMember = useMutation({
+    mutationFn: async (memberId: number) => {
+      const token = await getIdToken();
+      const r = await fetch(`/api/churches/${church!.id}/members/${memberId}/approve`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      if (!r.ok) throw new Error((await r.json()).message);
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: "Member approved" }); },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const declineMember = useMutation({
+    mutationFn: async (memberId: number) => {
+      const token = await getIdToken();
+      const r = await fetch(`/api/churches/${church!.id}/members/${memberId}/decline`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      if (!r.ok) throw new Error((await r.json()).message);
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: "Request declined" }); },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  function copyText(text: string, label = "Copied") {
+    const fallback = () => { const el = document.createElement("textarea"); el.value = text; document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast({ title: label })).catch(fallback);
+    else { fallback(); toast({ title: label }); }
+  }
+
   const copyInviteLink = (code: string) => {
     const origin = window.location.hostname === "localhost" ? window.location.origin : PROD_URL;
+    copyText(`${origin}/church/join/${code}`, "Link copied");
+  };
+
+  const copyInviteCode = (code: string) => copyText(code, "Code copied");
+
+  const shareInvite = async (code: string, churchName: string) => {
+    const origin = window.location.hostname === "localhost" ? window.location.origin : PROD_URL;
     const url = `${origin}/church/join/${code}`;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(url).then(() => toast({ title: "Link copied" })).catch(() => {
-        const el = document.createElement("textarea");
-        el.value = url; document.body.appendChild(el); el.select();
-        document.execCommand("copy"); document.body.removeChild(el);
-        toast({ title: "Link copied" });
-      });
-    } else {
-      const el = document.createElement("textarea");
-      el.value = url; document.body.appendChild(el); el.select();
-      document.execCommand("copy"); document.body.removeChild(el);
-      toast({ title: "Link copied" });
+    if (navigator.share) {
+      try { await navigator.share({ title: `Join ${churchName}`, text: `You're invited to join ${churchName}. Code: ${code}`, url }); return; } catch { /* fall through */ }
     }
+    copyInviteLink(code);
   };
 
   // Create sermon
@@ -621,53 +676,126 @@ export default function ChurchAdminPage() {
         {/* Invitations Tab */}
         {activeTab === "invitations" && (
           <div className="space-y-5">
-            <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
-              <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2" style={{ color: "#1a2744" }}><Plus className="w-4 h-4" />Create Invitation</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5"><Label>Label <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                    <Input value={invLabel} onChange={e => setInvLabel(e.target.value)} placeholder="e.g. Sunday Service" data-testid="input-invite-label" /></div>
-                  <div className="space-y-1.5"><Label>Max Uses <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                    <Input type="number" min="1" value={invMaxUses} onChange={e => setInvMaxUses(e.target.value)} placeholder="Unlimited" /></div>
-                </div>
-                <div className="space-y-1.5"><Label>Expiry Date <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                  <Input type="datetime-local" value={invExpiry} onChange={e => setInvExpiry(e.target.value)} /></div>
-                <Button onClick={createInvitation} disabled={creatingInv} style={{ backgroundColor: "#1a2744" }} data-testid="button-create-invitation">
-                  {creatingInv ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating…</> : "Generate Invitation"}
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="flex justify-end">
+              <Button onClick={() => setShowInvForm(v => !v)} style={{ backgroundColor: "#1a2744" }} data-testid="button-create-invitation">
+                <Plus className="w-4 h-4 mr-1.5" />{showInvForm ? "Cancel" : "New Invitation"}
+              </Button>
+            </div>
 
-            <div className="space-y-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#7a7570" }}>Active Invitations</h3>
-              {!invitations?.length ? (
-                <p className="text-sm text-center py-6" style={{ color: "#7a7570" }}>No invitations yet.</p>
-              ) : invitations.map(inv => (
-                <Card key={inv.id} className={`border-0 shadow-sm ${!inv.isActive ? "opacity-60" : ""}`} style={{ backgroundColor: "#fff" }}>
-                  <CardContent className="pt-4 pb-4 flex items-center gap-4">
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <code className="text-sm font-mono font-bold tracking-widest" style={{ color: "#1a2744" }}>{inv.inviteCode}</code>
-                        {inv.label && <Badge variant="outline" className="text-xs">{inv.label}</Badge>}
-                        {!inv.isActive && <Badge variant="secondary" className="text-xs">Inactive</Badge>}
-                      </div>
-                      <div className="flex flex-wrap gap-3 text-xs" style={{ color: "#7a7570" }}>
-                        <span className="flex items-center gap-1"><Users className="w-3 h-3" />{inv.usedCount}{inv.maxUses ? `/${inv.maxUses}` : ""} uses</span>
-                        {inv.expiresAt && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />Expires {new Date(inv.expiresAt).toLocaleDateString()}</span>}
-                      </div>
+            {showInvForm && (
+              <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+                <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2" style={{ color: "#1a2744" }}><LinkIcon className="w-4 h-4" />Create Invitation Code</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label>Purpose</Label>
+                      <Select value={invType} onValueChange={setInvType}>
+                        <SelectTrigger data-testid="select-invite-type"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="membership">General Membership</SelectItem>
+                          <SelectItem value="group">Group Membership</SelectItem>
+                          <SelectItem value="leadership">Leadership Team</SelectItem>
+                          <SelectItem value="ministry">Ministry Team</SelectItem>
+                          <SelectItem value="event">Event Attendee</SelectItem>
+                          <SelectItem value="volunteer">Volunteer</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                    {inv.isActive && (
-                      <div className="flex gap-2 flex-shrink-0">
-                        <Button size="sm" variant="outline" onClick={() => copyInviteLink(inv.inviteCode)} data-testid={`button-copy-invite-${inv.id}`}>
-                          <Copy className="w-3.5 h-3.5 mr-1" />Copy Link
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          onClick={() => { if (confirm("Deactivate this invitation?")) deactivateInv.mutate(inv.id); }}
-                          data-testid={`button-deactivate-invite-${inv.id}`}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                    {invType === "group" && (groups?.length ?? 0) > 0 && (
+                      <div className="space-y-1.5">
+                        <Label>Target Group</Label>
+                        <Select value={invGroupId} onValueChange={setInvGroupId}>
+                          <SelectTrigger data-testid="select-invite-group"><SelectValue placeholder="Select group…" /></SelectTrigger>
+                          <SelectContent>
+                            {groups?.map(g => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
                       </div>
                     )}
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label>Label <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                      <Input value={invLabel} onChange={e => setInvLabel(e.target.value)} placeholder="e.g. Sunday Service Invite" data-testid="input-invite-label" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Max Uses <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                      <Input type="number" min="1" value={invMaxUses} onChange={e => setInvMaxUses(e.target.value)} placeholder="Unlimited" data-testid="input-invite-max-uses" />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Expiry Date <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                    <Input type="datetime-local" value={invExpiry} onChange={e => setInvExpiry(e.target.value)} data-testid="input-invite-expiry" />
+                  </div>
+                  <Button onClick={createInvitation} disabled={creatingInv} style={{ backgroundColor: "#1a2744" }} data-testid="button-generate-invitation">
+                    {creatingInv ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating…</> : "Generate Invitation Code"}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#7a7570" }}>
+                {invitations?.filter(i => i.isActive).length ?? 0} Active Invitation{(invitations?.filter(i => i.isActive).length ?? 0) !== 1 ? "s" : ""}
+              </h3>
+              {!invitations?.length ? (
+                <p className="text-sm text-center py-6" style={{ color: "#7a7570" }}>No invitations yet. Create one to invite members.</p>
+              ) : invitations.map(inv => (
+                <Card key={inv.id} className={`border-0 shadow-sm ${!inv.isActive ? "opacity-50" : ""}`} style={{ backgroundColor: "#fff" }}>
+                  <CardContent className="pt-4 pb-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <code className="text-base font-mono font-bold tracking-widest px-2 py-0.5 rounded" style={{ color: "#1a2744", backgroundColor: "#1a274410" }}>
+                            {inv.inviteCode}
+                          </code>
+                          {inv.label && <Badge variant="outline" className="text-xs"><Tag className="w-2.5 h-2.5 mr-1" />{inv.label}</Badge>}
+                          {(inv as any).invitationType && (inv as any).invitationType !== "membership" && (
+                            <Badge variant="outline" className="text-xs" style={{ borderColor: "#b8962e55", color: "#7a5c1e" }}>
+                              {(inv as any).invitationType}
+                            </Badge>
+                          )}
+                          {!inv.isActive && <Badge variant="secondary" className="text-xs">Inactive</Badge>}
+                        </div>
+                        <div className="flex flex-wrap gap-3 text-xs" style={{ color: "#7a7570" }}>
+                          <span className="flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            {(inv as any).approvedUses ?? inv.usedCount}{inv.maxUses ? `/${inv.maxUses}` : ""} approved
+                          </span>
+                          {(inv as any).targetGroupName && (
+                            <span className="flex items-center gap-1">→ {(inv as any).targetGroupName}</span>
+                          )}
+                          {inv.expiresAt && (
+                            <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />Expires {new Date(inv.expiresAt).toLocaleDateString()}</span>
+                          )}
+                        </div>
+                      </div>
+                      {inv.isActive && (
+                        <div className="flex gap-1.5 flex-shrink-0 flex-wrap justify-end">
+                          <Button size="sm" variant="outline" onClick={() => copyInviteCode(inv.inviteCode)} data-testid={`button-copy-code-${inv.id}`}>
+                            <Copy className="w-3 h-3 mr-1" />Code
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => copyInviteLink(inv.inviteCode)} data-testid={`button-copy-link-${inv.id}`}>
+                            <Copy className="w-3 h-3 mr-1" />Link
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => shareInvite(inv.inviteCode, church?.name ?? "")} data-testid={`button-share-invite-${inv.id}`}>
+                            <Share2 className="w-3 h-3 mr-1" />Share
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-amber-600"
+                            title="Deactivate (keep record)"
+                            onClick={() => { if (confirm("Deactivate this invitation link? It will no longer work but can be tracked.")) deactivateInv.mutate(inv.id); }}
+                            data-testid={`button-deactivate-invite-${inv.id}`}>
+                            <X className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            title="Delete permanently"
+                            onClick={() => { if (confirm("Permanently delete this invitation? This cannot be undone.")) deleteInv.mutate(inv.id); }}
+                            data-testid={`button-delete-invite-${inv.id}`}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -792,58 +920,106 @@ export default function ChurchAdminPage() {
 
         {/* Members Tab */}
         {activeTab === "members" && (
-          <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#7a7570" }}>
-              {members?.length ?? 0} Members
-            </p>
-            {!members?.length ? (
-              <p className="text-sm text-center py-8" style={{ color: "#7a7570" }}>No members yet.</p>
-            ) : members.map(m => {
-              const isCurrentUser = m.firebaseUid === user?.uid;
-              const canManage = !isCurrentUser && m.role !== "owner";
+          <div className="space-y-5">
+            {/* Pending Approvals */}
+            {(() => {
+              const pending = members?.filter(m => m.status === "pending") ?? [];
+              if (!pending.length) return null;
               return (
-                <Card key={m.id} className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
-                  <CardContent className="pt-4 pb-4 flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold"
-                      style={{ backgroundColor: "#1a274418", color: "#1a2744" }}>
-                      {(m.displayName ?? m.email)[0]?.toUpperCase() ?? "?"}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-medium text-sm truncate" style={{ color: "#1a2744" }}>{m.displayName ?? m.email}</span>
-                        {isCurrentUser && <Badge variant="outline" className="text-xs py-0 px-1.5 flex-shrink-0">You</Badge>}
-                      </div>
-                      <p className="text-xs truncate" style={{ color: "#7a7570" }}>{m.email}</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {canManage ? (
-                        <Select value={m.role} onValueChange={role => roleUpdate.mutate({ memberId: m.id, role })}>
-                          <SelectTrigger className={`h-7 text-xs w-38 border ${roleColors[m.role] ?? ""}`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {CHURCH_ROLES.filter(r => r !== "owner").map(r => (
-                              <SelectItem key={r} value={r}>{CHURCH_ROLE_LABELS[r]}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${roleColors[m.role] ?? ""}`}>
-                          {CHURCH_ROLE_LABELS[m.role as ChurchRole] ?? m.role}
-                        </span>
-                      )}
-                      {canManage && (
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                          onClick={() => { if (confirm(`Remove ${m.displayName ?? m.email}?`)) removeMember.mutate(m.id); }}
-                          data-testid={`button-remove-member-${m.id}`}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <ClockIcon className="w-4 h-4 text-amber-600" />
+                    <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+                      {pending.length} Pending Approval{pending.length !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  {pending.map(m => (
+                    <Card key={m.id} className="border-0 shadow-sm" style={{ backgroundColor: "#fffbeb", borderLeft: "3px solid #f59e0b" }}>
+                      <CardContent className="pt-4 pb-4 flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold"
+                          style={{ backgroundColor: "#92400e22", color: "#92400e" }}>
+                          {(m.displayName ?? m.email)[0]?.toUpperCase() ?? "?"}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="font-medium text-sm truncate block" style={{ color: "#1a2744" }}>{m.displayName ?? m.email}</span>
+                          <p className="text-xs truncate" style={{ color: "#7a7570" }}>{m.email}</p>
+                          {(m as any).inviteCodeUsed && (
+                            <p className="text-xs mt-0.5" style={{ color: "#9a9080" }}>Code: {(m as any).inviteCodeUsed}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <Button size="sm" onClick={() => approveMember.mutate(m.id)} disabled={approveMember.isPending}
+                            className="h-8" style={{ backgroundColor: "#16a34a" }}
+                            data-testid={`button-approve-member-${m.id}`}>
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />Approve
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => { if (confirm(`Decline ${m.displayName ?? m.email}'s request?`)) declineMember.mutate(m.id); }}
+                            disabled={declineMember.isPending} className="h-8 text-red-600 border-red-200 hover:bg-red-50"
+                            data-testid={`button-decline-member-${m.id}`}>
+                            <XCircle className="w-3.5 h-3.5 mr-1" />Decline
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               );
-            })}
+            })()}
+
+            {/* Active Members */}
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#7a7570" }}>
+                {members?.filter(m => m.status === "active").length ?? 0} Active Members
+              </p>
+              {!members?.filter(m => m.status === "active").length ? (
+                <p className="text-sm text-center py-8" style={{ color: "#7a7570" }}>No active members yet.</p>
+              ) : members?.filter(m => m.status === "active").map(m => {
+                const isCurrentUser = m.firebaseUid === user?.uid;
+                const canManage = !isCurrentUser && m.role !== "owner";
+                return (
+                  <Card key={m.id} className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+                    <CardContent className="pt-4 pb-4 flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold"
+                        style={{ backgroundColor: "#1a274418", color: "#1a2744" }}>
+                        {(m.displayName ?? m.email)[0]?.toUpperCase() ?? "?"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-medium text-sm truncate" style={{ color: "#1a2744" }}>{m.displayName ?? m.email}</span>
+                          {isCurrentUser && <Badge variant="outline" className="text-xs py-0 px-1.5 flex-shrink-0">You</Badge>}
+                        </div>
+                        <p className="text-xs truncate" style={{ color: "#7a7570" }}>{m.email}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {canManage ? (
+                          <Select value={m.role} onValueChange={role => roleUpdate.mutate({ memberId: m.id, role })}>
+                            <SelectTrigger className={`h-7 text-xs w-38 border ${roleColors[m.role] ?? ""}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {CHURCH_ROLES.filter(r => r !== "owner").map(r => (
+                                <SelectItem key={r} value={r}>{CHURCH_ROLE_LABELS[r]}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${roleColors[m.role] ?? ""}`}>
+                            {CHURCH_ROLE_LABELS[m.role as ChurchRole] ?? m.role}
+                          </span>
+                        )}
+                        {canManage && (
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                            onClick={() => { if (confirm(`Remove ${m.displayName ?? m.email}?`)) removeMember.mutate(m.id); }}
+                            data-testid={`button-remove-member-${m.id}`}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
         )}
 

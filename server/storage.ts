@@ -100,6 +100,7 @@ import {
   type InsertChurch,
   type ChurchMember,
   type InsertChurchMember,
+  type ChurchMemberProfile,
   type ChurchInvitation,
   type InsertChurchInvitation,
   type ChurchSermon,
@@ -119,6 +120,17 @@ import {
   type ChurchPayoutConfig,
   type ChurchTransaction,
   type GlobalGivingSetting,
+  type ChurchConversation,
+  type InsertChurchConversation,
+  type ChurchConversationParticipant,
+  type InsertChurchConversationParticipant,
+  type ChurchMessage,
+  type InsertChurchMessage,
+  churchMemberProfiles,
+  churchConversations,
+  churchConversationParticipants,
+  churchMessages,
+  churchMessageReads,
 } from "@shared/schema";
 import { eq, desc, and, isNull, or, ilike, lte, notInArray, sql } from "drizzle-orm";
 
@@ -310,7 +322,24 @@ export interface IStorage {
   getChurchInvitation(inviteCode: string): Promise<ChurchInvitation | undefined>;
   getChurchInvitations(churchId: number): Promise<ChurchInvitation[]>;
   useChurchInvitation(inviteCode: string): Promise<ChurchInvitation>;
+  approveChurchInvitationUse(inviteCode: string): Promise<ChurchInvitation>;
   deactivateChurchInvitation(id: number): Promise<void>;
+  deleteChurchInvitation(id: number): Promise<void>;
+  // Church Member Profiles
+  upsertChurchMemberProfile(data: Partial<ChurchMemberProfile> & { churchId: number; firebaseUid: string }): Promise<ChurchMemberProfile>;
+  getChurchMemberProfile(churchId: number, firebaseUid: string): Promise<ChurchMemberProfile | undefined>;
+  // Church Messaging
+  createChurchConversation(data: InsertChurchConversation): Promise<ChurchConversation>;
+  getChurchConversations(churchId: number, firebaseUid: string, isLeader: boolean): Promise<ChurchConversation[]>;
+  getChurchConversation(id: number): Promise<ChurchConversation | undefined>;
+  updateChurchConversation(id: number, data: Partial<ChurchConversation>): Promise<ChurchConversation>;
+  addConversationParticipant(data: InsertChurchConversationParticipant): Promise<ChurchConversationParticipant>;
+  getConversationParticipants(conversationId: number): Promise<ChurchConversationParticipant[]>;
+  isConversationParticipant(conversationId: number, firebaseUid: string): Promise<boolean>;
+  createChurchMessage(data: InsertChurchMessage): Promise<ChurchMessage>;
+  getChurchMessages(conversationId: number, limit?: number, offset?: number): Promise<ChurchMessage[]>;
+  markMessagesRead(conversationId: number, firebaseUid: string): Promise<void>;
+  getUnreadMessageCount(churchId: number, firebaseUid: string): Promise<number>;
   // Church Sermons
   createChurchSermon(data: InsertChurchSermon): Promise<ChurchSermon>;
   getChurchSermons(churchId: number): Promise<ChurchSermon[]>;
@@ -1529,8 +1558,150 @@ export class DatabaseStorage implements IStorage {
     return row;
   }
 
+  async approveChurchInvitationUse(inviteCode: string): Promise<ChurchInvitation> {
+    const [row] = await db.update(churchInvitations)
+      .set({ approvedUses: sql`${churchInvitations.approvedUses} + 1` })
+      .where(eq(churchInvitations.inviteCode, inviteCode))
+      .returning();
+    return row;
+  }
+
   async deactivateChurchInvitation(id: number): Promise<void> {
     await db.update(churchInvitations).set({ isActive: false }).where(eq(churchInvitations.id, id));
+  }
+
+  async deleteChurchInvitation(id: number): Promise<void> {
+    await db.delete(churchInvitations).where(eq(churchInvitations.id, id));
+  }
+
+  // ── Church Member Profiles ──────────────────────────────────────────────────
+  async upsertChurchMemberProfile(data: Partial<ChurchMemberProfile> & { churchId: number; firebaseUid: string }): Promise<ChurchMemberProfile> {
+    const existing = await this.getChurchMemberProfile(data.churchId, data.firebaseUid);
+    if (existing) {
+      const [row] = await db.update(churchMemberProfiles)
+        .set({ ...data, updatedAt: new Date() })
+        .where(and(eq(churchMemberProfiles.churchId, data.churchId), eq(churchMemberProfiles.firebaseUid, data.firebaseUid)))
+        .returning();
+      return row;
+    }
+    const [row] = await db.insert(churchMemberProfiles).values({ ...data, updatedAt: new Date() } as any).returning();
+    return row;
+  }
+
+  async getChurchMemberProfile(churchId: number, firebaseUid: string): Promise<ChurchMemberProfile | undefined> {
+    const [row] = await db.select().from(churchMemberProfiles)
+      .where(and(eq(churchMemberProfiles.churchId, churchId), eq(churchMemberProfiles.firebaseUid, firebaseUid)));
+    return row;
+  }
+
+  // ── Church Messaging ─────────────────────────────────────────────────────────
+  async createChurchConversation(data: InsertChurchConversation): Promise<ChurchConversation> {
+    const [row] = await db.insert(churchConversations).values(data).returning();
+    return row;
+  }
+
+  async getChurchConversations(churchId: number, firebaseUid: string, isLeader: boolean): Promise<ChurchConversation[]> {
+    if (isLeader) {
+      // Leaders see all conversations for this church
+      return await db.select().from(churchConversations)
+        .where(eq(churchConversations.churchId, churchId))
+        .orderBy(desc(churchConversations.updatedAt));
+    }
+    // Members see only conversations they participate in
+    const participantRows = await db.select({ conversationId: churchConversationParticipants.conversationId })
+      .from(churchConversationParticipants)
+      .where(eq(churchConversationParticipants.firebaseUid, firebaseUid));
+    const ids = participantRows.map(r => r.conversationId);
+    if (!ids.length) return [];
+    return await db.select().from(churchConversations)
+      .where(and(eq(churchConversations.churchId, churchId), sql`${churchConversations.id} = ANY(${ids})`))
+      .orderBy(desc(churchConversations.updatedAt));
+  }
+
+  async getChurchConversation(id: number): Promise<ChurchConversation | undefined> {
+    const [row] = await db.select().from(churchConversations).where(eq(churchConversations.id, id));
+    return row;
+  }
+
+  async updateChurchConversation(id: number, data: Partial<ChurchConversation>): Promise<ChurchConversation> {
+    const [row] = await db.update(churchConversations)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(churchConversations.id, id))
+      .returning();
+    return row;
+  }
+
+  async addConversationParticipant(data: InsertChurchConversationParticipant): Promise<ChurchConversationParticipant> {
+    const [row] = await db.insert(churchConversationParticipants)
+      .values(data)
+      .onConflictDoNothing()
+      .returning();
+    return row;
+  }
+
+  async getConversationParticipants(conversationId: number): Promise<ChurchConversationParticipant[]> {
+    return await db.select().from(churchConversationParticipants)
+      .where(eq(churchConversationParticipants.conversationId, conversationId))
+      .orderBy(churchConversationParticipants.addedAt);
+  }
+
+  async isConversationParticipant(conversationId: number, firebaseUid: string): Promise<boolean> {
+    const [row] = await db.select({ id: churchConversationParticipants.id })
+      .from(churchConversationParticipants)
+      .where(and(
+        eq(churchConversationParticipants.conversationId, conversationId),
+        eq(churchConversationParticipants.firebaseUid, firebaseUid)
+      ));
+    return !!row;
+  }
+
+  async createChurchMessage(data: InsertChurchMessage): Promise<ChurchMessage> {
+    const [row] = await db.insert(churchMessages).values(data).returning();
+    // Update conversation updatedAt
+    await db.update(churchConversations).set({ updatedAt: new Date() }).where(eq(churchConversations.id, data.conversationId));
+    return row;
+  }
+
+  async getChurchMessages(conversationId: number, limit = 50, offset = 0): Promise<ChurchMessage[]> {
+    return await db.select().from(churchMessages)
+      .where(and(eq(churchMessages.conversationId, conversationId), eq(churchMessages.deletedBySender, false)))
+      .orderBy(churchMessages.createdAt)
+      .limit(limit)
+      .offset(offset);
+  }
+
+  async markMessagesRead(conversationId: number, firebaseUid: string): Promise<void> {
+    const msgs = await db.select({ id: churchMessages.id }).from(churchMessages)
+      .where(eq(churchMessages.conversationId, conversationId));
+    for (const m of msgs) {
+      await db.insert(churchMessageReads)
+        .values({ messageId: m.id, firebaseUid })
+        .onConflictDoNothing();
+    }
+  }
+
+  async getUnreadMessageCount(churchId: number, firebaseUid: string): Promise<number> {
+    const participantRows = await db.select({ conversationId: churchConversationParticipants.conversationId })
+      .from(churchConversationParticipants)
+      .where(and(
+        eq(churchConversationParticipants.firebaseUid, firebaseUid),
+        eq(churchConversationParticipants.churchId, churchId)
+      ));
+    if (!participantRows.length) return 0;
+    const convIds = participantRows.map(r => r.conversationId);
+    const allMsgs = await db.select({ id: churchMessages.id })
+      .from(churchMessages)
+      .where(sql`${churchMessages.conversationId} = ANY(${convIds})`);
+    if (!allMsgs.length) return 0;
+    const msgIds = allMsgs.map(m => m.id);
+    const readRows = await db.select({ messageId: churchMessageReads.messageId })
+      .from(churchMessageReads)
+      .where(and(
+        eq(churchMessageReads.firebaseUid, firebaseUid),
+        sql`${churchMessageReads.messageId} = ANY(${msgIds})`
+      ));
+    const readSet = new Set(readRows.map(r => r.messageId));
+    return allMsgs.filter(m => !readSet.has(m.id)).length;
   }
 
   // ── Church Sermons ──────────────────────────────────────────────────────────

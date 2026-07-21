@@ -78,6 +78,7 @@ import ChurchAnnouncements from "@/pages/ChurchAnnouncements";
 import ChurchGroups from "@/pages/ChurchGroups";
 import ChurchPrayer from "@/pages/ChurchPrayer";
 import ChurchGiving from "@/pages/ChurchGiving";
+import ChurchMessaging from "@/pages/ChurchMessaging";
 
 function Router() {
   return (
@@ -91,6 +92,7 @@ function Router() {
       <Route path="/church/:slug/prayer" component={ChurchPrayer} />
       <Route path="/church/:slug/giving/success" component={ChurchGiving} />
       <Route path="/church/:slug/giving" component={ChurchGiving} />
+      <Route path="/church/:slug/messages" component={ChurchMessaging} />
       <Route path="/church/:slug/members" component={ChurchMembers} />
       <Route path="/church/:slug/admin" component={ChurchAdminPage} />
       <Route path="/church/:slug" component={ChurchHome} />

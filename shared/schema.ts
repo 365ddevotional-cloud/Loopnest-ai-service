@@ -730,6 +730,8 @@ export const churches = pgTable("churches", {
   denomination: text("denomination"),
   ownerId: text("owner_id").notNull(), // firebase_uid of the creator
   status: text("status").notNull().default("active"), // "active" | "inactive"
+  approvalMode: text("approval_mode").notNull().default("require_approval"), // "require_approval" | "auto_approve"
+  memberDirectoryEnabled: boolean("member_directory_enabled").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -747,7 +749,9 @@ export const churchMembers = pgTable("church_members", {
   email: text("email").notNull(),
   displayName: text("display_name"),
   role: text("role").notNull().default("member"), // ChurchRole
-  status: text("status").notNull().default("active"), // "active" | "pending" | "suspended"
+  status: text("status").notNull().default("active"), // "active" | "pending" | "declined" | "suspended" | "left" | "removed"
+  invitedGroupId: integer("invited_group_id"), // group to assign after approval
+  inviteCodeUsed: text("invite_code_used"),    // which invitation code they used
   joinedAt: timestamp("joined_at").defaultNow(),
 }, (t) => ({
   uniqueMemberChurch: unique().on(t.churchId, t.firebaseUid),
@@ -760,26 +764,134 @@ export const insertChurchMemberSchema = createInsertSchema(churchMembers).omit({
 export type ChurchMember = typeof churchMembers.$inferSelect;
 export type InsertChurchMember = z.infer<typeof insertChurchMemberSchema>;
 
+// ── Church Member Profiles (extended info) ────────────────────────────────────
+export const churchMemberProfiles = pgTable("church_member_profiles", {
+  id: serial("id").primaryKey(),
+  churchId: integer("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  firebaseUid: text("firebase_uid").notNull(),
+  fullName: text("full_name"),
+  phone: text("phone"),
+  country: text("country"),
+  city: text("city"),
+  address: text("address"),
+  bio: text("bio"),
+  photoUrl: text("photo_url"),
+  // Privacy
+  showInDirectory: boolean("show_in_directory").notNull().default(true),
+  allowMemberMessages: boolean("allow_member_messages").notNull().default(true),
+  allowLeaderContact: boolean("allow_leader_contact").notNull().default(true),
+  showPhoneToLeadersOnly: boolean("show_phone_to_leaders_only").notNull().default(true),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => ({
+  uniqueProfile: unique().on(t.churchId, t.firebaseUid),
+}));
+export const insertChurchMemberProfileSchema = createInsertSchema(churchMemberProfiles).omit({ id: true, updatedAt: true });
+export type ChurchMemberProfile = typeof churchMemberProfiles.$inferSelect;
+
+export const INVITATION_TYPES = [
+  "membership", "group", "ministry_team", "leadership", "special_program", "custom"
+] as const;
+export type InvitationType = typeof INVITATION_TYPES[number];
+export const INVITATION_TYPE_LABELS: Record<InvitationType, string> = {
+  membership: "Church Membership",
+  group: "Church Group",
+  ministry_team: "Ministry Team",
+  leadership: "Leadership Invitation",
+  special_program: "Special Program",
+  custom: "Custom",
+};
+
 export const churchInvitations = pgTable("church_invitations", {
   id: serial("id").primaryKey(),
   churchId: integer("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
   inviteCode: text("invite_code").notNull().unique(),
   createdBy: text("created_by").notNull(), // firebase_uid
   expiresAt: timestamp("expires_at"),
-  maxUses: integer("max_uses"),
-  usedCount: integer("used_count").notNull().default(0),
+  maxUses: integer("max_uses"),                        // null = unlimited
+  approvedUses: integer("approved_uses").notNull().default(0), // only active/approved members count
+  usedCount: integer("used_count").notNull().default(0),       // all join attempts
   isActive: boolean("is_active").notNull().default(true),
   label: text("label"),
+  invitationType: text("invitation_type").notNull().default("membership"), // InvitationType
+  targetGroupId: integer("target_group_id"),           // if group/ministry invitation
+  targetGroupName: text("target_group_name"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const insertChurchInvitationSchema = createInsertSchema(churchInvitations).omit({
   id: true,
+  approvedUses: true,
   usedCount: true,
   createdAt: true,
 });
 export type ChurchInvitation = typeof churchInvitations.$inferSelect;
 export type InsertChurchInvitation = z.infer<typeof insertChurchInvitationSchema>;
+
+// ── Church Messaging ──────────────────────────────────────────────────────────
+export const CHURCH_MESSAGE_CATEGORIES = [
+  "general", "pastoral", "counseling", "prayer_followup",
+  "membership_question", "group_message", "announcement", "ministry_assignment"
+] as const;
+
+export const churchConversations = pgTable("church_conversations", {
+  id: serial("id").primaryKey(),
+  churchId: integer("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  subject: text("subject").notNull(),
+  category: text("category").notNull().default("general"),
+  status: text("status").notNull().default("open"), // "open" | "closed" | "archived"
+  createdBy: text("created_by").notNull(),          // firebase_uid
+  assignedTo: text("assigned_to"),                  // firebase_uid of pastor/staff
+  isUrgent: boolean("is_urgent").notNull().default(false),
+  // Targeting: null = direct message, "all" = all members, groupId = group
+  targetType: text("target_type").notNull().default("direct"), // "direct" | "group" | "all" | "leaders"
+  targetGroupId: integer("target_group_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+export const insertChurchConversationSchema = createInsertSchema(churchConversations).omit({ id: true, createdAt: true, updatedAt: true });
+export type ChurchConversation = typeof churchConversations.$inferSelect;
+export type InsertChurchConversation = typeof insertChurchConversationSchema._type;
+
+export const churchConversationParticipants = pgTable("church_conversation_participants", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull().references(() => churchConversations.id, { onDelete: "cascade" }),
+  churchId: integer("church_id").notNull(),
+  firebaseUid: text("firebase_uid").notNull(),
+  displayName: text("display_name"),
+  role: text("role").notNull().default("member"), // "member" | "pastor" | "assistant" | "admin"
+  addedBy: text("added_by"),                      // firebase_uid of who added them (for audit)
+  addedAt: timestamp("added_at").defaultNow(),
+}, (t) => ({
+  uniqueParticipant: unique().on(t.conversationId, t.firebaseUid),
+}));
+export const insertChurchConversationParticipantSchema = createInsertSchema(churchConversationParticipants).omit({ id: true, addedAt: true });
+export type ChurchConversationParticipant = typeof churchConversationParticipants.$inferSelect;
+export type InsertChurchConversationParticipant = typeof insertChurchConversationParticipantSchema._type;
+
+export const churchMessages = pgTable("church_messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull().references(() => churchConversations.id, { onDelete: "cascade" }),
+  churchId: integer("church_id").notNull(),
+  senderUid: text("sender_uid").notNull(),
+  senderName: text("sender_name"),
+  senderRole: text("sender_role"),                // "member" | "pastor" | "admin" etc.
+  body: text("body").notNull(),
+  isSystemMessage: boolean("is_system_message").notNull().default(false),
+  deletedBySender: boolean("deleted_by_sender").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertChurchMessageSchema = createInsertSchema(churchMessages).omit({ id: true, createdAt: true });
+export type ChurchMessage = typeof churchMessages.$inferSelect;
+export type InsertChurchMessage = typeof insertChurchMessageSchema._type;
+
+export const churchMessageReads = pgTable("church_message_reads", {
+  id: serial("id").primaryKey(),
+  messageId: integer("message_id").notNull().references(() => churchMessages.id, { onDelete: "cascade" }),
+  firebaseUid: text("firebase_uid").notNull(),
+  readAt: timestamp("read_at").defaultNow(),
+}, (t) => ({
+  uniqueRead: unique().on(t.messageId, t.firebaseUid),
+}));
 
 // ── Church Sermons ────────────────────────────────────────────────────────────
 export const churchSermons = pgTable("church_sermons", {

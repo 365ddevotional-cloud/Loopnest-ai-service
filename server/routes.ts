@@ -2816,20 +2816,37 @@ export async function registerRoutes(
       + "-" + Math.random().toString(36).substring(2, 6);
   }
   function inviteCode() {
-    const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    return Array.from({ length: 8 }, () => c[Math.floor(Math.random() * c.length)]).join("");
+    // Readable format: 3 letters + dash + 4 digits, e.g. "AXJ-4823"
+    const alpha = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+    const digits = "0123456789";
+    const letters = Array.from({ length: 3 }, () => alpha[Math.floor(Math.random() * alpha.length)]).join("");
+    const nums = Array.from({ length: 4 }, () => digits[Math.floor(Math.random() * digits.length)]).join("");
+    return `${letters}-${nums}`;
   }
 
-  // Public: preview an invite code
+  // Public: preview an invite code — returns full context for the join page
   app.get("/api/church-invite/:code", async (req, res) => {
     try {
-      const inv = await storage.getChurchInvitation(req.params.code.toUpperCase());
+      const inv = await storage.getChurchInvitation(req.params.code.toUpperCase().replace(/\s/g, ""));
       if (!inv || !inv.isActive) return res.status(404).json({ message: "Invitation not found or no longer active" });
       if (inv.expiresAt && new Date(inv.expiresAt) < new Date()) return res.status(410).json({ message: "Invitation has expired" });
-      if (inv.maxUses && inv.usedCount >= inv.maxUses) return res.status(410).json({ message: "Invitation has reached its limit" });
+      if (inv.maxUses && inv.approvedUses >= inv.maxUses) return res.status(410).json({ message: "Invitation has reached its limit" });
       const church = await storage.getChurch(inv.churchId);
       if (!church) return res.status(404).json({ message: "Church not found" });
-      res.json({ church: { id: church.id, name: church.name, slug: church.slug, description: church.description, logoUrl: church.logoUrl, denomination: church.denomination }, invitation: { label: inv.label, expiresAt: inv.expiresAt } });
+      let groupName: string | null = inv.targetGroupName ?? null;
+      if (!groupName && inv.targetGroupId) {
+        const groups = await storage.getChurchGroups(inv.churchId);
+        groupName = groups.find(g => g.id === inv.targetGroupId)?.name ?? null;
+      }
+      res.json({
+        church: { id: church.id, name: church.name, slug: church.slug, description: church.description, logoUrl: church.logoUrl, denomination: church.denomination, approvalMode: church.approvalMode },
+        invitation: {
+          id: inv.id, label: inv.label, expiresAt: inv.expiresAt,
+          invitationType: inv.invitationType, targetGroupId: inv.targetGroupId,
+          targetGroupName: groupName, maxUses: inv.maxUses,
+          approvedUses: inv.approvedUses, remaining: inv.maxUses ? Math.max(0, inv.maxUses - inv.approvedUses) : null,
+        },
+      });
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 
@@ -2862,16 +2879,82 @@ export async function registerRoutes(
     try {
       const { inviteCode: code, email, displayName } = req.body;
       if (!code?.trim()) return res.status(400).json({ message: "Invite code is required" });
-      const inv = await storage.getChurchInvitation(code.trim().toUpperCase());
+      const inv = await storage.getChurchInvitation(code.trim().toUpperCase().replace(/\s/g, ""));
       if (!inv || !inv.isActive) return res.status(404).json({ message: "Invalid or expired invitation code" });
       if (inv.expiresAt && new Date(inv.expiresAt) < new Date()) return res.status(410).json({ message: "This invitation has expired" });
-      if (inv.maxUses && inv.usedCount >= inv.maxUses) return res.status(410).json({ message: "This invitation has reached its maximum uses" });
+      // Server-side atomic limit check using approvedUses (only counts approved members)
+      if (inv.maxUses && inv.approvedUses >= inv.maxUses) return res.status(410).json({ message: "This invitation has reached its maximum uses" });
+      const church = await storage.getChurch(inv.churchId);
+      if (!church) return res.status(404).json({ message: "Church not found" });
       const already = await storage.getChurchMember(inv.churchId, uid);
-      if (already?.status === "active") return res.json({ message: "Already a member", church: await storage.getChurch(inv.churchId) });
-      await storage.addChurchMember({ churchId: inv.churchId, firebaseUid: uid, email: email || "", displayName: displayName || null, role: "member", status: "active" });
+      if (already?.status === "active") return res.json({ message: "Already a member", church });
+      if (already?.status === "pending") return res.json({ message: "Your membership request is pending approval", pending: true, church });
+      // Determine initial status based on church approvalMode
+      const initialStatus = church.approvalMode === "auto_approve" ? "active" : "pending";
+      await storage.addChurchMember({
+        churchId: inv.churchId, firebaseUid: uid, email: email || "",
+        displayName: displayName || null, role: "member", status: initialStatus,
+        invitedGroupId: inv.targetGroupId ?? null,
+        inviteCodeUsed: inv.inviteCode,
+      });
+      // Only increment approvedUses if auto-approved
+      if (initialStatus === "active") {
+        await storage.approveChurchInvitationUse(inv.inviteCode);
+        // Assign to group if targeted
+        if (inv.targetGroupId) {
+          try {
+            await storage.addChurchGroupMember({ groupId: inv.targetGroupId, firebaseUid: uid, displayName: displayName || null, email: email || "" });
+          } catch { /* group may not exist */ }
+        }
+      }
       await storage.useChurchInvitation(inv.inviteCode);
-      res.json({ message: "Joined successfully", church: await storage.getChurch(inv.churchId) });
+      res.json({
+        message: initialStatus === "pending" ? "Your request to join has been sent and is awaiting approval." : "Joined successfully",
+        pending: initialStatus === "pending",
+        church,
+      });
     } catch (err) { console.error("Join church:", err); res.status(500).json({ message: "Failed to join church" }); }
+  });
+
+  // Auth: approve a pending member (increments approvedUses, assigns group)
+  app.post("/api/churches/:id/members/:memberId/approve", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const memberId = Number(req.params.memberId);
+      const requester = await storage.getChurchMember(churchId, uid);
+      if (!requester || !["owner", "lead_pastor", "administrator"].includes(requester.role)) return res.status(403).json({ message: "Not authorized" });
+      const all = await storage.getChurchMembers(churchId);
+      const target = all.find(m => m.id === memberId);
+      if (!target || target.status !== "pending") return res.status(404).json({ message: "Pending member not found" });
+      // Check invitation limit before approving
+      if (target.inviteCodeUsed) {
+        const inv = await storage.getChurchInvitation(target.inviteCodeUsed);
+        if (inv && inv.maxUses && inv.approvedUses >= inv.maxUses) return res.status(409).json({ message: "Invitation limit reached — cannot approve this member" });
+        if (inv) await storage.approveChurchInvitationUse(inv.inviteCode);
+      }
+      const updated = await storage.updateChurchMemberStatus(memberId, "active");
+      // Assign to group if invitation targeted one
+      if (target.invitedGroupId) {
+        try {
+          await storage.addChurchGroupMember({ groupId: target.invitedGroupId, firebaseUid: target.firebaseUid, displayName: target.displayName, email: target.email });
+        } catch { /* already in group */ }
+      }
+      res.json(updated);
+    } catch { res.status(500).json({ message: "Failed to approve member" }); }
+  });
+
+  // Auth: decline a pending member
+  app.post("/api/churches/:id/members/:memberId/decline", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const memberId = Number(req.params.memberId);
+      const requester = await storage.getChurchMember(churchId, uid);
+      if (!requester || !["owner", "lead_pastor", "administrator"].includes(requester.role)) return res.status(403).json({ message: "Not authorized" });
+      const updated = await storage.updateChurchMemberStatus(memberId, "declined");
+      res.json(updated);
+    } catch { res.status(500).json({ message: "Failed to decline member" }); }
   });
 
   // Public: get church by slug
@@ -2961,16 +3044,29 @@ export async function registerRoutes(
 
   // Auth: create invitation (owner/admin/lead_pastor)
   app.post("/api/churches/:id/invitations", async (req, res) => {
-    const uid = await getUid(req, res);
-    if (!uid) return;
+    const uid = await getUid(req, res); if (!uid) return;
     try {
       const id = Number(req.params.id);
       const m = await storage.getChurchMember(id, uid);
-      if (!m || !["owner", "administrator", "lead_pastor"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
-      const { label, expiresAt, maxUses } = req.body;
+      if (!m || !["owner", "administrator", "lead_pastor", "associate_pastor"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      const { label, expiresAt, maxUses, invitationType, targetGroupId } = req.body;
+      let groupName: string | null = null;
+      if (targetGroupId) {
+        const groups = await storage.getChurchGroups(id);
+        groupName = groups.find(g => g.id === Number(targetGroupId))?.name ?? null;
+      }
       let code = inviteCode();
       for (let i = 0; i < 10 && await storage.getChurchInvitation(code); i++) code = inviteCode();
-      res.status(201).json(await storage.createChurchInvitation({ churchId: id, inviteCode: code, createdBy: uid, label: label || null, expiresAt: expiresAt ? new Date(expiresAt) : null, maxUses: maxUses || null, isActive: true }));
+      res.status(201).json(await storage.createChurchInvitation({
+        churchId: id, inviteCode: code, createdBy: uid,
+        label: label || null,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        maxUses: maxUses ? Number(maxUses) : null,
+        isActive: true,
+        invitationType: invitationType || "membership",
+        targetGroupId: targetGroupId ? Number(targetGroupId) : null,
+        targetGroupName: groupName,
+      }));
     } catch { res.status(500).json({ message: "Failed to create invitation" }); }
   });
 
@@ -2988,16 +3084,228 @@ export async function registerRoutes(
 
   // Auth: deactivate an invitation
   app.delete("/api/churches/:id/invitations/:invId", async (req, res) => {
-    const uid = await getUid(req, res);
-    if (!uid) return;
+    const uid = await getUid(req, res); if (!uid) return;
     try {
       const id = Number(req.params.id);
       const invId = Number(req.params.invId);
       const m = await storage.getChurchMember(id, uid);
-      if (!m || !["owner", "administrator", "lead_pastor"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
-      await storage.deactivateChurchInvitation(invId);
+      if (!m || !["owner", "administrator", "lead_pastor", "associate_pastor"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      const { permanent } = req.query;
+      if (permanent === "true") await storage.deleteChurchInvitation(invId);
+      else await storage.deactivateChurchInvitation(invId);
       res.json({ success: true });
     } catch { res.status(500).json({ message: "Failed to deactivate invitation" }); }
+  });
+
+  // Auth: update church settings (includes approvalMode)
+  app.patch("/api/churches/:id/settings", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || !["owner", "lead_pastor", "administrator"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      const { approvalMode, memberDirectoryEnabled } = req.body;
+      const update: any = {};
+      if (approvalMode !== undefined) update.approvalMode = approvalMode;
+      if (memberDirectoryEnabled !== undefined) update.memberDirectoryEnabled = memberDirectoryEnabled;
+      res.json(await storage.updateChurch(id, update));
+    } catch { res.status(500).json({ message: "Failed to update settings" }); }
+  });
+
+  // ── Church Member Profiles ────────────────────────────────────────────────────
+  app.get("/api/churches/:id/profile", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m) return res.status(403).json({ message: "Not a member" });
+      res.json(await storage.getChurchMemberProfile(churchId, uid) ?? null);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/churches/:id/profile", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m) return res.status(403).json({ message: "Not a member" });
+      const { fullName, phone, country, city, address, bio, photoUrl, showInDirectory, allowMemberMessages, allowLeaderContact, showPhoneToLeadersOnly } = req.body;
+      res.json(await storage.upsertChurchMemberProfile({ churchId, firebaseUid: uid, fullName, phone, country, city, address, bio, photoUrl, showInDirectory, allowMemberMessages, allowLeaderContact, showPhoneToLeadersOnly }));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // Admin: get any member's profile (leaders only)
+  app.get("/api/churches/:id/members/:targetUid/profile", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor", "counselor"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      res.json(await storage.getChurchMemberProfile(churchId, req.params.targetUid) ?? null);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Church Member Directory ───────────────────────────────────────────────────
+  app.get("/api/churches/:id/directory", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not an active member" });
+      const church = await storage.getChurch(churchId);
+      if (!church?.memberDirectoryEnabled) return res.status(403).json({ message: "Directory is not enabled for this church" });
+      const isLeader = ["owner", "lead_pastor", "administrator", "associate_pastor", "counselor"].includes(m.role);
+      const members = await storage.getChurchMembers(churchId);
+      const activeMembers = members.filter(mb => mb.status === "active");
+      // Return public-safe directory entries
+      const directory = await Promise.all(activeMembers.map(async mb => {
+        const profile = await storage.getChurchMemberProfile(churchId, mb.firebaseUid);
+        if (profile && !profile.showInDirectory) return null;
+        const entry: any = { firebaseUid: mb.firebaseUid, displayName: mb.displayName, role: mb.role, bio: profile?.bio ?? null, photoUrl: profile?.photoUrl ?? null };
+        if (isLeader) {
+          entry.email = mb.email;
+          entry.phone = profile?.showPhoneToLeadersOnly ? profile.phone : null;
+          entry.city = profile?.city ?? null;
+          entry.country = profile?.country ?? null;
+        }
+        return entry;
+      }));
+      res.json(directory.filter(Boolean));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Church Messaging ──────────────────────────────────────────────────────────
+  app.get("/api/churches/:id/conversations", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not an active member" });
+      const isLeader = ["owner", "lead_pastor", "administrator", "associate_pastor", "counselor"].includes(m.role);
+      const convs = await storage.getChurchConversations(churchId, uid, isLeader);
+      const unread = await storage.getUnreadMessageCount(churchId, uid);
+      res.json({ conversations: convs, unreadCount: unread });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/churches/:id/conversations", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not an active member" });
+      const isLeader = ["owner", "lead_pastor", "administrator", "associate_pastor", "counselor"].includes(m.role);
+      const { subject, category, targetType, targetGroupId, initialMessage } = req.body;
+      if (!subject?.trim()) return res.status(400).json({ message: "Subject is required" });
+      if (!initialMessage?.trim()) return res.status(400).json({ message: "Message is required" });
+      // Only leaders can send to groups or all members
+      if ((targetType === "all" || targetType === "leaders" || targetType === "group") && !isLeader) return res.status(403).json({ message: "Not authorized to broadcast messages" });
+      const conv = await storage.createChurchConversation({
+        churchId, subject: subject.trim(), category: category || "general",
+        status: "open", createdBy: uid,
+        targetType: targetType || "direct",
+        targetGroupId: targetGroupId ? Number(targetGroupId) : null,
+      });
+      // Add creator as participant
+      await storage.addConversationParticipant({ conversationId: conv.id, churchId, firebaseUid: uid, displayName: m.displayName, role: isLeader ? "pastor" : "member", addedBy: uid });
+      // For direct messages: add a pastor/admin as participant
+      if (targetType === "direct" && !isLeader) {
+        const allMembers = await storage.getChurchMembers(churchId);
+        const leader = allMembers.find(mb => mb.status === "active" && ["owner", "lead_pastor"].includes(mb.role));
+        if (leader) await storage.addConversationParticipant({ conversationId: conv.id, churchId, firebaseUid: leader.firebaseUid, displayName: leader.displayName, role: "pastor", addedBy: uid });
+      }
+      // Create first message
+      const msg = await storage.createChurchMessage({ conversationId: conv.id, churchId, senderUid: uid, senderName: m.displayName, senderRole: isLeader ? "pastor" : "member", body: initialMessage.trim(), isSystemMessage: false });
+      res.status(201).json({ conversation: conv, message: msg });
+    } catch { res.status(500).json({ message: "Failed to create conversation" }); }
+  });
+
+  app.get("/api/churches/:id/conversations/:convId", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const convId = Number(req.params.convId);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not an active member" });
+      const conv = await storage.getChurchConversation(convId);
+      if (!conv || conv.churchId !== churchId) return res.status(404).json({ message: "Conversation not found" });
+      const isLeader = ["owner", "lead_pastor", "administrator", "associate_pastor", "counselor"].includes(m.role);
+      const isParticipant = await storage.isConversationParticipant(convId, uid);
+      if (!isLeader && !isParticipant) return res.status(403).json({ message: "Not a participant in this conversation" });
+      const [messages, participants] = await Promise.all([
+        storage.getChurchMessages(convId),
+        storage.getConversationParticipants(convId),
+      ]);
+      await storage.markMessagesRead(convId, uid);
+      res.json({ conversation: conv, messages, participants });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/churches/:id/conversations/:convId/messages", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const convId = Number(req.params.convId);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not an active member" });
+      const conv = await storage.getChurchConversation(convId);
+      if (!conv || conv.churchId !== churchId) return res.status(404).json({ message: "Conversation not found" });
+      const isLeader = ["owner", "lead_pastor", "administrator", "associate_pastor", "counselor"].includes(m.role);
+      const isParticipant = await storage.isConversationParticipant(convId, uid);
+      if (!isLeader && !isParticipant) return res.status(403).json({ message: "Not authorized to reply" });
+      if (conv.status === "closed") return res.status(400).json({ message: "Conversation is closed" });
+      const { body } = req.body;
+      if (!body?.trim()) return res.status(400).json({ message: "Message body is required" });
+      const msg = await storage.createChurchMessage({ conversationId: convId, churchId, senderUid: uid, senderName: m.displayName, senderRole: isLeader ? "pastor" : "member", body: body.trim(), isSystemMessage: false });
+      res.status(201).json(msg);
+    } catch { res.status(500).json({ message: "Failed to send message" }); }
+  });
+
+  app.patch("/api/churches/:id/conversations/:convId", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const convId = Number(req.params.convId);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor", "counselor"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      const conv = await storage.getChurchConversation(convId);
+      if (!conv || conv.churchId !== churchId) return res.status(404).json({ message: "Not found" });
+      const { status, assignedTo, isUrgent } = req.body;
+      const updated = await storage.updateChurchConversation(convId, { status, assignedTo, isUrgent });
+      res.json(updated);
+    } catch { res.status(500).json({ message: "Failed to update conversation" }); }
+  });
+
+  // Add a participant to a conversation (for assigning pastoral assistants)
+  app.post("/api/churches/:id/conversations/:convId/participants", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const convId = Number(req.params.convId);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m || !["owner", "lead_pastor", "administrator"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      const conv = await storage.getChurchConversation(convId);
+      if (!conv || conv.churchId !== churchId) return res.status(404).json({ message: "Not found" });
+      const { firebaseUid: targetUid, displayName, role: participantRole } = req.body;
+      if (!targetUid) return res.status(400).json({ message: "Firebase UID is required" });
+      // Verify they are a member
+      const targetMember = await storage.getChurchMember(churchId, targetUid);
+      if (!targetMember) return res.status(404).json({ message: "User is not a member of this church" });
+      const participant = await storage.addConversationParticipant({ conversationId: convId, churchId, firebaseUid: targetUid, displayName: displayName || targetMember.displayName, role: participantRole || "assistant", addedBy: uid });
+      // Create system message noting the addition
+      await storage.createChurchMessage({ conversationId: convId, churchId, senderUid: uid, senderName: m.displayName, senderRole: "admin", body: `${displayName || targetMember.displayName || "A staff member"} was added to this conversation.`, isSystemMessage: true });
+      res.status(201).json(participant);
+    } catch { res.status(500).json({ message: "Failed to add participant" }); }
+  });
+
+  app.get("/api/churches/:id/unread-count", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m) return res.json({ count: 0 });
+      res.json({ count: await storage.getUnreadMessageCount(churchId, uid) });
+    } catch { res.status(500).json({ message: "Server error" }); }
   });
 
   // ── Church Sermons ──────────────────────────────────────────────────────────

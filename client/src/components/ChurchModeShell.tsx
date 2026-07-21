@@ -2,12 +2,13 @@ import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import type { Church } from "@shared/schema";
 import { CHURCH_ROLE_LABELS, type ChurchRole } from "@shared/schema";
-import { Home, Mic2, Megaphone, Users, Heart, Shield, Settings, ChevronRight, HandCoins } from "lucide-react";
+import { Home, Mic2, Megaphone, Users, Heart, Shield, Settings, ChevronRight, HandCoins, MessageSquare } from "lucide-react";
 
 interface ChurchModeShellProps {
   church: Church | null;
   currentRole: string | null;
   children: React.ReactNode;
+  unreadMessages?: number;
 }
 
 function DefaultEmblem({ size = 52 }: { size?: number }) {
@@ -23,12 +24,14 @@ function DefaultEmblem({ size = 52 }: { size?: number }) {
 }
 
 const ADMIN_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor"];
+const LEADER_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor", "counselor", "ministry_leader", "group_leader", "prayer_team"];
 
-export function ChurchModeShell({ church, currentRole, children }: ChurchModeShellProps) {
+export function ChurchModeShell({ church, currentRole, children, unreadMessages = 0 }: ChurchModeShellProps) {
   const [location, setLocation] = useLocation();
 
   const slug = church?.slug;
   const isAdmin = ADMIN_ROLES.includes(currentRole ?? "");
+  const isLeader = LEADER_ROLES.includes(currentRole ?? "");
   const isMember = !!currentRole;
 
   const navItems = slug && isMember ? [
@@ -38,7 +41,11 @@ export function ChurchModeShell({ church, currentRole, children }: ChurchModeShe
     { label: "Groups", path: `/church/${slug}/groups`, icon: Users },
     { label: "Prayer", path: `/church/${slug}/prayer`, icon: Heart },
     { label: "Giving", path: `/church/${slug}/giving`, icon: HandCoins },
-    { label: "Members", path: `/church/${slug}/members`, icon: Shield },
+    // Messages — visible to all active members
+    { label: "Messages", path: `/church/${slug}/messages`, icon: MessageSquare, badge: unreadMessages > 0 ? unreadMessages : 0 },
+    // Members directory — only leaders can see the full directory
+    ...(isLeader ? [{ label: "Members", path: `/church/${slug}/members`, icon: Shield }] : []),
+    // Admin — only full admins
     ...(isAdmin ? [{ label: "Admin", path: `/church/${slug}/admin`, icon: Settings }] : []),
   ] : [];
 
@@ -124,12 +131,13 @@ export function ChurchModeShell({ church, currentRole, children }: ChurchModeShe
               {navItems.map(item => {
                 const active = isNavActive(item.path);
                 const Icon = item.icon;
+                const badge = (item as any).badge ?? 0;
                 return (
                   <button
                     key={item.path}
                     onClick={() => setLocation(item.path)}
                     className={cn(
-                      "flex items-center gap-2 px-3.5 py-3.5 text-sm font-semibold transition-all duration-150 border-b-2 flex-shrink-0 whitespace-nowrap",
+                      "relative flex items-center gap-2 px-3.5 py-3.5 text-sm font-semibold transition-all duration-150 border-b-2 flex-shrink-0 whitespace-nowrap",
                       active ? "border-[#d4a83a]" : "border-transparent"
                     )}
                     style={{ color: active ? "#d4a83a" : "#ffffffcc" }}
@@ -139,6 +147,12 @@ export function ChurchModeShell({ church, currentRole, children }: ChurchModeShe
                   >
                     <Icon className="w-4 h-4 flex-shrink-0" />
                     {item.label}
+                    {badge > 0 && (
+                      <span className="absolute -top-0.5 right-0.5 min-w-[16px] h-4 px-1 text-[10px] font-bold rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: "#e53e3e", color: "#fff" }}>
+                        {badge > 99 ? "99+" : badge}
+                      </span>
+                    )}
                   </button>
                 );
               })}

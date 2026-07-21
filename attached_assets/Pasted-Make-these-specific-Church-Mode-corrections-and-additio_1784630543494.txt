@@ -1,0 +1,683 @@
+Make these specific Church Mode corrections and additions only.
+
+This prompt replaces the previous invitation/member prompt.
+
+Do not redesign unrelated pages.
+Do not modify Firebase configuration, donations, sermons, announcements, prayer, or existing church records.
+Do not deploy automatically.
+
+Preserve all existing churches, members, invitations, groups, and user accounts.
+
+==================================================
+1. MULTI-PERSON INVITATION CODES
+==================================================
+
+CURRENT REQUIREMENT
+
+Church invitation codes must not be limited to one person.
+
+A church leader may generate one invitation for:
+
+• General Church Membership
+• Youth Group
+• Women’s Ministry
+• Men’s Ministry
+• Choir
+• Workers
+• Prayer Team
+• Leadership
+• Children’s Ministry
+• A custom church group
+
+The same invitation code may be used by multiple people until:
+
+• The invitation expires
+• The church leader deactivates it
+• The optional maximum-use limit is reached
+
+Default Max Uses:
+
+Unlimited
+
+Do not default invitations to one use.
+
+Allow the church leader to choose:
+
+• Unlimited uses
+• A custom maximum number of approved members
+
+Examples:
+
+• Unlimited
+• 10 people
+• 25 people
+• 50 people
+• 100 people
+
+Clearly display:
+
+• Number of people who have used the invitation
+• Maximum uses, or “Unlimited”
+• Remaining uses, where limited
+• Expiry date
+• Invitation status
+
+Only approved or successfully completed memberships should count toward the use limit. Do not waste an invitation use because somebody opened the link but did not finish joining.
+
+Use server-side enforcement so two people cannot exceed a limited invitation at the same time.
+
+==================================================
+2. MEANINGFUL INVITATION IDENTITY
+==================================================
+
+A generated invitation must clearly show what the person is joining.
+
+Do not display only a random code with no explanation.
+
+Each invitation must contain:
+
+• Church name
+• Invitation type
+• Group or ministry name, where applicable
+• Invitation label
+• Invitation code
+• Expiration date
+• Maximum uses
+• Current uses
+• Church logo
+• Church denomination
+• Short church description
+
+Invitation types:
+
+• Church Membership
+• Church Group
+• Ministry Team
+• Leadership Invitation
+• Special Program
+• Custom
+
+Examples of visible invitation titles:
+
+• Holiness Church — Church Membership
+• Holiness Church — Youth Group
+• Holiness Church — Women’s Ministry
+• Holiness Church — Choir
+• Holiness Church — Prayer Team
+
+The joining person must know exactly what they are joining before confirming.
+
+==================================================
+3. READABLE INVITATION CODES
+==================================================
+
+Generate invitation codes in a readable format.
+
+Example format:
+
+127-1970
+
+or another short, secure, human-readable format.
+
+Do not use the church name as the secret code itself.
+
+The code must remain sufficiently random and difficult to guess.
+
+Display it together with context:
+
+Holiness Church
+Youth Group Invitation
+Code: 127-1970
+
+Do not rely on the code alone to identify the church or group.
+
+Existing invitation codes must continue to work.
+
+==================================================
+4. COPY CODE, COPY LINK, AND SHARE
+==================================================
+
+Every invitation card must include clearly visible controls:
+
+• Copy Code
+• Copy Link
+• Share Invitation
+• View Details
+• Deactivate
+• Delete, with confirmation
+
+Copy Code:
+
+• Copies only the invitation code
+• Shows “Invitation code copied” after real success
+
+Copy Link:
+
+• Copies the full production invitation URL
+• Uses:
+  https://365dailydevotional.com
+• Shows “Invitation link copied” after real success
+
+Share Invitation:
+
+• Uses navigator.share where supported
+• Includes the church name, invitation purpose, code, and link
+
+Example shared message:
+
+“You are invited to join the Youth Group at Holiness Church on 365 Daily Devotional.
+
+Invitation Code: 127-1970
+
+Open:
+https://365dailydevotional.com/church/join/127-1970”
+
+Provide a reliable iPhone Safari fallback.
+
+Do not display a success message when copying fails.
+
+Minimum touch target: 48px.
+
+==================================================
+5. ACCOUNT REQUIRED BEFORE JOINING
+==================================================
+
+Every person joining a church must have their own free 365 Daily Devotional account.
+
+Do not create a separate Church Mode authentication system.
+
+Use the existing Firebase authentication.
+
+If a visitor opens an invitation while logged out:
+
+1. Display the church and invitation preview.
+2. Explain that a free account is required.
+3. Offer:
+   • Sign In
+   • Create Free Account
+4. Preserve the invitation code throughout signup and email verification.
+5. Return the user to the same invitation after authentication.
+
+New account fields:
+
+• Full name
+• Email address
+• Password
+• Confirm password
+
+Require the existing email-verification process before full membership activation.
+
+==================================================
+6. CHURCH MEMBER PROFILE
+==================================================
+
+After authentication, collect the church member’s profile information.
+
+Required:
+
+• Full name
+• Display name
+• Verified email address
+• Country
+
+Optional:
+
+• Phone number
+• City
+• Address
+• Profile photo
+• Date of birth, only if genuinely needed
+• Emergency contact
+• Short bio
+• Contact preferences
+
+Store church membership separately from Firebase authentication.
+
+Do not store passwords in the church database.
+
+Create:
+
+Church Mode → My Church Profile
+
+Members may:
+
+• Edit display name
+• Change phone number
+• Change city
+• Change profile photo
+• View church role
+• View assigned groups
+• View membership status
+• View date joined
+• Leave the church, with confirmation
+• Manage privacy preferences
+
+==================================================
+7. INVITATION TARGET AND GROUP ASSIGNMENT
+==================================================
+
+Each invitation must have a target.
+
+Possible targets:
+
+• General Church Membership
+• Existing Church Group
+• Existing Ministry Team
+• Leadership Review
+• Special Event or Program
+
+If the invitation targets a group such as Youth Group:
+
+1. The person first requests or receives church membership.
+2. After approval, assign them to the Youth Group.
+3. Do not grant leadership authority automatically.
+4. Do not add them to a different group.
+5. Record which invitation was used.
+
+The invitation preview must say:
+
+“You are requesting to join Holiness Church and the Youth Group.”
+
+Do not make the user believe they are joining only a standalone group outside the church.
+
+==================================================
+8. MEMBERSHIP APPROVAL
+==================================================
+
+Add the church setting:
+
+Membership Approval
+
+Options:
+
+• Require Church Approval
+• Automatically Approve Valid Invitations
+
+Default:
+
+Require Church Approval
+
+When approval is required:
+
+1. The applicant completes their member profile.
+2. Membership status becomes Pending.
+3. Church Owner, Lead Pastor, or authorized Church Administrator receives the request.
+4. Leadership may Approve or Decline.
+5. Approval creates an Active Member record.
+6. If the invitation targets a group, add the member to that group after approval.
+7. Declined applicants cannot access private church content.
+
+Statuses:
+
+• Pending
+• Active
+• Declined
+• Suspended
+• Left
+• Removed
+
+==================================================
+9. STRICT CHURCH ADMIN ACCESS
+==================================================
+
+Ordinary members must never have access to Church Administration.
+
+Full Church Administration roles:
+
+• Church Owner
+• Lead Pastor
+• Church Administrator
+
+Limited leadership access may be granted to:
+
+• Associate Pastor
+• Ministry Leader
+• Group Leader
+• Counselor
+• Prayer Team
+
+Only according to explicit permissions.
+
+Ordinary Member must not see:
+
+• Admin navigation
+• Church settings
+• Invitation management
+• Role controls
+• Giving payout setup
+• Finance reports
+• Member removal controls
+• Global moderation controls
+• Leadership-only messages
+
+Enforce this:
+
+• In navigation
+• In page route guards
+• In protected APIs
+• In database queries
+• On the server
+
+If a member manually opens an admin URL, show:
+
+“You do not have permission to access Church Administration.”
+
+Do not expose protected data before blocking access.
+
+==================================================
+10. PRIVATE CHURCH MESSAGING
+==================================================
+
+Add a private in-app Church Messaging Center.
+
+Church Owner, Lead Pastor, and authorized Church Administrator must be able to send messages to:
+
+• All members
+• A selected group
+• A specific member
+• Church leaders only
+
+Members must be able to:
+
+• Send a private message to the pastor or authorized church office
+• Reply within an existing conversation
+• Receive announcements and direct messages
+• View unread-message count
+
+Message categories:
+
+• General Message
+• Pastoral Message
+• Counseling Request
+• Prayer Follow-up
+• Membership Question
+• Group Message
+• Announcement
+• Ministry Assignment
+
+Provide:
+
+• Church Inbox
+• Sent Messages
+• Unread count
+• Conversation threads
+• Date and time
+• Read status
+• Archive
+• Close conversation
+• Report inappropriate message
+
+==================================================
+11. MESSAGE PRIVACY
+==================================================
+
+A private message from one member to the pastor must not be visible to other church members.
+
+Allowed viewers for a private pastoral message:
+
+• The sending member
+• The assigned pastor
+• An explicitly assigned authorized church administrator or pastoral assistant
+
+Do not allow every church administrator to automatically read all private pastoral or counseling conversations.
+
+The Church Owner may assign specific staff as:
+
+• Pastoral Assistant
+• Counselor
+• Message Administrator
+
+Only assigned participants may access the conversation.
+
+Group messages may be read only by members of the targeted group and authorized senders.
+
+Church-wide messages may be read by all active members of that church.
+
+One church must never access another church’s messages.
+
+==================================================
+12. ENCRYPTION REQUIREMENTS
+==================================================
+
+Do not falsely label the system “end-to-end encrypted” unless true end-to-end encryption is fully implemented.
+
+At minimum, provide:
+
+• HTTPS encryption in transit
+• Secure encrypted database/storage where supported
+• Server-side authorization
+• Strict participant-based access controls
+• No message content in public logs
+• No message content in analytics
+• No message previews exposed to unauthorized users
+• Audit logging for privileged administrative access
+
+If true end-to-end encryption is implemented:
+
+• Only the sender and explicitly designated participants may possess decryption access.
+• A pastor’s assistant can read a conversation only when added as a participant.
+• The server must not be able to read plaintext.
+• Key management, device recovery, lost-device handling, and multi-device access must be properly designed.
+• Do not implement a weak homemade encryption system.
+
+Because true end-to-end encryption is a major cryptographic feature, prefer secure private messaging with encryption in transit, encryption at rest where supported, and strict role-based access during this task unless the project already contains a reviewed E2EE architecture.
+
+In the UI, call it:
+
+“Private Church Messaging”
+
+Do not call it “End-to-End Encrypted” unless technically verified.
+
+==================================================
+13. PASTORAL INBOX
+==================================================
+
+Create a Pastoral Inbox available to authorized pastoral users.
+
+Sections:
+
+• New Member Messages
+• Counseling Requests
+• Prayer Follow-ups
+• General Questions
+• Assigned to Me
+• Unassigned
+• Closed
+
+Pastor or authorized staff may:
+
+• Open conversation
+• Reply
+• Assign conversation to a pastor or counselor
+• Add an authorized participant
+• Mark urgent
+• Close conversation
+• Reopen conversation
+• Archive conversation
+
+A member should clearly see who is participating in their private conversation.
+
+If another staff member is added, show:
+
+“Pastoral Assistant [Name] was added to this conversation.”
+
+Do not add hidden readers.
+
+==================================================
+14. MEMBER NAVIGATION
+==================================================
+
+For ordinary members, show:
+
+• Home
+• Sermons
+• Announcements
+• Groups
+• Prayer
+• Messages
+• My Profile
+
+Only show Members if the church has enabled a member directory.
+
+Do not show Admin to ordinary members.
+
+For authorized leaders, show Admin clearly.
+
+==================================================
+15. MEMBER DIRECTORY PRIVACY
+==================================================
+
+Do not expose private contact information to ordinary members.
+
+Ordinary member-directory display may include:
+
+• Display name
+• Profile photo
+• Ministry group
+• Optional short bio
+
+Private fields visible only to authorized leadership:
+
+• Email
+• Phone
+• Address
+• Emergency contact
+• Membership notes
+
+Member privacy settings:
+
+• Show me in church directory
+• Allow members to message me
+• Allow church leaders to contact me
+• Show phone number to leaders only
+
+==================================================
+16. DATABASE AND SECURITY
+==================================================
+
+Add or extend only the necessary records for:
+
+• Invitation target type
+• Invitation group ID
+• Maximum uses
+• Approved uses
+• Pending join requests
+• Member profiles
+• Member privacy settings
+• Church conversations
+• Conversation participants
+• Church messages
+• Message read status
+• Message assignments
+• Message access audit logs
+
+Every record must contain church_id where relevant.
+
+Every protected request must:
+
+• Verify Firebase ID token
+• Derive identity from the token
+• Verify church membership
+• Verify role or conversation participation
+• Enforce church isolation on the server
+• Never trust the client’s claimed role
+
+Use pagination for message lists.
+
+Do not load every conversation at once.
+
+==================================================
+17. TESTING
+==================================================
+
+MULTI-PERSON INVITATIONS
+
+1. Generate an unlimited Youth Group invitation.
+2. Use it successfully with multiple separate accounts.
+3. Confirm all approved users can join.
+4. Confirm the invitation remains active.
+5. Generate a limited invitation for 10 approved users.
+6. Confirm the eleventh approval is blocked.
+7. Confirm incomplete applications do not consume a use.
+
+INVITATION CONTEXT
+
+1. Invitation preview shows church name.
+2. It shows Church Membership or group name.
+3. It shows denomination and description.
+4. The joining user understands exactly what they are joining.
+
+COPY AND SHARE
+
+1. Copy Code works on iPhone Safari.
+2. Copy Link works on iPhone Safari.
+3. Share contains church name, purpose, code, and link.
+4. No manual text highlighting is required.
+
+MEMBER ACCOUNT
+
+1. Logged-out visitor creates an account.
+2. Invitation survives signup and verification.
+3. Member profile is created.
+4. Email comes from authenticated Firebase account.
+5. No duplicate password record is created.
+
+PERMISSIONS
+
+1. Ordinary member does not see Admin.
+2. Member cannot open Admin directly.
+3. Member cannot access admin APIs.
+4. Pastor can access authorized administration.
+5. One church cannot manage another church.
+
+MESSAGING
+
+1. Pastor sends to all church members.
+2. Pastor sends to Youth Group only.
+3. Pastor sends to one member.
+4. Member sends private message to pastor.
+5. Another member cannot read it.
+6. Unassigned church staff cannot read it.
+7. Assigned pastoral assistant can read only after being added.
+8. Member sees that the assistant was added.
+9. Message content does not appear in logs or analytics.
+10. One church cannot access another church’s conversations.
+
+Run existing build and TypeScript validation only.
+
+Do not install a new test framework.
+
+==================================================
+DEPLOYMENT
+==================================================
+
+Do not deploy automatically.
+
+After implementation and testing, report whether it is ready for publishing.
+
+==================================================
+RETURN ONLY
+==================================================
+
+Return only:
+
+1. Files changed
+2. Multi-person invitation implementation
+3. Invitation context and readable-code result
+4. Copy Code result
+5. Copy Link result
+6. Share Invitation result
+7. Member account flow result
+8. Member profile result
+9. Group-assignment result
+10. Membership-approval result
+11. Member navigation result
+12. Admin access enforcement result
+13. Church messaging result
+14. Private pastoral-message result
+15. Encryption and privacy protections actually implemented
+16. Member-directory privacy result
+17. Mobile test result
+18. Confirmation that existing members and invitations were preserved
+19. Confirmation that unrelated features were not modified
+20. Confirmation that nothing was deployed automatically
