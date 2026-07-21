@@ -73,6 +73,10 @@ import ChurchJoin from "@/pages/ChurchJoin";
 import ChurchHome from "@/pages/ChurchHome";
 import ChurchMembers from "@/pages/ChurchMembers";
 import ChurchAdminPage from "@/pages/ChurchAdminPage";
+import ChurchSermons from "@/pages/ChurchSermons";
+import ChurchAnnouncements from "@/pages/ChurchAnnouncements";
+import ChurchGroups from "@/pages/ChurchGroups";
+import ChurchPrayer from "@/pages/ChurchPrayer";
 
 function Router() {
   return (
@@ -80,6 +84,10 @@ function Router() {
       <Route path="/church/create" component={ChurchCreate} />
       <Route path="/church/join/:code" component={ChurchJoin} />
       <Route path="/church/join" component={ChurchJoin} />
+      <Route path="/church/:slug/sermons" component={ChurchSermons} />
+      <Route path="/church/:slug/announcements" component={ChurchAnnouncements} />
+      <Route path="/church/:slug/groups" component={ChurchGroups} />
+      <Route path="/church/:slug/prayer" component={ChurchPrayer} />
       <Route path="/church/:slug/members" component={ChurchMembers} />
       <Route path="/church/:slug/admin" component={ChurchAdminPage} />
       <Route path="/church/:slug" component={ChurchHome} />

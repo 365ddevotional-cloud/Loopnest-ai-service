@@ -3000,6 +3000,304 @@ export async function registerRoutes(
     } catch { res.status(500).json({ message: "Failed to deactivate invitation" }); }
   });
 
+  // ── Church Sermons ──────────────────────────────────────────────────────────
+  app.get("/api/churches/:id/sermons", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not a member" });
+      res.json(await storage.getChurchSermons(id));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/churches/:id/sermons", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor", "ministry_leader"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      const { title, description, speakerName, videoUrl, audioUrl, bibleReference, sermonDate } = req.body;
+      if (!title?.trim()) return res.status(400).json({ message: "Title required" });
+      res.status(201).json(await storage.createChurchSermon({
+        churchId: id, title: title.trim(), description: description?.trim() || null,
+        speakerName: speakerName?.trim() || null, videoUrl: videoUrl?.trim() || null,
+        audioUrl: audioUrl?.trim() || null, bibleReference: bibleReference?.trim() || null,
+        sermonDate: sermonDate ? new Date(sermonDate) : null, isPublished: true, createdBy: uid,
+      }));
+    } catch { res.status(500).json({ message: "Failed to create sermon" }); }
+  });
+
+  app.patch("/api/churches/:id/sermons/:sermonId", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const sermonId = Number(req.params.sermonId);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor", "ministry_leader"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      const { title, description, speakerName, videoUrl, audioUrl, bibleReference, sermonDate, isPublished } = req.body;
+      res.json(await storage.updateChurchSermon(sermonId, { title, description, speakerName, videoUrl, audioUrl, bibleReference, sermonDate: sermonDate ? new Date(sermonDate) : undefined, isPublished }));
+    } catch { res.status(500).json({ message: "Failed to update sermon" }); }
+  });
+
+  app.delete("/api/churches/:id/sermons/:sermonId", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const sermonId = Number(req.params.sermonId);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      await storage.deleteChurchSermon(sermonId);
+      res.json({ success: true });
+    } catch { res.status(500).json({ message: "Failed to delete sermon" }); }
+  });
+
+  // ── Church Announcements ────────────────────────────────────────────────────
+  app.get("/api/churches/:id/announcements", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not a member" });
+      res.json(await storage.getChurchAnnouncements(id));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/churches/:id/announcements", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      const { title, body, isPinned, expiresAt } = req.body;
+      if (!title?.trim() || !body?.trim()) return res.status(400).json({ message: "Title and body required" });
+      res.status(201).json(await storage.createChurchAnnouncement({
+        churchId: id, title: title.trim(), body: body.trim(),
+        isPinned: !!isPinned, expiresAt: expiresAt ? new Date(expiresAt) : null, createdBy: uid,
+      }));
+    } catch { res.status(500).json({ message: "Failed to create announcement" }); }
+  });
+
+  app.patch("/api/churches/:id/announcements/:annId", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const annId = Number(req.params.annId);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      const { title, body, isPinned, expiresAt } = req.body;
+      res.json(await storage.updateChurchAnnouncement(annId, { title, body, isPinned, expiresAt: expiresAt ? new Date(expiresAt) : undefined }));
+    } catch { res.status(500).json({ message: "Failed to update announcement" }); }
+  });
+
+  app.delete("/api/churches/:id/announcements/:annId", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const annId = Number(req.params.annId);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      await storage.deleteChurchAnnouncement(annId);
+      res.json({ success: true });
+    } catch { res.status(500).json({ message: "Failed to delete announcement" }); }
+  });
+
+  // ── Church Groups ───────────────────────────────────────────────────────────
+  app.get("/api/churches/:id/groups", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not a member" });
+      const groups = await storage.getChurchGroups(id);
+      const enriched = await Promise.all(groups.map(async (g) => {
+        const members = await storage.getChurchGroupMembers(g.id);
+        const myMembership = members.find(gm => gm.firebaseUid === uid);
+        return { ...g, memberCount: members.length, isMember: !!myMembership };
+      }));
+      res.json(enriched);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/churches/:id/groups", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor", "ministry_leader"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      const { name, description, category, leaderName, meetingSchedule, isPublic } = req.body;
+      if (!name?.trim()) return res.status(400).json({ message: "Group name required" });
+      res.status(201).json(await storage.createChurchGroup({
+        churchId: id, name: name.trim(), description: description?.trim() || null,
+        category: category?.trim() || null, leaderId: uid, leaderName: leaderName?.trim() || m.displayName || null,
+        meetingSchedule: meetingSchedule?.trim() || null, isPublic: isPublic !== false,
+      }));
+    } catch { res.status(500).json({ message: "Failed to create group" }); }
+  });
+
+  app.patch("/api/churches/:id/groups/:groupId", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const groupId = Number(req.params.groupId);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor", "ministry_leader"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      const { name, description, category, leaderName, meetingSchedule, isPublic } = req.body;
+      res.json(await storage.updateChurchGroup(groupId, { name, description, category, leaderName, meetingSchedule, isPublic }));
+    } catch { res.status(500).json({ message: "Failed to update group" }); }
+  });
+
+  app.delete("/api/churches/:id/groups/:groupId", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const groupId = Number(req.params.groupId);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || !["owner", "lead_pastor", "administrator"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      await storage.deleteChurchGroup(groupId);
+      res.json({ success: true });
+    } catch { res.status(500).json({ message: "Failed to delete group" }); }
+  });
+
+  app.post("/api/churches/:id/groups/:groupId/join", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const groupId = Number(req.params.groupId);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not a member" });
+      const result = await storage.addChurchGroupMember({ groupId, firebaseUid: uid, displayName: m.displayName || null, email: m.email });
+      res.json(result);
+    } catch { res.status(500).json({ message: "Failed to join group" }); }
+  });
+
+  app.delete("/api/churches/:id/groups/:groupId/leave", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const groupId = Number(req.params.groupId);
+      await storage.removeChurchGroupMember(groupId, uid);
+      res.json({ success: true });
+    } catch { res.status(500).json({ message: "Failed to leave group" }); }
+  });
+
+  // ── Church Prayer Requests ──────────────────────────────────────────────────
+  app.get("/api/churches/:id/prayer", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not a member" });
+      const canSeeConfidential = ["owner", "lead_pastor", "administrator", "associate_pastor", "counselor", "prayer_team"].includes(m.role);
+      res.json(await storage.getChurchPrayerRequests(id, canSeeConfidential));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/churches/:id/prayer", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not a member" });
+      const { title, body, isConfidential } = req.body;
+      if (!title?.trim() || !body?.trim()) return res.status(400).json({ message: "Title and body required" });
+      const req2 = await storage.createChurchPrayerRequest({
+        churchId: id, firebaseUid: uid, displayName: m.displayName || null,
+        title: title.trim(), body: body.trim(), isConfidential: !!isConfidential, status: "active",
+      });
+      await storage.logChurchActivity({ churchId: id, firebaseUid: uid, displayName: m.displayName || null, activityType: "prayer_submitted", metadata: null });
+      res.status(201).json(req2);
+    } catch { res.status(500).json({ message: "Failed to submit prayer request" }); }
+  });
+
+  app.post("/api/churches/:id/prayer/:prayerId/pray", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const prayerId = Number(req.params.prayerId);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not a member" });
+      res.json(await storage.incrementPrayerCount(prayerId));
+    } catch { res.status(500).json({ message: "Failed to register prayer" }); }
+  });
+
+  app.patch("/api/churches/:id/prayer/:prayerId/status", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const prayerId = Number(req.params.prayerId);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor", "prayer_team"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      const { status } = req.body;
+      res.json(await storage.updateChurchPrayerStatus(prayerId, status));
+    } catch { res.status(500).json({ message: "Failed to update prayer status" }); }
+  });
+
+  app.delete("/api/churches/:id/prayer/:prayerId", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const prayerId = Number(req.params.prayerId);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      await storage.deleteChurchPrayerRequest(prayerId);
+      res.json({ success: true });
+    } catch { res.status(500).json({ message: "Failed to delete prayer request" }); }
+  });
+
+  // ── Church Activity (admin) ─────────────────────────────────────────────────
+  app.get("/api/churches/:id/activity", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      res.json(await storage.getChurchActivity(id, 100));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Global Admin Church Moderation ──────────────────────────────────────────
+  app.get("/api/admin/churches", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const churches = await storage.getAllChurches();
+      const enriched = await Promise.all(churches.map(async (c) => {
+        const members = await storage.getChurchMembers(c.id);
+        return { ...c, memberCount: members.length };
+      }));
+      res.json(enriched);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.patch("/api/admin/churches/:id/status", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const id = Number(req.params.id);
+      const { status } = req.body;
+      if (!["active", "inactive", "suspended"].includes(status)) return res.status(400).json({ message: "Invalid status" });
+      res.json(await storage.updateChurchStatus(id, status));
+    } catch { res.status(500).json({ message: "Failed to update church status" }); }
+  });
+
   return httpServer;
 }
 

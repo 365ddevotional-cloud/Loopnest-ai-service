@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2, Upload, Gift, Video } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2, Upload, Gift, Video, Building2 } from "lucide-react";
 import { useUpload } from "@/hooks/use-upload";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -2567,6 +2567,10 @@ export default function Admin() {
               <Gift className="w-4 h-4 mr-1.5 flex-shrink-0" />
               Donations
             </TabsTrigger>
+            <TabsTrigger value="churches" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-churches">
+              <Building2 className="w-4 h-4 mr-1.5 flex-shrink-0" />
+              Churches
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -2713,6 +2717,10 @@ export default function Admin() {
               <DonationConfirmationsAdmin />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="churches">
+          <ChurchModerationAdmin />
         </TabsContent>
       </Tabs>
     </div>
@@ -4104,5 +4112,129 @@ function SongsAdmin() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// ── Church Moderation Admin ────────────────────────────────────────────────────
+
+interface ChurchModData {
+  id: number;
+  name: string;
+  slug: string;
+  denomination: string | null;
+  status: string;
+  createdAt: string | null;
+}
+
+function ChurchModerationAdmin() {
+  const { password } = useAuth();
+  const { toast } = useToast();
+
+  const { data: churches, isLoading, refetch } = useQuery<ChurchModData[]>({
+    queryKey: ["/api/admin/churches"],
+    queryFn: () =>
+      fetch("/api/admin/churches", {
+        headers: { Authorization: `Bearer ${password}` },
+      }).then(r => r.ok ? r.json() : Promise.reject()),
+  });
+
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      const r = await fetch(`/api/admin/churches/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${password}` },
+        body: JSON.stringify({ status }),
+      });
+      if (!r.ok) throw new Error((await r.json()).message);
+      return r.json();
+    },
+    onSuccess: () => { refetch(); toast({ title: "Church status updated" }); },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const statusColors: Record<string, string> = {
+    active: "bg-green-100 text-green-800 border-green-300",
+    suspended: "bg-red-100 text-red-800 border-red-300",
+    pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
+  };
+
+  return (
+    <Card className="border-primary/10 shadow-lg shadow-primary/5">
+      <CardHeader className="bg-muted/30 border-b border-border">
+        <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+          <Building2 className="w-6 h-6" />
+          Church Mode Moderation
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">Global oversight of all Church Mode spaces</p>
+      </CardHeader>
+      <CardContent className="p-6">
+        {isLoading ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        ) : !churches?.length ? (
+          <div className="text-center py-12">
+            <Building2 className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
+            <p className="text-muted-foreground">No churches registered yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground font-medium">{churches.length} church spaces registered</p>
+            {churches.map(church => (
+              <Card key={church.id} className="border border-border/50">
+                <CardContent className="pt-4 pb-4 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-primary/10">
+                    <Building2 className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-sm">{church.name}</span>
+                      <code className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">/{church.slug}</code>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${statusColors[church.status] ?? "bg-gray-100 text-gray-700 border-gray-300"}`}>
+                        {church.status}
+                      </span>
+                    </div>
+                    {church.denomination && (
+                      <p className="text-xs text-muted-foreground mt-0.5">{church.denomination}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Created {church.createdAt ? new Date(church.createdAt).toLocaleDateString() : "—"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {church.status !== "active" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-7 border-green-300 text-green-700 hover:bg-green-50"
+                        onClick={() => updateStatus.mutate({ id: church.id, status: "active" })}
+                        disabled={updateStatus.isPending}
+                        data-testid={`button-activate-church-${church.id}`}
+                      >
+                        <CheckCircle className="w-3.5 h-3.5 mr-1" />
+                        Activate
+                      </Button>
+                    )}
+                    {church.status !== "suspended" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-7 border-red-300 text-red-700 hover:bg-red-50"
+                        onClick={() => { if (confirm("Suspend this church?")) updateStatus.mutate({ id: church.id, status: "suspended" }); }}
+                        disabled={updateStatus.isPending}
+                        data-testid={`button-suspend-church-${church.id}`}
+                      >
+                        <XCircle className="w-3.5 h-3.5 mr-1" />
+                        Suspend
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

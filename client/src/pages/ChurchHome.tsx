@@ -4,10 +4,12 @@ import { useUser } from "@/contexts/UserContext";
 import { ChurchModeShell } from "@/components/ChurchModeShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, MapPin, Globe, Info, Settings, Loader2 } from "lucide-react";
-import type { Church, ChurchMember } from "@shared/schema";
+import { Building2, Users, MapPin, Globe, Info, Settings, Loader2, Mic2, Megaphone, Heart, Pin } from "lucide-react";
+import type { Church, ChurchMember, ChurchAnnouncement, ChurchSermon } from "@shared/schema";
 
 interface MyRole { role: string | null; memberId: number | null; status: string | null; }
+
+const ADMIN_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor"];
 
 export default function ChurchHome() {
   const [, params] = useRoute("/church/:slug");
@@ -36,23 +38,47 @@ export default function ChurchHome() {
   const { data: members } = useQuery<ChurchMember[]>({
     queryKey: ["/api/churches", church?.id, "members"],
     queryFn: async () => {
-      if (!church?.id) return [];
       const token = await getIdToken();
       if (!token) return [];
-      const r = await fetch(`/api/churches/${church.id}/members`, { headers: { Authorization: `Bearer ${token}` } });
+      const r = await fetch(`/api/churches/${church!.id}/members`, { headers: { Authorization: `Bearer ${token}` } });
       return r.ok ? r.json() : [];
     },
     enabled: !!church?.id && isSignedIn && !!myRole?.role,
   });
 
+  const { data: announcements } = useQuery<ChurchAnnouncement[]>({
+    queryKey: ["/api/churches", church?.id, "announcements"],
+    queryFn: async () => {
+      const token = await getIdToken();
+      if (!token) return [];
+      const r = await fetch(`/api/churches/${church!.id}/announcements`, { headers: { Authorization: `Bearer ${token}` } });
+      return r.ok ? r.json() : [];
+    },
+    enabled: !!church?.id && !!myRole?.role,
+  });
+
+  const { data: sermons } = useQuery<ChurchSermon[]>({
+    queryKey: ["/api/churches", church?.id, "sermons"],
+    queryFn: async () => {
+      const token = await getIdToken();
+      if (!token) return [];
+      const r = await fetch(`/api/churches/${church!.id}/sermons`, { headers: { Authorization: `Bearer ${token}` } });
+      return r.ok ? r.json() : [];
+    },
+    enabled: !!church?.id && !!myRole?.role,
+  });
+
   const currentRole = myRole?.role ?? null;
   const isMember = !!currentRole && myRole?.status === "active";
-  const isAdmin = ["owner", "administrator", "lead_pastor"].includes(currentRole ?? "");
+  const isAdmin = ADMIN_ROLES.includes(currentRole ?? "");
+
+  const recentAnnouncements = announcements?.slice(0, 3) ?? [];
+  const recentSermons = sermons?.slice(0, 2) ?? [];
 
   if (churchLoading) {
     return (
       <ChurchModeShell church={null} currentRole={null}>
-        <div className="flex items-center justify-center py-20">
+        <div className="flex items-center justify-center py-24">
           <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#b8962e" }} />
         </div>
       </ChurchModeShell>
@@ -62,10 +88,12 @@ export default function ChurchHome() {
   if (!church) {
     return (
       <ChurchModeShell church={null} currentRole={null}>
-        <div className="text-center py-16 space-y-3">
-          <Building2 className="w-12 h-12 mx-auto text-muted-foreground/40" />
-          <p className="font-semibold text-lg">Church not found</p>
-          <p className="text-sm text-muted-foreground">This church space may have been removed or the link is incorrect.</p>
+        <div className="text-center py-20 space-y-4">
+          <Building2 className="w-14 h-14 mx-auto" style={{ color: "#c9b99060" }} />
+          <div>
+            <p className="font-semibold text-lg" style={{ color: "#1a2744" }}>Church not found</p>
+            <p className="text-sm mt-1" style={{ color: "#7a7570" }}>This church space may have been removed or the link is incorrect.</p>
+          </div>
           <Button variant="outline" onClick={() => setLocation("/church")}>Return to Church Mode</Button>
         </div>
       </ChurchModeShell>
@@ -75,12 +103,14 @@ export default function ChurchHome() {
   return (
     <ChurchModeShell church={church} currentRole={currentRole}>
       <div className="space-y-6">
-        {/* Church identity card */}
-        <Card className="overflow-hidden" style={{ borderColor: "#c9b99044" }}>
-          <div className="h-2" style={{ background: "linear-gradient(90deg, #1a2744, #2d4270, #b8962e)" }} />
-          <CardContent className="pt-6 pb-6">
-            <div className="flex items-start gap-5">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "#1a274418", border: "2px solid #1a274420" }}>
+
+        {/* Church Identity Banner */}
+        <Card className="overflow-hidden border-0 shadow-md" style={{ backgroundColor: "#fff" }}>
+          <div className="h-1.5" style={{ background: "linear-gradient(90deg, #1a2744 0%, #2d4270 50%, #b8962e 100%)" }} />
+          <CardContent className="pt-5 pb-6 px-5">
+            <div className="flex items-start gap-4">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm"
+                style={{ backgroundColor: "#1a274412", border: "2px solid #1a274420" }}>
                 {church.logoUrl ? (
                   <img src={church.logoUrl} alt={church.name} className="w-16 h-16 rounded-2xl object-cover" />
                 ) : (
@@ -88,22 +118,23 @@ export default function ChurchHome() {
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="font-serif text-2xl font-semibold text-foreground leading-tight">{church.name}</h2>
+                <h2 className="font-serif font-bold leading-tight" style={{ color: "#1a2744", fontSize: "1.5rem" }}>{church.name}</h2>
                 {church.denomination && (
-                  <p className="text-sm mt-0.5" style={{ color: "#b8962e" }}>{church.denomination}</p>
+                  <p className="text-sm mt-0.5 font-medium" style={{ color: "#b8962e" }}>{church.denomination}</p>
                 )}
                 {church.description && (
-                  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{church.description}</p>
+                  <p className="text-sm mt-2 leading-relaxed" style={{ color: "#5a5450" }}>{church.description}</p>
                 )}
                 <div className="flex flex-wrap gap-4 mt-3">
                   {church.address && (
-                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <MapPin className="w-3.5 h-3.5" />
+                    <span className="flex items-center gap-1.5 text-xs" style={{ color: "#7a7570" }}>
+                      <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                       {church.address}
                     </span>
                   )}
                   {church.websiteUrl && (
-                    <a href={church.websiteUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs hover:underline" style={{ color: "#b8962e" }}>
+                    <a href={church.websiteUrl} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs font-medium hover:underline" style={{ color: "#b8962e" }}>
                       <Globe className="w-3.5 h-3.5" />
                       Website
                     </a>
@@ -114,77 +145,144 @@ export default function ChurchHome() {
           </CardContent>
         </Card>
 
-        {/* Not a member — prompt to join or return */}
-        {isSignedIn && !isMember && (
-          <Card className="border-amber-300/50 bg-amber-50/30">
-            <CardContent className="pt-5 flex items-center gap-3">
-              <Info className="w-5 h-5 text-amber-600 flex-shrink-0" />
+        {/* Sign-in prompt */}
+        {!isSignedIn && (
+          <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff", borderLeft: "4px solid #1a2744" }}>
+            <CardContent className="pt-4 pb-4 flex items-center gap-3">
+              <Info className="w-5 h-5 flex-shrink-0" style={{ color: "#1a2744" }} />
               <div className="flex-1">
-                <p className="text-sm font-medium">You are not a member of this church</p>
-                <p className="text-xs text-muted-foreground">You need an invitation to join this community.</p>
+                <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>Sign in to access your church community</p>
+                <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>You need to be signed in to view member content.</p>
+              </div>
+              <Button size="sm" onClick={() => setLocation("/signin")} style={{ backgroundColor: "#1a2744" }}>Sign In</Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Not a member */}
+        {isSignedIn && !isMember && (
+          <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff", borderLeft: "4px solid #b8962e" }}>
+            <CardContent className="pt-4 pb-4 flex items-center gap-3">
+              <Info className="w-5 h-5 flex-shrink-0" style={{ color: "#b8962e" }} />
+              <div className="flex-1">
+                <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>You are not a member of this church</p>
+                <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>You need an invitation to join this community.</p>
               </div>
               <Button size="sm" variant="outline" onClick={() => setLocation("/church/join")}>Join with Code</Button>
             </CardContent>
           </Card>
         )}
 
-        {!isSignedIn && (
-          <Card className="border-primary/20">
-            <CardContent className="pt-5 flex items-center gap-3">
-              <Info className="w-5 h-5 text-primary flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Sign in to access your church community</p>
-                <p className="text-xs text-muted-foreground">You need to be signed in to view member content.</p>
-              </div>
-              <Button size="sm" onClick={() => setLocation("/signin")}>Sign In</Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Quick stats — visible to members */}
+        {/* Member dashboard */}
         {isMember && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <button
-              onClick={() => setLocation(`/church/${slug}/members`)}
-              className="group"
-              data-testid="card-church-members-count"
-            >
-              <Card className="h-full hover:shadow-md transition-shadow cursor-pointer" style={{ borderColor: "#1a274420" }}>
-                <CardContent className="pt-5 pb-5 text-center">
-                  <Users className="w-7 h-7 mx-auto mb-2" style={{ color: "#1a2744" }} />
-                  <p className="text-2xl font-bold" style={{ color: "#1a2744" }}>{members?.length ?? "—"}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Members</p>
-                </CardContent>
-              </Card>
-            </button>
+          <>
+            {/* Quick stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: "Members", value: members?.length ?? "—", icon: Users, path: `/church/${slug}/members`, color: "#1a2744" },
+                { label: "Sermons", value: sermons?.length ?? "—", icon: Mic2, path: `/church/${slug}/sermons`, color: "#1a2744" },
+                { label: "Announcements", value: announcements?.length ?? "—", icon: Megaphone, path: `/church/${slug}/announcements`, color: "#b8962e" },
+                { label: "Prayer Wall", value: "Open", icon: Heart, path: `/church/${slug}/prayer`, color: "#7a1520" },
+              ].map(stat => {
+                const Icon = stat.icon;
+                return (
+                  <button key={stat.label} onClick={() => setLocation(stat.path)} className="text-left group" data-testid={`stat-${stat.label.toLowerCase().replace(/\s+/g, "-")}`}>
+                    <Card className="border-0 shadow-sm hover:shadow-md transition-shadow" style={{ backgroundColor: "#fff" }}>
+                      <CardContent className="pt-4 pb-4 px-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <Icon className="w-5 h-5" style={{ color: stat.color }} />
+                        </div>
+                        <p className="text-2xl font-bold" style={{ color: "#1a2744" }}>{stat.value}</p>
+                        <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>{stat.label}</p>
+                      </CardContent>
+                    </Card>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Recent Announcements */}
+            {recentAnnouncements.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-serif font-semibold text-lg" style={{ color: "#1a2744" }}>Announcements</h3>
+                  <button onClick={() => setLocation(`/church/${slug}/announcements`)} className="text-xs font-medium hover:underline" style={{ color: "#b8962e" }}>
+                    View all →
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {recentAnnouncements.map(ann => (
+                    <Card key={ann.id} className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+                      <CardContent className="pt-4 pb-4 px-5">
+                        <div className="flex items-start gap-2">
+                          {ann.isPinned && <Pin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: "#b8962e" }} />}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm" style={{ color: "#1a2744" }}>{ann.title}</p>
+                            <p className="text-xs mt-1 leading-relaxed line-clamp-2" style={{ color: "#5a5450" }}>{ann.body}</p>
+                            <p className="text-xs mt-1.5" style={{ color: "#9a9080" }}>
+                              {new Date(ann.createdAt!).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent Sermons */}
+            {recentSermons.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-serif font-semibold text-lg" style={{ color: "#1a2744" }}>Recent Sermons</h3>
+                  <button onClick={() => setLocation(`/church/${slug}/sermons`)} className="text-xs font-medium hover:underline" style={{ color: "#b8962e" }}>
+                    View all →
+                  </button>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {recentSermons.map(sermon => (
+                    <Card key={sermon.id} className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+                      <CardContent className="pt-4 pb-4 px-5">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                            style={{ backgroundColor: "#1a274412" }}>
+                            <Mic2 className="w-5 h-5" style={{ color: "#1a2744" }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm truncate" style={{ color: "#1a2744" }}>{sermon.title}</p>
+                            {sermon.speakerName && <p className="text-xs mt-0.5" style={{ color: "#b8962e" }}>{sermon.speakerName}</p>}
+                            {sermon.bibleReference && <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>{sermon.bibleReference}</p>}
+                            {sermon.sermonDate && (
+                              <p className="text-xs mt-1" style={{ color: "#9a9080" }}>
+                                {new Date(sermon.sermonDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Admin quick action */}
             {isAdmin && (
-              <button
-                onClick={() => setLocation(`/church/${slug}/admin`)}
-                className="group"
-                data-testid="card-church-admin-link"
-              >
-                <Card className="h-full hover:shadow-md transition-shadow cursor-pointer" style={{ borderColor: "#b8962e33" }}>
-                  <CardContent className="pt-5 pb-5 text-center">
-                    <Settings className="w-7 h-7 mx-auto mb-2" style={{ color: "#b8962e" }} />
-                    <p className="text-sm font-semibold mt-1" style={{ color: "#b8962e" }}>Administration</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Manage your church</p>
+              <button onClick={() => setLocation(`/church/${slug}/admin`)} className="w-full text-left group" data-testid="card-church-admin-link">
+                <Card className="border-0 shadow-sm hover:shadow-md transition-all" style={{ backgroundColor: "#1a2744" }}>
+                  <CardContent className="pt-4 pb-4 px-5 flex items-center gap-3">
+                    <Settings className="w-5 h-5 flex-shrink-0" style={{ color: "#d4a83a" }} />
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm" style={{ color: "#f5ede0" }}>Church Administration</p>
+                      <p className="text-xs mt-0.5" style={{ color: "#f5ede070" }}>Manage sermons, announcements, members &amp; settings</p>
+                    </div>
+                    <Settings className="w-4 h-4 opacity-40" style={{ color: "#d4a83a" }} />
                   </CardContent>
                 </Card>
               </button>
             )}
-          </div>
-        )}
-
-        {/* Welcome message */}
-        {isMember && (
-          <Card style={{ backgroundColor: "#1a274408", borderColor: "#1a274420" }}>
-            <CardContent className="pt-5 pb-5 space-y-1">
-              <p className="font-serif text-sm font-semibold" style={{ color: "#1a2744" }}>Welcome to your Church Space</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                This is your church's dedicated space on 365 Daily Devotional. More features — sermons, bulletins, church giving, and communication tools — are coming in future updates.
-              </p>
-            </CardContent>
-          </Card>
+          </>
         )}
       </div>
     </ChurchModeShell>

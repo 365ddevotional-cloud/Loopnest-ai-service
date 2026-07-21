@@ -1,0 +1,993 @@
+Continue building the 365 Daily Devotional Church Mode.
+
+This is a focused Church Mode expansion and visual-quality task.
+
+Do not redesign or modify unrelated parts of 365 Daily Devotional.
+
+Do not modify:
+
+• Existing devotionals
+• Music or song pages
+• Downloads
+• Existing donations
+• Sunday School outside Church Mode
+• Main app authentication
+• Firebase configuration or secrets
+• Existing global admin functionality except where specifically required to moderate churches
+• Existing user records
+• Existing church records, invitations, or memberships
+
+Preserve all existing Church Mode data.
+
+Use the project’s existing database, authentication, server, storage, UI components, and deployment structure.
+
+Do not add paid APIs, unnecessary packages, external chat services, or another database.
+
+Make Church Mode mature, beautiful, highly readable, secure, and suitable for pastors and churches.
+
+==================================================
+PRIMARY GOALS
+==================================================
+
+Complete these connected Church Mode improvements:
+
+1. Redesign the Church Mode interface to be brighter, more mature, and easier to read.
+2. Increase font sizes and weights throughout Church Mode.
+3. Fix the invitation Copy Link function.
+4. Fix direct URL navigation so /church and Church Mode routes never show “Cannot GET /church.”
+5. Add sermon and pastor-message publishing.
+6. Add church announcements and targeted messaging.
+7. Add private counseling conversations.
+8. Add confidential prayer requests.
+9. Add member, group, and church-wide messaging.
+10. Add church attendance and activity insights.
+11. Strengthen pastor and church-owner administration.
+12. Add global app-admin church moderation and deletion controls.
+
+Do all work inside Church Mode unless a small server or global-admin addition is explicitly required.
+
+==================================================
+PART 1 — REDESIGN CHURCH MODE
+==================================================
+
+CURRENT PROBLEMS
+
+The current Church Mode interface:
+
+• Is too dark.
+• Uses small and faint text.
+• Has low-contrast gray wording.
+• Makes members strain their eyes.
+• Uses oversized dark blocks with too much empty space.
+• Has a strong grid background that competes with the content.
+• Does not look polished enough for pastors and established churches.
+• Has icons or text that almost disappear against dark cards.
+• Does not create a beautiful, realistic church-community experience.
+
+Redesign the complete Church Mode visual system.
+
+--------------------------------------------------
+DESIGN DIRECTION
+--------------------------------------------------
+
+Church Mode must feel like a refined digital church environment.
+
+It should feel:
+
+• Mature
+• Beautiful
+• Warm
+• Reverent
+• Professional
+• Trustworthy
+• Modern
+• Organized
+• Peaceful
+• Suitable for small and large churches
+
+Do not make it childish, flashy, or similar to a social-media entertainment app.
+
+Use a brighter and more balanced palette.
+
+Recommended palette:
+
+• Warm ivory page background
+• Soft cream content sections
+• White cards where appropriate
+• Deep navy used mainly for the header, footer, and selected emphasis
+• Rich burgundy or warm rust for important headings
+• Muted gold for accents and selected states
+• Charcoal or deep brown for body text
+• Soft gray only for secondary information
+
+Do not cover the entire screen with navy cards.
+
+Use dark cards only where they create useful contrast.
+
+The present gold grid background is too visually strong. Replace it with one of these:
+
+• A very faint architectural pattern
+• A soft church-window-inspired geometric pattern
+• A subtle paper or linen texture
+• A nearly invisible grid with much lower opacity
+
+The background must never cross through text strongly or make the content difficult to read.
+
+--------------------------------------------------
+TYPOGRAPHY
+--------------------------------------------------
+
+Use the large, strong, highly readable style shown in the reference screenshot with bold ChatGPT-like lettering.
+
+Use the existing app font where possible, but make the visual hierarchy resemble a modern, highly readable interface.
+
+Preferred typography behavior:
+
+• Body and interface text: clean system sans-serif, Inter, or the existing equivalent
+• Church names and major ministry headings: refined bold serif or the existing Church Mode display font
+• Avoid thin font weights
+• Avoid pale gray text on cream
+• Avoid tiny labels
+
+Minimum mobile sizes:
+
+• Church name on Church Home: 32–38px, bold
+• Main page headings: 30–36px, bold
+• Section headings: 24–28px, bold
+• Card titles: 21–24px, bold
+• Navigation labels: at least 17–18px, semibold
+• Body text: at least 18px
+• Form labels: at least 17px, semibold
+• Inputs: at least 18px
+• Helper text: at least 16px
+• Buttons: at least 18px, bold
+• Metadata: never below 15px
+
+Use responsive scaling where appropriate, but do not allow mobile text to become tiny.
+
+All primary text must pass strong contrast requirements.
+
+--------------------------------------------------
+CHURCH HEADER
+--------------------------------------------------
+
+Make the church identity prominent.
+
+The header should clearly display:
+
+• Church logo or professional placeholder
+• Church name in large bold lettering
+• Church Mode badge
+• Current user’s church role
+• Return to 365 Daily Devotional button
+
+The church name must be visually dominant.
+
+Do not allow the church name to appear small or secondary.
+
+On mobile:
+
+• Keep the header compact but readable.
+• Allow text to wrap safely.
+• Do not squeeze the church name beside oversized controls.
+• Keep the Return to 365 button usable without dominating the screen.
+
+--------------------------------------------------
+CHURCH HOME PAGE
+--------------------------------------------------
+
+Redesign the Church Home page into a polished ministry dashboard.
+
+Display a beautiful church identity card containing:
+
+• Church logo
+• Church name
+• Denomination
+• Short description
+• City or full address
+• Pastor or lead minister name
+• Member count
+• Active members this week
+
+Add clear dashboard cards for actual features:
+
+• Sermons
+• Announcements
+• Members
+• Messages
+• Prayer Requests
+• Counseling
+• Groups
+• Invitations
+• Church Administration — leaders only
+
+Use clean cards with clear icons, bold text, descriptions, and sufficient contrast.
+
+Do not show faint or nearly invisible icons.
+
+Remove wording such as:
+
+“More features are coming in future updates.”
+
+Replace temporary language with real, working feature cards.
+
+--------------------------------------------------
+CHURCH ADMINISTRATION PAGE
+--------------------------------------------------
+
+Redesign the Administration page.
+
+It should not be one long form dominated by dark blocks.
+
+Use a clean administrative dashboard with categories:
+
+• Church Profile
+• Members and Roles
+• Invitations
+• Groups
+• Sermons and Messages
+• Announcements
+• Prayer and Counseling
+• Activity Insights
+• Church Settings
+
+Use either:
+
+• Clear responsive cards, or
+• A well-designed tab/section system
+
+On mobile, prevent navigation labels from becoming crowded.
+
+Make forms bright, spacious, and readable.
+
+Use white or soft-cream input areas with dark text rather than very dark inputs throughout.
+
+==================================================
+PART 2 — FIX DIRECT ROUTING
+==================================================
+
+CURRENT PROBLEM
+
+Opening or refreshing:
+
+https://365dailydevotional.com/church
+
+can show:
+
+Cannot GET /church
+
+Fix SPA fallback routing for Church Mode and every client-side route.
+
+Requirements:
+
+• Directly visiting /church must load the Church Mode page.
+• Refreshing /church must not produce a server 404.
+• Direct links to church pages must work.
+• Invitation links must work when opened in a new browser.
+• Preserve API routes.
+• Do not route /api requests to the frontend.
+• Configure the existing production server to return the frontend app for valid non-API client routes.
+
+Test:
+
+• /church
+• /church/create
+• /church/join
+• /church/join/:code
+• /church/:slug
+• /church/:slug/members
+• /church/:slug/admin
+• All new Church Mode routes added in this task
+
+==================================================
+PART 3 — FIX INVITATION COPY LINK
+==================================================
+
+CURRENT PROBLEM
+
+An invitation can be generated, but the Copy Link button does not place the invitation link on the device clipboard.
+
+Fix it.
+
+Requirements:
+
+• Copy Link must copy the complete public invitation URL.
+• The URL must use the correct production origin:
+  https://365dailydevotional.com
+• Do not copy an internal Replit hostname.
+• Do not copy only the invitation code.
+• Use navigator.clipboard.writeText where supported.
+• Provide an iPhone/Safari fallback when Clipboard API is unavailable.
+• Fallback may use a temporary selectable input and document.execCommand only where necessary.
+• Do not silently report success when copying failed.
+
+After success, show:
+
+“Invitation link copied.”
+
+Also provide:
+
+• Share Invitation button using navigator.share where supported
+• View Invitation Code
+• Copy Code
+• Deactivate Invitation
+• Delete Invitation with confirmation
+
+The copied invitation URL must open the correct church preview and joining flow.
+
+Test the actual button on iPhone Safari and desktop browser.
+
+==================================================
+PART 4 — SERMONS AND PASTOR MESSAGES
+==================================================
+
+Add a complete but cost-conscious Sermons module.
+
+Authorized publishers:
+
+• Church Owner
+• Lead Pastor
+• Church Administrator when explicitly permitted
+
+Members may read sermons but cannot publish them unless granted a publishing role.
+
+--------------------------------------------------
+SERMON CREATION
+--------------------------------------------------
+
+Allow an authorized pastor to create:
+
+• Sermon title
+• Main Scripture reference
+• Main Scripture text
+• Speaker or preacher
+• Service date
+• Service type
+• Sermon summary
+• Sermon outline
+• Full sermon notes
+• Key points
+• Prayer points
+• Weekly assignment or reflection question
+• Optional cover image
+• Draft or Published status
+• Allow member notes — On or Off
+• Allow member highlights — On or Off
+
+Suggested service types:
+
+• Sunday Service
+• Midweek Service
+• Bible Study
+• Youth Service
+• Prayer Meeting
+• Special Program
+• Other
+
+Provide:
+
+• Save Draft
+• Preview
+• Publish
+• Edit
+• Unpublish
+• Delete with confirmation
+
+--------------------------------------------------
+MEMBER SERMON EXPERIENCE
+--------------------------------------------------
+
+Members should be able to:
+
+• Open the current sermon
+• Follow the outline during service
+• Increase or decrease text size
+• Highlight sections
+• Bookmark key points
+• Add personal notes
+• Mark sermon as completed
+• Share the sermon if the church permits
+
+Personal notes and highlights should be stored locally on the member’s device by default to reduce server cost and protect privacy.
+
+Use the existing local storage or IndexedDB approach.
+
+Do not install a heavy offline database package.
+
+Shared sermon content remains in the server database.
+
+Add a searchable:
+
+My Church Notes
+
+Members should be able to search their saved sermon notes by:
+
+• Sermon title
+• Scripture
+• Pastor
+• Date
+• Keywords
+
+==================================================
+PART 5 — ANNOUNCEMENTS AND CHURCH MESSAGING
+==================================================
+
+Add a Church Communication Center.
+
+Authorized church leadership should be able to send messages to:
+
+• All church members
+• A selected church group
+• A specific member
+• Church leaders only
+
+Message types:
+
+• General Message
+• Announcement
+• Urgent Notice
+• Service Reminder
+• Event Reminder
+• Ministry Assignment
+• Encouragement
+
+Fields:
+
+• Title
+• Message
+• Recipient type
+• Selected group or member where applicable
+• Publish/send time
+• Expiration date — optional
+• Priority
+• Draft or Send
+
+Members must have an in-app Church Inbox.
+
+Show:
+
+• Unread count
+• Sender
+• Subject
+• Date
+• Message type
+• Read status
+
+Do not send external emails or push notifications during this task unless the app’s existing notification system can be reused safely without additional cost.
+
+Use the existing app notification system where appropriate.
+
+Prevent one church from messaging another church’s members.
+
+==================================================
+PART 6 — CHURCH GROUPS
+==================================================
+
+Add manageable church groups.
+
+Examples:
+
+• Youth Group
+• Women’s Ministry
+• Men’s Ministry
+• Choir
+• Workers
+• Prayer Team
+• Children’s Ministry
+• Leadership
+• Custom group
+
+Church Owner or authorized leaders may:
+
+• Create group
+• Add description
+• Assign group leader
+• Add members
+• Remove members
+• Rename group
+• Archive group
+• Delete empty group
+• Send group messages
+
+Group leaders may manage only their assigned group if permitted.
+
+Do not give group leaders authority over the entire church.
+
+Invitation labels such as “Youth Group” should optionally connect a newly approved member to that group after approval.
+
+Do not automatically add a user without clear church-admin approval.
+
+==================================================
+PART 7 — CONFIDENTIAL PRAYER REQUESTS
+==================================================
+
+Add private Church Prayer Requests.
+
+A member may submit a prayer request to:
+
+• Lead Pastor
+• Church prayer team
+• Both
+• Anonymous to the prayer team, where identity is hidden from ordinary prayer-team members
+
+Fields:
+
+• Prayer request title
+• Prayer request details
+• Urgency
+• Confidentiality choice
+• Allow follow-up — Yes or No
+
+Statuses:
+
+• Submitted
+• Acknowledged
+• Praying
+• Follow-up Requested
+• Answered
+• Closed
+
+Security requirements:
+
+• Prayer requests must never be publicly visible.
+• Only the requester and authorized assigned leaders may read them.
+• A church leader must not access another church’s prayer requests.
+• Global application administrators should not routinely read private prayer content.
+• Global administrators may access limited metadata for abuse investigation only when necessary and authorized.
+• Log administrative access to confidential content.
+• Do not expose confidential content in analytics, search previews, logs, or notifications.
+
+Add:
+
+• Mark as answered
+• Add private pastoral response
+• Request follow-up
+• Close request
+
+==================================================
+PART 8 — PRIVATE COUNSELING
+==================================================
+
+Add a secure Church Counseling module.
+
+A member may request counseling from:
+
+• Lead Pastor
+• Assigned pastor
+• Approved counselor
+• Ministry leader authorized for counseling
+
+Request fields:
+
+• Subject
+• Brief description
+• Preferred counselor
+• Preferred contact method
+• Preferred time
+• Urgency
+• Confidentiality acknowledgement
+
+Create a private counseling conversation after a leader accepts the request.
+
+Participants:
+
+• Requesting member
+• Assigned pastor/counselor
+• Church Owner only when explicitly assigned or required for safeguarding
+• No other members
+
+Counseling conversation requirements:
+
+• Private threaded messages
+• Date and time
+• Read status
+• Assigned counselor
+• Status
+• Close conversation
+• Reopen by authorized leader
+• Member may withdraw request
+• Emergency notice explaining that this is not an emergency service
+
+Statuses:
+
+• Requested
+• Accepted
+• In Progress
+• Follow-up
+• Completed
+• Declined
+• Withdrawn
+
+Privacy requirements:
+
+• Encrypt in transit using the existing HTTPS setup.
+• Enforce authorization server-side.
+• Never place counseling details in public notifications.
+• Do not expose conversation text in analytics.
+• Do not allow ordinary church administrators to browse counseling conversations unless they are assigned counselors.
+• Maintain a minimal access log.
+• Provide delete/archive rules appropriate to the existing system.
+• Do not claim medical confidentiality or professional therapy unless the counselor is qualified.
+
+Include this message:
+
+“Church counseling is pastoral support and is not a substitute for emergency, medical, legal, or licensed mental-health services.”
+
+==================================================
+PART 9 — MEMBER ACTIVITY AND ATTENDANCE INSIGHTS
+==================================================
+
+Each church should be able to understand engagement without invasive tracking.
+
+Track useful church activity such as:
+
+• Total active members
+• New members this week
+• Members who opened the church space today
+• Members active in the last 7 days
+• Members active in the last 30 days
+• Sermon views
+• Announcement views
+• Message read rate
+• Number of prayer requests
+• Number of active counseling requests
+• Group membership counts
+
+Define a church visit as:
+
+An authenticated member opening that church’s Church Mode space.
+
+Do not count every refresh as a separate person.
+
+Store:
+
+• Last church access time
+• First access time
+• Limited daily visit count where useful
+
+Do not collect unnecessary location, browsing history, or device fingerprint information.
+
+Church leadership may view:
+
+• Aggregate activity
+• Member last active date, only when appropriate for ministry administration
+• Never expose private counseling or prayer content through analytics
+
+Display clear cards:
+
+• Total Members
+• Active Today
+• Active This Week
+• New This Month
+• Messages Read
+• Sermons Viewed
+
+Provide a Members Activity view with sensible privacy.
+
+==================================================
+PART 10 — MEMBER AND ROLE ADMINISTRATION
+==================================================
+
+The Church Owner must remain the highest church-level authority.
+
+Church Owner abilities:
+
+• Edit church profile
+• Upload/change church logo
+• Approve or decline membership
+• Add members through invitations
+• Remove members
+• Assign church roles
+• Create and manage groups
+• Assign pastors, ministry leaders, counselors, and prayer-team members
+• Publish sermons and messages
+• View church activity
+• Manage invitations
+• Suspend a member from the church space
+• Delete content created by church leaders
+• Close the church space through a protected process
+
+Roles:
+
+• Church Owner
+• Lead Pastor
+• Church Administrator
+• Associate Pastor
+• Ministry Leader
+• Group Leader
+• Counselor
+• Prayer Team
+• Member
+
+A user may hold more than one ministry assignment where appropriate, but there must be one primary church role.
+
+Important rules:
+
+• Church Owner cannot be removed by another church administrator.
+• No user may promote themselves.
+• Church administrators cannot assign Church Owner.
+• Ownership transfer must require confirmation and reauthentication.
+• Removing a member requires confirmation.
+• Suspending a member must record a reason.
+• Role changes must be logged.
+• Church-level roles must not grant global app-admin access.
+
+==================================================
+PART 11 — GLOBAL APP-ADMIN CHURCH MODERATION
+==================================================
+
+Add a Church Moderation section to the existing global 365 Daily Devotional Admin Dashboard.
+
+Only existing authorized global administrators may access it.
+
+The global app administrator must be able to:
+
+• View all registered churches
+• Search by church name, owner, country, city, status, or creation date
+• View member count
+• View limited activity summaries
+• View reported churches
+• Suspend a church
+• Unsuspend a church
+• Delete a church
+• Record moderation reason
+• Contact the church owner through the existing app messaging system
+• Review basic church profile and public church content
+
+Statuses:
+
+• Active
+• Under Review
+• Suspended
+• Deleted
+
+Deleting or suspending a church must require:
+
+• Confirmation
+• Written reason
+• Global administrator identity
+• Timestamp
+• Audit record
+
+Use soft deletion first.
+
+When suspended:
+
+• Members may see a neutral notice.
+• Church leaders cannot publish or invite members.
+• Private data must not be publicly exposed.
+• The global administrator may restore the church.
+
+Permanent deletion:
+
+• Must be a separate, protected action.
+• Require a second confirmation.
+• Clearly explain what data will be deleted.
+• Avoid immediate irreversible deletion where recovery is possible.
+
+The global administrator must not automatically gain routine access to confidential prayer or counseling content.
+
+==================================================
+PART 12 — DATABASE AND SECURITY
+==================================================
+
+Use the project’s existing database conventions.
+
+Create only the required models/tables, such as:
+
+• church_sermons
+• church_announcements
+• church_messages
+• church_message_recipients
+• church_groups
+• church_group_members
+• church_prayer_requests
+• church_prayer_responses
+• church_counseling_requests
+• church_counseling_threads
+• church_counseling_messages
+• church_activity
+• church_moderation_actions
+• church_access_logs, only if necessary
+
+Every record must include church_id where relevant.
+
+Every protected API route must:
+
+• Verify Firebase ID token
+• Derive user identity from the verified token
+• Confirm church membership
+• Confirm required role/permission
+• Enforce church isolation on the server
+• Never trust church_id or role from the client alone
+
+Prevent:
+
+• Cross-church data access
+• Self-promotion
+• Unauthorized message access
+• Unauthorized counseling access
+• Unauthorized prayer-request access
+• Members deleting churches
+• Church owners gaining global-admin privileges
+• Global administrators accidentally exposing confidential content
+
+Add sensible indexes and pagination.
+
+Do not load all messages, members, or activity records at once.
+
+==================================================
+PART 13 — MOBILE EXPERIENCE
+==================================================
+
+Optimize all Church Mode pages for mobile.
+
+Requirements:
+
+• No horizontal page overflow
+• Minimum 48px touch targets
+• Sticky navigation only where useful
+• Large readable text
+• Buttons must not be covered by browser bars
+• Cards must not be wider than the viewport
+• Forms must remain usable above the mobile keyboard
+• Long church names must wrap safely
+• Navigation tabs must scroll horizontally where necessary
+• Invitations and messages must be easy to copy/share
+• Confidential screens must not expose text in page previews where avoidable
+
+Test approximately:
+
+• 320px
+• 375px
+• 390px
+• 430px
+• Tablet
+• Desktop
+
+==================================================
+PART 14 — PERFORMANCE AND COST CONTROL
+==================================================
+
+Keep the implementation cost-conscious.
+
+• Reuse existing components.
+• Do not add real-time sockets unless the project already has them and they are necessary.
+• Use normal polling or refresh for inbox updates if simpler.
+• Do not add video conferencing.
+• Do not add live streaming.
+• Do not add AI counseling.
+• Do not add paid messaging APIs.
+• Do not add SMS.
+• Do not duplicate files.
+• Paginate messages, sermons, members, and activity.
+• Store member sermon notes locally by default.
+• Avoid unnecessary database writes.
+• Do not run broad refactors.
+
+==================================================
+PART 15 — TESTING
+==================================================
+
+Test the real public-style flow, not only isolated API calls.
+
+VISUAL TESTING
+
+1. Church name is prominent and bold.
+2. No primary text is faint or tiny.
+3. Church Mode is brighter and easier to read.
+4. Background does not interfere with text.
+5. Mobile cards and forms fit the screen.
+6. Icons are clearly visible.
+7. Administration page looks professional.
+8. Navigation is readable and usable.
+
+ROUTING
+
+1. Direct /church URL loads.
+2. Refreshing Church Mode routes works.
+3. API routes still work.
+4. Invitation deep links work.
+
+INVITATIONS
+
+1. Generate invitation.
+2. Copy Link copies the complete production URL.
+3. Share Invitation works where supported.
+4. Invitation opens the correct church preview.
+5. No false success message appears when copying fails.
+
+SERMONS
+
+1. Pastor creates a draft.
+2. Pastor publishes a sermon.
+3. Member reads it.
+4. Member adds local notes and highlights.
+5. Unauthorized member cannot publish.
+6. Search in My Church Notes works.
+
+MESSAGING
+
+1. Send to all members.
+2. Send to a group.
+3. Send to one member.
+4. Unauthorized users cannot read messages not addressed to them.
+5. Read status updates correctly.
+
+PRAYER
+
+1. Member submits confidential request.
+2. Only authorized recipients can read it.
+3. Leader responds privately.
+4. Another church cannot access it.
+
+COUNSELING
+
+1. Member requests counseling.
+2. Assigned counselor accepts it.
+3. Private conversation works.
+4. Unassigned leaders cannot read it.
+5. Member can close or withdraw appropriately.
+
+ACTIVITY
+
+1. Church visit records correctly.
+2. Repeated refreshes do not inflate unique active-member numbers.
+3. Church leadership sees aggregate activity.
+4. Private content never appears in analytics.
+
+ADMINISTRATION
+
+1. Church Owner can manage members and roles.
+2. Member cannot promote themselves.
+3. Church admin cannot remove the owner.
+4. Global admin can suspend a church.
+5. Suspended church behavior is correct.
+6. Global admin actions are logged.
+
+Run existing build and TypeScript validation.
+
+Do not install a new testing framework.
+
+==================================================
+DEPLOYMENT
+==================================================
+
+Do not automatically publish until:
+
+• Existing church data is preserved.
+• Database migrations succeed.
+• Main Church Mode flows pass.
+• Direct routing is fixed.
+• Copy Link works.
+• No unrelated app area is broken.
+
+After testing, report whether publishing is ready.
+
+Do not deploy automatically unless I explicitly approve it.
+
+==================================================
+RETURN ONLY
+==================================================
+
+Return only:
+
+1. Files changed
+2. Database tables, fields, indexes, and migrations added
+3. Church Mode visual redesign completed
+4. Exact typography and major color changes
+5. Direct-routing fix
+6. Invitation Copy Link test result
+7. Sermon module test result
+8. Messaging test result
+9. Prayer-request privacy test result
+10. Counseling privacy test result
+11. Church activity test result
+12. Member-role security test result
+13. Global app-admin moderation test result
+14. Mobile test result
+15. Any genuine limitation
+16. Confirmation that existing church data was preserved
+17. Confirmation that Firebase secrets were not changed
+18. Confirmation that unrelated features were not modified
+19. Confirmation that nothing was deployed automatically

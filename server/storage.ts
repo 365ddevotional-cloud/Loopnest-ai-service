@@ -85,12 +85,30 @@ import {
   churches,
   churchMembers,
   churchInvitations,
+  churchSermons,
+  churchAnnouncements,
+  churchGroups,
+  churchGroupMembers,
+  churchPrayerRequests,
+  churchActivityLog,
   type Church,
   type InsertChurch,
   type ChurchMember,
   type InsertChurchMember,
   type ChurchInvitation,
   type InsertChurchInvitation,
+  type ChurchSermon,
+  type InsertChurchSermon,
+  type ChurchAnnouncement,
+  type InsertChurchAnnouncement,
+  type ChurchGroup,
+  type InsertChurchGroup,
+  type ChurchGroupMember,
+  type InsertChurchGroupMember,
+  type ChurchPrayerRequest,
+  type InsertChurchPrayerRequest,
+  type ChurchActivity,
+  type InsertChurchActivity,
 } from "@shared/schema";
 import { eq, desc, and, isNull, or, ilike, lte, notInArray, sql } from "drizzle-orm";
 
@@ -283,6 +301,37 @@ export interface IStorage {
   getChurchInvitations(churchId: number): Promise<ChurchInvitation[]>;
   useChurchInvitation(inviteCode: string): Promise<ChurchInvitation>;
   deactivateChurchInvitation(id: number): Promise<void>;
+  // Church Sermons
+  createChurchSermon(data: InsertChurchSermon): Promise<ChurchSermon>;
+  getChurchSermons(churchId: number): Promise<ChurchSermon[]>;
+  updateChurchSermon(id: number, data: Partial<InsertChurchSermon>): Promise<ChurchSermon>;
+  deleteChurchSermon(id: number): Promise<void>;
+  // Church Announcements
+  createChurchAnnouncement(data: InsertChurchAnnouncement): Promise<ChurchAnnouncement>;
+  getChurchAnnouncements(churchId: number): Promise<ChurchAnnouncement[]>;
+  updateChurchAnnouncement(id: number, data: Partial<InsertChurchAnnouncement>): Promise<ChurchAnnouncement>;
+  deleteChurchAnnouncement(id: number): Promise<void>;
+  // Church Groups
+  createChurchGroup(data: InsertChurchGroup): Promise<ChurchGroup>;
+  getChurchGroups(churchId: number): Promise<ChurchGroup[]>;
+  updateChurchGroup(id: number, data: Partial<InsertChurchGroup>): Promise<ChurchGroup>;
+  deleteChurchGroup(id: number): Promise<void>;
+  getChurchGroupMembers(groupId: number): Promise<ChurchGroupMember[]>;
+  addChurchGroupMember(data: InsertChurchGroupMember): Promise<ChurchGroupMember>;
+  removeChurchGroupMember(groupId: number, firebaseUid: string): Promise<void>;
+  getChurchGroupMember(groupId: number, firebaseUid: string): Promise<ChurchGroupMember | undefined>;
+  // Church Prayer Requests
+  createChurchPrayerRequest(data: InsertChurchPrayerRequest): Promise<ChurchPrayerRequest>;
+  getChurchPrayerRequests(churchId: number, includeConfidential: boolean): Promise<ChurchPrayerRequest[]>;
+  incrementPrayerCount(id: number): Promise<ChurchPrayerRequest>;
+  updateChurchPrayerStatus(id: number, status: string): Promise<ChurchPrayerRequest>;
+  deleteChurchPrayerRequest(id: number): Promise<void>;
+  // Church Activity
+  logChurchActivity(data: InsertChurchActivity): Promise<ChurchActivity>;
+  getChurchActivity(churchId: number, limit?: number): Promise<ChurchActivity[]>;
+  // Global admin
+  getAllChurches(): Promise<Church[]>;
+  updateChurchStatus(id: number, status: string): Promise<Church>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1472,6 +1521,130 @@ export class DatabaseStorage implements IStorage {
 
   async deactivateChurchInvitation(id: number): Promise<void> {
     await db.update(churchInvitations).set({ isActive: false }).where(eq(churchInvitations.id, id));
+  }
+
+  // ── Church Sermons ──────────────────────────────────────────────────────────
+  async createChurchSermon(data: InsertChurchSermon): Promise<ChurchSermon> {
+    const [row] = await db.insert(churchSermons).values(data).returning();
+    return row;
+  }
+  async getChurchSermons(churchId: number): Promise<ChurchSermon[]> {
+    return await db.select().from(churchSermons)
+      .where(and(eq(churchSermons.churchId, churchId), eq(churchSermons.isPublished, true)))
+      .orderBy(desc(churchSermons.sermonDate));
+  }
+  async updateChurchSermon(id: number, data: Partial<InsertChurchSermon>): Promise<ChurchSermon> {
+    const [row] = await db.update(churchSermons).set(data).where(eq(churchSermons.id, id)).returning();
+    return row;
+  }
+  async deleteChurchSermon(id: number): Promise<void> {
+    await db.delete(churchSermons).where(eq(churchSermons.id, id));
+  }
+
+  // ── Church Announcements ────────────────────────────────────────────────────
+  async createChurchAnnouncement(data: InsertChurchAnnouncement): Promise<ChurchAnnouncement> {
+    const [row] = await db.insert(churchAnnouncements).values(data).returning();
+    return row;
+  }
+  async getChurchAnnouncements(churchId: number): Promise<ChurchAnnouncement[]> {
+    return await db.select().from(churchAnnouncements)
+      .where(eq(churchAnnouncements.churchId, churchId))
+      .orderBy(desc(churchAnnouncements.isPinned), desc(churchAnnouncements.createdAt));
+  }
+  async updateChurchAnnouncement(id: number, data: Partial<InsertChurchAnnouncement>): Promise<ChurchAnnouncement> {
+    const [row] = await db.update(churchAnnouncements).set(data).where(eq(churchAnnouncements.id, id)).returning();
+    return row;
+  }
+  async deleteChurchAnnouncement(id: number): Promise<void> {
+    await db.delete(churchAnnouncements).where(eq(churchAnnouncements.id, id));
+  }
+
+  // ── Church Groups ───────────────────────────────────────────────────────────
+  async createChurchGroup(data: InsertChurchGroup): Promise<ChurchGroup> {
+    const [row] = await db.insert(churchGroups).values(data).returning();
+    return row;
+  }
+  async getChurchGroups(churchId: number): Promise<ChurchGroup[]> {
+    return await db.select().from(churchGroups)
+      .where(eq(churchGroups.churchId, churchId))
+      .orderBy(churchGroups.name);
+  }
+  async updateChurchGroup(id: number, data: Partial<InsertChurchGroup>): Promise<ChurchGroup> {
+    const [row] = await db.update(churchGroups).set(data).where(eq(churchGroups.id, id)).returning();
+    return row;
+  }
+  async deleteChurchGroup(id: number): Promise<void> {
+    await db.delete(churchGroups).where(eq(churchGroups.id, id));
+  }
+  async getChurchGroupMembers(groupId: number): Promise<ChurchGroupMember[]> {
+    return await db.select().from(churchGroupMembers)
+      .where(eq(churchGroupMembers.groupId, groupId))
+      .orderBy(churchGroupMembers.joinedAt);
+  }
+  async addChurchGroupMember(data: InsertChurchGroupMember): Promise<ChurchGroupMember> {
+    const [row] = await db.insert(churchGroupMembers).values(data)
+      .onConflictDoNothing({ target: [churchGroupMembers.groupId, churchGroupMembers.firebaseUid] })
+      .returning();
+    return row;
+  }
+  async removeChurchGroupMember(groupId: number, firebaseUid: string): Promise<void> {
+    await db.delete(churchGroupMembers).where(and(eq(churchGroupMembers.groupId, groupId), eq(churchGroupMembers.firebaseUid, firebaseUid)));
+  }
+  async getChurchGroupMember(groupId: number, firebaseUid: string): Promise<ChurchGroupMember | undefined> {
+    const [row] = await db.select().from(churchGroupMembers)
+      .where(and(eq(churchGroupMembers.groupId, groupId), eq(churchGroupMembers.firebaseUid, firebaseUid)));
+    return row;
+  }
+
+  // ── Church Prayer Requests ──────────────────────────────────────────────────
+  async createChurchPrayerRequest(data: InsertChurchPrayerRequest): Promise<ChurchPrayerRequest> {
+    const [row] = await db.insert(churchPrayerRequests).values(data).returning();
+    return row;
+  }
+  async getChurchPrayerRequests(churchId: number, includeConfidential: boolean): Promise<ChurchPrayerRequest[]> {
+    if (includeConfidential) {
+      return await db.select().from(churchPrayerRequests)
+        .where(eq(churchPrayerRequests.churchId, churchId))
+        .orderBy(desc(churchPrayerRequests.createdAt));
+    }
+    return await db.select().from(churchPrayerRequests)
+      .where(and(eq(churchPrayerRequests.churchId, churchId), eq(churchPrayerRequests.isConfidential, false)))
+      .orderBy(desc(churchPrayerRequests.createdAt));
+  }
+  async incrementPrayerCount(id: number): Promise<ChurchPrayerRequest> {
+    const [row] = await db.update(churchPrayerRequests)
+      .set({ prayerCount: sql`${churchPrayerRequests.prayerCount} + 1` })
+      .where(eq(churchPrayerRequests.id, id))
+      .returning();
+    return row;
+  }
+  async updateChurchPrayerStatus(id: number, status: string): Promise<ChurchPrayerRequest> {
+    const [row] = await db.update(churchPrayerRequests).set({ status }).where(eq(churchPrayerRequests.id, id)).returning();
+    return row;
+  }
+  async deleteChurchPrayerRequest(id: number): Promise<void> {
+    await db.delete(churchPrayerRequests).where(eq(churchPrayerRequests.id, id));
+  }
+
+  // ── Church Activity Log ─────────────────────────────────────────────────────
+  async logChurchActivity(data: InsertChurchActivity): Promise<ChurchActivity> {
+    const [row] = await db.insert(churchActivityLog).values(data).returning();
+    return row;
+  }
+  async getChurchActivity(churchId: number, limit = 50): Promise<ChurchActivity[]> {
+    return await db.select().from(churchActivityLog)
+      .where(eq(churchActivityLog.churchId, churchId))
+      .orderBy(desc(churchActivityLog.createdAt))
+      .limit(limit);
+  }
+
+  // ── Global Admin Church Moderation ──────────────────────────────────────────
+  async getAllChurches(): Promise<Church[]> {
+    return await db.select().from(churches).orderBy(desc(churches.createdAt));
+  }
+  async updateChurchStatus(id: number, status: string): Promise<Church> {
+    const [row] = await db.update(churches).set({ status }).where(eq(churches.id, id)).returning();
+    return row;
   }
 }
 
