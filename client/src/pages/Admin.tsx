@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2, Upload, Gift, Video, Building2 } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2, Upload, Gift, Video, Building2, DollarSign } from "lucide-react";
 import { useUpload } from "@/hooks/use-upload";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -2720,7 +2720,10 @@ export default function Admin() {
         </TabsContent>
 
         <TabsContent value="churches">
-          <ChurchModerationAdmin />
+          <div className="space-y-6">
+            <ChurchModerationAdmin />
+            <ChurchFinanceAdmin />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
@@ -4124,6 +4127,145 @@ interface ChurchModData {
   denomination: string | null;
   status: string;
   createdAt: string | null;
+}
+
+function ChurchFinanceAdmin() {
+  const { toast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [feeValue, setFeeValue] = useState("");
+
+  const { data: stats, isLoading: statsLoading } = useQuery<{
+    totalDonations: number; totalPlatformFee: number; totalChurchNet: number; count: number;
+  }>({ queryKey: ["/api/admin/giving/stats"] });
+
+  const { data: txns, isLoading: txnsLoading } = useQuery<Array<{
+    id: number; churchId: number; reference: string; grossAmount: number;
+    platformFeeAmount: number; churchNetAmount: number; currency: string;
+    categoryName: string; status: string; createdAt: string | null;
+  }>>({ queryKey: ["/api/admin/giving/transactions"] });
+
+  const { data: settings, refetch: refetchSettings } = useQuery<{ platform_fee_percent: string }>({
+    queryKey: ["/api/admin/giving/platform-settings"],
+  });
+
+  const saveFee = async () => {
+    const pct = parseFloat(feeValue);
+    if (isNaN(pct) || pct < 0 || pct > 30) {
+      toast({ title: "Invalid fee percentage", description: "Enter a number between 0 and 30.", variant: "destructive" });
+      return;
+    }
+    const r = await fetch("/api/admin/giving/platform-settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ platform_fee_percent: feeValue }),
+    });
+    if (r.ok) {
+      toast({ title: "Platform fee updated" });
+      setEditing(false);
+      refetchSettings();
+    } else {
+      toast({ title: "Error updating fee", variant: "destructive" });
+    }
+  };
+
+  const fmt = (cents: number, currency = "USD") => {
+    const syms: Record<string, string> = { USD: "$", GBP: "£", EUR: "€", NGN: "₦", KES: "KSh" };
+    return `${syms[currency] ?? currency + " "}${(cents / 100).toFixed(2)}`;
+  };
+
+  return (
+    <Card className="border-0 shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <DollarSign className="w-5 h-5 text-green-600" />
+          Church Finance Overview
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">Platform-wide giving summary and fee controls</p>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {/* Platform fee */}
+        <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: "#fffbf0", border: "1px solid #b8962e30" }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold" style={{ color: "#92400e" }}>Platform Fee</p>
+              <p className="text-xs text-muted-foreground">Deducted from each church transaction before payout</p>
+            </div>
+            {!editing ? (
+              <div className="flex items-center gap-3">
+                <span className="text-2xl font-bold" style={{ color: "#92400e" }}>
+                  {settings?.platform_fee_percent ?? "2.5"}%
+                </span>
+                <Button size="sm" variant="outline" onClick={() => { setFeeValue(settings?.platform_fee_percent ?? "2.5"); setEditing(true); }}
+                  data-testid="button-edit-platform-fee">
+                  Edit
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Input type="number" step="0.1" min="0" max="30" value={feeValue}
+                  onChange={e => setFeeValue(e.target.value)}
+                  className="w-24 h-8 text-sm" data-testid="input-platform-fee" />
+                <span className="text-sm font-medium">%</span>
+                <Button size="sm" onClick={saveFee} style={{ backgroundColor: "#1d3461" }} data-testid="button-save-platform-fee">Save</Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Stats */}
+        {statsLoading ? (
+          <div className="flex justify-center py-6"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+        ) : stats ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: "Total Donations", value: fmt(stats.totalDonations), color: "#1d3461" },
+              { label: "Platform Revenue", value: fmt(stats.totalPlatformFee), color: "#92400e" },
+              { label: "Churches Received", value: fmt(stats.totalChurchNet), color: "#166534" },
+              { label: "Transactions", value: String(stats.count), color: "#4a4540" },
+            ].map(s => (
+              <div key={s.label} className="rounded-xl p-4 text-center" style={{ backgroundColor: "#f8f4ee" }}>
+                <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {/* Recent transactions */}
+        <div className="space-y-2">
+          <p className="text-sm font-semibold" style={{ color: "#1d3461" }}>Recent Transactions (All Churches)</p>
+          {txnsLoading ? (
+            <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+          ) : !txns?.length ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">No transactions yet.</p>
+          ) : (
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {txns.slice(0, 50).map(txn => (
+                <div key={txn.id} className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: "#f8f4ee" }}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-semibold" style={{ color: "#1d3461" }}>{fmt(txn.grossAmount, txn.currency)}</p>
+                      <Badge variant={txn.status === "completed" ? "default" : txn.status === "failed" ? "destructive" : "secondary"}
+                        className="text-xs">{txn.status}</Badge>
+                      <span className="text-xs text-muted-foreground">{txn.categoryName}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground font-mono">Church #{txn.churchId} · Ref: {txn.reference}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Platform: −{fmt(txn.platformFeeAmount, txn.currency)} · Church: {fmt(txn.churchNetAmount, txn.currency)}
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground flex-shrink-0">
+                    {txn.createdAt ? new Date(txn.createdAt).toLocaleDateString() : "—"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 function ChurchModerationAdmin() {

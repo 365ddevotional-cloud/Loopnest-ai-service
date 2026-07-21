@@ -4057,6 +4057,50 @@ export async function registerRoutes(
   });
 
   // ── Admin: Global Giving Platform Settings ────────────────────────────────────
+  // Member: my giving history for a church
+  app.get("/api/churches/:id/giving/my-history", async (req, res) => {
+    const churchId = parseInt(req.params.id);
+    if (isNaN(churchId)) return res.status(400).json({ message: "Invalid church ID" });
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ message: "Unauthorized" });
+      const { auth } = await import("./firebase-admin.js");
+      const decoded = await auth.verifyIdToken(authHeader.slice(7));
+      const uid = decoded.uid;
+      const txns = await storage.getMyGivingHistory(churchId, uid, 50);
+      res.json(txns);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // Admin: seed default giving categories
+  app.post("/api/churches/:id/giving/seed-categories", async (req, res) => {
+    const churchId = parseInt(req.params.id);
+    if (isNaN(churchId)) return res.status(400).json({ message: "Invalid church ID" });
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ message: "Unauthorized" });
+      const { auth } = await import("./firebase-admin.js");
+      const decoded = await auth.verifyIdToken(authHeader.slice(7));
+      const uid = decoded.uid;
+      const church = await storage.getChurch(churchId);
+      if (!church) return res.status(404).json({ message: "Church not found" });
+      const member = await storage.getChurchMemberByUid(churchId, uid);
+      const ADMIN_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor"];
+      if (!member || !ADMIN_ROLES.includes(member.role ?? "")) return res.status(403).json({ message: "Not authorized" });
+      const cats = await storage.seedDefaultGivingCategories(churchId);
+      res.json(cats);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // Super admin: all-church giving stats
+  app.get("/api/admin/giving/stats", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const stats = await storage.getAllGivingStats();
+      res.json(stats);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
   app.get("/api/admin/giving/platform-settings", async (req, res) => {
     if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
     try {

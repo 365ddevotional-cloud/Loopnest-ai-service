@@ -1356,13 +1356,38 @@ export default function ChurchAdminPage() {
             {/* Giving Categories */}
             <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2" style={{ color: "#1a2744" }}>
-                  <DollarSign className="w-4 h-4" />Giving Categories
-                </CardTitle>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <CardTitle className="text-base flex items-center gap-2" style={{ color: "#1a2744" }}>
+                    <DollarSign className="w-4 h-4" />Giving Categories
+                  </CardTitle>
+                  {!givingCategories?.length && (
+                    <Button
+                      variant="outline" size="sm"
+                      style={{ borderColor: "#1a2744", color: "#1a2744" }}
+                      onClick={async () => {
+                        if (!church) return;
+                        try {
+                          const token = await getIdToken();
+                          const r = await fetch(`/api/churches/${church.id}/giving/seed-categories`, {
+                            method: "POST",
+                            headers: { Authorization: `Bearer ${token ?? ""}` },
+                          });
+                          if (r.ok) {
+                            qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "giving", "categories"] });
+                            toast({ title: "Default categories added" });
+                          }
+                        } catch { toast({ title: "Error seeding categories", variant: "destructive" }); }
+                      }}
+                      data-testid="button-seed-categories"
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" />Seed Defaults
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 {!givingCategories?.length ? (
-                  <p className="text-sm py-2" style={{ color: "#7a7570" }}>No categories yet. Add categories like "Tithe", "Building Fund", "Missions", etc.</p>
+                  <p className="text-sm py-2" style={{ color: "#7a7570" }}>No categories yet. Click "Seed Defaults" to add Tithes, Offering, Thanksgiving, Building Fund, Mission, Welfare, and more.</p>
                 ) : (
                   <div className="space-y-2">
                     {givingCategories.map(cat => (
@@ -1421,8 +1446,10 @@ export default function ChurchAdminPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "#f0f8ff", border: "1px solid #3b82f620" }}>
-                  <p style={{ color: "#1e40af" }}>These details are used by the platform admin to process payouts to your church. Your account number is masked after saving and stored securely.</p>
+                  <p style={{ color: "#1e40af" }}>These details are used by the platform admin to process payouts to your church. Your account number is stored securely and masked in the UI.</p>
                 </div>
+
+                {/* Country + Legal Name */}
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label>Legal Name (of church)</Label>
@@ -1437,47 +1464,16 @@ export default function ChurchAdminPage() {
                       onChange={e => setPayoutForm(f => ({ ...f, country: e.target.value }))}
                       data-testid="select-payout-country">
                       <option value="">Select country…</option>
-                      <option value="US">United States</option>
-                      <option value="GB">United Kingdom</option>
-                      <option value="NG">Nigeria</option>
-                      <option value="KE">Kenya</option>
-                      <option value="GH">Ghana</option>
-                      <option value="ZA">South Africa</option>
-                      <option value="CA">Canada</option>
-                      <option value="AU">Australia</option>
+                      <option value="US">🇺🇸 United States</option>
+                      <option value="GB">🇬🇧 United Kingdom</option>
+                      <option value="NG">🇳🇬 Nigeria</option>
+                      <option value="KE">🇰🇪 Kenya</option>
+                      <option value="GH">🇬🇭 Ghana</option>
+                      <option value="ZA">🇿🇦 South Africa</option>
+                      <option value="CA">🇨🇦 Canada</option>
+                      <option value="AU">🇦🇺 Australia</option>
+                      <option value="OTHER">Other</option>
                     </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Bank Name</Label>
-                    <Input value={payoutForm.bankName ?? payoutConfig?.bankName ?? ""}
-                      onChange={e => setPayoutForm(f => ({ ...f, bankName: e.target.value }))}
-                      placeholder="e.g. Chase, GTBank" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Account Holder Name</Label>
-                    <Input value={payoutForm.accountHolderName ?? payoutConfig?.accountHolderName ?? ""}
-                      onChange={e => setPayoutForm(f => ({ ...f, accountHolderName: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Account Number</Label>
-                    <Input value={payoutForm.accountNumber ?? (payoutConfig?.accountNumber ? "" : "")}
-                      onChange={e => setPayoutForm(f => ({ ...f, accountNumber: e.target.value }))}
-                      placeholder={payoutConfig?.accountNumber ?? "Enter account number"}
-                      type="password" autoComplete="off" />
-                    {payoutConfig?.accountNumber && !payoutForm.accountNumber && (
-                      <p className="text-xs mt-0.5" style={{ color: "#9a9080" }}>Masked: {payoutConfig.accountNumber} — enter new value to replace</p>
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Routing / Sort Code</Label>
-                    <Input value={payoutForm.routingNumber ?? payoutConfig?.routingNumber ?? ""}
-                      onChange={e => setPayoutForm(f => ({ ...f, routingNumber: e.target.value }))}
-                      placeholder="ACH routing or sort code" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>SWIFT / BIC <span className="text-muted-foreground text-xs">(international)</span></Label>
-                    <Input value={payoutForm.swiftBic ?? payoutConfig?.swiftBic ?? ""}
-                      onChange={e => setPayoutForm(f => ({ ...f, swiftBic: e.target.value }))} />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Contact Email</Label>
@@ -1485,23 +1481,195 @@ export default function ChurchAdminPage() {
                       onChange={e => setPayoutForm(f => ({ ...f, contactEmail: e.target.value }))} />
                   </div>
                 </div>
-                <div className="border-t pt-3 space-y-3" style={{ borderColor: "#e8e3dc" }}>
-                  <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>Mobile Money <span className="font-normal text-muted-foreground text-xs">(Africa)</span></p>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label>Provider</Label>
-                      <Input value={payoutForm.mobileMoneyProvider ?? payoutConfig?.mobileMoneyProvider ?? ""}
-                        onChange={e => setPayoutForm(f => ({ ...f, mobileMoneyProvider: e.target.value }))}
-                        placeholder="e.g. M-Pesa, MTN MoMo, Airtel" />
+
+                {/* Nigeria-specific */}
+                {(payoutForm.country ?? payoutConfig?.country) === "NG" && (
+                  <div className="border rounded-lg p-4 space-y-4" style={{ borderColor: "#e8e3dc", backgroundColor: "#fafaf8" }}>
+                    <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>🇳🇬 Nigeria — Bank Transfer</p>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label>Bank Name</Label>
+                        <Input value={payoutForm.bankName ?? payoutConfig?.bankName ?? ""}
+                          onChange={e => setPayoutForm(f => ({ ...f, bankName: e.target.value }))}
+                          placeholder="e.g. GTBank, First Bank, Zenith" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Account Name</Label>
+                        <Input value={payoutForm.accountHolderName ?? payoutConfig?.accountHolderName ?? ""}
+                          onChange={e => setPayoutForm(f => ({ ...f, accountHolderName: e.target.value }))}
+                          placeholder="Account holder name" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Account Number (10 digits)</Label>
+                        <Input value={payoutForm.accountNumber ?? ""}
+                          onChange={e => setPayoutForm(f => ({ ...f, accountNumber: e.target.value }))}
+                          placeholder={payoutConfig?.accountNumber ? "•••• (saved)" : "10-digit NUBAN"}
+                          type="password" autoComplete="off" maxLength={10} />
+                      </div>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Mobile Number</Label>
-                      <Input value={payoutForm.mobileMoneyNumber ?? payoutConfig?.mobileMoneyNumber ?? ""}
-                        onChange={e => setPayoutForm(f => ({ ...f, mobileMoneyNumber: e.target.value }))}
-                        placeholder="+234..." />
+                    <div className="border-t pt-3" style={{ borderColor: "#e8e3dc" }}>
+                      <p className="text-sm font-semibold mb-3" style={{ color: "#1a2744" }}>Mobile Money <span className="font-normal text-xs text-muted-foreground">(optional)</span></p>
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label>Provider</Label>
+                          <select className="w-full border rounded-md px-3 py-2 text-sm" style={{ borderColor: "#e8e3dc" }}
+                            value={payoutForm.mobileMoneyProvider ?? payoutConfig?.mobileMoneyProvider ?? ""}
+                            onChange={e => setPayoutForm(f => ({ ...f, mobileMoneyProvider: e.target.value }))}>
+                            <option value="">Select…</option>
+                            <option value="OPay">OPay</option>
+                            <option value="PalmPay">PalmPay</option>
+                            <option value="Kuda">Kuda</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label>Phone Number</Label>
+                          <Input value={payoutForm.mobileMoneyNumber ?? payoutConfig?.mobileMoneyNumber ?? ""}
+                            onChange={e => setPayoutForm(f => ({ ...f, mobileMoneyNumber: e.target.value }))}
+                            placeholder="+234..." />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+
+                {/* US-specific */}
+                {(payoutForm.country ?? payoutConfig?.country) === "US" && (
+                  <div className="border rounded-lg p-4 space-y-4" style={{ borderColor: "#e8e3dc", backgroundColor: "#fafaf8" }}>
+                    <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>🇺🇸 United States — Bank / Digital</p>
+                    <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "#fffbf0", border: "1px solid #b8962e30" }}>
+                      <p style={{ color: "#92400e" }}>For automatic payouts, Stripe Connect is required. Until connected, provide your bank or digital payment details below for manual reconciliation.</p>
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label>Bank Name</Label>
+                        <Input value={payoutForm.bankName ?? payoutConfig?.bankName ?? ""}
+                          onChange={e => setPayoutForm(f => ({ ...f, bankName: e.target.value }))}
+                          placeholder="e.g. Chase, Bank of America" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Account Holder Name</Label>
+                        <Input value={payoutForm.accountHolderName ?? payoutConfig?.accountHolderName ?? ""}
+                          onChange={e => setPayoutForm(f => ({ ...f, accountHolderName: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Account Number</Label>
+                        <Input value={payoutForm.accountNumber ?? ""}
+                          onChange={e => setPayoutForm(f => ({ ...f, accountNumber: e.target.value }))}
+                          placeholder={payoutConfig?.accountNumber ? "•••• (saved)" : "Account number"}
+                          type="password" autoComplete="off" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>ACH Routing Number</Label>
+                        <Input value={payoutForm.routingNumber ?? payoutConfig?.routingNumber ?? ""}
+                          onChange={e => setPayoutForm(f => ({ ...f, routingNumber: e.target.value }))}
+                          placeholder="9-digit routing number" />
+                      </div>
+                    </div>
+                    <div className="border-t pt-3" style={{ borderColor: "#e8e3dc" }}>
+                      <p className="text-sm font-semibold mb-3" style={{ color: "#1a2744" }}>Digital Payment Handles <span className="font-normal text-xs text-muted-foreground">(optional)</span></p>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        {["PayPal", "CashApp", "Venmo", "Zelle"].map(provider => (
+                          <div key={provider} className="space-y-1.5">
+                            <Label>{provider}</Label>
+                            <Input
+                              value={(payoutForm.mobileMoneyProvider === provider ? payoutForm.mobileMoneyNumber : payoutConfig?.mobileMoneyProvider === provider ? payoutConfig.mobileMoneyNumber : "") ?? ""}
+                              onChange={e => setPayoutForm(f => ({ ...f, mobileMoneyProvider: provider, mobileMoneyNumber: e.target.value }))}
+                              placeholder={`${provider} email/handle`} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* UK / EU */}
+                {["GB", "CA", "AU", "OTHER"].includes(payoutForm.country ?? payoutConfig?.country ?? "") && (
+                  <div className="border rounded-lg p-4 space-y-4" style={{ borderColor: "#e8e3dc", backgroundColor: "#fafaf8" }}>
+                    <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>Bank Details</p>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label>Bank Name</Label>
+                        <Input value={payoutForm.bankName ?? payoutConfig?.bankName ?? ""}
+                          onChange={e => setPayoutForm(f => ({ ...f, bankName: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Account Holder Name</Label>
+                        <Input value={payoutForm.accountHolderName ?? payoutConfig?.accountHolderName ?? ""}
+                          onChange={e => setPayoutForm(f => ({ ...f, accountHolderName: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Account Number / IBAN</Label>
+                        <Input value={payoutForm.accountNumber ?? ""}
+                          onChange={e => setPayoutForm(f => ({ ...f, accountNumber: e.target.value }))}
+                          placeholder={payoutConfig?.accountNumber ? "•••• (saved)" : "Account / IBAN"}
+                          type="password" autoComplete="off" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Sort Code / Routing</Label>
+                        <Input value={payoutForm.routingNumber ?? payoutConfig?.routingNumber ?? ""}
+                          onChange={e => setPayoutForm(f => ({ ...f, routingNumber: e.target.value }))}
+                          placeholder="Sort code or routing number" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>SWIFT / BIC</Label>
+                        <Input value={payoutForm.swiftBic ?? payoutConfig?.swiftBic ?? ""}
+                          onChange={e => setPayoutForm(f => ({ ...f, swiftBic: e.target.value }))}
+                          placeholder="e.g. BARCGB22" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Africa (KE, GH, ZA) */}
+                {["KE", "GH", "ZA"].includes(payoutForm.country ?? payoutConfig?.country ?? "") && (
+                  <div className="border rounded-lg p-4 space-y-4" style={{ borderColor: "#e8e3dc", backgroundColor: "#fafaf8" }}>
+                    <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>Bank + Mobile Money</p>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label>Bank Name</Label>
+                        <Input value={payoutForm.bankName ?? payoutConfig?.bankName ?? ""}
+                          onChange={e => setPayoutForm(f => ({ ...f, bankName: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Account Holder Name</Label>
+                        <Input value={payoutForm.accountHolderName ?? payoutConfig?.accountHolderName ?? ""}
+                          onChange={e => setPayoutForm(f => ({ ...f, accountHolderName: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Account Number</Label>
+                        <Input value={payoutForm.accountNumber ?? ""}
+                          onChange={e => setPayoutForm(f => ({ ...f, accountNumber: e.target.value }))}
+                          placeholder={payoutConfig?.accountNumber ? "•••• (saved)" : "Account number"}
+                          type="password" autoComplete="off" />
+                      </div>
+                    </div>
+                    <div className="border-t pt-3" style={{ borderColor: "#e8e3dc" }}>
+                      <p className="text-sm font-semibold mb-3" style={{ color: "#1a2744" }}>Mobile Money</p>
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label>Provider</Label>
+                          <select className="w-full border rounded-md px-3 py-2 text-sm" style={{ borderColor: "#e8e3dc" }}
+                            value={payoutForm.mobileMoneyProvider ?? payoutConfig?.mobileMoneyProvider ?? ""}
+                            onChange={e => setPayoutForm(f => ({ ...f, mobileMoneyProvider: e.target.value }))}>
+                            <option value="">Select…</option>
+                            <option value="M-Pesa">M-Pesa (Kenya)</option>
+                            <option value="MTN MoMo">MTN MoMo (Ghana)</option>
+                            <option value="Airtel Money">Airtel Money</option>
+                            <option value="SnapScan">SnapScan (South Africa)</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label>Mobile Number</Label>
+                          <Input value={payoutForm.mobileMoneyNumber ?? payoutConfig?.mobileMoneyNumber ?? ""}
+                            onChange={e => setPayoutForm(f => ({ ...f, mobileMoneyNumber: e.target.value }))}
+                            placeholder="+254..." />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <Button onClick={savePayout} disabled={savingPayout} style={{ backgroundColor: "#1a2744" }}
                   data-testid="button-save-payout">
                   {savingPayout ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : "Save Payout Details"}

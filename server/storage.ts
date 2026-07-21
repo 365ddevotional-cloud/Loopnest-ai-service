@@ -383,6 +383,10 @@ export interface IStorage {
   // Global admin
   getAllChurches(): Promise<Church[]>;
   updateChurchStatus(id: number, status: string): Promise<Church>;
+  // Giving extras
+  getMyGivingHistory(churchId: number, firebaseUid: string, limit?: number): Promise<ChurchTransaction[]>;
+  seedDefaultGivingCategories(churchId: number): Promise<ChurchGivingCategory[]>;
+  getAllGivingStats(): Promise<{ totalDonations: number; totalPlatformFee: number; totalChurchNet: number; count: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1999,6 +2003,42 @@ export class DatabaseStorage implements IStorage {
   }
   async getAllGlobalGivingSettings(): Promise<GlobalGivingSetting[]> {
     return await db.select().from(globalGivingSettings);
+  }
+
+  async getMyGivingHistory(churchId: number, firebaseUid: string, limit = 50): Promise<ChurchTransaction[]> {
+    return await db.select().from(churchTransactions)
+      .where(and(eq(churchTransactions.churchId, churchId), eq(churchTransactions.donorFirebaseUid, firebaseUid)))
+      .orderBy(desc(churchTransactions.createdAt))
+      .limit(limit);
+  }
+
+  async seedDefaultGivingCategories(churchId: number): Promise<ChurchGivingCategory[]> {
+    const existing = await this.getChurchGivingCategories(churchId);
+    if (existing.length > 0) return existing;
+    const defaults = [
+      { name: "Tithes", description: "10% of income given as an act of worship", displayOrder: 1 },
+      { name: "Offering", description: "Freewill offering to support church ministry", displayOrder: 2 },
+      { name: "Thanksgiving", description: "Giving in gratitude for God's blessings", displayOrder: 3 },
+      { name: "Building Fund", description: "Contributions toward church building projects", displayOrder: 4 },
+      { name: "Mission", description: "Support for missionary and outreach work", displayOrder: 5 },
+      { name: "Welfare", description: "Support for members and community in need", displayOrder: 6 },
+      { name: "Special Donation", description: "Special gifts for designated projects", displayOrder: 7 },
+      { name: "General Fund", description: "General support for all church activities", displayOrder: 8 },
+    ];
+    const inserted = await db.insert(churchGivingCategories)
+      .values(defaults.map(d => ({ churchId, ...d, isActive: true })))
+      .returning();
+    return inserted;
+  }
+
+  async getAllGivingStats(): Promise<{ totalDonations: number; totalPlatformFee: number; totalChurchNet: number; count: number }> {
+    const txns = await db.select().from(churchTransactions).where(eq(churchTransactions.status, "completed"));
+    return {
+      totalDonations: txns.reduce((s, t) => s + t.grossAmount, 0),
+      totalPlatformFee: txns.reduce((s, t) => s + t.platformFeeAmount, 0),
+      totalChurchNet: txns.reduce((s, t) => s + t.churchNetAmount, 0),
+      count: txns.length,
+    };
   }
 }
 

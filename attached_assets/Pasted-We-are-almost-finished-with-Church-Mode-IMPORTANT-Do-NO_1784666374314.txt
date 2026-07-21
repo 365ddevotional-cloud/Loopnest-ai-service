@@ -1,0 +1,285 @@
+We are almost finished with Church Mode.
+
+IMPORTANT:
+Do NOT redesign existing pages.
+Do NOT modify Daily Devotional, Songs, Sunday School, Downloads, existing Donation System, Authentication, or other locked features unless absolutely required.
+Keep changes tightly scoped to Church Mode only.
+
+==================================================
+FINAL CHURCH MODE - GIVING & FINANCIAL SYSTEM
+==================================================
+
+The Church Mode foundation is now complete. Finish the remaining financial and ministry management features to make Church Mode production-ready.
+
+==================================================
+1. CHURCH GIVING PAGE
+==================================================
+
+Create a dedicated "Giving" page.
+
+Support these donation categories:
+
+• Tithes
+• Offering
+• Thanksgiving
+• Building Fund
+• Mission
+• Welfare
+• Special Donation
+• Custom Fund
+
+Church admins should be able to:
+
+• Enable/Disable categories
+• Rename custom categories
+• Change display order
+
+==================================================
+2. MULTI-COUNTRY PAYMENT SUPPORT
+==================================================
+
+Each church selects its country.
+
+Display the appropriate payout configuration.
+
+Examples:
+
+Nigeria
+• Bank Name
+• Account Name
+• Account Number
+
+United States
+• Stripe Connect
+• PayPal
+• Cash App
+• Venmo
+• Zelle
+
+Design this so additional countries can easily be added later without redesigning the system.
+
+==================================================
+3. PLATFORM SERVICE FEE
+==================================================
+
+Money must NEVER pass through the 365 Daily Devotional account.
+
+The church receives funds directly.
+
+The platform receives only the configured service fee.
+
+Display the calculation transparently.
+
+Example:
+
+Donation: $100
+
+Platform Fee: $2
+
+Church Receives: $98
+
+The platform fee percentage must only be editable by the Super Admin.
+
+Church admins can see the percentage but cannot modify it.
+
+==================================================
+4. GIVING HISTORY
+==================================================
+
+Members should have:
+
+• Donation history
+• Donation category
+• Amount
+• Date
+• Reference number
+• Receipt
+• Download receipt
+
+Church admins should have:
+
+• All donations
+• Search
+• Filters
+• Export
+• Summary
+
+==================================================
+5. RECEIPTS
+==================================================
+
+Automatically generate professional receipts.
+
+Include:
+
+• Church Logo
+• Church Name
+• Donation Category
+• Amount
+• Platform Fee
+• Net Amount
+• Date
+• Receipt Number
+• Reference Number
+
+Allow:
+
+• Download PDF
+• Email Receipt
+
+==================================================
+6. GIVING ANALYTICS
+==================================================
+
+Church Dashboard should display:
+
+• Today's Giving
+• Weekly Giving
+• Monthly Giving
+• Yearly Giving
+• Lifetime Giving
+• Largest Donation
+• Most Active Giving Category
+• Recent Donations
+• Growth Charts
+
+==================================================
+7. FINANCIAL SECURITY
+==================================================
+
+All calculations must happen server-side.
+
+Do not trust client values.
+
+Prevent:
+
+• Duplicate submissions
+• Tampering
+• Manipulated donation amounts
+• Fake platform fees
+
+Audit every financial transaction.
+
+==================================================
+8. CHURCH BRANDING
+==================================================
+
+Allow churches to upload:
+
+• Church Logo
+• Church Banner
+• Background Image
+
+Support:
+
+• Crop
+• Replace
+• Delete
+• Preview
+
+Show branding consistently on:
+
+• Home
+• Giving
+• Receipts
+• Join Page
+• Sermons
+• Announcements
+• Dashboard
+• Messages
+
+==================================================
+9. SUPER ADMIN CONTROLS
+==================================================
+
+Inside the global 365 Daily Devotional Admin Dashboard create a Church Financial Overview.
+
+Display:
+
+• Total Churches
+• Active Churches
+• Total Donations
+• Platform Revenue
+• Monthly Platform Revenue
+• Church Status
+
+Allow Super Admin to:
+
+• Suspend Church
+• Reactivate Church
+• View Reports
+• Change Platform Service Fee %
+• View Giving Statistics
+
+==================================================
+10. PERFORMANCE
+==================================================
+
+Keep Church Mode fast.
+
+Optimize database queries.
+
+Maintain responsive mobile layouts.
+
+Keep loading times low.
+
+Do NOT modify unrelated parts of the application.
+
+==================================================
+11. FUTURE-READY ARCHITECTURE
+==================================================
+
+Build the Giving system so it can later support:
+
+• Event Registration Fees
+• Conference Tickets
+• Paid Courses
+• Mission Campaigns
+• Building Projects
+• Special Fundraising Campaigns
+
+without redesigning the database.
+
+==================================================
+12. FINAL VERIFICATION
+==================================================
+
+Test:
+
+• Mobile
+• Tablet
+• Desktop
+
+Verify:
+
+• Church branding
+• Giving
+• Receipts
+• Analytics
+• Admin permissions
+• Platform fee calculations
+• Security
+
+==================================================
+FINAL REPORT
+==================================================
+
+When complete, provide ONLY:
+
+✅ Features completed
+
+✅ Database changes
+
+✅ APIs added
+
+✅ Security improvements
+
+✅ Mobile testing results
+
+✅ Files changed
+
+✅ Any recommended future improvements
+
+Do NOT perform unrelated refactoring.
+
+Keep implementation minimal, production-ready, scalable, and cost-efficient.
