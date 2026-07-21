@@ -1,0 +1,45 @@
+This project is already published on Google Play as a Trusted Web Activity (TWA).
+
+Google Play now requires the existing 365 Daily Devotional Android app to target Android 16, API level 36.
+
+Important:
+- The deep-link warning visible elsewhere in Play Console relates to other apps, not 365 Daily Devotional.
+- Do not investigate, modify, or mention deep links in this task.
+- Do not inspect or change unrelated apps or unrelated files.
+
+Do NOT create a new Android app.
+Do NOT create a new Google Play listing.
+Do NOT change the existing package name.
+Do NOT alter the website, Church Mode, devotionals, donations, songs, authentication, or any other web functionality.
+Do NOT rebuild the app from scratch.
+
+Investigate only the Android publishing path for the existing 365 Daily Devotional TWA and determine:
+
+1. How the existing Google Play Android App Bundle was originally generated.
+2. Whether Bubblewrap, PWABuilder, or another TWA packaging method was used.
+3. Whether the existing Android signing configuration or keystore is available.
+4. Whether Replit can regenerate the same app bundle using the existing package name and signing identity.
+5. What minimum changes are required to set compileSdk and targetSdk to API 36.
+6. What compatible Android Gradle Plugin, Gradle wrapper, Java version, and Bubblewrap/PWABuilder version are required.
+7. How to increment versionCode safely while preserving the existing version history.
+8. How to produce a release-ready signed .aab for upload to the existing 365 Daily Devotional Play Store listing.
+
+The existing app identity must be preserved.
+
+Existing Google Play package shown in the current listing:
+app.replit.attachment_parser__365ddevotional.twa
+
+Do not assume that any different package name found elsewhere belongs to the current Play Store app. Verify the exact package name from the existing Play Console listing and use only that package name.
+
+If the Android project, keystore, signing key, or original TWA configuration is missing, do not generate a replacement app immediately. Report exactly what is missing and give the safest recovery path that will preserve the existing Play Store app identity and signing compatibility.
+
+First perform the investigation only. Do not deploy, publish, upload, regenerate signing keys, or create a new Play Store app without my approval.
+
+Return a concise report containing:
+- confirmed current package name
+- original packaging method
+- location of Android project, if found
+- signing/keystore status
+- exact files missing, if any
+- safest next action
+- whether a compliant API 36 .aab can be produced without changing the existing app identity
