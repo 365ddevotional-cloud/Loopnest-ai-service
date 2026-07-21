@@ -1,0 +1,188 @@
+The account-creation problem is NOT resolved.
+
+I completed every requested manual step:
+
+• Correct Firebase configuration was supplied.
+• The Replit preview hostname was added to Firebase Authorized Domains.
+• The application was republished.
+• Account creation was tested again in the Replit preview.
+• Account creation was also tested on the published website.
+• Both still display:
+  “We could not create your account. Please try again or contact support.”
+
+Do not repeat the previous REST API test. The REST API result does not prove that the app’s real Create Account form works.
+
+Fix ONLY the actual browser-based signup failure.
+
+==================================================
+1. REPRODUCE THROUGH THE REAL USER INTERFACE
+==================================================
+
+Open the running application in the browser and use the actual:
+
+Your Account → Create Account
+
+form.
+
+Test separately on:
+
+1. The current Replit preview URL
+2. The published 365 Daily Devotional website
+
+Use fresh temporary email addresses that have never been registered.
+
+Do not use curl or a standalone REST API call as the primary test.
+
+Capture from the browser:
+
+• Exact Firebase Auth error code
+• Exact Firebase error message
+• Browser console error
+• Failed network request and response
+• Current window.location.hostname
+• Firebase projectId being used at runtime
+• Firebase authDomain being used at runtime
+• Whether the Firebase app has been initialized once or more than once
+
+Do not expose the full API key or any private credential in the report.
+
+==================================================
+2. INSPECT THE REAL RUNTIME CONFIGURATION
+==================================================
+
+The previous report said the Replit secrets still contained stale or swapped values and that fallback values were embedded in:
+
+• client/src/lib/firebase.ts
+• client/src/loopnest/firebase.ts
+
+Determine which Firebase configuration file and Firebase app instance the Create Account form is actually using.
+
+Check for:
+
+• Multiple initializeApp calls
+• Multiple Firebase Auth instances
+• Old LoopNest Firebase configuration
+• Incorrect imports
+• Environment variables overriding the corrected values
+• A production build using stale variables
+• Preview and production using different Firebase projects
+• Cached service-worker or PWA files serving an older bundle
+• An API key with HTTP referrer restrictions that exclude the current domains
+
+There must be one authoritative Firebase client configuration for authentication.
+
+Do not create a second Firebase project.
+
+==================================================
+3. CLEANLY CORRECT REPLIT SECRETS
+==================================================
+
+Do not rely permanently on hardcoded fallback values while incorrect secrets with the same names still exist.
+
+Correct these four Replit environment variables:
+
+• VITE_FIREBASE_API_KEY
+• VITE_FIREBASE_AUTH_DOMAIN
+• VITE_FIREBASE_PROJECT_ID
+• VITE_FIREBASE_APP_ID
+
+If Replit cannot overwrite an existing secret programmatically:
+
+• Tell me exactly which stale secrets must be deleted in the Replit Secrets interface.
+• After deletion, request the four correct values again using secure secret fields.
+• Do not ask me to paste Firebase configuration into ordinary chat.
+• Do not expose the values in logs.
+
+After the correct secrets are active:
+
+• Make the Firebase client read the correct environment variables.
+• Remove any unsafe or confusing stale fallback configuration.
+• Preserve only a safe validation error when required variables are missing.
+• Do not maintain two competing Firebase configurations.
+
+==================================================
+4. CHECK AUTHORIZED DOMAINS
+==================================================
+
+Verify whether all browser origins being tested are authorized, including:
+
+• Current Replit preview hostname
+• 365dailydevotional.com
+• www.365dailydevotional.com, if used
+• loopnestai.app, if the app still runs there
+• Any actual Replit deployment hostname serving the published app
+
+Do not add unrelated domains or wildcards.
+
+If a production domain is missing, report it clearly as a required Firebase Console action.
+
+==================================================
+5. CHECK FIREBASE API-KEY RESTRICTIONS
+==================================================
+
+Because the original failure included API_KEY_INVALID, inspect whether the Firebase Web API key has Google Cloud HTTP-referrer restrictions.
+
+Confirm that the current preview and production origins are permitted.
+
+Do not remove security restrictions unnecessarily. Add only the required valid domains or use the normal Firebase-managed Web API-key configuration.
+
+==================================================
+6. PREVENT STALE PRODUCTION CODE
+==================================================
+
+After correcting the runtime configuration:
+
+• Clear the development build cache.
+• Rebuild the frontend.
+• Restart the development server.
+• Republish the corrected application.
+• Ensure the service worker/PWA does not continue serving the old JavaScript bundle.
+• Increment the appropriate cache/build version only if the project already uses one.
+• Do not redesign or change any page.
+
+==================================================
+7. REAL END-TO-END TEST
+==================================================
+
+Test with the actual browser Create Account form.
+
+Confirm all of these:
+
+1. A fresh user submits the form.
+2. createUserWithEmailAndPassword succeeds from the browser.
+3. The Firebase Authentication user record exists.
+4. The browser receives an authenticated user.
+5. The verification-email process is attempted.
+6. The account can sign out.
+7. The same account can sign back in.
+8. The account can enter Church Mode.
+9. The account can reach Create a Church Space.
+10. The temporary test account is removed afterward.
+11. Existing real accounts remain untouched.
+
+Do not state that signup works unless the actual browser form completes successfully.
+
+==================================================
+8. RETURN ONLY
+==================================================
+
+Return only:
+
+1. Exact browser Firebase error code found
+2. Exact browser error message
+3. The runtime hostname where it occurred
+4. Firebase projectId used by the failing form
+5. The exact configuration file/import used by the form
+6. Whether multiple Firebase app instances were found
+7. Whether stale Replit secrets were still overriding the configuration
+8. Whether API-key referrer restrictions were involved
+9. Whether production domains were missing from Authorized Domains
+10. Files changed
+11. Actual browser signup test result
+12. Actual browser login test result
+13. Church Mode access test result
+14. Any manual action still required
+15. Confirmation that no unrelated feature was modified
+
+Do not perform another REST-only test.
+Do not claim completion until browser signup succeeds.
