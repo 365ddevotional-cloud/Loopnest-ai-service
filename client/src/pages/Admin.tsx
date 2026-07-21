@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2, Upload, Gift } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2, Upload, Gift, Video } from "lucide-react";
 import { useUpload } from "@/hooks/use-upload";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -2739,6 +2739,10 @@ interface BatchSong {
   shortDescription: string;
   coverFile: File | null;
   coverPreview: string | null;
+  videoFile: File | null;
+  videoUploadStatus: "none" | "uploading" | "completed" | "failed";
+  videoDownloadEnabled: boolean;
+  videoError: string | null;
   downloadEnabled: boolean;
   isActive: boolean;
   releaseYear: number;
@@ -2838,6 +2842,7 @@ function SongsAdmin() {
   });
 
   const audioUpload = useUpload();
+  const videoUpload = useUpload();
   const coverUpload = useUpload();
   const logoUpload = useUpload();
 
@@ -2855,6 +2860,27 @@ function SongsAdmin() {
       toast({ title: "✓ Audio uploaded", description: file.name });
     } else {
       toast({ title: "Upload failed", description: "Could not upload audio.", variant: "destructive" });
+    }
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    if (!file.name.toLowerCase().endsWith(".mp4") && file.type !== "video/mp4") {
+      toast({ title: "Invalid file", description: "Please upload an MP4 video file.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 500 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Video must be under 500MB.", variant: "destructive" });
+      return;
+    }
+    const result = await videoUpload.uploadFile(file);
+    if (result) {
+      setEditingSong((prev) => (prev ? { ...prev, videoUrl: result.objectPath, videoDownloadStatus: "free" } as any : null));
+      toast({ title: "✓ Video uploaded", description: file.name });
+    } else {
+      toast({ title: "Upload failed", description: "Could not upload video.", variant: "destructive" });
     }
   };
 
@@ -2977,6 +3003,8 @@ function SongsAdmin() {
       releaseYear: new Date().getFullYear(),
       copyrightNotice: `© ${new Date().getFullYear()} SpiritTone Records. All rights reserved.`,
       downloadStatus: "free",
+      videoUrl: null,
+      videoDownloadStatus: "disabled",
       createdAt: null,
       updatedAt: null,
     } as unknown as Song);
@@ -3028,6 +3056,7 @@ function SongsAdmin() {
         scriptureReference: "", scriptureText: "",
         lyrics: "", shortDescription: "",
         coverFile: null, coverPreview: null,
+        videoFile: null, videoUploadStatus: "none" as const, videoDownloadEnabled: false, videoError: null,
         downloadEnabled: true, isActive: true,
         releaseYear: new Date().getFullYear(),
         status: "waiting", error: null, expanded: true,
@@ -3041,40 +3070,55 @@ function SongsAdmin() {
     if (queue.length === 0) return;
     setBatchUploading(true);
 
-    const processOne = async (song: BatchSong) => {
-      if (!song.title || !song.scriptureReference) {
-        setBatchSongs(prev => prev.map(s => s.id === song.id ? { ...s, status: "failed", error: "Title and scripture reference are required." } : s));
+    const processOne = async (bsong: BatchSong) => {
+      if (!bsong.title || !bsong.scriptureReference) {
+        setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, status: "failed", error: "Title and scripture reference are required." } : s));
         return;
       }
-      setBatchSongs(prev => prev.map(s => s.id === song.id ? { ...s, status: "uploading" } : s));
+      setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, status: "uploading" } : s));
       try {
-        const audioPath = await doFileUpload(song.file);
+        const audioPath = await doFileUpload(bsong.file);
         let coverPath: string | null = null;
-        if (song.coverFile) coverPath = await doFileUpload(song.coverFile);
-        const songSlug = song.slug || song.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        if (bsong.coverFile) coverPath = await doFileUpload(bsong.coverFile);
+
+        let videoPath: string | null = null;
+        if (bsong.videoFile) {
+          setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, videoUploadStatus: "uploading" } : s));
+          try {
+            videoPath = await doFileUpload(bsong.videoFile);
+            setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, videoUploadStatus: "completed" } : s));
+          } catch (videoErr) {
+            const vmsg = videoErr instanceof Error ? videoErr.message : "Video upload failed";
+            setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, videoUploadStatus: "failed", videoError: vmsg } : s));
+          }
+        }
+
+        const songSlug = bsong.slug || bsong.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
         await apiRequest("POST", "/api/songs", {
-          title: song.title, slug: songSlug,
-          artist: song.artist || null,
-          featuredArtist: song.featuredArtist || null,
-          labelName: song.labelName || "SpiritTone Records",
-          producer: song.producer || "Moses Afolabi",
-          composer: song.composer || null,
-          lyricist: song.lyricist || null,
-          language: song.language || "English",
-          scriptureReference: song.scriptureReference,
-          scriptureText: song.scriptureText || null,
-          lyrics: song.lyrics || null,
-          shortDescription: song.shortDescription || null,
+          title: bsong.title, slug: songSlug,
+          artist: bsong.artist || null,
+          featuredArtist: bsong.featuredArtist || null,
+          labelName: bsong.labelName || "SpiritTone Records",
+          producer: bsong.producer || "Moses Afolabi",
+          composer: bsong.composer || null,
+          lyricist: bsong.lyricist || null,
+          language: bsong.language || "English",
+          scriptureReference: bsong.scriptureReference,
+          scriptureText: bsong.scriptureText || null,
+          lyrics: bsong.lyrics || null,
+          shortDescription: bsong.shortDescription || null,
           audioUrl: audioPath,
           coverImageUrl: coverPath,
-          downloadStatus: song.downloadEnabled ? "free" : "disabled",
-          isActive: asDraft ? false : song.isActive,
-          releaseYear: song.releaseYear || null,
+          downloadStatus: bsong.downloadEnabled ? "free" : "disabled",
+          videoUrl: videoPath,
+          videoDownloadStatus: bsong.videoDownloadEnabled && videoPath ? "free" : "disabled",
+          isActive: asDraft ? false : bsong.isActive,
+          releaseYear: bsong.releaseYear || null,
         });
-        setBatchSongs(prev => prev.map(s => s.id === song.id ? { ...s, status: "completed", expanded: false } : s));
+        setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, status: "completed", expanded: false } : s));
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Upload failed";
-        setBatchSongs(prev => prev.map(s => s.id === song.id ? { ...s, status: "failed", error: msg } : s));
+        setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, status: "failed", error: msg } : s));
       }
     };
 
@@ -3144,6 +3188,12 @@ function SongsAdmin() {
                       <Badge variant="outline" className={`text-xs flex-shrink-0 ${song.status === "completed" ? "border-green-400 text-green-700" : song.status === "failed" ? "border-red-400 text-red-700" : song.status === "uploading" ? "border-blue-400 text-blue-700" : ""}`}>
                         {song.status === "waiting" ? "Waiting" : song.status === "uploading" ? "Uploading…" : song.status === "completed" ? "Completed ✓" : "Failed"}
                       </Badge>
+                      {song.videoFile && (
+                        <Badge variant="outline" className={`text-xs flex-shrink-0 ${song.videoUploadStatus === "completed" ? "border-green-400 text-green-700" : song.videoUploadStatus === "failed" ? "border-red-400 text-red-700" : song.videoUploadStatus === "uploading" ? "border-blue-400 text-blue-700" : "border-blue-300/60 text-blue-600"}`}>
+                          <Video className="w-2.5 h-2.5 mr-0.5" />
+                          {song.videoUploadStatus === "none" ? "MP4" : song.videoUploadStatus === "uploading" ? "Video…" : song.videoUploadStatus === "completed" ? "Video ✓" : "Video ✗"}
+                        </Badge>
+                      )}
                       {!batchUploading && song.status !== "uploading" && (
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <Button size="sm" variant="ghost" className="h-6 w-6 p-0" title={song.expanded ? "Collapse" : "Edit"} onClick={() => updateBatchSong(song.id, { expanded: !song.expanded })}>
@@ -3246,11 +3296,36 @@ function SongsAdmin() {
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-5 pt-1">
+                        <div className="space-y-0.5">
+                          <Label className="text-xs">MP4 Video <span className="text-muted-foreground">(optional, max 500MB)</span></Label>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {song.videoFile && <span className="text-xs text-foreground truncate max-w-[140px]">{song.videoFile.name}</span>}
+                            {song.videoUploadStatus === "failed" && song.videoError && <span className="text-xs text-red-600">{song.videoError}</span>}
+                            <label className={`inline-flex items-center gap-1 text-xs border rounded px-2 py-1 cursor-pointer hover:bg-muted transition-colors ${song.videoUploadStatus === "uploading" ? "opacity-60 pointer-events-none" : ""}`}>
+                              <Video className="w-3 h-3" />
+                              {song.videoFile ? "Change MP4" : "Add MP4"}
+                              <input type="file" className="hidden" accept=".mp4,video/mp4" onChange={(e) => {
+                                const f = e.target.files?.[0]; e.target.value = "";
+                                if (!f) return;
+                                if (!f.name.toLowerCase().endsWith(".mp4") && f.type !== "video/mp4") { toast({ title: "Invalid file", description: "Please upload an MP4 video file.", variant: "destructive" }); return; }
+                                if (f.size > 500 * 1024 * 1024) { toast({ title: "File too large", description: "Video must be under 500MB.", variant: "destructive" }); return; }
+                                updateBatchSong(song.id, { videoFile: f, videoDownloadEnabled: true, videoUploadStatus: "none", videoError: null });
+                              }} />
+                            </label>
+                            {song.videoFile && <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" onClick={() => updateBatchSong(song.id, { videoFile: null, videoDownloadEnabled: false, videoUploadStatus: "none", videoError: null })}>Remove</Button>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-5 pt-1 flex-wrap">
                           <label className="flex items-center gap-1.5 text-xs cursor-pointer">
                             <input type="checkbox" checked={song.downloadEnabled} onChange={(e) => updateBatchSong(song.id, { downloadEnabled: e.target.checked })} className="w-3.5 h-3.5" />
-                            Download Enabled
+                            Audio Download Enabled
                           </label>
+                          {song.videoFile && (
+                            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                              <input type="checkbox" checked={song.videoDownloadEnabled} onChange={(e) => updateBatchSong(song.id, { videoDownloadEnabled: e.target.checked })} className="w-3.5 h-3.5" />
+                              Video Download Enabled
+                            </label>
+                          )}
                           <label className="flex items-center gap-1.5 text-xs cursor-pointer">
                             <input type="checkbox" checked={song.isActive} onChange={(e) => updateBatchSong(song.id, { isActive: e.target.checked })} className="w-3.5 h-3.5" />
                             Active (visible to public)
@@ -3337,8 +3412,24 @@ function SongsAdmin() {
                     )}
                     <Badge variant="outline" className={`text-xs ${song.downloadStatus === "disabled" ? "border-muted-foreground/40 text-muted-foreground" : "border-green-400/60 text-green-700"}`}>
                       <Download className="w-2.5 h-2.5 mr-1" />
-                      {song.downloadStatus === "disabled" ? "Download Disabled" : "Download Enabled"}
+                      {song.downloadStatus === "disabled" ? "Audio DL Off" : "Audio DL On"}
                     </Badge>
+                    {(song as any).videoUrl ? (
+                      <Badge variant="outline" className="text-xs border-blue-400/50 text-blue-600">
+                        <Video className="w-2.5 h-2.5 mr-1" />
+                        MP4
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground/60">
+                        No Video
+                      </Badge>
+                    )}
+                    {(song as any).videoUrl && (
+                      <Badge variant="outline" className={`text-xs ${(song as any).videoDownloadStatus === "disabled" ? "border-muted-foreground/40 text-muted-foreground" : "border-blue-400/60 text-blue-700"}`}>
+                        <Download className="w-2.5 h-2.5 mr-1" />
+                        {(song as any).videoDownloadStatus === "disabled" ? "Video DL Off" : "Video DL On"}
+                      </Badge>
+                    )}
                     <Badge variant={song.isActive ? "default" : "secondary"} className="text-xs">
                       {song.isActive ? "Active" : "Inactive"}
                     </Badge>
@@ -3858,6 +3949,29 @@ function SongsAdmin() {
                 )}
               </div>
 
+              <div className="space-y-2">
+                <Label className="text-xs">Song Video File <span className="text-muted-foreground">(MP4 only, max 500MB — optional)</span></Label>
+                {(editingSong as any).videoUrl && (
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-muted/30 border">
+                    <Video className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs text-foreground truncate flex-1">{(editingSong as any).videoUrl.split("/").pop()}</span>
+                    <Button size="sm" variant="ghost" className="text-destructive h-6 text-xs flex-shrink-0" onClick={() => setEditingSong({ ...editingSong, videoUrl: null, videoDownloadStatus: "disabled" } as any)}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
+                <label className={`inline-flex items-center gap-1.5 text-xs border rounded-md px-3 py-1.5 cursor-pointer hover:bg-muted transition-colors ${videoUpload.isUploading ? "opacity-60 pointer-events-none" : ""}`}>
+                  <Video className="w-3 h-3" />
+                  {videoUpload.isUploading ? `Uploading ${Math.round(videoUpload.progress ?? 0)}%…` : (editingSong as any).videoUrl ? "Replace Video" : "Upload MP4"}
+                  <input type="file" className="hidden" accept=".mp4,video/mp4" disabled={videoUpload.isUploading} onChange={handleVideoUpload} data-testid="input-song-video" />
+                </label>
+                {videoUpload.isUploading && (
+                  <div className="w-48 bg-muted rounded-full h-1.5">
+                    <div className="bg-primary rounded-full h-1.5 transition-all" style={{ width: `${videoUpload.progress ?? 0}%` }} />
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-1">
                 <Label className="text-xs">Lyrics (use blank lines between sections)</Label>
                 <Textarea
@@ -3923,31 +4037,48 @@ function SongsAdmin() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs">Download</Label>
+                  <Label className="text-xs">Audio Download</Label>
                   <Select
                     value={editingSong.downloadStatus === "disabled" ? "disabled" : "free"}
                     onValueChange={(v) => setEditingSong({ ...editingSong, downloadStatus: v })}
                   >
                     <SelectTrigger data-testid="select-song-download-status"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="free">Download Enabled</SelectItem>
-                      <SelectItem value="disabled">Download Disabled</SelectItem>
+                      <SelectItem value="free">Audio Download Enabled</SelectItem>
+                      <SelectItem value="disabled">Audio Download Disabled</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Status</Label>
+                  <Label className="text-xs">
+                    Video Download
+                    {!(editingSong as any).videoUrl && <span className="text-muted-foreground ml-1">(upload MP4 first)</span>}
+                  </Label>
                   <Select
-                    value={editingSong.isActive ? "active" : "inactive"}
-                    onValueChange={(v) => setEditingSong({ ...editingSong, isActive: v === "active" })}
+                    value={(editingSong as any).videoDownloadStatus === "disabled" ? "disabled" : "free"}
+                    onValueChange={(v) => setEditingSong({ ...editingSong, videoDownloadStatus: v } as any)}
+                    disabled={!(editingSong as any).videoUrl}
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="free">Video Download Enabled</SelectItem>
+                      <SelectItem value="disabled">Video Download Disabled</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Song Status</Label>
+                <Select
+                  value={editingSong.isActive ? "active" : "inactive"}
+                  onValueChange={(v) => setEditingSong({ ...editingSong, isActive: v === "active" })}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}

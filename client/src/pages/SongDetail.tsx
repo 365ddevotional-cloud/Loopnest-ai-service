@@ -265,6 +265,7 @@ export default function SongDetail() {
   const [showMusicSettings, setShowMusicSettings] = useState(false);
   const [localFav, setLocalFav] = useState(false);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [downloadType, setDownloadType] = useState<"audio" | "video">("audio");
 
   const { data: song, isLoading, error } = useQuery<Song>({
     queryKey: ["/api/songs/by-slug", slug],
@@ -427,6 +428,22 @@ export default function SongDetail() {
     }
   };
 
+  const triggerVideoDownload = () => {
+    if (!song) return;
+    setShowDownloadModal(false);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    if (isIOS) {
+      window.open(`/api/songs/${song.id}/download-video`, "_blank");
+    } else {
+      const a = document.createElement("a");
+      a.href = `/api/songs/${song.id}/download-video`;
+      a.setAttribute("download", "");
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -449,7 +466,8 @@ export default function SongDetail() {
   }
 
   const hasCover = !!song.coverImageUrl;
-  const downloadEnabled = song.downloadStatus !== "disabled" && !!song.audioUrl;
+  const audioDownloadEnabled = song.downloadStatus !== "disabled" && !!song.audioUrl;
+  const videoDownloadEnabled = (song as any).videoDownloadStatus !== "disabled" && !!(song as any).videoUrl;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-12">
@@ -683,13 +701,20 @@ export default function SongDetail() {
           Share
         </Button>
 
-        {/* Download button */}
-        {downloadEnabled ? (
-          <Button variant="outline" size="sm" onClick={() => setShowDownloadModal(true)} data-testid="button-download-song">
+        {/* Download buttons */}
+        {audioDownloadEnabled && (
+          <Button variant="outline" size="sm" onClick={() => { setDownloadType("audio"); setShowDownloadModal(true); }} data-testid="button-download-audio">
             <Download className="w-4 h-4 mr-1.5" />
-            Download Song
+            Download Audio
           </Button>
-        ) : (
+        )}
+        {videoDownloadEnabled && (
+          <Button variant="outline" size="sm" onClick={() => { setDownloadType("video"); setShowDownloadModal(true); }} data-testid="button-download-video">
+            <Download className="w-4 h-4 mr-1.5" />
+            Download Video (MP4)
+          </Button>
+        )}
+        {!audioDownloadEnabled && !videoDownloadEnabled && (
           <Button variant="outline" size="sm" disabled className="opacity-50" data-testid="button-download-unavailable">
             <Download className="w-4 h-4 mr-1.5" />
             Download Unavailable
@@ -820,12 +845,12 @@ export default function SongDetail() {
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl text-primary flex items-center gap-2">
               <Download className="w-6 h-6" />
-              Your Song Is Ready
+              {downloadType === "video" ? "Your Video Download Is Ready" : "Your Audio Download Is Ready"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-foreground/80 leading-relaxed">
-              Thank you for listening to music from SpiritTone Records and 365 Daily Devotional. You may download this song freely. Your voluntary support helps us continue producing Scripture-based songs, devotionals, Bible teaching, prayer resources, and counseling encouragement.
+              Thank you for listening to music from SpiritTone Records and 365 Daily Devotional. You may download this {downloadType === "video" ? "video" : "song"} freely. Your voluntary support helps us continue producing Scripture-based songs, devotionals, Bible teaching, prayer resources, and counseling encouragement.
             </p>
             <div className="rounded-lg bg-primary/5 border border-primary/15 p-4 space-y-1">
               <p className="text-sm italic text-foreground/80 leading-relaxed">
@@ -838,13 +863,18 @@ export default function SongDetail() {
             </p>
             {/iPad|iPhone|iPod/.test(navigator.userAgent) && (
               <p className="text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 rounded-md px-3 py-2 text-center">
-                On iPhone: Tap the Share icon after the file opens, then choose <strong>Save to Files</strong>.
+                On iPhone: Tap the Share icon after the file opens, then choose{" "}
+                <strong>{downloadType === "video" ? "Save Video" : "Save to Files"}</strong>.
               </p>
             )}
             <div className="flex flex-col gap-2 pt-1">
-              <Button onClick={triggerDownload} className="w-full" data-testid="button-confirm-download">
+              <Button
+                onClick={downloadType === "video" ? triggerVideoDownload : triggerDownload}
+                className="w-full"
+                data-testid="button-confirm-download"
+              >
                 <Download className="w-4 h-4 mr-2" />
-                Continue to Download
+                {downloadType === "video" ? "Continue to Download Video" : "Continue to Download Audio"}
               </Button>
               <Button
                 variant="outline"

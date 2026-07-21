@@ -1,0 +1,239 @@
+==================================================
+ADD MP4 VIDEO UPLOAD AND DOWNLOAD SUPPORT
+==================================================
+
+In addition to the existing audio support, allow each song to have an OPTIONAL MP4 video file.
+
+Do not remove, replace, or disrupt the existing audio upload, playback, or download system.
+
+--------------------------------------------------
+ADMIN SONG FORM
+--------------------------------------------------
+
+For every song upload and edit form, add:
+
+Video File — optional
+
+Accepted format:
+
+• MP4 only
+
+Add separate controls:
+
+Audio Download:
+• Enabled
+• Disabled
+
+Video Download:
+• Enabled
+• Disabled
+
+Default for new songs:
+
+• Audio Download Enabled
+• Video Download Enabled only when an MP4 file has been uploaded
+
+If no video file exists:
+
+• Hide or disable the Video Download setting
+• Do not show a broken video button publicly
+
+In the admin song list, clearly display:
+
+• Audio Download Enabled / Disabled
+• Video Download Enabled / Disabled
+• MP4 Uploaded / No Video
+
+The admin must be able to:
+
+• Upload an MP4 while creating a song
+• Add or replace an MP4 later
+• Remove the MP4 without deleting the audio or song record
+• Enable or disable audio and video downloads independently
+
+Do not automatically generate or convert an MP4 from the audio file.
+
+--------------------------------------------------
+MULTI-SONG BATCH UPLOAD
+--------------------------------------------------
+
+For batch uploads, allow each selected song entry to have:
+
+• One audio file
+• One optional MP4 video file
+• One optional cover image
+• Separate Audio Download and Video Download settings
+
+Keep each MP4 correctly attached to its matching song.
+
+Do not require every song in the batch to have a video.
+
+Use controlled uploads so large MP4 files do not overload the server.
+
+Recommended maximum concurrency:
+
+• Two total file uploads at a time
+
+Show separate progress indicators for:
+
+• Audio upload
+• Video upload
+• Cover image upload
+
+If the MP4 upload fails but the audio succeeds:
+
+• Preserve the uploaded audio and song record
+• Mark the video upload as Failed
+• Allow Retry Video
+• Do not duplicate the song
+
+--------------------------------------------------
+PUBLIC SONG PAGE
+--------------------------------------------------
+
+When a song has downloadable audio and video, show two clear buttons:
+
+• Download Audio
+• Download Video (MP4)
+
+Do not combine both into one unclear button.
+
+When only audio is available:
+
+• Show Download Audio
+• Do not show Download Video
+
+When only video is available:
+
+• Show Download Video (MP4)
+• Do not show Download Audio
+
+When both are disabled:
+
+Show:
+
+Download Unavailable
+
+When the user taps either download button, open the existing download encouragement modal.
+
+Update the modal title according to the selected format:
+
+For audio:
+Your Audio Download Is Ready
+
+For video:
+Your Video Download Is Ready
+
+Keep the existing voluntary-support message and Scripture:
+
+“Each of you should give what you have decided in your heart to give, not reluctantly or under compulsion, for God loves a cheerful giver.”
+— 2 Corinthians 9:7
+
+Keep this statement visible:
+
+“Giving is completely optional. You may continue your download whether or not you give.”
+
+For audio, use:
+
+Continue to Download Audio
+
+For MP4, use:
+
+Continue to Download Video
+
+The support button must continue opening the existing donation system.
+
+--------------------------------------------------
+VIDEO DOWNLOAD BEHAVIOR
+--------------------------------------------------
+
+When Video Download is enabled:
+
+• Download or open the original uploaded MP4 file
+• Preserve the original video quality
+• Use a safe filename based on the song title
+• Example:
+  the-lord-is-my-shepherd.mp4
+• Do not transcode or compress the MP4
+• Do not duplicate it in storage
+• Do not expose private server paths
+• Use the existing storage URL or secure download endpoint
+
+On iPhone Safari, if the browser opens the video instead of saving it, display:
+
+“Tap the Share icon, then choose Save to Files or Save Video.”
+
+Do not claim that the video was downloaded unless the browser initiated or opened the file.
+
+--------------------------------------------------
+FILE VALIDATION AND COST CONTROL
+--------------------------------------------------
+
+Validate before uploading:
+
+• File extension is .mp4
+• MIME type is video/mp4
+• File size is within the current storage/server limit
+
+Use the project’s existing storage system only.
+
+Do not add:
+
+• Video conversion
+• FFmpeg
+• Automatic rendering
+• Streaming infrastructure
+• A paid video service
+• A new storage subscription
+
+If there is no existing MP4 size limit, use a conservative limit that the current server safely supports and clearly show the limit beside the upload field.
+
+Reject unsupported video formats with a clear message:
+
+“Please upload an MP4 video file.”
+
+Do not silently compress or alter the video.
+
+--------------------------------------------------
+PRESERVE CURRENT FEATURES
+--------------------------------------------------
+
+Do not break:
+
+• Existing audio files
+• Audio playback
+• Existing song records
+• Existing cover images
+• Lyrics
+• Credits
+• Favorites
+• Library
+• Sharing
+• Donations
+• Admin navigation
+• Song testimonials
+• Existing batch uploads
+
+--------------------------------------------------
+TEST
+--------------------------------------------------
+
+Test:
+
+1. Upload a song with audio only.
+2. Upload a song with audio and MP4.
+3. Upload multiple songs where only some have MP4 files.
+4. Confirm audio and video remain attached to the correct song.
+5. Confirm Download Audio works.
+6. Confirm Download Video works.
+7. Confirm no video button appears when no MP4 exists.
+8. Confirm disabling video download hides or disables only the video button.
+9. Confirm audio playback remains unchanged.
+10. Confirm a failed video upload does not remove a successful audio upload.
+
+Return additionally:
+
+• Video database field added, if any
+• MP4 storage path or existing storage bucket used
+• Maximum MP4 file size allowed
+• Audio and video download test results

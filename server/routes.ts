@@ -1673,6 +1673,54 @@ export async function registerRoutes(
     }
   });
 
+  // Public: free promotional video download — streams MP4 with safe filename
+  app.get("/api/songs/:id/download-video", async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const song = await storage.getSong(id);
+      if (!song) return res.status(404).json({ message: "Song not found" });
+      if ((song as any).videoDownloadStatus === "disabled") {
+        return res.status(403).json({ message: "Video download is not available for this song" });
+      }
+      if (!(song as any).videoUrl) {
+        return res.status(404).json({ message: "No video file associated with this song" });
+      }
+
+      const { ObjectStorageService } = await import("./replit_integrations/object_storage/index.js");
+      const svc = new ObjectStorageService();
+      const file = await svc.getObjectEntityFile((song as any).videoUrl);
+      const [metadata] = await file.getMetadata();
+      const contentType = (metadata.contentType as string) || "video/mp4";
+
+      const safeTitle = song.title
+        .replace(/[^\w\s-]/gi, "")
+        .trim()
+        .replace(/\s+/g, "-")
+        .substring(0, 80) || "song";
+
+      res.set({
+        "Content-Type": contentType,
+        "Content-Disposition": `attachment; filename="${safeTitle}.mp4"`,
+        "Cache-Control": "private, no-store",
+      });
+      if (metadata.size) res.set("Content-Length", String(metadata.size));
+
+      const stream = file.createReadStream();
+      stream.on("error", (err) => {
+        console.error("Song video download stream error:", err);
+        if (!res.headersSent) res.status(500).json({ message: "Error streaming video file" });
+      });
+      stream.pipe(res);
+    } catch (err: any) {
+      console.error("Song video download error:", err);
+      if (err?.name === "ObjectNotFoundError") {
+        return res.status(404).json({ message: "Video file not found in storage" });
+      }
+      res.status(500).json({ message: "Video download failed" });
+    }
+  });
+
   // Public: get active giving methods (voluntary support)
   app.get("/api/giving-methods", async (_req, res) => {
     try {
