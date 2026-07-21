@@ -1,300 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Heart, ExternalLink, CreditCard, X, Copy, Check, Calendar, RefreshCw, AlertCircle, Send, CheckCircle2 } from "lucide-react";
-import { SiPaypal, SiCashapp, SiVenmo } from "react-icons/si";
+import { Heart, ExternalLink, Copy, Check, RefreshCw, AlertCircle, Send, CheckCircle2, Building2 } from "lucide-react";
+import { SiVenmo } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
-const PAYPAL_LINK = import.meta.env.VITE_PAYPAL_DONATION_LINK || "https://www.paypal.com/donate/?hosted_button_id=Y9PAZK36FKT8L";
-const CASHAPP_TAG = import.meta.env.VITE_CASHTAG || "$365dailydevotional";
-const CASHAPP_LINK = `https://cash.app/${CASHAPP_TAG}`;
 const VENMO_LINK = "https://venmo.com/u/dailydevotional";
+const VENMO_USERNAME = "@dailydevotional";
 const OPAY_ACCOUNT_NUMBER = "8054611168";
-
-const SUGGESTED_AMOUNTS = [
-  { amount: 5, label: "Help someone read today's devotional" },
-  { amount: 10, label: "Sponsor devotionals for a week" },
-  { amount: 25, label: "Support global outreach" },
-  { amount: 50, label: "Help expand the ministry" },
-];
-
-const PURPOSES = [
-  "General Ministry Support",
-  "Daily Devotional Outreach",
-  "Youth Fellowship",
-  "Media Ministry",
-  "Tithe / Offering",
-];
-
-type PaymentMethod = "paypal" | "cashapp" | "card";
-
-function DonationModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { toast } = useToast();
-  const [amount, setAmount] = useState("");
-  const [donorName, setDonorName] = useState("");
-  const [note, setNote] = useState("");
-  const [purpose, setPurpose] = useState(PURPOSES[0]);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("paypal");
-  const [loading, setLoading] = useState(false);
-
-  if (!open) return null;
-
-  const numericAmount = parseFloat(amount);
-  const canContinue = !isNaN(numericAmount) && numericAmount > 0;
-
-  const handleContinue = async () => {
-    if (!canContinue) return;
-
-    if (paymentMethod === "paypal") {
-      window.open(PAYPAL_LINK, "_blank", "noopener,noreferrer");
-      return;
-    }
-
-    if (paymentMethod === "cashapp") {
-      window.open(CASHAPP_LINK, "_blank", "noopener,noreferrer");
-      return;
-    }
-
-    if (paymentMethod === "card") {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/create-donation-session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            amount: numericAmount,
-            donorName: donorName.trim() || "Anonymous",
-            note: note.trim(),
-            purpose,
-          }),
-        });
-
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.message || "Payment could not be started. Please try again.");
-        }
-
-        const data = await res.json();
-        if (data.checkoutUrl) {
-          window.location.href = data.checkoutUrl;
-        } else {
-          throw new Error("Payment could not be started. Please try again.");
-        }
-      } catch (err: any) {
-        if (err.message?.includes("not currently available")) {
-          toast({
-            title: "Card Payments Unavailable",
-            description: "Redirecting you to PayPal instead.",
-          });
-          setTimeout(() => {
-            window.open(PAYPAL_LINK, "_blank", "noopener,noreferrer");
-          }, 1500);
-        } else {
-          toast({
-            title: "Payment Error",
-            description: err.message || "Payment could not be started. Please try again.",
-            variant: "destructive",
-          });
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  const inputClass =
-    "w-full px-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/40";
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      data-testid="donation-modal-overlay"
-    >
-      <div
-        className="bg-card rounded-2xl shadow-2xl w-[95%] max-w-[420px] max-h-[90vh] overflow-y-auto"
-        data-testid="donation-modal"
-      >
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-lg font-bold text-foreground">Support the Ministry</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-muted transition-colors"
-            data-testid="button-close-modal"
-          >
-            <X className="w-5 h-5 text-muted-foreground" />
-          </button>
-        </div>
-
-        <div className="p-4 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Suggested Amounts</label>
-            <div className="grid grid-cols-2 gap-2">
-              {SUGGESTED_AMOUNTS.map((s) => (
-                <button
-                  key={s.amount}
-                  type="button"
-                  onClick={() => setAmount(String(s.amount))}
-                  className={`p-3 rounded-lg border text-left transition-all ${
-                    amount === String(s.amount)
-                      ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                      : "border-border hover:border-primary/40 hover:bg-muted/50"
-                  }`}
-                  data-testid={`button-amount-${s.amount}`}
-                >
-                  <span className="block text-base font-bold text-foreground">${s.amount}</span>
-                  <span className="block text-xs text-muted-foreground leading-snug mt-0.5">{s.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="donation-amount" className="block text-sm font-medium text-foreground mb-1">
-              Amount ($)
-            </label>
-            <input
-              id="donation-amount"
-              type="number"
-              min="1"
-              step="any"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter amount"
-              className={inputClass}
-              data-testid="input-donation-amount"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="donor-name" className="block text-sm font-medium text-foreground mb-1">
-              Name <span className="text-muted-foreground">(optional)</span>
-            </label>
-            <input
-              id="donor-name"
-              type="text"
-              value={donorName}
-              onChange={(e) => setDonorName(e.target.value)}
-              placeholder="Your name"
-              className={inputClass}
-              data-testid="input-donor-name"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="donation-note" className="block text-sm font-medium text-foreground mb-1">
-              Note <span className="text-muted-foreground">(optional)</span>
-            </label>
-            <input
-              id="donation-note"
-              type="text"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Leave a message"
-              className={inputClass}
-              data-testid="input-donation-note"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="donation-purpose" className="block text-sm font-medium text-foreground mb-1">
-              Donation Purpose
-            </label>
-            <select
-              id="donation-purpose"
-              value={purpose}
-              onChange={(e) => setPurpose(e.target.value)}
-              className={inputClass}
-              data-testid="select-donation-purpose"
-            >
-              {PURPOSES.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Payment Method</label>
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("paypal")}
-                className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                  paymentMethod === "paypal"
-                    ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                    : "border-border hover:border-primary/40"
-                }`}
-                data-testid="button-method-paypal"
-              >
-                <SiPaypal className="w-5 h-5 text-[#003087]" />
-                <span className="text-sm font-medium text-foreground">Donate with PayPal</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("cashapp")}
-                className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                  paymentMethod === "cashapp"
-                    ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                    : "border-border hover:border-primary/40"
-                }`}
-                data-testid="button-method-cashapp"
-              >
-                <SiCashapp className="w-5 h-5 text-[#00D632]" />
-                <span className="text-sm font-medium text-foreground">Donate with Cash App</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("card")}
-                className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                  paymentMethod === "card"
-                    ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                    : "border-border hover:border-primary/40"
-                }`}
-                data-testid="button-method-card"
-              >
-                <CreditCard className="w-5 h-5 text-foreground" />
-                <span className="text-sm font-medium text-foreground">Donate with Card</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 border-t border-border flex flex-col gap-2">
-          <Button
-            type="button"
-            size="lg"
-            className="w-full gap-2"
-            disabled={!canContinue || loading}
-            onClick={handleContinue}
-            data-testid="button-continue-payment"
-          >
-            {loading ? "Processing..." : "Continue to Payment"}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            className="w-full"
-            onClick={onClose}
-            data-testid="button-cancel-donation"
-          >
-            Cancel
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
+const OPAY_ACCOUNT_NAME = "MOSES AFOLABI";
+const OPAY_BANK = "OPay";
 
 export function ConfirmationModal({ open, onClose, defaultGivingType }: {
   open: boolean;
@@ -316,14 +37,6 @@ export function ConfirmationModal({ open, onClose, defaultGivingType }: {
   const [paymentReference, setPaymentReference] = useState("");
   const [message, setMessage] = useState("");
   const [wantsThankYou, setWantsThankYou] = useState(false);
-
-  useEffect(() => {
-    if (open) {
-      setSubmitted(false);
-      setError("");
-      setGivingType(defaultGivingType);
-    }
-  }, [open, defaultGivingType]);
 
   const handleSubmit = async () => {
     setError("");
@@ -487,8 +200,7 @@ export function ConfirmationModal({ open, onClose, defaultGivingType }: {
 }
 
 export default function Donate() {
-  const [opaycopied, setOpayCopied] = useState(false);
-  const [frequency, setFrequency] = useState<"once" | "monthly">("once");
+  const [opayCopied, setOpayCopied] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { toast } = useToast();
 
@@ -520,120 +232,6 @@ export default function Donate() {
         </p>
       </div>
 
-      {/* Giving Frequency Toggle */}
-      <div className="flex justify-center">
-        <div className="inline-flex bg-muted/50 rounded-xl p-1 border border-primary/10 gap-1">
-          <button
-            type="button"
-            onClick={() => setFrequency("once")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-              frequency === "once"
-                ? "bg-primary text-primary-foreground shadow"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-            data-testid="button-give-once"
-          >
-            <Heart className="w-4 h-4" />
-            Give Once
-          </button>
-          <button
-            type="button"
-            onClick={() => setFrequency("monthly")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-              frequency === "monthly"
-                ? "bg-primary text-primary-foreground shadow"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-            data-testid="button-give-monthly"
-          >
-            <Calendar className="w-4 h-4" />
-            Support Monthly
-          </button>
-        </div>
-      </div>
-
-      {/* Monthly encouragement message */}
-      {frequency === "monthly" && (
-        <div className="bg-primary/5 border border-primary/20 rounded-xl px-6 py-5 text-center">
-          <p className="text-sm md:text-base text-foreground leading-relaxed">
-            Thank you for choosing to support the 365 Daily Devotional ministry every month. Your faithful
-            partnership helps us continue sharing God's Word with people around the world.
-          </p>
-        </div>
-      )}
-
-      {/* PayPal */}
-      <Card className="shadow-lg shadow-primary/10 border border-primary/15 overflow-hidden" data-testid="card-paypal">
-        <div className="bg-gradient-to-r from-[#003087]/10 via-[#003087]/5 to-transparent px-6 py-4 border-b border-primary/10 flex items-center gap-3">
-          <SiPaypal className="w-7 h-7 text-[#003087]" />
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Worldwide</p>
-            <h2 className="font-serif text-xl font-bold text-foreground">Donate with PayPal</h2>
-          </div>
-        </div>
-        <div className="px-6 py-6 space-y-5 text-center">
-          <p className="text-base text-muted-foreground leading-relaxed">
-            {frequency === "monthly"
-              ? "Tap the button below to open PayPal. You can then set up a recurring monthly gift from within your PayPal account."
-              : "Tap the button below to open PayPal and complete your donation securely."}
-          </p>
-          <a href={PAYPAL_LINK} target="_blank" rel="noopener noreferrer"
-            data-testid="link-paypal-donate" className="block">
-            <Button size="lg"
-              className="w-full gap-2 text-lg font-bold bg-[#003087] hover:bg-[#002574] text-white border-0 h-14"
-              data-testid="button-paypal-donate">
-              <SiPaypal className="w-6 h-6" />
-              Donate with PayPal
-              <ExternalLink className="w-4 h-4" />
-            </Button>
-          </a>
-          {frequency === "monthly" && (
-            <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 rounded-lg px-4 py-3 border border-primary/10">
-              To give monthly, complete your donation on PayPal, then log in and select{" "}
-              <strong>Set up recurring payments</strong> from your payment activity.
-            </p>
-          )}
-        </div>
-      </Card>
-
-      {/* Cash App */}
-      <Card className="shadow-lg shadow-primary/10 border border-primary/15 overflow-hidden" data-testid="card-cashapp">
-        <div className="bg-gradient-to-r from-[#00D632]/10 via-[#00D632]/5 to-transparent px-6 py-4 border-b border-primary/10 flex items-center gap-3">
-          <SiCashapp className="w-7 h-7 text-[#00D632]" />
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">USA</p>
-            <h2 className="font-serif text-xl font-bold text-foreground">Donate with Cash App</h2>
-          </div>
-        </div>
-        <div className="px-6 py-6 space-y-5 text-center">
-          <div className="inline-flex items-center gap-2 bg-muted/50 rounded-full px-5 py-2 border border-primary/10">
-            <SiCashapp className="w-5 h-5 text-[#00D632]" />
-            <span className="font-mono text-lg font-bold text-foreground tracking-wide">{CASHAPP_TAG}</span>
-          </div>
-          <p className="text-base text-muted-foreground leading-relaxed">
-            {frequency === "monthly"
-              ? "Tap the button below to open Cash App. You can then schedule a recurring monthly payment from within the app."
-              : "Tap the button below to open Cash App and send your gift directly."}
-          </p>
-          <a href={CASHAPP_LINK} target="_blank" rel="noopener noreferrer"
-            data-testid="link-cashapp-donate" className="block">
-            <Button size="lg"
-              className="w-full gap-2 text-lg font-bold bg-[#00D632] hover:bg-[#00b82a] text-black border-0 h-14"
-              data-testid="button-cashapp-donate">
-              <SiCashapp className="w-6 h-6" />
-              Donate with Cash App
-              <ExternalLink className="w-4 h-4" />
-            </Button>
-          </a>
-          {frequency === "monthly" && (
-            <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 rounded-lg px-4 py-3 border border-primary/10">
-              To make this monthly, open Cash App, tap <strong>Pay</strong>, enter your amount, then
-              select <strong>Make it recurring</strong> before sending.
-            </p>
-          )}
-        </div>
-      </Card>
-
       {/* Venmo — USA */}
       <Card className="shadow-lg shadow-primary/10 border border-primary/15 overflow-hidden" data-testid="card-venmo">
         <div className="bg-gradient-to-r from-[#008CFF]/10 via-[#008CFF]/5 to-transparent px-6 py-4 border-b border-primary/10 flex items-center gap-3">
@@ -644,32 +242,30 @@ export default function Donate() {
           </div>
         </div>
         <div className="px-6 py-6 space-y-5 text-center">
-          <div className="inline-flex items-center gap-2 bg-muted/50 rounded-full px-5 py-2 border border-primary/10">
+          <div className="inline-flex items-center gap-2 bg-muted/50 rounded-full px-5 py-2.5 border border-[#008CFF]/20">
             <SiVenmo className="w-5 h-5 text-[#008CFF]" />
-            <span className="font-mono text-lg font-bold text-foreground tracking-wide">@dailydevotional</span>
+            <span className="font-mono text-lg font-bold text-foreground tracking-wide">{VENMO_USERNAME}</span>
           </div>
           <p className="text-base text-muted-foreground leading-relaxed">
-            {frequency === "monthly"
-              ? "Tap the button below to open Venmo. You can then schedule monthly payments from within the app."
-              : "Tap the button below to open Venmo and send your gift. If Venmo is installed on your device it will open automatically."}
+            Tap the button below to open Venmo and send your gift. If Venmo is installed on your device it will open automatically.
           </p>
-          <a href={VENMO_LINK} target="_blank" rel="noopener noreferrer"
-            data-testid="link-venmo-donate" className="block">
-            <Button size="lg"
+          <a
+            href={VENMO_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block"
+            data-testid="link-venmo-donate"
+          >
+            <Button
+              size="lg"
               className="w-full gap-2 text-lg font-bold bg-[#008CFF] hover:bg-[#0079e0] text-white border-0 h-14"
-              data-testid="button-venmo-donate">
+              data-testid="button-venmo-donate"
+            >
               <SiVenmo className="w-6 h-6" />
-              {frequency === "monthly" ? "Set Up Monthly Support on Venmo" : "Donate via Venmo"}
+              Donate via Venmo
               <ExternalLink className="w-4 h-4" />
             </Button>
           </a>
-          {frequency === "monthly" && (
-            <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 rounded-lg px-4 py-3 border border-primary/10">
-              To make this monthly, open the Venmo app, enter your support amount, tap{" "}
-              <strong>Schedule</strong>, select <strong>Monthly</strong>, and choose your preferred
-              payment date.
-            </p>
-          )}
         </div>
       </Card>
 
@@ -677,44 +273,42 @@ export default function Donate() {
       <Card className="shadow-lg shadow-primary/10 border border-primary/15 overflow-hidden" data-testid="card-opay">
         <div className="bg-gradient-to-r from-green-600/10 via-green-600/5 to-transparent px-6 py-4 border-b border-primary/10 flex items-center gap-3">
           <div className="w-7 h-7 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-xs font-bold leading-none">₦</span>
+            <Building2 className="w-4 h-4 text-white" />
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">🇳🇬 Nigeria</p>
-            <h2 className="font-serif text-xl font-bold text-foreground">Donate by Bank Transfer</h2>
+            <h2 className="font-serif text-xl font-bold text-foreground">Donate by Bank Transfer (Nigeria)</h2>
           </div>
         </div>
         <div className="px-6 py-6 space-y-5">
           <div className="bg-muted/40 rounded-xl border border-primary/10 divide-y divide-primary/10 overflow-hidden">
             <div className="flex items-center justify-between px-4 py-4">
-              <span className="text-base text-muted-foreground font-medium">Account Name</span>
-              <span className="text-base font-bold text-foreground tracking-wide">MOSES AFOLABI</span>
+              <span className="text-sm text-muted-foreground font-medium">Account Name</span>
+              <span className="text-base font-bold text-foreground tracking-wide">{OPAY_ACCOUNT_NAME}</span>
             </div>
             <div className="flex items-center justify-between px-4 py-4">
-              <span className="text-base text-muted-foreground font-medium">Bank</span>
-              <span className="text-base font-bold text-foreground">OPay</span>
+              <span className="text-sm text-muted-foreground font-medium">Bank</span>
+              <span className="text-base font-bold text-foreground">{OPAY_BANK}</span>
             </div>
-            <div className="flex items-center justify-between px-4 py-4">
-              <span className="text-base text-muted-foreground font-medium">Account Number</span>
-              <span className="font-mono text-lg font-bold text-foreground tracking-widest">{OPAY_ACCOUNT_NUMBER}</span>
+            <div className="flex items-center justify-between px-4 py-4 gap-3">
+              <span className="text-sm text-muted-foreground font-medium flex-shrink-0">Account Number</span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-lg font-bold text-foreground tracking-widest">{OPAY_ACCOUNT_NUMBER}</span>
+                <button
+                  onClick={handleCopyOpay}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-all hover:bg-green-600/5 hover:border-green-600/50 flex-shrink-0"
+                  style={{ borderColor: opayCopied ? "#16a34a" : undefined, color: opayCopied ? "#16a34a" : undefined }}
+                  data-testid="button-copy-opay-account"
+                  aria-label="Copy account number"
+                >
+                  {opayCopied
+                    ? <><Check className="w-4 h-4" /> Copied</>
+                    : <><Copy className="w-4 h-4" /> Copy</>
+                  }
+                </button>
+              </div>
             </div>
           </div>
-          {frequency === "monthly" && (
-            <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 rounded-lg px-4 py-3 border border-primary/10">
-              For monthly support by bank transfer, you may save these account details and send your
-              chosen amount each month. Where available, you may also create a monthly standing
-              instruction through your banking app.
-            </p>
-          )}
-          <Button size="lg" variant="outline"
-            className="w-full gap-2 text-lg font-bold border-green-600/40 hover:bg-green-600/5 hover:border-green-600/70 h-14"
-            onClick={handleCopyOpay} data-testid="button-copy-opay-account">
-            {opaycopied ? (
-              <><Check className="w-5 h-5 text-green-600" /> Account number copied</>
-            ) : (
-              <><Copy className="w-5 h-5" /> Copy Account Number</>
-            )}
-          </Button>
         </div>
       </Card>
 
@@ -743,7 +337,7 @@ export default function Donate() {
       <ConfirmationModal
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
-        defaultGivingType={frequency === "monthly" ? "Monthly Support" : "One-Time Donation"}
+        defaultGivingType="One-Time Donation"
       />
     </div>
   );
