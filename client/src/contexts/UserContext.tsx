@@ -151,11 +151,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
           : code === "auth/weak-password"
           ? "Please choose a stronger password."
           : code === "auth/operation-not-allowed"
-          ? "Account creation is temporarily unavailable. Please contact support."
+          ? "Email and password account creation is not yet enabled. Please contact support."
           : code === "auth/network-request-failed"
           ? "We could not connect. Please check your internet connection and try again."
           : code === "auth/unauthorized-domain"
-          ? "Account creation is not available on this domain. Please use the main app."
+          ? "This preview address is not yet authorized for account creation. Please contact support."
           : code === "auth/too-many-requests"
           ? "Too many attempts. Please wait a moment and try again."
           : "We could not create your account. Please try again or contact support.";

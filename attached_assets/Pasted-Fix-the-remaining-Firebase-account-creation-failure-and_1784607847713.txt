@@ -1,0 +1,161 @@
+Fix the remaining Firebase account-creation failure and verify that a new account can access Church Mode.
+
+This is a tightly scoped authentication repair.
+
+Do not redesign or modify Church Mode, navigation, devotionals, songs, donations, admin tools, or any unrelated feature.
+
+CURRENT CONFIRMED PROBLEM
+
+A completely new email address was used:
+
+myshopmyplaceng@gmail.com
+
+This email has never previously been registered in the 365 Daily Devotional app.
+
+The Create Account page still returns:
+
+“We could not create your account. Please try again or contact support.”
+
+The previous task improved error handling, but it did not identify or correct the underlying Firebase configuration problem.
+
+Do not stop after improving the error message again.
+
+==================================================
+1. CAPTURE THE REAL FIREBASE FAILURE
+==================================================
+
+Use the running Replit preview and reproduce account creation with a temporary fresh test email.
+
+Capture the exact Firebase error code from the browser console or the authentication response.
+
+Determine whether the error is caused by:
+
+• auth/operation-not-allowed
+• auth/unauthorized-domain
+• auth/network-request-failed
+• invalid or missing Firebase environment configuration
+• Firebase project mismatch
+• API key restriction
+• another actual Firebase error
+
+Return the exact code.
+
+Do not expose API keys, secrets, tokens, or passwords in the final report.
+
+==================================================
+2. CORRECT THE ACTUAL CONFIGURATION
+==================================================
+
+If Email/Password authentication is disabled:
+
+• Enable the Email/Password sign-in provider in the connected Firebase project if Replit has permission to do so.
+• Do not enable anonymous authentication.
+• Do not change existing authentication providers unnecessarily.
+
+If the Replit preview domain is unauthorized:
+
+• Identify the exact current preview hostname.
+• Add only that required hostname to Firebase Authentication Authorized Domains if project access permits.
+• Also confirm that the actual production domain remains authorized.
+• Do not add wildcards or unrelated domains.
+
+If Firebase environment variables are missing or incorrect:
+
+• Compare the preview configuration to the Firebase project already used by the production app.
+• Correct only the necessary Firebase public client configuration values.
+• Use Replit Secrets for any value that should not be committed.
+• Do not create a second Firebase project.
+• Do not replace the current user database.
+• Do not expose secrets in source code.
+
+If Replit cannot make a Firebase Console setting automatically:
+
+• State the exact setting that requires manual action.
+• Give the exact Firebase Console navigation path.
+• Provide the exact preview hostname that must be added.
+• Do not claim the issue is fixed until that action is completed.
+
+==================================================
+3. VERIFY REAL ACCOUNT CREATION
+==================================================
+
+After correcting the root cause, verify account creation with a temporary test email that has never been used.
+
+Confirm all of the following:
+
+1. createUserWithEmailAndPassword succeeds.
+2. The Firebase Authentication user record exists.
+3. The app recognizes the authenticated user.
+4. The verification-email process is attempted.
+5. Failure to send a verification email does not erase or hide a successfully created account.
+6. The user can sign out.
+7. The user can sign back in.
+8. The user can open Church Mode after signing in.
+9. The Church Mode page offers Create a Church Space and Join a Church.
+10. Existing users can still sign in.
+
+Delete only the temporary test user after testing if it is safe and does not affect any real account.
+
+Do not delete or change any existing real user.
+
+==================================================
+4. ACCOUNT TO BE CREATED BY THE OWNER
+==================================================
+
+Once Firebase signup is confirmed working, leave the Create Account form ready for the owner to personally register:
+
+Email:
+myshopmyplaceng@gmail.com
+
+Do not hard-code this email into the app.
+
+Do not place the owner’s password in source code, logs, test files, environment variables, database records, or the final report.
+
+Do not ask the owner’s password to be sent through the Agent conversation.
+
+The owner will type the password personally into the Create Account form after the fix.
+
+After successful registration, this account must be able to:
+
+• Sign in
+• Open Church Mode
+• Select Create a Church Space
+• Create and manage a church
+• Become Church Owner and Lead Pastor for the church it creates
+
+Do not automatically grant this account global 365 Daily Devotional administrator privileges.
+
+==================================================
+5. ERROR MESSAGES
+==================================================
+
+Keep the improved friendly error messages, but ensure unknown errors also log the actual Firebase error code in development mode.
+
+For auth/unauthorized-domain, display:
+
+“This preview address is not yet authorized for account creation. Please contact support.”
+
+For auth/operation-not-allowed, display:
+
+“Email and password account creation is not yet enabled. Please contact support.”
+
+Do not show raw Firebase error codes to ordinary users.
+
+==================================================
+6. RETURN ONLY
+==================================================
+
+Return only:
+
+1. Exact Firebase error code found
+2. Exact root cause
+3. Configuration or code corrected
+4. Whether Email/Password authentication is enabled
+5. Whether the current Replit preview hostname is authorized
+6. Whether a temporary test account was successfully created
+7. Whether sign-out and sign-in were successfully tested
+8. Whether the authenticated test account opened Church Mode
+9. Any manual Firebase Console action still required
+10. Confirmation that no unrelated feature was modified
+11. Confirmation that no password was saved, logged, or hard-coded
+12. Confirmation that nothing was deployed automatically

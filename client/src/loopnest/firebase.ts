@@ -1,12 +1,7 @@
-import { initializeApp } from "firebase/app";
+import { getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-};
-
-const app = initializeApp(firebaseConfig);
+// Reuse the app already initialised by client/src/lib/firebase.ts
+// to avoid "Firebase: Firebase App named '[DEFAULT]' already exists" error.
+const app = getApps().length > 0 ? getApp() : (() => { throw new Error("Firebase not initialised"); })();
 export const auth = getAuth(app);
