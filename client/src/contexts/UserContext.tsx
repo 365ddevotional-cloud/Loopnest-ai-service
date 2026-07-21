@@ -133,22 +133,47 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
+    let cred: Awaited<ReturnType<typeof createUserWithEmailAndPassword>> | null = null;
+
+    // Step 1: Create the Firebase account
     try {
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
-      await sendEmailVerification(cred.user);
-      return { success: true };
+      cred = await createUserWithEmailAndPassword(auth, email, password);
     } catch (err: any) {
       const code = err?.code ?? "";
+      if (import.meta.env.DEV) {
+        console.error("[signUp] Firebase createUser error:", code, err?.message);
+      }
       const error =
         code === "auth/email-already-in-use"
-          ? "An account with this email already exists."
-          : code === "auth/weak-password"
-          ? "Password must be at least 6 characters."
+          ? "An account already exists with this email. Please sign in or use Forgot Password."
           : code === "auth/invalid-email"
           ? "Please enter a valid email address."
-          : "Could not create account. Please try again.";
+          : code === "auth/weak-password"
+          ? "Please choose a stronger password."
+          : code === "auth/operation-not-allowed"
+          ? "Account creation is temporarily unavailable. Please contact support."
+          : code === "auth/network-request-failed"
+          ? "We could not connect. Please check your internet connection and try again."
+          : code === "auth/unauthorized-domain"
+          ? "Account creation is not available on this domain. Please use the main app."
+          : code === "auth/too-many-requests"
+          ? "Too many attempts. Please wait a moment and try again."
+          : "We could not create your account. Please try again or contact support.";
       return { success: false, error };
     }
+
+    // Step 2: Send verification email — failure here does NOT mean account creation failed
+    try {
+      await sendEmailVerification(cred.user);
+    } catch (err: any) {
+      if (import.meta.env.DEV) {
+        console.error("[signUp] sendEmailVerification error:", err?.code, err?.message);
+      }
+      // Account was created; verification email failed (domain auth, quota, etc.)
+      // Return success so the user can reach the verification screen and resend
+    }
+
+    return { success: true };
   }, []);
 
   const signUserOut = useCallback(async () => {

@@ -1,0 +1,82 @@
+Fix ONLY the existing account-creation failure shown in the preview.
+
+Do not modify Church Mode, navigation, styling, database structure, songs, devotionals, donations, or any unrelated feature.
+
+CURRENT PROBLEM
+
+On the existing “Your Account” page, creating an account returns only:
+
+“Could not create account. Please try again.”
+
+The form used a valid email and matching password, but the account was not created.
+
+This account system existed before Church Mode. Church Mode depends on it, so diagnose and correct the real signup failure.
+
+IMPORTANT
+
+Do not guess.
+Do not merely replace the error message.
+Inspect the actual Firebase/Auth error and the related user-profile creation request.
+
+CHECK THESE ITEMS ONLY
+
+1. Confirm Firebase Email/Password authentication is correctly initialized in the preview.
+2. Confirm the preview is using the correct Firebase environment variables.
+3. Confirm the preview domain is authorized where required.
+4. Confirm createUserWithEmailAndPassword is actually being called.
+5. Capture and inspect the exact Firebase error code.
+6. Confirm the app’s database/profile creation after Firebase signup succeeds.
+7. Confirm a failure creating the profile does not leave the user in a broken partial state.
+8. Check whether the email already exists before concluding signup is broken.
+9. Preserve the existing verification-email behavior.
+10. Preserve existing login and forgot-password functionality.
+
+USER-FACING ERROR MESSAGES
+
+Replace the generic message with the correct friendly message based on the actual error:
+
+auth/email-already-in-use:
+“An account already exists with this email. Please sign in or use Forgot Password.”
+
+auth/invalid-email:
+“Please enter a valid email address.”
+
+auth/weak-password:
+“Please choose a stronger password.”
+
+auth/operation-not-allowed:
+“Account creation is temporarily unavailable. Please contact support.”
+
+auth/network-request-failed:
+“We could not connect. Please check your internet connection and try again.”
+
+For unexpected errors:
+“We could not create your account. Please try again or contact support.”
+
+Do not expose technical Firebase details, keys, stack traces, or configuration values to users.
+
+TEST
+
+Use a fresh test email that has never been registered.
+
+Verify:
+
+1. A new Firebase user is created.
+2. The corresponding app user/profile record is created.
+3. The verification email is requested.
+4. The user sees the correct success message.
+5. An existing email produces the “account already exists” message.
+6. The user can sign in afterward.
+7. Church Mode can recognize the authenticated user.
+8. No existing user records are changed or deleted.
+
+Return only:
+
+1. Exact root cause
+2. Files changed
+3. Whether Firebase signup succeeded
+4. Whether app profile creation succeeded
+5. Preview test results
+6. Any configuration step that still requires manual action
+
+Do not deploy automatically.
