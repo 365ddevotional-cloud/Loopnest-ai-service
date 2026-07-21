@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import type { Church } from "@shared/schema";
 import { CHURCH_ROLE_LABELS, type ChurchRole } from "@shared/schema";
-import { Home, Mic2, Megaphone, Users, Heart, Shield, Settings, ChevronRight, HandCoins, MessageSquare, UserCircle } from "lucide-react";
+import { Home, Mic2, Megaphone, Users, Heart, Shield, Settings, ChevronRight, HandCoins, MessageSquare, UserCircle, Building2 } from "lucide-react";
 
 interface ChurchModeShellProps {
   church: Church | null;
@@ -48,6 +48,7 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
     { label: "Sermons", path: `/church/${slug}/sermons`, icon: Mic2 },
     { label: "Announcements", path: `/church/${slug}/announcements`, icon: Megaphone },
     { label: "Groups", path: `/church/${slug}/groups`, icon: Users },
+    { label: "Departments", path: `/church/${slug}/departments`, icon: Building2 },
     { label: "Prayer", path: `/church/${slug}/prayer`, icon: Heart },
     { label: "Giving", path: `/church/${slug}/giving`, icon: HandCoins },
     { label: "Messages", path: `/church/${slug}/messages`, icon: MessageSquare, badge: unreadMessages > 0 ? unreadMessages : 0 },

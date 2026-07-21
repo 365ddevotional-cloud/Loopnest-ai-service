@@ -25,6 +25,22 @@ import {
   userDownloadHistory,
   churchGivingSettings,
   churchGivingCategories,
+  churchDepartments,
+  churchDepartmentMembers,
+  churchDepartmentPosts,
+  churchDepartmentEvents,
+  churchDepartmentTasks,
+  churchDepartmentAttendance,
+  type ChurchDepartment,
+  type InsertChurchDepartment,
+  type ChurchDepartmentMember,
+  type ChurchDepartmentPost,
+  type ChurchDepartmentEvent,
+  type InsertChurchDepartmentEvent,
+  type ChurchDepartmentTask,
+  type InsertChurchDepartmentTask,
+  type ChurchDepartmentAttendance,
+  type InsertChurchDepartmentAttendance,
   churchPayoutConfigs,
   churchTransactions,
   globalGivingSettings,
@@ -387,6 +403,34 @@ export interface IStorage {
   getMyGivingHistory(churchId: number, firebaseUid: string, limit?: number): Promise<ChurchTransaction[]>;
   seedDefaultGivingCategories(churchId: number): Promise<ChurchGivingCategory[]>;
   getAllGivingStats(): Promise<{ totalDonations: number; totalPlatformFee: number; totalChurchNet: number; count: number }>;
+  // Departments
+  getDepartments(churchId: number): Promise<ChurchDepartment[]>;
+  getDepartment(id: number): Promise<ChurchDepartment | undefined>;
+  getDepartmentBySlug(churchId: number, slug: string): Promise<ChurchDepartment | undefined>;
+  getDepartmentByInviteCode(code: string): Promise<ChurchDepartment | undefined>;
+  createDepartment(data: InsertChurchDepartment): Promise<ChurchDepartment>;
+  updateDepartment(id: number, data: Partial<InsertChurchDepartment>): Promise<ChurchDepartment>;
+  deleteDepartment(id: number): Promise<void>;
+  getDepartmentMembers(departmentId: number): Promise<Array<ChurchDepartmentMember & { member: ChurchMember }>>;
+  getMyDepartmentMembership(departmentId: number, churchMemberId: number): Promise<ChurchDepartmentMember | undefined>;
+  addDepartmentMember(departmentId: number, churchMemberId: number, role?: string): Promise<ChurchDepartmentMember>;
+  removeDepartmentMember(departmentId: number, churchMemberId: number): Promise<void>;
+  updateDepartmentMemberRole(departmentId: number, churchMemberId: number, role: string): Promise<ChurchDepartmentMember>;
+  getDepartmentPosts(departmentId: number, type?: string, limit?: number): Promise<Array<ChurchDepartmentPost & { authorName: string | null }>>;
+  createDepartmentPost(data: Omit<typeof churchDepartmentPosts.$inferInsert, "id" | "createdAt" | "isDeleted">): Promise<ChurchDepartmentPost>;
+  deleteDepartmentPost(id: number): Promise<void>;
+  pinDepartmentPost(id: number, isPinned: boolean): Promise<void>;
+  getDepartmentEvents(departmentId: number): Promise<ChurchDepartmentEvent[]>;
+  createDepartmentEvent(data: InsertChurchDepartmentEvent): Promise<ChurchDepartmentEvent>;
+  updateDepartmentEvent(id: number, data: Partial<InsertChurchDepartmentEvent>): Promise<ChurchDepartmentEvent>;
+  deleteDepartmentEvent(id: number): Promise<void>;
+  getDepartmentTasks(departmentId: number): Promise<ChurchDepartmentTask[]>;
+  createDepartmentTask(data: InsertChurchDepartmentTask): Promise<ChurchDepartmentTask>;
+  updateDepartmentTask(id: number, data: Partial<InsertChurchDepartmentTask>): Promise<ChurchDepartmentTask>;
+  deleteDepartmentTask(id: number): Promise<void>;
+  getDepartmentAttendance(departmentId: number): Promise<ChurchDepartmentAttendance[]>;
+  createDepartmentAttendance(data: InsertChurchDepartmentAttendance): Promise<ChurchDepartmentAttendance>;
+  updateDepartmentAttendance(id: number, data: Partial<InsertChurchDepartmentAttendance>): Promise<ChurchDepartmentAttendance>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2039,6 +2083,153 @@ export class DatabaseStorage implements IStorage {
       totalChurchNet: txns.reduce((s, t) => s + t.churchNetAmount, 0),
       count: txns.length,
     };
+  }
+
+  // ── Departments ────────────────────────────────────────────────────────────
+  async getDepartments(churchId: number): Promise<ChurchDepartment[]> {
+    return db.select().from(churchDepartments)
+      .where(and(eq(churchDepartments.churchId, churchId), eq(churchDepartments.isActive, true)))
+      .orderBy(churchDepartments.name);
+  }
+  async getDepartment(id: number): Promise<ChurchDepartment | undefined> {
+    const [row] = await db.select().from(churchDepartments).where(eq(churchDepartments.id, id));
+    return row;
+  }
+  async getDepartmentBySlug(churchId: number, slug: string): Promise<ChurchDepartment | undefined> {
+    const [row] = await db.select().from(churchDepartments)
+      .where(and(eq(churchDepartments.churchId, churchId), eq(churchDepartments.slug, slug)));
+    return row;
+  }
+  async getDepartmentByInviteCode(code: string): Promise<ChurchDepartment | undefined> {
+    const [row] = await db.select().from(churchDepartments)
+      .where(and(eq(churchDepartments.inviteCode, code), eq(churchDepartments.isActive, true)));
+    return row;
+  }
+  async createDepartment(data: InsertChurchDepartment): Promise<ChurchDepartment> {
+    const [row] = await db.insert(churchDepartments).values(data).returning();
+    return row;
+  }
+  async updateDepartment(id: number, data: Partial<InsertChurchDepartment>): Promise<ChurchDepartment> {
+    const [row] = await db.update(churchDepartments).set(data).where(eq(churchDepartments.id, id)).returning();
+    return row;
+  }
+  async deleteDepartment(id: number): Promise<void> {
+    await db.update(churchDepartments).set({ isActive: false }).where(eq(churchDepartments.id, id));
+  }
+
+  async getDepartmentMembers(departmentId: number): Promise<Array<ChurchDepartmentMember & { member: ChurchMember }>> {
+    const rows = await db.select({ dm: churchDepartmentMembers, member: churchMembers })
+      .from(churchDepartmentMembers)
+      .innerJoin(churchMembers, eq(churchDepartmentMembers.churchMemberId, churchMembers.id))
+      .where(and(eq(churchDepartmentMembers.departmentId, departmentId), eq(churchDepartmentMembers.isActive, true)))
+      .orderBy(churchDepartmentMembers.joinedAt);
+    return rows.map(r => ({ ...r.dm, member: r.member }));
+  }
+  async getMyDepartmentMembership(departmentId: number, churchMemberId: number): Promise<ChurchDepartmentMember | undefined> {
+    const [row] = await db.select().from(churchDepartmentMembers)
+      .where(and(
+        eq(churchDepartmentMembers.departmentId, departmentId),
+        eq(churchDepartmentMembers.churchMemberId, churchMemberId),
+        eq(churchDepartmentMembers.isActive, true),
+      ));
+    return row;
+  }
+  async addDepartmentMember(departmentId: number, churchMemberId: number, role = "member"): Promise<ChurchDepartmentMember> {
+    const existing = await this.getMyDepartmentMembership(departmentId, churchMemberId);
+    if (existing) {
+      if (!existing.isActive) {
+        const [row] = await db.update(churchDepartmentMembers)
+          .set({ isActive: true, role })
+          .where(eq(churchDepartmentMembers.id, existing.id))
+          .returning();
+        return row;
+      }
+      return existing;
+    }
+    const [row] = await db.insert(churchDepartmentMembers).values({ departmentId, churchMemberId, role }).returning();
+    return row;
+  }
+  async removeDepartmentMember(departmentId: number, churchMemberId: number): Promise<void> {
+    await db.update(churchDepartmentMembers)
+      .set({ isActive: false })
+      .where(and(eq(churchDepartmentMembers.departmentId, departmentId), eq(churchDepartmentMembers.churchMemberId, churchMemberId)));
+  }
+  async updateDepartmentMemberRole(departmentId: number, churchMemberId: number, role: string): Promise<ChurchDepartmentMember> {
+    const [row] = await db.update(churchDepartmentMembers)
+      .set({ role })
+      .where(and(eq(churchDepartmentMembers.departmentId, departmentId), eq(churchDepartmentMembers.churchMemberId, churchMemberId)))
+      .returning();
+    return row;
+  }
+
+  async getDepartmentPosts(departmentId: number, type?: string, limit = 100): Promise<Array<ChurchDepartmentPost & { authorName: string | null }>> {
+    const conditions = [eq(churchDepartmentPosts.departmentId, departmentId), eq(churchDepartmentPosts.isDeleted, false)];
+    if (type) conditions.push(eq(churchDepartmentPosts.type, type));
+    const rows = await db.select({ post: churchDepartmentPosts, memberName: churchMembers.displayName })
+      .from(churchDepartmentPosts)
+      .leftJoin(churchMembers, eq(churchDepartmentPosts.authorMemberId, churchMembers.id))
+      .where(and(...conditions))
+      .orderBy(desc(churchDepartmentPosts.createdAt))
+      .limit(limit);
+    return rows.map(r => ({ ...r.post, authorName: r.memberName ?? null }));
+  }
+  async createDepartmentPost(data: Omit<typeof churchDepartmentPosts.$inferInsert, "id" | "createdAt" | "isDeleted">): Promise<ChurchDepartmentPost> {
+    const [row] = await db.insert(churchDepartmentPosts).values({ ...data, isDeleted: false }).returning();
+    return row;
+  }
+  async deleteDepartmentPost(id: number): Promise<void> {
+    await db.update(churchDepartmentPosts).set({ isDeleted: true }).where(eq(churchDepartmentPosts.id, id));
+  }
+  async pinDepartmentPost(id: number, isPinned: boolean): Promise<void> {
+    await db.update(churchDepartmentPosts).set({ isPinned }).where(eq(churchDepartmentPosts.id, id));
+  }
+
+  async getDepartmentEvents(departmentId: number): Promise<ChurchDepartmentEvent[]> {
+    return db.select().from(churchDepartmentEvents)
+      .where(eq(churchDepartmentEvents.departmentId, departmentId))
+      .orderBy(churchDepartmentEvents.startDate);
+  }
+  async createDepartmentEvent(data: InsertChurchDepartmentEvent): Promise<ChurchDepartmentEvent> {
+    const [row] = await db.insert(churchDepartmentEvents).values(data).returning();
+    return row;
+  }
+  async updateDepartmentEvent(id: number, data: Partial<InsertChurchDepartmentEvent>): Promise<ChurchDepartmentEvent> {
+    const [row] = await db.update(churchDepartmentEvents).set(data).where(eq(churchDepartmentEvents.id, id)).returning();
+    return row;
+  }
+  async deleteDepartmentEvent(id: number): Promise<void> {
+    await db.delete(churchDepartmentEvents).where(eq(churchDepartmentEvents.id, id));
+  }
+
+  async getDepartmentTasks(departmentId: number): Promise<ChurchDepartmentTask[]> {
+    return db.select().from(churchDepartmentTasks)
+      .where(eq(churchDepartmentTasks.departmentId, departmentId))
+      .orderBy(desc(churchDepartmentTasks.createdAt));
+  }
+  async createDepartmentTask(data: InsertChurchDepartmentTask): Promise<ChurchDepartmentTask> {
+    const [row] = await db.insert(churchDepartmentTasks).values(data).returning();
+    return row;
+  }
+  async updateDepartmentTask(id: number, data: Partial<InsertChurchDepartmentTask>): Promise<ChurchDepartmentTask> {
+    const [row] = await db.update(churchDepartmentTasks).set(data).where(eq(churchDepartmentTasks.id, id)).returning();
+    return row;
+  }
+  async deleteDepartmentTask(id: number): Promise<void> {
+    await db.delete(churchDepartmentTasks).where(eq(churchDepartmentTasks.id, id));
+  }
+
+  async getDepartmentAttendance(departmentId: number): Promise<ChurchDepartmentAttendance[]> {
+    return db.select().from(churchDepartmentAttendance)
+      .where(eq(churchDepartmentAttendance.departmentId, departmentId))
+      .orderBy(desc(churchDepartmentAttendance.sessionDate));
+  }
+  async createDepartmentAttendance(data: InsertChurchDepartmentAttendance): Promise<ChurchDepartmentAttendance> {
+    const [row] = await db.insert(churchDepartmentAttendance).values(data).returning();
+    return row;
+  }
+  async updateDepartmentAttendance(id: number, data: Partial<InsertChurchDepartmentAttendance>): Promise<ChurchDepartmentAttendance> {
+    const [row] = await db.update(churchDepartmentAttendance).set(data).where(eq(churchDepartmentAttendance.id, id)).returning();
+    return row;
   }
 }
 

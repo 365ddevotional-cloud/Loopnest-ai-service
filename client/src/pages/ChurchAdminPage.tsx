@@ -24,10 +24,114 @@ import { Switch } from "@/components/ui/switch";
 
 interface MyRole { role: string | null; memberId: number | null; status: string | null; }
 
+function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdToken: () => Promise<string | null> }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [showCreate, setShowCreate] = useState(false);
+  const [deptName, setDeptName] = useState("");
+  const [deptType, setDeptType] = useState("Custom");
+  const [creating, setCreating] = useState(false);
+
+  const { data: departments, isLoading } = useQuery<any[]>({
+    queryKey: ["/api/churches", church.id, "departments-admin"],
+    queryFn: async () => {
+      const token = await getIdToken();
+      if (!token) return [];
+      const r = await fetch(`/api/churches/${church.id}/departments`, { headers: { Authorization: `Bearer ${token}` } });
+      return r.ok ? r.json() : [];
+    },
+  });
+
+  const handleCreate = async () => {
+    if (!deptName.trim()) return;
+    setCreating(true);
+    try {
+      const token = await getIdToken();
+      const r = await fetch(`/api/churches/${church.id}/departments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token ?? ""}` },
+        body: JSON.stringify({ name: deptName.trim(), type: deptType }),
+      });
+      const data = await r.json();
+      if (!r.ok) { toast({ title: "Error", description: data.message, variant: "destructive" }); return; }
+      toast({ title: "Department created!" });
+      qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "departments-admin"] });
+      setShowCreate(false); setDeptName(""); setDeptType("Custom");
+    } finally { setCreating(false); }
+  };
+
+  const handleDelete = async (deptId: number) => {
+    const token = await getIdToken();
+    await fetch(`/api/churches/departments/${deptId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token ?? ""}` } });
+    qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "departments-admin"] });
+    toast({ title: "Department removed" });
+  };
+
+  return (
+    <div className="space-y-4">
+      <Button size="sm" onClick={() => setShowCreate(true)} className="gap-2" style={{ backgroundColor: "#1a2744" }}
+        data-testid="button-admin-create-dept">
+        <Plus className="w-4 h-4" />Create Department
+      </Button>
+
+      {isLoading ? (
+        <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "#b8962e" }} /></div>
+      ) : !departments?.length ? (
+        <div className="text-center py-10">
+          <Building2 className="w-10 h-10 mx-auto mb-2" style={{ color: "#c9b99060" }} />
+          <p className="text-sm" style={{ color: "#7a7570" }}>No departments yet</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {departments.map((dept: any) => (
+            <Card key={dept.id} className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+              <CardContent className="pt-3 pb-3 px-4 flex items-center gap-3">
+                <Building2 className="w-4 h-4 flex-shrink-0" style={{ color: "#1a2744" }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>{dept.name}</p>
+                  <p className="text-xs" style={{ color: "#7a7570" }}>{dept.type} · Invite: {dept.inviteCode}</p>
+                </div>
+                <a href={`/church/${church.slug}/departments/${dept.slug}`}
+                  className="text-xs px-2.5 py-1.5 rounded-lg font-medium"
+                  style={{ backgroundColor: "#1a274412", color: "#1a2744" }}>Open</a>
+                <button onClick={() => handleDelete(dept.id)} className="p-1.5 rounded hover:bg-red-50">
+                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                </button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {showCreate && (
+        <Card className="border" style={{ borderColor: "#e8e3dc" }}>
+          <CardContent className="pt-4 pb-4 px-4 space-y-3">
+            <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>New Department</p>
+            <Input value={deptName} onChange={e => setDeptName(e.target.value)} placeholder="Department name…" data-testid="input-admin-dept-name" />
+            <select className="w-full border rounded-md px-3 py-2 text-sm" style={{ borderColor: "#e8e3dc" }}
+              value={deptType} onChange={e => setDeptType(e.target.value)}>
+              {["Youth Ministry","Children's Ministry","Women's Fellowship","Men's Fellowship","Choir","Ushering","Media","Evangelism","Prayer Team","Sunday School","Hospitality","Finance","Protocol","Follow-Up","Missions","Custom"].map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            <div className="flex gap-3">
+              <Button variant="outline" size="sm" onClick={() => setShowCreate(false)} className="flex-1">Cancel</Button>
+              <Button size="sm" onClick={handleCreate} disabled={creating || !deptName.trim()} className="flex-1"
+                style={{ backgroundColor: "#1a2744" }} data-testid="button-admin-confirm-dept">
+                {creating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}Create
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 const ADMIN_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor"];
 const PROD_URL = "https://365dailydevotional.com";
 
-type AdminTab = "settings" | "branding" | "invitations" | "sermons" | "announcements" | "members" | "prayer" | "giving" | "reports" | "insights";
+type AdminTab = "settings" | "branding" | "invitations" | "sermons" | "announcements" | "members" | "prayer" | "giving" | "reports" | "insights" | "departments";
 
 const roleColors: Record<string, string> = {
   owner: "bg-amber-100 text-amber-800 border-amber-300",
@@ -624,6 +728,7 @@ export default function ChurchAdminPage() {
     { key: "members", label: "Members", icon: Users },
     { key: "prayer", label: "Prayer", icon: Heart },
     { key: "giving", label: "Giving", icon: HandCoins },
+    { key: "departments", label: "Departments", icon: Building2 },
     { key: "reports", label: "Reports", icon: BarChart3 },
     { key: "insights", label: "Insights", icon: BarChart3 },
   ];
@@ -1851,6 +1956,31 @@ export default function ChurchAdminPage() {
                   </Card>
                 )}
               </>
+            )}
+          </div>
+        )}
+
+        {activeTab === "departments" && (
+          <div className="space-y-5">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <h3 className="font-semibold" style={{ color: "#1a2744" }}>Department Management</h3>
+              <Button
+                size="sm"
+                className="gap-2"
+                style={{ backgroundColor: "#1a2744" }}
+                onClick={() => church && window.open(`/church/${church.slug}/departments`, "_self")}
+                data-testid="button-manage-departments"
+              >
+                <Building2 className="w-4 h-4" />View All Departments
+              </Button>
+            </div>
+
+            {!church ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#b8962e" }} />
+              </div>
+            ) : (
+              <AdminDepartmentsPanel church={church} getIdToken={getIdToken} />
             )}
           </div>
         )}

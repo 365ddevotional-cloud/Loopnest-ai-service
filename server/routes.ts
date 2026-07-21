@@ -4056,6 +4056,354 @@ export async function registerRoutes(
     }
   });
 
+  // ── Church Departments ────────────────────────────────────────────────────────
+  const deptAuth = async (req: any, deptId: number) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) throw new Error("Unauthorized");
+    const { auth } = await import("./firebase-admin.js");
+    const decoded = await auth.verifyIdToken(authHeader.slice(7));
+    const dept = await storage.getDepartment(deptId);
+    if (!dept) throw new Error("Not found");
+    const churchMember = await storage.getChurchMember(dept.churchId, decoded.uid);
+    if (!churchMember || churchMember.status !== "active") throw new Error("Not a church member");
+    const deptMember = await storage.getMyDepartmentMembership(deptId, churchMember.id);
+    const ADMIN_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor"];
+    const isChurchAdmin = ADMIN_ROLES.includes(churchMember.role ?? "");
+    return { uid: decoded.uid, churchMember, deptMember, dept, isChurchAdmin };
+  };
+
+  app.get("/api/churches/:churchId/departments", async (req, res) => {
+    const churchId = parseInt(req.params.churchId);
+    if (isNaN(churchId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ message: "Unauthorized" });
+      const { auth } = await import("./firebase-admin.js");
+      const decoded = await auth.verifyIdToken(authHeader.slice(7));
+      const member = await storage.getChurchMember(churchId, decoded.uid);
+      if (!member || member.status !== "active") return res.status(403).json({ message: "Not a member" });
+      const depts = await storage.getDepartments(churchId);
+      const deptMembers = await Promise.all(depts.map(d => storage.getMyDepartmentMembership(d.id, member.id)));
+      res.json(depts.map((d, i) => ({ ...d, myMembership: deptMembers[i] ?? null })));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/churches/:churchId/departments", async (req, res) => {
+    const churchId = parseInt(req.params.churchId);
+    if (isNaN(churchId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ message: "Unauthorized" });
+      const { auth } = await import("./firebase-admin.js");
+      const decoded = await auth.verifyIdToken(authHeader.slice(7));
+      const member = await storage.getChurchMember(churchId, decoded.uid);
+      const ADMIN_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor", "ministry_leader"];
+      if (!member || !ADMIN_ROLES.includes(member.role ?? "")) return res.status(403).json({ message: "Insufficient permissions" });
+      const { name, type, description, logoUrl, bannerUrl } = req.body;
+      if (!name?.trim()) return res.status(400).json({ message: "Name is required" });
+      const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Date.now().toString(36);
+      const inviteCode = Math.random().toString(36).slice(2, 8).toUpperCase();
+      const dept = await storage.createDepartment({ churchId, name: name.trim(), slug, type: type ?? "Custom", description, logoUrl, bannerUrl, inviteCode, isActive: true, createdBy: member.id });
+      await storage.addDepartmentMember(dept.id, member.id, "leader");
+      res.status(201).json(dept);
+    } catch (e: any) { res.status(500).json({ message: e.message ?? "Server error" }); }
+  });
+
+  app.get("/api/churches/departments/:deptId", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { churchMember, deptMember, dept, isChurchAdmin } = await deptAuth(req, deptId);
+      if (!deptMember && !isChurchAdmin) return res.status(403).json({ message: "Not a department member" });
+      const members = await storage.getDepartmentMembers(deptId);
+      res.json({ ...dept, myMembership: deptMember ?? null, memberCount: members.length });
+    } catch (e: any) { res.status(e.message === "Not found" ? 404 : e.message === "Unauthorized" ? 401 : 403).json({ message: e.message }); }
+  });
+
+  app.put("/api/churches/departments/:deptId", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin } = await deptAuth(req, deptId);
+      const isDeptLeader = deptMember?.role === "leader" || deptMember?.role === "assistant_leader";
+      if (!isDeptLeader && !isChurchAdmin) return res.status(403).json({ message: "Not authorized" });
+      const { name, type, description, logoUrl, bannerUrl } = req.body;
+      const updated = await storage.updateDepartment(deptId, { name, type, description, logoUrl, bannerUrl });
+      res.json(updated);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.delete("/api/churches/departments/:deptId", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { isChurchAdmin } = await deptAuth(req, deptId);
+      if (!isChurchAdmin) return res.status(403).json({ message: "Only church admins can delete departments" });
+      await storage.deleteDepartment(deptId);
+      res.json({ ok: true });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.get("/api/churches/departments/:deptId/members", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin } = await deptAuth(req, deptId);
+      if (!deptMember && !isChurchAdmin) return res.status(403).json({ message: "Not a member" });
+      const members = await storage.getDepartmentMembers(deptId);
+      res.json(members.map(m => ({ ...m, member: { id: m.member.id, displayName: m.member.displayName, avatarUrl: null, role: m.member.role } })));
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.post("/api/churches/departments/:deptId/members", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin, dept } = await deptAuth(req, deptId);
+      const isDeptLeader = deptMember?.role === "leader" || deptMember?.role === "assistant_leader";
+      if (!isDeptLeader && !isChurchAdmin) return res.status(403).json({ message: "Not authorized" });
+      const { churchMemberId, role } = req.body;
+      const added = await storage.addDepartmentMember(deptId, parseInt(churchMemberId), role ?? "member");
+      res.json(added);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.delete("/api/churches/departments/:deptId/members/:memberId", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    const memberId = parseInt(req.params.memberId);
+    if (isNaN(deptId) || isNaN(memberId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin, churchMember } = await deptAuth(req, deptId);
+      const isDeptLeader = deptMember?.role === "leader";
+      const isSelf = churchMember.id === memberId;
+      if (!isDeptLeader && !isChurchAdmin && !isSelf) return res.status(403).json({ message: "Not authorized" });
+      await storage.removeDepartmentMember(deptId, memberId);
+      res.json({ ok: true });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.patch("/api/churches/departments/:deptId/members/:memberId/role", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    const memberId = parseInt(req.params.memberId);
+    if (isNaN(deptId) || isNaN(memberId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin } = await deptAuth(req, deptId);
+      if (deptMember?.role !== "leader" && !isChurchAdmin) return res.status(403).json({ message: "Not authorized" });
+      const { role } = req.body;
+      const updated = await storage.updateDepartmentMemberRole(deptId, memberId, role);
+      res.json(updated);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.post("/api/churches/departments/join", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ message: "Unauthorized" });
+      const { auth } = await import("./firebase-admin.js");
+      const decoded = await auth.verifyIdToken(authHeader.slice(7));
+      const { inviteCode } = req.body;
+      if (!inviteCode) return res.status(400).json({ message: "Invite code required" });
+      const dept = await storage.getDepartmentByInviteCode(inviteCode.trim().toUpperCase());
+      if (!dept) return res.status(404).json({ message: "Invalid invite code" });
+      const member = await storage.getChurchMember(dept.churchId, decoded.uid);
+      if (!member || member.status !== "active") return res.status(403).json({ message: "Not an active church member" });
+      const deptMember = await storage.addDepartmentMember(dept.id, member.id, "member");
+      res.json({ dept, deptMember });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.get("/api/churches/departments/:deptId/posts", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin } = await deptAuth(req, deptId);
+      if (!deptMember && !isChurchAdmin) return res.status(403).json({ message: "Not a member" });
+      const type = typeof req.query.type === "string" ? req.query.type : undefined;
+      const posts = await storage.getDepartmentPosts(deptId, type, 100);
+      res.json(posts);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.post("/api/churches/departments/:deptId/posts", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin, churchMember } = await deptAuth(req, deptId);
+      if (!deptMember && !isChurchAdmin) return res.status(403).json({ message: "Not a member" });
+      const { type, title, content, fileUrl, fileName } = req.body;
+      if (!content?.trim()) return res.status(400).json({ message: "Content required" });
+      const LEADER_ROLES = ["leader", "assistant_leader", "secretary"];
+      if (type === "announcement" && !LEADER_ROLES.includes(deptMember?.role ?? "") && !isChurchAdmin) {
+        return res.status(403).json({ message: "Only leaders can post announcements" });
+      }
+      const post = await storage.createDepartmentPost({ departmentId: deptId, authorMemberId: churchMember.id, type: type ?? "message", title, content: content.trim(), fileUrl, fileName, isPinned: false });
+      res.status(201).json(post);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.delete("/api/churches/departments/:deptId/posts/:postId", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    const postId = parseInt(req.params.postId);
+    if (isNaN(deptId) || isNaN(postId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin, churchMember } = await deptAuth(req, deptId);
+      const posts = await storage.getDepartmentPosts(deptId, undefined, 200);
+      const post = posts.find(p => p.id === postId);
+      if (!post) return res.status(404).json({ message: "Post not found" });
+      const isDeptLeader = ["leader", "assistant_leader"].includes(deptMember?.role ?? "");
+      if (post.authorMemberId !== churchMember.id && !isDeptLeader && !isChurchAdmin) return res.status(403).json({ message: "Not authorized" });
+      await storage.deleteDepartmentPost(postId);
+      res.json({ ok: true });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.patch("/api/churches/departments/:deptId/posts/:postId/pin", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    const postId = parseInt(req.params.postId);
+    if (isNaN(deptId) || isNaN(postId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin } = await deptAuth(req, deptId);
+      const isDeptLeader = ["leader", "assistant_leader"].includes(deptMember?.role ?? "");
+      if (!isDeptLeader && !isChurchAdmin) return res.status(403).json({ message: "Not authorized" });
+      await storage.pinDepartmentPost(postId, req.body.isPinned === true);
+      res.json({ ok: true });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.get("/api/churches/departments/:deptId/events", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin } = await deptAuth(req, deptId);
+      if (!deptMember && !isChurchAdmin) return res.status(403).json({ message: "Not a member" });
+      res.json(await storage.getDepartmentEvents(deptId));
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.post("/api/churches/departments/:deptId/events", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin, churchMember } = await deptAuth(req, deptId);
+      const isDeptLeader = ["leader", "assistant_leader"].includes(deptMember?.role ?? "");
+      if (!isDeptLeader && !isChurchAdmin) return res.status(403).json({ message: "Only leaders can create events" });
+      const { title, description, location, startDate, endDate, isAllDay } = req.body;
+      if (!title?.trim() || !startDate) return res.status(400).json({ message: "Title and startDate required" });
+      const event = await storage.createDepartmentEvent({ departmentId: deptId, createdBy: churchMember.id, title: title.trim(), description, location, startDate: new Date(startDate), endDate: endDate ? new Date(endDate) : undefined, isAllDay: isAllDay ?? false });
+      res.status(201).json(event);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.put("/api/churches/departments/:deptId/events/:eventId", async (req, res) => {
+    const deptId = parseInt(req.params.deptId); const eventId = parseInt(req.params.eventId);
+    if (isNaN(deptId) || isNaN(eventId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin } = await deptAuth(req, deptId);
+      const isDeptLeader = ["leader", "assistant_leader"].includes(deptMember?.role ?? "");
+      if (!isDeptLeader && !isChurchAdmin) return res.status(403).json({ message: "Not authorized" });
+      const { title, description, location, startDate, endDate, isAllDay } = req.body;
+      const updated = await storage.updateDepartmentEvent(eventId, { title, description, location, startDate: startDate ? new Date(startDate) : undefined, endDate: endDate ? new Date(endDate) : undefined, isAllDay });
+      res.json(updated);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.delete("/api/churches/departments/:deptId/events/:eventId", async (req, res) => {
+    const deptId = parseInt(req.params.deptId); const eventId = parseInt(req.params.eventId);
+    if (isNaN(deptId) || isNaN(eventId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin } = await deptAuth(req, deptId);
+      const isDeptLeader = ["leader", "assistant_leader"].includes(deptMember?.role ?? "");
+      if (!isDeptLeader && !isChurchAdmin) return res.status(403).json({ message: "Not authorized" });
+      await storage.deleteDepartmentEvent(eventId);
+      res.json({ ok: true });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.get("/api/churches/departments/:deptId/tasks", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin } = await deptAuth(req, deptId);
+      if (!deptMember && !isChurchAdmin) return res.status(403).json({ message: "Not a member" });
+      res.json(await storage.getDepartmentTasks(deptId));
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.post("/api/churches/departments/:deptId/tasks", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin, churchMember } = await deptAuth(req, deptId);
+      const isDeptLeader = ["leader", "assistant_leader", "secretary"].includes(deptMember?.role ?? "");
+      if (!isDeptLeader && !isChurchAdmin) return res.status(403).json({ message: "Only leaders can create tasks" });
+      const { title, description, assignedTo, dueDate, priority } = req.body;
+      if (!title?.trim()) return res.status(400).json({ message: "Title required" });
+      const task = await storage.createDepartmentTask({ departmentId: deptId, createdBy: churchMember.id, title: title.trim(), description, assignedTo: assignedTo ? parseInt(assignedTo) : undefined, dueDate: dueDate ? new Date(dueDate) : undefined, status: "pending", priority: priority ?? "normal" });
+      res.status(201).json(task);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.patch("/api/churches/departments/:deptId/tasks/:taskId", async (req, res) => {
+    const deptId = parseInt(req.params.deptId); const taskId = parseInt(req.params.taskId);
+    if (isNaN(deptId) || isNaN(taskId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin } = await deptAuth(req, deptId);
+      if (!deptMember && !isChurchAdmin) return res.status(403).json({ message: "Not a member" });
+      const updated = await storage.updateDepartmentTask(taskId, req.body);
+      res.json(updated);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.delete("/api/churches/departments/:deptId/tasks/:taskId", async (req, res) => {
+    const deptId = parseInt(req.params.deptId); const taskId = parseInt(req.params.taskId);
+    if (isNaN(deptId) || isNaN(taskId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin } = await deptAuth(req, deptId);
+      const isDeptLeader = ["leader", "assistant_leader"].includes(deptMember?.role ?? "");
+      if (!isDeptLeader && !isChurchAdmin) return res.status(403).json({ message: "Not authorized" });
+      await storage.deleteDepartmentTask(taskId);
+      res.json({ ok: true });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.get("/api/churches/departments/:deptId/attendance", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin } = await deptAuth(req, deptId);
+      const isDeptLeader = ["leader", "assistant_leader", "secretary"].includes(deptMember?.role ?? "");
+      if (!isDeptLeader && !isChurchAdmin) return res.status(403).json({ message: "Only leaders can view attendance" });
+      res.json(await storage.getDepartmentAttendance(deptId));
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.post("/api/churches/departments/:deptId/attendance", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin, churchMember } = await deptAuth(req, deptId);
+      const isDeptLeader = ["leader", "assistant_leader", "secretary"].includes(deptMember?.role ?? "");
+      if (!isDeptLeader && !isChurchAdmin) return res.status(403).json({ message: "Not authorized" });
+      const { sessionDate, sessionTitle, attendeeIds } = req.body;
+      if (!sessionDate || !Array.isArray(attendeeIds)) return res.status(400).json({ message: "sessionDate and attendeeIds[] required" });
+      const session = await storage.createDepartmentAttendance({ departmentId: deptId, sessionDate: new Date(sessionDate), sessionTitle: sessionTitle ?? null, attendeeIds: attendeeIds.map(Number), createdBy: churchMember.id });
+      res.status(201).json(session);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.patch("/api/churches/departments/:deptId/attendance/:sessionId", async (req, res) => {
+    const deptId = parseInt(req.params.deptId); const sessionId = parseInt(req.params.sessionId);
+    if (isNaN(deptId) || isNaN(sessionId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin } = await deptAuth(req, deptId);
+      const isDeptLeader = ["leader", "assistant_leader", "secretary"].includes(deptMember?.role ?? "");
+      if (!isDeptLeader && !isChurchAdmin) return res.status(403).json({ message: "Not authorized" });
+      const { attendeeIds } = req.body;
+      const updated = await storage.updateDepartmentAttendance(sessionId, { attendeeIds: Array.isArray(attendeeIds) ? attendeeIds.map(Number) : undefined });
+      res.json(updated);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
   // ── Admin: Global Giving Platform Settings ────────────────────────────────────
   // Member: my giving history for a church
   app.get("/api/churches/:id/giving/my-history", async (req, res) => {
@@ -4084,7 +4432,7 @@ export async function registerRoutes(
       const uid = decoded.uid;
       const church = await storage.getChurch(churchId);
       if (!church) return res.status(404).json({ message: "Church not found" });
-      const member = await storage.getChurchMemberByUid(churchId, uid);
+      const member = await storage.getChurchMember(churchId, uid);
       const ADMIN_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor"];
       if (!member || !ADMIN_ROLES.includes(member.role ?? "")) return res.status(403).json({ message: "Not authorized" });
       const cats = await storage.seedDefaultGivingCategories(churchId);

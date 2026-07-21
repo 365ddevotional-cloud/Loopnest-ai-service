@@ -1111,3 +1111,102 @@ export const globalGivingSettings = pgTable("global_giving_settings", {
 });
 export type GlobalGivingSetting = typeof globalGivingSettings.$inferSelect;
 export type InsertChurchActivity = z.infer<typeof insertChurchActivitySchema>;
+
+// ── Church Departments ────────────────────────────────────────────────────────
+export const PREDEFINED_DEPARTMENT_TYPES = [
+  "Youth Ministry", "Children's Ministry", "Women's Fellowship", "Men's Fellowship",
+  "Choir", "Ushering", "Media", "Evangelism", "Prayer Team", "Sunday School",
+  "Hospitality", "Finance", "Protocol", "Follow-Up", "Missions", "Custom",
+] as const;
+
+export const churchDepartments = pgTable("church_departments", {
+  id: serial("id").primaryKey(),
+  churchId: integer("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  type: text("type").notNull().default("Custom"),
+  description: text("description"),
+  logoUrl: text("logo_url"),
+  bannerUrl: text("banner_url"),
+  inviteCode: text("invite_code").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: integer("created_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertChurchDepartmentSchema = createInsertSchema(churchDepartments).omit({ id: true, createdAt: true });
+export type ChurchDepartment = typeof churchDepartments.$inferSelect;
+export type InsertChurchDepartment = z.infer<typeof insertChurchDepartmentSchema>;
+
+export const DEPT_MEMBER_ROLES = ["leader", "assistant_leader", "secretary", "member"] as const;
+export type DeptMemberRole = typeof DEPT_MEMBER_ROLES[number];
+
+export const churchDepartmentMembers = pgTable("church_department_members", {
+  id: serial("id").primaryKey(),
+  departmentId: integer("department_id").notNull().references(() => churchDepartments.id, { onDelete: "cascade" }),
+  churchMemberId: integer("church_member_id").notNull().references(() => churchMembers.id, { onDelete: "cascade" }),
+  role: text("role").notNull().default("member"),
+  joinedAt: timestamp("joined_at").defaultNow(),
+  isActive: boolean("is_active").notNull().default(true),
+});
+export type ChurchDepartmentMember = typeof churchDepartmentMembers.$inferSelect;
+
+export const churchDepartmentPosts = pgTable("church_department_posts", {
+  id: serial("id").primaryKey(),
+  departmentId: integer("department_id").notNull().references(() => churchDepartments.id, { onDelete: "cascade" }),
+  authorMemberId: integer("author_member_id").notNull().references(() => churchMembers.id, { onDelete: "cascade" }),
+  type: text("type").notNull().default("message"),
+  title: text("title"),
+  content: text("content").notNull(),
+  fileUrl: text("file_url"),
+  fileName: text("file_name"),
+  isPinned: boolean("is_pinned").notNull().default(false),
+  isDeleted: boolean("is_deleted").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertChurchDepartmentPostSchema = createInsertSchema(churchDepartmentPosts).omit({ id: true, createdAt: true, isDeleted: true });
+export type ChurchDepartmentPost = typeof churchDepartmentPosts.$inferSelect;
+
+export const churchDepartmentEvents = pgTable("church_department_events", {
+  id: serial("id").primaryKey(),
+  departmentId: integer("department_id").notNull().references(() => churchDepartments.id, { onDelete: "cascade" }),
+  createdBy: integer("created_by").notNull().references(() => churchMembers.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  location: text("location"),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date"),
+  isAllDay: boolean("is_all_day").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertChurchDepartmentEventSchema = createInsertSchema(churchDepartmentEvents).omit({ id: true, createdAt: true });
+export type ChurchDepartmentEvent = typeof churchDepartmentEvents.$inferSelect;
+export type InsertChurchDepartmentEvent = z.infer<typeof insertChurchDepartmentEventSchema>;
+
+export const churchDepartmentTasks = pgTable("church_department_tasks", {
+  id: serial("id").primaryKey(),
+  departmentId: integer("department_id").notNull().references(() => churchDepartments.id, { onDelete: "cascade" }),
+  createdBy: integer("created_by").notNull().references(() => churchMembers.id),
+  assignedTo: integer("assigned_to").references(() => churchMembers.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  dueDate: timestamp("due_date"),
+  status: text("status").notNull().default("pending"),
+  priority: text("priority").notNull().default("normal"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertChurchDepartmentTaskSchema = createInsertSchema(churchDepartmentTasks).omit({ id: true, createdAt: true });
+export type ChurchDepartmentTask = typeof churchDepartmentTasks.$inferSelect;
+export type InsertChurchDepartmentTask = z.infer<typeof insertChurchDepartmentTaskSchema>;
+
+export const churchDepartmentAttendance = pgTable("church_department_attendance", {
+  id: serial("id").primaryKey(),
+  departmentId: integer("department_id").notNull().references(() => churchDepartments.id, { onDelete: "cascade" }),
+  sessionDate: timestamp("session_date").notNull(),
+  sessionTitle: text("session_title"),
+  attendeeIds: integer("attendee_ids").array().notNull(),
+  createdBy: integer("created_by").notNull().references(() => churchMembers.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertChurchDepartmentAttendanceSchema = createInsertSchema(churchDepartmentAttendance).omit({ id: true, createdAt: true });
+export type ChurchDepartmentAttendance = typeof churchDepartmentAttendance.$inferSelect;
+export type InsertChurchDepartmentAttendance = z.infer<typeof insertChurchDepartmentAttendanceSchema>;

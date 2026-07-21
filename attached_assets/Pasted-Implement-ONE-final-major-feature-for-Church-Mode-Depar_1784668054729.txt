@@ -1,0 +1,114 @@
+Implement ONE final major feature for Church Mode: Department & Ministry Management.
+
+IMPORTANT:
+- Make only the changes described below.
+- Do not refactor unrelated code.
+- Do not modify existing Devotional, Songs, Bible Reader, Sunday School, Donation, or Admin features.
+- Preserve all existing functionality.
+- Keep database migrations minimal.
+- Keep implementation production-ready and mobile-friendly.
+
+DEPARTMENT & MINISTRY MANAGEMENT
+
+Allow every church to create unlimited ministries/departments such as:
+
+• Youth Ministry
+• Children's Ministry
+• Women's Fellowship
+• Men's Fellowship
+• Choir
+• Ushering
+• Media
+• Evangelism
+• Prayer Team
+• Sunday School
+• Hospitality
+• Finance
+• Protocol
+• Follow-Up
+• Missions
+• Plus unlimited custom departments.
+
+Each department should support:
+
+1. Department Name
+2. Description
+3. Department Logo/Icon
+4. Department Banner (optional)
+5. Department Leader
+6. Assistant Leader(s)
+7. Secretary (optional)
+8. Department Members
+9. Join by invitation code
+10. Department announcements
+11. Private department chat
+12. Department prayer requests
+13. Department calendar/events
+14. Department assignments/tasks
+15. File sharing (PDF, DOC, images)
+16. Attendance tracking
+17. Member list
+18. Activity history
+
+PERMISSIONS
+
+Only church admins and authorized leaders can:
+
+- Create departments
+- Edit departments
+- Delete departments
+- Assign leaders
+- Remove leaders
+- Manage department settings
+
+Department members cannot access church administration.
+
+MESSAGING
+
+Department messaging must follow the same privacy model already implemented in Church Mode.
+
+Only department members can see messages inside their department.
+
+Department leaders can send announcements to every department member.
+
+UI
+
+Use the same Church Mode visual design.
+
+Maintain:
+- Large readable fonts
+- Bright professional layout
+- Responsive mobile interface
+- Consistent branding
+- Church logo support
+
+DATABASE
+
+Create only the minimum tables required.
+
+Reuse existing Church Mode authentication, member accounts, invitation system, permissions, messaging, notifications, and activity logs whenever possible.
+
+TESTING
+
+Verify:
+
+✓ Department creation
+✓ Editing
+✓ Member assignment
+✓ Leader assignment
+✓ Invitations
+✓ Messaging
+✓ Announcements
+✓ Attendance
+✓ Assignments
+✓ Mobile responsiveness
+
+Do not introduce breaking changes.
+
+After implementation, provide a concise report listing:
+- New tables
+- New APIs
+- New pages
+- Files changed
+- Tests performed
+- Confirmation that existing Church Mode features remain fully functional.
