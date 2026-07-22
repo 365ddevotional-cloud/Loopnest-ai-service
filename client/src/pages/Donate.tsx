@@ -7,15 +7,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Heart, ExternalLink, Copy, Check, RefreshCw, AlertCircle, Send, CheckCircle2, Building2 } from "lucide-react";
-import { SiVenmo } from "react-icons/si";
+import { SiVenmo, SiPaypal, SiCashapp } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-
-const VENMO_LINK = "https://venmo.com/u/dailydevotional";
-const VENMO_USERNAME = "@dailydevotional";
-const OPAY_ACCOUNT_NUMBER = "8054611168";
-const OPAY_ACCOUNT_NAME = "MOSES AFOLABI";
-const OPAY_BANK = "OPay";
+import {
+  PAYPAL_EMAIL,
+  PAYPAL_LINK,
+  CASHAPP_TAG,
+  CASHAPP_LINK,
+  VENMO_LINK,
+  VENMO_USERNAME,
+  OPAY_ACCOUNT_NUMBER,
+  OPAY_ACCOUNT_NAME,
+  OPAY_BANK,
+} from "@/lib/donationConstants";
 
 export function ConfirmationModal({ open, onClose, defaultGivingType }: {
   open: boolean;
@@ -32,7 +37,7 @@ export function ConfirmationModal({ open, onClose, defaultGivingType }: {
   const [country, setCountry] = useState("");
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("USD");
-  const [paymentMethod, setPaymentMethod] = useState("Venmo");
+  const [paymentMethod, setPaymentMethod] = useState("PayPal");
   const [givingType, setGivingType] = useState(defaultGivingType);
   const [paymentReference, setPaymentReference] = useState("");
   const [message, setMessage] = useState("");
@@ -140,6 +145,8 @@ export function ConfirmationModal({ open, onClose, defaultGivingType }: {
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                 <SelectTrigger data-testid="select-confirm-method"><SelectValue /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="PayPal">PayPal</SelectItem>
+                  <SelectItem value="Cash App">Cash App</SelectItem>
                   <SelectItem value="Venmo">Venmo</SelectItem>
                   <SelectItem value="OPay Bank Transfer">OPay Bank Transfer</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
@@ -201,6 +208,7 @@ export function ConfirmationModal({ open, onClose, defaultGivingType }: {
 
 export default function Donate() {
   const [opayCopied, setOpayCopied] = useState(false);
+  const [cashtagCopied, setCashtagCopied] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { toast } = useToast();
 
@@ -212,6 +220,17 @@ export default function Donate() {
       setTimeout(() => setOpayCopied(false), 2500);
     } catch {
       toast({ title: "Account number copied.", description: OPAY_ACCOUNT_NUMBER });
+    }
+  };
+
+  const handleCopyCashtag = async () => {
+    try {
+      await navigator.clipboard.writeText(CASHAPP_TAG);
+      setCashtagCopied(true);
+      toast({ title: "Cash App tag copied." });
+      setTimeout(() => setCashtagCopied(false), 2500);
+    } catch {
+      toast({ title: "Cash App tag copied.", description: CASHAPP_TAG });
     }
   };
 
@@ -231,6 +250,91 @@ export default function Donate() {
           richly bless you.
         </p>
       </div>
+
+      {/* PayPal — Worldwide */}
+      <Card className="shadow-lg shadow-primary/10 border border-primary/15 overflow-hidden" data-testid="card-paypal">
+        <div className="bg-gradient-to-r from-[#003087]/10 via-[#003087]/5 to-transparent px-6 py-4 border-b border-primary/10 flex items-center gap-3">
+          <SiPaypal className="w-7 h-7 text-[#003087]" />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">🌍 Worldwide</p>
+            <h2 className="font-serif text-xl font-bold text-foreground">Donate with PayPal</h2>
+          </div>
+        </div>
+        <div className="px-6 py-6 space-y-5 text-center">
+          <div className="inline-flex items-center gap-2 bg-muted/50 rounded-full px-5 py-2.5 border border-[#003087]/20">
+            <SiPaypal className="w-5 h-5 text-[#003087]" />
+            <span className="font-mono text-base font-bold text-foreground tracking-wide">{PAYPAL_EMAIL}</span>
+          </div>
+          <p className="text-base text-muted-foreground leading-relaxed">
+            Tap the button below to open PayPal and send your gift. Works worldwide from any device.
+          </p>
+          <a
+            href={PAYPAL_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block"
+            data-testid="link-paypal-donate"
+          >
+            <Button
+              size="lg"
+              className="w-full gap-2 text-lg font-bold bg-[#003087] hover:bg-[#002574] text-white border-0 h-14"
+              data-testid="button-paypal-donate"
+            >
+              <SiPaypal className="w-6 h-6" />
+              Donate via PayPal
+              <ExternalLink className="w-4 h-4" />
+            </Button>
+          </a>
+        </div>
+      </Card>
+
+      {/* Cash App — USA */}
+      <Card className="shadow-lg shadow-primary/10 border border-primary/15 overflow-hidden" data-testid="card-cashapp">
+        <div className="bg-gradient-to-r from-[#00D632]/10 via-[#00D632]/5 to-transparent px-6 py-4 border-b border-primary/10 flex items-center gap-3">
+          <SiCashapp className="w-7 h-7 text-[#00D632]" />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">🇺🇸 United States</p>
+            <h2 className="font-serif text-xl font-bold text-foreground">Donate with Cash App</h2>
+          </div>
+        </div>
+        <div className="px-6 py-6 space-y-5 text-center">
+          <div className="flex items-center justify-center gap-3">
+            <div className="inline-flex items-center gap-2 bg-muted/50 rounded-full px-5 py-2.5 border border-[#00D632]/20">
+              <SiCashapp className="w-5 h-5 text-[#00D632]" />
+              <span className="font-mono text-lg font-bold text-foreground tracking-wide">{CASHAPP_TAG}</span>
+            </div>
+            <button
+              onClick={handleCopyCashtag}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all hover:bg-[#00D632]/5 hover:border-[#00D632]/50"
+              style={{ borderColor: cashtagCopied ? "#00D632" : undefined, color: cashtagCopied ? "#00D632" : undefined }}
+              data-testid="button-copy-cashapp-tag"
+              aria-label="Copy Cash App tag"
+            >
+              {cashtagCopied ? <><Check className="w-4 h-4" /> Copied</> : <><Copy className="w-4 h-4" /> Copy</>}
+            </button>
+          </div>
+          <p className="text-base text-muted-foreground leading-relaxed">
+            Tap the button below to open Cash App and send your gift directly.
+          </p>
+          <a
+            href={CASHAPP_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block"
+            data-testid="link-cashapp-donate"
+          >
+            <Button
+              size="lg"
+              className="w-full gap-2 text-lg font-bold bg-[#00D632] hover:bg-[#00b82a] text-black border-0 h-14"
+              data-testid="button-cashapp-donate"
+            >
+              <SiCashapp className="w-6 h-6" />
+              Donate via Cash App
+              <ExternalLink className="w-4 h-4" />
+            </Button>
+          </a>
+        </div>
+      </Card>
 
       {/* Venmo — USA */}
       <Card className="shadow-lg shadow-primary/10 border border-primary/15 overflow-hidden" data-testid="card-venmo">

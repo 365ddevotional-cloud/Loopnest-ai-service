@@ -1,0 +1,88 @@
+FIX ALL DONATION / GIVING AREAS — MINIMAL CHANGES ONLY
+
+Please correct the donation methods throughout the 365 Daily Devotional app.
+
+IMPORTANT:
+- Do not redesign or rebuild the app.
+- Do not refactor unrelated code.
+- Do not modify Church Mode, devotionals, songs, authentication, database structure, admin features, or unrelated pages.
+- Inspect and change only files directly connected to giving, donations, ministry support, donation modals, donation menu links, song donation prompts, and download-support prompts.
+- Preserve the current design and functionality.
+- Make the smallest safe changes necessary.
+- Do not remove any working feature.
+
+PROBLEM:
+
+Different donation areas currently show inconsistent information:
+
+- Some places show only Venmo and Cash App.
+- Some places still show the old Cash App name: $MuzAfo.
+- Some places do not display all four approved donation methods.
+
+REQUIRED FIX:
+
+Every area of the app that displays giving, donation, support, ministry support, or donation payment options must consistently show all four current approved methods:
+
+1. PAYPAL
+   PayPal email:
+   365ddevotional@gmail.com
+
+2. CASH APP
+   Current Cashtag:
+   $365dailydevotional
+
+   Remove and replace every occurrence of the old Cashtag:
+   $MuzAfo
+
+3. VENMO
+   Venmo profile:
+   https://www.venmo.com/u/dailydevotional
+
+4. OPAY
+   Account Number: 8054611168
+   Bank: OPay
+   Account Name: MOSES AFOLABI
+
+CHECK AND CORRECT ALL RELEVANT LOCATIONS, INCLUDING:
+
+- Main donation page
+- “Support the Ministry” page
+- Donation modal or popup
+- Giving section opened from the main or pull-down menu
+- Song-related donation modal
+- Audio or MP4 download support page
+- Any donation card or payment-method component
+- Any ministry-support prompt
+- Any other visible area that currently displays donation or giving information
+
+IMPLEMENTATION REQUIREMENTS:
+
+- Use one shared donation-method data source or reusable component where safely possible, so every donation area stays consistent.
+- Do not create duplicate conflicting payment information.
+- Ensure all four options are clearly visible and readable.
+- Ensure PayPal, Cash App, and Venmo links/buttons open the correct payment destination where linking is supported.
+- Provide a clear copy button for information users may need to copy, including the Cash App Cashtag and OPay account number.
+- Keep the exact capitalization and account information provided above.
+- Search specifically for “$MuzAfo” and remove or replace every user-visible occurrence with “$365dailydevotional.”
+- Do not expose secret keys, passwords, or private environment variables.
+- Do not change payment details beyond the four methods listed above.
+
+TEST ONLY THE AFFECTED AREAS:
+
+Confirm that:
+
+1. Every donation/giving area displays PayPal, Cash App, Venmo, and OPay.
+2. No user-visible occurrence of $MuzAfo remains.
+3. Cash App displays $365dailydevotional everywhere.
+4. Venmo uses the dailydevotional profile.
+5. OPay displays the correct account number, bank, and account name.
+6. PayPal displays 365ddevotional@gmail.com.
+7. Existing navigation, donation modals, and support buttons still work.
+8. No unrelated app functionality was changed or broken.
+
+After completing the fix, provide a concise report listing:
+- Files changed
+- Donation locations corrected
+- Confirmation that all four methods now appear everywhere relevant
+- Confirmation that $MuzAfo no longer appears anywhere user-visible
+- Any location that could not safely be updated

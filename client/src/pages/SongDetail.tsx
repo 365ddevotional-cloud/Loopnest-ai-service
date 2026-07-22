@@ -17,12 +17,13 @@ import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import MusicSettings from "@/components/MusicSettings";
 import type { Song } from "@shared/schema";
 import { ConfirmationModal } from "./Donate";
-
-const VENMO_LINK = "https://venmo.com/u/dailydevotional";
-const OPAY_ACCOUNT_NUMBER = "8054611168";
-const PAYPAL_LINK = import.meta.env.VITE_PAYPAL_DONATION_LINK || "https://www.paypal.com/donate/?hosted_button_id=Y9PAZK36FKT8L";
-const CASHAPP_TAG = import.meta.env.VITE_CASHTAG || "$365dailydevotional";
-const CASHAPP_LINK = `https://cash.app/${CASHAPP_TAG}`;
+import {
+  PAYPAL_LINK,
+  CASHAPP_TAG,
+  CASHAPP_LINK,
+  VENMO_LINK,
+  OPAY_ACCOUNT_NUMBER,
+} from "@/lib/donationConstants";
 
 const LOCAL_FAV_KEY = "spirittone-song-favorites";
 
