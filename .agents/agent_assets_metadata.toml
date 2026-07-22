@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "kTqgp1rjWZWxGNDktMyfH"
+uri = "file://365-devotional-upload-keystore.zip"
+type = "unspecified"
+title = "365 Daily Devotional — New Upload Keystore Package"
