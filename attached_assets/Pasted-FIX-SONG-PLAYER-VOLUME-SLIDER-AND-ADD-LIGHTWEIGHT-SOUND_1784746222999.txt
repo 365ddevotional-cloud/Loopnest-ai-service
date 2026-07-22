@@ -1,0 +1,54 @@
+FIX SONG PLAYER VOLUME SLIDER AND ADD LIGHTWEIGHT SOUND WAVE
+
+The song playback is working now, but the visible volume slider moves without changing the audio loudness.
+
+Please make only a small, safe correction to the existing song player.
+
+REQUIRED FIX:
+
+1. Connect the current volume slider to the actual audio element.
+2. Moving the slider left must reduce the song volume.
+3. Moving it fully left must mute the song.
+4. Moving it right must increase the song volume up to full volume.
+5. The volume must change immediately while the song is playing.
+6. Preserve the selected volume when the song is paused and resumed.
+7. Make the speaker icon reflect muted, low, and high volume where possible.
+8. Allow tapping the speaker icon to mute and restore the previous volume.
+
+Important:
+On iPhone and Safari, a website cannot control the phone’s physical system volume. The slider should control the song player’s internal audio volume only.
+
+OPTIONAL SOUND WAVE:
+
+Add a small, professional animated sound-wave or equalizer near the player if it can be done safely.
+
+- It should move while the song is playing.
+- It should stop when paused or ended.
+- Keep it subtle and beautiful.
+- Do not cover the progress bar, volume control, or other buttons.
+- Use lightweight CSS animation.
+- Do not add a large library or make major changes.
+- If a real audio-reactive waveform is unreliable on iPhone, use a clean animated equalizer that follows the play and pause state.
+
+DO NOT:
+
+- Redesign the full player.
+- Change the working audio playback.
+- Modify song uploads, scheduling, donations, Church Mode, authentication, database, or unrelated files.
+- Refactor unrelated code.
+
+TEST:
+
+- Play a song and move the volume slider left and right.
+- Confirm the song becomes quieter and louder.
+- Confirm full-left mutes it.
+- Confirm mute/unmute works.
+- Confirm pause and resume retain the chosen volume.
+- Confirm the sound-wave animation starts and stops with playback.
+- Confirm the player still works on iPhone Safari and desktop.
+
+After completion, report only:
+- the root cause
+- files changed
+- the volume fix made
+- whether the sound-wave animation was added

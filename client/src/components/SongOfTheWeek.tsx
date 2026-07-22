@@ -25,6 +25,9 @@ import {
   HandHeart,
   Loader2,
   Music2,
+  Volume2,
+  Volume1,
+  VolumeX,
 } from "lucide-react";
 import type { Song } from "@shared/schema";
 
@@ -46,10 +49,14 @@ function useAudioPlayer(audioUrl: string | null | undefined) {
   const [duration, setDuration] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [volume, setVolumeState] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const prevVolumeRef = useRef(1);
 
   useEffect(() => {
     const audio = new Audio();
     audioRef.current = audio;
+    audio.volume = prevVolumeRef.current;
 
     const onTimeUpdate = () => setCurrentTime(audio.currentTime);
     const onLoaded = () => { setDuration(audio.duration); setLoading(false); };
@@ -114,7 +121,37 @@ function useAudioPlayer(audioUrl: string | null | undefined) {
     setCurrentTime(value);
   }, []);
 
-  return { isPlaying, currentTime, duration, loading, error, togglePlay, seek };
+  const setVolume = useCallback((val: number) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const clamped = Math.max(0, Math.min(1, val));
+    audio.volume = clamped;
+    setVolumeState(clamped);
+    if (clamped > 0) {
+      prevVolumeRef.current = clamped;
+      setIsMuted(false);
+    } else {
+      setIsMuted(true);
+    }
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (isMuted || audio.volume === 0) {
+      const restore = prevVolumeRef.current > 0 ? prevVolumeRef.current : 1;
+      audio.volume = restore;
+      setVolumeState(restore);
+      setIsMuted(false);
+    } else {
+      prevVolumeRef.current = audio.volume;
+      audio.volume = 0;
+      setVolumeState(0);
+      setIsMuted(true);
+    }
+  }, [isMuted]);
+
+  return { isPlaying, currentTime, duration, loading, error, togglePlay, seek, volume, isMuted, setVolume, toggleMute };
 }
 
 // ── Lyrics Modal ──────────────────────────────────────────────────────────────
@@ -359,7 +396,7 @@ export function SongOfTheWeek() {
     retry: 1,
   });
 
-  const { isPlaying, currentTime, duration, loading: audioLoading, error: audioError, togglePlay, seek } =
+  const { isPlaying, currentTime, duration, loading: audioLoading, error: audioError, togglePlay, seek, volume, isMuted, setVolume, toggleMute } =
     useAudioPlayer(song ? `/api/songs/${song.id}/audio` : undefined);
 
   // Broadcast play state so the mini preview card can sync its icon
@@ -575,6 +612,7 @@ export function SongOfTheWeek() {
 
           {/* ── Audio Player ── */}
           <div className="rounded-xl bg-muted/50 dark:bg-muted/20 border border-border/40 p-3 space-y-2" data-testid="section-audio-player">
+            {/* Play/pause + seek row */}
             <div className="flex items-center gap-3">
               <button
                 onClick={togglePlay}
@@ -609,6 +647,73 @@ export function SongOfTheWeek() {
                   <span data-testid="text-duration">{duration > 0 ? formatTime(duration) : "--:--"}</span>
                 </div>
               </div>
+            </div>
+
+            {/* Volume + equalizer row */}
+            <div className="flex items-center gap-2">
+              {/* Speaker icon — tap to mute/unmute */}
+              <button
+                onClick={toggleMute}
+                aria-label={isMuted || volume === 0 ? "Unmute" : "Mute"}
+                data-testid="button-mute"
+                className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {isMuted || volume === 0 ? (
+                  <VolumeX className="w-4 h-4" />
+                ) : volume < 0.5 ? (
+                  <Volume1 className="w-4 h-4" />
+                ) : (
+                  <Volume2 className="w-4 h-4" />
+                )}
+              </button>
+
+              {/* Volume slider */}
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={volume}
+                onChange={(e) => setVolume(Number(e.target.value))}
+                aria-label="Volume"
+                data-testid="range-volume"
+                className="w-20 h-1.5 rounded-full accent-primary cursor-pointer"
+              />
+
+              {/* Animated equalizer — plays when song is playing */}
+              {isPlaying && (
+                <div
+                  className="flex items-end gap-[2px] ml-1"
+                  aria-hidden="true"
+                  style={{ height: 14 }}
+                >
+                  <style>{`
+                    @keyframes eq-bar {
+                      0%, 100% { height: 3px; }
+                      50% { height: 12px; }
+                    }
+                  `}</style>
+                  {[
+                    { delay: "0s",    dur: "0.55s" },
+                    { delay: "0.12s", dur: "0.7s"  },
+                    { delay: "0.25s", dur: "0.5s"  },
+                    { delay: "0.08s", dur: "0.65s" },
+                  ].map((bar, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        display: "inline-block",
+                        width: 3,
+                        borderRadius: 2,
+                        backgroundColor: "hsl(var(--primary))",
+                        animation: `eq-bar ${bar.dur} ${bar.delay} ease-in-out infinite`,
+                        opacity: 0.85,
+                        alignSelf: "flex-end",
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
             {audioError && (
