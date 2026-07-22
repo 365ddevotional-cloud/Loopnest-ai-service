@@ -360,7 +360,7 @@ export function SongOfTheWeek() {
   });
 
   const { isPlaying, currentTime, duration, loading: audioLoading, error: audioError, togglePlay, seek } =
-    useAudioPlayer(song?.audioUrl);
+    useAudioPlayer(song ? `/api/songs/${song.id}/audio` : undefined);
 
   // Broadcast play state so the mini preview card can sync its icon
   useEffect(() => {

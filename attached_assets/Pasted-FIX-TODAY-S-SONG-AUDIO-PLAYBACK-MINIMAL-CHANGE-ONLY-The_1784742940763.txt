@@ -1,0 +1,60 @@
+FIX TODAY’S SONG AUDIO PLAYBACK — MINIMAL CHANGE ONLY
+
+There is a regression in the 365 Daily Devotional app.
+
+Songs uploaded through the admin dashboard are correctly appearing on the “Today’s Message” page when:
+
+- the song is marked active
+- the song date is today
+
+However, the song audio is no longer playing.
+
+This feature worked before, so please restore the previous working playback behavior.
+
+IMPORTANT:
+- Do not redesign or rebuild the app.
+- Do not refactor unrelated code.
+- Do not modify donations, Church Mode, devotionals, authentication, database structure, admin permissions, or unrelated pages.
+- Inspect only the files and API routes directly related to admin-uploaded songs and playback on the Today’s Message page.
+- Make the smallest safe fix.
+- Do not remove or replace working features.
+
+PLEASE INVESTIGATE:
+
+1. Confirm the song record returned for today includes the correct audio file URL.
+2. Check whether the Today’s Message page is passing the correct audio source into the player.
+3. Check whether the uploaded audio URL is valid, publicly accessible, and not being altered incorrectly.
+4. Check for:
+   - broken or expired file URLs
+   - incorrect storage paths
+   - HTTP/HTTPS mismatch
+   - CORS issues
+   - missing audio MIME type
+   - incorrect song field mapping
+   - player state errors
+   - autoplay restrictions
+   - mobile browser playback errors
+   - a recent code change that disconnected the play button from the audio element
+5. Compare the current implementation with the last working song playback implementation and restore only the necessary behavior.
+6. Ensure the play button works after a user taps it.
+7. Ensure pause, resume, progress, and replay continue to work if those controls already exist.
+8. Ensure the fix works for songs uploaded through the admin dashboard, not only hardcoded or older songs.
+
+TEST THE FOLLOWING:
+
+- An active song dated today appears on the Today’s Message page.
+- Tapping Play starts the correct uploaded audio.
+- The audio does not silently fail.
+- The song title and audio match the same database record.
+- Playback works on mobile and desktop browsers.
+- Existing devotional text and page layout remain unchanged.
+- Admin song upload and activation remain unchanged.
+- No unrelated area of the app is modified.
+
+After fixing it, provide a concise report containing:
+
+- Root cause
+- Files changed
+- Exact fix made
+- Confirmation that an active song dated today now plays on the Today’s Message page
+- Any remaining limitation
