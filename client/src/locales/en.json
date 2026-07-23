@@ -908,5 +908,12 @@
   "cm_welcomeMessagePlaceholder": "A warm welcome message shown on the homepage hero...",
   "cm_missionPlaceholder": "Our mission is to...",
   "cm_visionPlaceholder": "We envision a world where...",
-  "cm_visitorInfoPlaceholder": "What to expect when you visit us for the first time..."
+  "cm_visitorInfoPlaceholder": "What to expect when you visit us for the first time...",
+  "cm_uploadPhoto": "Upload Photo",
+  "cm_changePhoto": "Change Photo",
+  "cm_removePhoto": "Remove Photo",
+  "cm_photoUpdated": "Profile photo updated",
+  "cm_photoRemoved": "Profile photo removed",
+  "cm_fileTooLarge": "Image must be under 5 MB",
+  "cm_invalidImage": "Please select a valid image file"
 }

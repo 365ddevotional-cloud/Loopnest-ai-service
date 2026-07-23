@@ -13,6 +13,7 @@ import type { Church, ChurchMember } from "@shared/schema";
 import { CHURCH_ROLE_LABELS, CHURCH_ROLES, type ChurchRole } from "@shared/schema";
 
 interface MyRole { role: string | null; memberId: number | null; status: string | null; }
+type ChurchMemberWithPhoto = ChurchMember & { photoUrl?: string | null };
 
 const roleColors: Record<string, string> = {
   owner: "bg-amber-100 text-amber-800 border-amber-300",
@@ -62,7 +63,7 @@ export default function ChurchMembers() {
     enabled: !!slug && isSignedIn,
   });
 
-  const { data: members, isLoading } = useQuery<ChurchMember[]>({
+  const { data: members, isLoading } = useQuery<ChurchMemberWithPhoto[]>({
     queryKey: ["/api/churches", church?.id, "members"],
     queryFn: async () => {
       const token = await getIdToken();
@@ -107,9 +108,9 @@ export default function ChurchMembers() {
   const grouped = members ? {
     leadership: members.filter(m => ADMIN_ROLES.includes(m.role) || ["ministry_leader", "group_leader", "counselor", "prayer_team"].includes(m.role)),
     congregation: members.filter(m => m.role === "member"),
-  } : { leadership: [], congregation: [] };
+  } : { leadership: [] as ChurchMemberWithPhoto[], congregation: [] as ChurchMemberWithPhoto[] };
 
-  const getDisplayName = (m: ChurchMember) => {
+  const getDisplayName = (m: ChurchMemberWithPhoto) => {
     if (isLeader) return m.displayName ?? m.email;
     return m.displayName ?? t("cm_memberRole");
   };
@@ -154,9 +155,11 @@ export default function ChurchMembers() {
                   return (
                     <Card key={m.id} className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
                       <CardContent className="pt-4 pb-4 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold"
+                        <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center text-sm font-bold"
                           style={{ backgroundColor: "#1a274418", color: "#1a2744" }}>
-                          {getDisplayName(m)[0]?.toUpperCase() ?? "?"}
+                          {m.photoUrl
+                            ? <img src={m.photoUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+                            : (getDisplayName(m)[0]?.toUpperCase() ?? "?")}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
@@ -212,9 +215,11 @@ export default function ChurchMembers() {
                   return (
                     <Card key={m.id} className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
                       <CardContent className="pt-3.5 pb-3.5 flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
+                        <div className="w-9 h-9 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center text-xs font-bold"
                           style={{ backgroundColor: "#1a274410", color: "#1a2744" }}>
-                          {getDisplayName(m)[0]?.toUpperCase() ?? "?"}
+                          {m.photoUrl
+                            ? <img src={m.photoUrl} alt="" className="w-9 h-9 rounded-full object-cover" />
+                            : (getDisplayName(m)[0]?.toUpperCase() ?? "?")}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">

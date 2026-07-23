@@ -1,0 +1,82 @@
+ALLOW BOTH CHURCH OWNERS AND CHURCH MEMBERS TO UPLOAD AND EDIT PROFILE PICTURES
+
+On the Church Mode “My Profile” page, both church owners and church members must be able to upload, replace, and remove their own profile picture.
+
+IMPORTANT:
+
+- This applies to the user’s personal Church Mode profile picture.
+- Do not confuse it with the church logo, church banner, or pastor photo.
+- Do not allow users to edit another person’s profile picture.
+- Do not redesign the page.
+- Do not modify the main 365 Daily Devotional profile system unless needed to reuse the existing secure upload logic.
+- Make the smallest safe change.
+
+REQUIRED BEHAVIOR:
+
+1. Church Owner:
+   - Can upload their own profile picture.
+   - Can replace it later.
+   - Can remove it and return to the default avatar.
+
+2. Church Member:
+   - Can upload their own profile picture.
+   - Can replace it later.
+   - Can remove it and return to the default avatar.
+
+3. Church Admin or Department Leader:
+   - Can edit only their own profile picture unless they also have an existing authorized moderation feature.
+   - Must not be able to change another member’s picture through this task.
+
+4. On the “My Profile” page:
+   - Make the current avatar clearly tappable.
+   - Add a visible “Upload Photo” or “Change Photo” action.
+   - Show “Remove Photo” when a custom image exists.
+   - Update the image immediately after a successful upload.
+
+5. Image handling:
+   - Accept JPG, JPEG, PNG, and WebP.
+   - Validate file type and reasonable file size.
+   - Compress or resize large images where the existing upload system supports it.
+   - Use secure object storage.
+   - Store the returned profile image URL against the authenticated user’s own profile.
+   - Preserve the existing profile if upload fails.
+
+6. Authorization:
+   - Identify the user from the verified Firebase session/token.
+   - Do not trust a user ID supplied by the browser.
+   - Confirm the server prevents one user from updating another user’s profile image.
+
+7. Display the updated profile picture consistently in:
+   - My Profile
+   - Member directory
+   - Member details
+   - Messages or chat avatar
+   - Prayer posts where profile pictures are shown
+   - Church owner profile areas
+   - Any other Church Mode location that already displays the user avatar
+
+8. Translation:
+   Add or reuse translation keys for English, Spanish, and French for:
+   - Upload Photo
+   - Change Photo
+   - Remove Photo
+   - Photo Updated
+   - Upload Failed
+   - Invalid Image
+   - File Too Large
+
+9. Test:
+   - Church owner uploads, replaces, and removes their own photo.
+   - Church member uploads, replaces, and removes their own photo.
+   - One member cannot edit another member’s photo.
+   - The image persists after refresh and sign-in.
+   - The updated avatar appears consistently across Church Mode.
+   - English, Spanish, and French labels work.
+   - Existing church logo and banner uploads are not affected.
+
+After completion, report only:
+- files changed
+- storage route used
+- authorization check added
+- where the updated avatar now appears
+- confirmation that both owners and members can edit only their own profile picture

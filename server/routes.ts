@@ -3116,11 +3116,14 @@ export async function registerRoutes(
       const LEADER_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor", "counselor", "ministry_leader", "group_leader", "prayer_team"];
       const isLeader = LEADER_ROLES.includes(m.role);
       const members = await storage.getChurchMembers(id);
-      // Server-side privacy: strip email from non-leaders
+      const profiles = await storage.getChurchMemberProfilesByChurchId(id);
+      const photoMap = new Map(profiles.map(p => [p.firebaseUid, p.photoUrl ?? null]));
+      // Server-side privacy: strip email from non-leaders; attach photoUrl for avatars
       const safe = members.map(mb => {
-        if (isLeader) return mb;
+        const photoUrl = photoMap.get(mb.firebaseUid ?? "") ?? null;
+        if (isLeader) return { ...mb, photoUrl };
         const { email: _omit, ...rest } = mb as any;
-        return { ...rest, email: undefined };
+        return { ...rest, email: undefined, photoUrl };
       });
       res.json(safe);
     } catch { res.status(500).json({ message: "Server error" }); }
@@ -3197,6 +3200,33 @@ export async function registerRoutes(
       });
       res.json(profile);
     } catch { res.status(500).json({ message: "Failed to update profile" }); }
+  });
+
+  // Auth: update my church member profile photo
+  app.patch("/api/churches/:id/my-profile/photo", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not an active member" });
+      const { objectPath } = req.body;
+      if (!objectPath || typeof objectPath !== "string") return res.status(400).json({ message: "objectPath is required" });
+      if (!objectPath.startsWith("/objects/")) return res.status(400).json({ message: "Invalid object path" });
+      const profile = await storage.upsertChurchMemberProfile({ churchId: id, firebaseUid: uid, photoUrl: objectPath });
+      res.json({ photoUrl: profile.photoUrl });
+    } catch { res.status(500).json({ message: "Failed to update photo" }); }
+  });
+
+  // Auth: remove my church member profile photo
+  app.delete("/api/churches/:id/my-profile/photo", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not an active member" });
+      await storage.upsertChurchMemberProfile({ churchId: id, firebaseUid: uid, photoUrl: null });
+      res.json({ photoUrl: null });
+    } catch { res.status(500).json({ message: "Failed to remove photo" }); }
   });
 
   // Auth: create invitation (owner/admin/lead_pastor)
@@ -4274,10 +4304,16 @@ export async function registerRoutes(
     const deptId = parseInt(req.params.deptId);
     if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });
     try {
-      const { deptMember, isChurchAdmin } = await deptAuth(req, deptId);
+      const { deptMember, isChurchAdmin, dept } = await deptAuth(req, deptId);
       if (!deptMember && !isChurchAdmin) return res.status(403).json({ message: "Not a member" });
       const members = await storage.getDepartmentMembers(deptId);
-      res.json(members.map(m => ({ ...m, member: { id: m.member.id, displayName: m.member.displayName, avatarUrl: null, role: m.member.role } })));
+      const profiles = await Promise.all(
+        members.map(m => storage.getChurchMemberProfile(dept.churchId, m.member.firebaseUid ?? "").catch(() => null))
+      );
+      res.json(members.map((m, i) => ({
+        ...m,
+        member: { id: m.member.id, displayName: m.member.displayName, avatarUrl: profiles[i]?.photoUrl ?? null, role: m.member.role }
+      })));
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 

@@ -908,5 +908,12 @@
   "cm_welcomeMessagePlaceholder": "Un message de bienvenue affiché sur la page d'accueil...",
   "cm_missionPlaceholder": "Notre mission est de...",
   "cm_visionPlaceholder": "Nous imaginons un monde où...",
-  "cm_visitorInfoPlaceholder": "Ce à quoi vous attendre lors de votre première visite..."
+  "cm_visitorInfoPlaceholder": "Ce à quoi vous attendre lors de votre première visite...",
+  "cm_uploadPhoto": "Télécharger une Photo",
+  "cm_changePhoto": "Changer la Photo",
+  "cm_removePhoto": "Supprimer la Photo",
+  "cm_photoUpdated": "Photo de profil mise à jour",
+  "cm_photoRemoved": "Photo de profil supprimée",
+  "cm_fileTooLarge": "L'image doit faire moins de 5 Mo",
+  "cm_invalidImage": "Veuillez sélectionner une image valide"
 }

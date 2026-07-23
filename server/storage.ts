@@ -352,6 +352,7 @@ export interface IStorage {
   // Church Member Profiles
   upsertChurchMemberProfile(data: Partial<ChurchMemberProfile> & { churchId: number; firebaseUid: string }): Promise<ChurchMemberProfile>;
   getChurchMemberProfile(churchId: number, firebaseUid: string): Promise<ChurchMemberProfile | undefined>;
+  getChurchMemberProfilesByChurchId(churchId: number): Promise<ChurchMemberProfile[]>;
   // Church Messaging
   createChurchConversation(data: InsertChurchConversation): Promise<ChurchConversation>;
   getChurchConversations(churchId: number, firebaseUid: string, isLeader: boolean): Promise<ChurchConversation[]>;
@@ -1671,6 +1672,10 @@ export class DatabaseStorage implements IStorage {
     const [row] = await db.select().from(churchMemberProfiles)
       .where(and(eq(churchMemberProfiles.churchId, churchId), eq(churchMemberProfiles.firebaseUid, firebaseUid)));
     return row;
+  }
+
+  async getChurchMemberProfilesByChurchId(churchId: number): Promise<ChurchMemberProfile[]> {
+    return db.select().from(churchMemberProfiles).where(eq(churchMemberProfiles.churchId, churchId));
   }
 
   // ── Church Messaging ─────────────────────────────────────────────────────────

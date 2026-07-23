@@ -1,0 +1,119 @@
+MAKE CHURCH AND DEPARTMENT LOGOS CONSISTENT
+
+Please make the church logo display consistently across all Church Mode pages, while allowing each department to have its own optional logo.
+
+IMPORTANT:
+
+- Do not redesign Church Mode.
+- Do not touch the main 365 Daily Devotional logo or main app header.
+- Do not modify unrelated features.
+- Preserve all existing church and department data.
+- Make the smallest safe changes.
+
+CHURCH LOGO REQUIREMENTS:
+
+1. Use the church’s saved logo consistently across its entire Church Mode account, including:
+
+- Church header
+- Church dashboard
+- My Profile page
+- Church administration
+- Member directory
+- Sermons
+- Announcements
+- Prayer
+- Messages
+- Events
+- Attendance
+- Giving
+- Reports
+- Departments
+- Public church profile
+- Any other Church Mode page that displays church identity
+
+2. Do not show the generic “Church Mode” icon when a church already has a valid uploaded logo.
+
+3. Use the generic Church Mode icon only when the church has no logo.
+
+4. When the church owner changes the church logo, the updated logo must appear everywhere immediately or after the normal data refresh.
+
+5. Do not confuse the church logo with:
+- user profile pictures
+- pastor picture
+- church banner
+- department logo
+
+DEPARTMENT LOGO REQUIREMENTS:
+
+1. Add an optional logo field for each department.
+
+2. Church owners and authorized department leaders may:
+- upload a department logo
+- replace it
+- remove it
+
+3. Department members must not be able to change the department logo unless their role already grants department-management permission.
+
+4. If a department has its own logo:
+- display the department logo on the department card
+- department dashboard
+- department header
+- department invitations
+- department messages and announcements where department identity is shown
+
+5. If a department does not have its own logo:
+- automatically display the parent church logo as the fallback
+
+6. If neither the department nor the church has a logo:
+- show the existing generic department icon
+
+IMAGE HANDLING:
+
+- Accept JPG, JPEG, PNG, and WebP.
+- Validate file type and reasonable file size.
+- Reuse the existing secure object-storage upload system.
+- Resize or compress large images where the existing system supports it.
+- Preserve the current logo if an upload fails.
+- Do not expose storage credentials in frontend code.
+
+AUTHORIZATION:
+
+- Church owners may update the church logo.
+- Church admins may update it only if their existing permission rules allow church settings access.
+- Department leaders may update only logos for departments they are authorized to manage.
+- No user may update another church’s or department’s logo.
+- Verify authorization server-side from the authenticated Firebase user.
+
+TRANSLATION:
+
+Add or reuse English, Spanish, and French translation keys for:
+
+- Upload Logo
+- Change Logo
+- Remove Logo
+- Department Logo
+- Use Church Logo
+- Logo Updated
+- Upload Failed
+- Invalid Image
+- File Too Large
+
+TEST:
+
+1. A church with a logo shows the same logo across all Church Mode pages.
+2. Updating the church logo updates every relevant page.
+3. A department without a custom logo shows the church logo.
+4. A department uploads its own logo and it replaces the fallback only within that department.
+5. Removing the department logo restores the church logo.
+6. Unauthorized members cannot change church or department logos.
+7. English, Spanish, and French labels work.
+8. The main 365 Daily Devotional logo and navigation remain untouched.
+
+After completion, report only:
+
+- files changed
+- database field added or reused
+- storage path used
+- authorization rules
+- fallback order used
+- confirmation that the main app branding was untouched

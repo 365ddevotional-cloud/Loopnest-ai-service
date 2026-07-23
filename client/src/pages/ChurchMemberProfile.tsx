@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import {
   User, Loader2, AlertCircle, Save, LogOut, Shield, Calendar,
-  Phone, MapPin, BookOpen, Eye
+  Phone, MapPin, BookOpen, Eye, Camera, Trash2
 } from "lucide-react";
 import type { Church, ChurchMember, ChurchMemberProfile } from "@shared/schema";
 import { CHURCH_ROLE_LABELS, type ChurchRole } from "@shared/schema";
@@ -31,10 +31,13 @@ export default function ChurchMemberProfilePage() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const isSignedIn = !!user && !!emailVerified;
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [saving, setSaving] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     fullName: "",
@@ -92,6 +95,7 @@ export default function ChurchMemberProfilePage() {
         allowLeaderContact: p?.allowLeaderContact ?? true,
         showPhoneToLeadersOnly: p?.showPhoneToLeadersOnly ?? true,
       });
+      setPhotoUrl(p?.photoUrl ?? null);
     }
   }, [profileData]);
 
@@ -112,6 +116,69 @@ export default function ChurchMemberProfilePage() {
       toast({ title: t("cm_error"), description: e.message, variant: "destructive" });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !church?.id) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: t("cm_invalidImage"), variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: t("cm_fileTooLarge"), variant: "destructive" });
+      return;
+    }
+    setPhotoUploading(true);
+    try {
+      const token = await getIdToken();
+      // Step 1: get presigned upload URL
+      const urlRes = await fetch("/api/uploads/request-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+      });
+      if (!urlRes.ok) throw new Error("Could not get upload URL");
+      const { uploadURL, objectPath } = await urlRes.json();
+      // Step 2: upload file directly to presigned URL
+      const uploadRes = await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      // Step 3: save objectPath as photoUrl
+      const saveRes = await fetch(`/api/churches/${church.id}/my-profile/photo`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ objectPath }),
+      });
+      if (!saveRes.ok) throw new Error((await saveRes.json()).message ?? "Save failed");
+      setPhotoUrl(objectPath);
+      qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "my-profile"] });
+      toast({ title: t("cm_photoUpdated") });
+    } catch (err: any) {
+      toast({ title: t("cm_uploadFailed"), description: err.message, variant: "destructive" });
+    } finally {
+      setPhotoUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!church?.id) return;
+    setPhotoUploading(true);
+    try {
+      const token = await getIdToken();
+      const r = await fetch(`/api/churches/${church.id}/my-profile/photo`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!r.ok) throw new Error((await r.json()).message ?? "Remove failed");
+      setPhotoUrl(null);
+      qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "my-profile"] });
+      toast({ title: t("cm_photoRemoved") });
+    } catch (err: any) {
+      toast({ title: t("cm_uploadFailed"), description: err.message, variant: "destructive" });
+    } finally {
+      setPhotoUploading(false);
     }
   };
 
@@ -163,6 +230,7 @@ export default function ChurchMemberProfilePage() {
   const member = profileData?.member;
   const roleLabel = myRole?.role ? (CHURCH_ROLE_LABELS[myRole.role as ChurchRole] ?? myRole.role) : t("cm_memberRole");
   const joinDate = member?.joinedAt ? new Date(member.joinedAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : null;
+  const initials = (form.fullName || user?.displayName || user?.email || "?")[0]?.toUpperCase();
 
   return (
     <ChurchModeShell church={church ?? null} currentRole={myRole?.role ?? null}>
@@ -178,19 +246,73 @@ export default function ChurchMemberProfilePage() {
         </div>
 
         <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
-          <CardContent className="pt-5 pb-4 space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0"
-                style={{ backgroundColor: "#1a274418", color: "#1a2744" }}>
-                {(form.fullName || user?.displayName || user?.email || "?")[0]?.toUpperCase()}
+          <CardContent className="pt-5 pb-4 space-y-4">
+            {/* Avatar section with upload controls */}
+            <div className="flex items-center gap-4">
+              <div className="relative flex-shrink-0">
+                {photoUrl ? (
+                  <img
+                    src={photoUrl}
+                    alt={form.fullName || user?.displayName || ""}
+                    className="w-16 h-16 rounded-full object-cover"
+                    style={{ border: "2px solid #e8e3dc" }}
+                    data-testid="img-member-avatar"
+                  />
+                ) : (
+                  <div
+                    className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0"
+                    style={{ backgroundColor: "#1a274418", color: "#1a2744" }}
+                    data-testid="div-member-avatar-initials"
+                  >
+                    {initials}
+                  </div>
+                )}
+                {photoUploading && (
+                  <div className="absolute inset-0 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: "rgba(0,0,0,0.45)" }}>
+                    <Loader2 className="w-5 h-5 animate-spin text-white" />
+                  </div>
+                )}
               </div>
-              <div>
-                <p className="font-semibold" style={{ color: "#1a2744" }}>{form.fullName || user?.displayName || user?.email}</p>
-                <p className="text-sm" style={{ color: "#7a7570" }}>{user?.email}</p>
+
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold truncate" style={{ color: "#1a2744" }}>{form.fullName || user?.displayName || user?.email}</p>
+                <p className="text-sm truncate" style={{ color: "#7a7570" }}>{user?.email}</p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <label
+                    className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                    style={{ backgroundColor: "#1a2744", color: "#fff", opacity: photoUploading ? 0.6 : 1, pointerEvents: photoUploading ? "none" : "auto" }}
+                    data-testid="button-upload-photo"
+                  >
+                    {photoUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                    {photoUrl ? t("cm_changePhoto") : t("cm_uploadPhoto")}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoChange}
+                      disabled={photoUploading}
+                    />
+                  </label>
+                  {photoUrl && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-[30px] px-3 text-xs border-red-200 text-red-600 hover:bg-red-50"
+                      onClick={handleRemovePhoto}
+                      disabled={photoUploading}
+                      data-testid="button-remove-photo"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1" />
+                      {t("cm_removePhoto")}
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 pt-1">
+            <div className="flex flex-wrap gap-2">
               {myRole?.role && (
                 <Badge variant="outline" className="text-xs flex items-center gap-1">
                   <Shield className="w-3 h-3" />{roleLabel}
