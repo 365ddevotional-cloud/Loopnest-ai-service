@@ -207,7 +207,7 @@ export default function ChurchJoin() {
             <Clock className="w-10 h-10 mx-auto text-amber-600" />
             <p className="font-semibold text-amber-900">{t("cm_requestSubmitted")}</p>
             <p className="text-sm text-muted-foreground">
-              Your request to join <strong>{preview?.church.name}</strong> has been sent to the church leadership for approval. You'll be notified once they review it.
+              {t("cm_pendingApprovalStart")} <strong>{preview?.church.name}</strong> {t("cm_pendingApprovalEnd")}
             </p>
             <Button variant="outline" onClick={() => setLocation("/church")} className="mt-2">
               {t("cm_returnToChurchMode")}

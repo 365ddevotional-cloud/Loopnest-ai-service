@@ -382,7 +382,7 @@ export default function ChurchMessaging() {
                   <Label>{t("cm_group")}</Label>
                   <Select value={newTargetGroupId} onValueChange={setNewTargetGroupId}>
                     <SelectTrigger data-testid="select-target-group">
-                      <SelectValue placeholder="Select a group…" />
+                      <SelectValue placeholder={t("cm_selectGroup")} />
                     </SelectTrigger>
                     <SelectContent>
                       {(groups ?? []).map(g => (
@@ -594,7 +594,7 @@ export default function ChurchMessaging() {
                     <Input
                       value={replyText}
                       onChange={e => setReplyText(e.target.value)}
-                      placeholder="Write a reply…"
+                      placeholder={t("cm_writeReply")}
                       onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendReply(); } }}
                       data-testid="input-reply-text"
                       className="flex-1"

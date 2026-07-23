@@ -56,7 +56,7 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
       });
       const data = await r.json();
       if (!r.ok) { toast({ title: t("cm_error"), description: data.message, variant: "destructive" }); return; }
-      toast({ title: "Department created!" });
+      toast({ title: t("cm_deptCreated") });
       qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "departments-admin"] });
       setShowCreate(false); setDeptName(""); setDeptType("Custom");
     } finally { setCreating(false); }
@@ -66,7 +66,7 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
     const token = await getIdToken();
     await fetch(`/api/churches/departments/${deptId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token ?? ""}` } });
     qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "departments-admin"] });
-    toast({ title: "Department removed" });
+    toast({ title: t("cm_deptRemoved") });
   };
 
   return (
@@ -109,7 +109,7 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
         <Card className="border" style={{ borderColor: "#e8e3dc" }}>
           <CardContent className="pt-4 pb-4 px-4 space-y-3">
             <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>{t("cm_newDept")}</p>
-            <Input value={deptName} onChange={e => setDeptName(e.target.value)} placeholder="Department name…" data-testid="input-admin-dept-name" />
+            <Input value={deptName} onChange={e => setDeptName(e.target.value)} placeholder={t("cm_deptNamePlaceholder")} data-testid="input-admin-dept-name" />
             <select className="w-full border rounded-md px-3 py-2 text-sm" style={{ borderColor: "#e8e3dc" }}
               value={deptType} onChange={e => setDeptType(e.target.value)}>
               {["Youth Ministry","Children's Ministry","Women's Fellowship","Men's Fellowship","Choir","Ushering","Media","Evangelism","Prayer Team","Sunday School","Hospitality","Finance","Protocol","Follow-Up","Missions","Custom"].map(opt => (
@@ -379,9 +379,9 @@ export default function ChurchAdminPage() {
       });
       if (!saveRes.ok) throw new Error((await saveRes.json()).message ?? "Save failed");
       qc.invalidateQueries({ queryKey: ["/api/churches/slug", slug] });
-      toast({ title: "Logo updated successfully" });
+      toast({ title: t("cm_logoUpdated") });
     } catch (err: any) {
-      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+      toast({ title: t("cm_uploadFailed"), description: err.message, variant: "destructive" });
     } finally {
       setLogoUploading(false);
     }
@@ -403,7 +403,7 @@ export default function ChurchAdminPage() {
       if (!r.ok) throw new Error((await r.json()).message);
       qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "giving", "settings"] });
       setGivingSettingsForm({});
-      toast({ title: "Giving settings saved" });
+      toast({ title: t("cm_givingSettingsSaved") });
     } catch (err: any) {
       toast({ title: t("cm_error"), description: err.message, variant: "destructive" });
     } finally { setSavingGivingSettings(false); }
@@ -423,7 +423,7 @@ export default function ChurchAdminPage() {
       if (!r.ok) throw new Error((await r.json()).message);
       setNewCatName(""); setNewCatDesc("");
       refetchCategories();
-      toast({ title: "Category added" });
+      toast({ title: t("cm_categoryAdded") });
     } catch (err: any) {
       toast({ title: t("cm_error"), description: err.message, variant: "destructive" });
     } finally { setAddingCat(false); }
@@ -439,7 +439,7 @@ export default function ChurchAdminPage() {
         body: JSON.stringify({ isActive: !cat.isActive }),
       });
       refetchCategories();
-    } catch { toast({ title: "Error updating category", variant: "destructive" }); }
+    } catch { toast({ title: t("cm_errorUpdatingCategory"), variant: "destructive" }); }
   };
 
   const deleteCategory = async (catId: number) => {
@@ -451,7 +451,7 @@ export default function ChurchAdminPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       refetchCategories();
-      toast({ title: "Category removed" });
+      toast({ title: t("cm_categoryRemoved") });
     } catch { toast({ title: t("cm_error"), variant: "destructive" }); }
   };
 
@@ -471,7 +471,7 @@ export default function ChurchAdminPage() {
       if (!r.ok) throw new Error((await r.json()).message);
       refetchPayout();
       setPayoutForm({});
-      toast({ title: "Payout details saved" });
+      toast({ title: t("cm_payoutSaved") });
     } catch (err: any) {
       toast({ title: t("cm_error"), description: err.message, variant: "destructive" });
     } finally { setSavingPayout(false); }
@@ -495,7 +495,7 @@ export default function ChurchAdminPage() {
       if (!r.ok) throw new Error((await r.json()).message);
       qc.invalidateQueries({ queryKey: ["/api/churches/slug", slug] });
       setBrandingForm({ logoUrl: "", bannerUrl: "", themeColor: "" });
-      toast({ title: "Branding updated" });
+      toast({ title: t("cm_brandingUpdated") });
     } catch (err: any) {
       toast({ title: t("cm_error"), description: err.message, variant: "destructive" });
     } finally { setSavingBranding(false); }
@@ -546,7 +546,7 @@ export default function ChurchAdminPage() {
       });
       if (!r.ok) throw new Error((await r.json()).message);
       qc.invalidateQueries({ queryKey: ["/api/churches/slug", slug] });
-      toast({ title: "✅ Website settings saved" });
+      toast({ title: t("cm_websiteSettingsSaved") });
     } catch (err: any) {
       toast({ title: t("cm_error"), description: err.message, variant: "destructive" });
     } finally { setSavingWebsite(false); }
@@ -564,7 +564,7 @@ export default function ChurchAdminPage() {
       if (!r.ok) throw new Error((await r.json()).message);
       return r.json();
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches/slug", slug] }); setForm({}); toast({ title: "Settings saved" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches/slug", slug] }); setForm({}); toast({ title: t("cm_settingsSaved") }); },
     onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
@@ -589,7 +589,7 @@ export default function ChurchAdminPage() {
       qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "invitations"] });
       setInvLabel(""); setInvExpiry(""); setInvMaxUses(""); setInvType("membership"); setInvGroupId("");
       setShowInvForm(false);
-      toast({ title: "Invitation created" });
+      toast({ title: t("cm_invitationCreated") });
     } catch (e: any) { toast({ title: t("cm_error"), description: e.message, variant: "destructive" }); }
     finally { setCreatingInv(false); }
   };
@@ -600,7 +600,7 @@ export default function ChurchAdminPage() {
       const r = await fetch(`/api/churches/${church!.id}/invitations/${invId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       if (!r.ok) throw new Error((await r.json()).message);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "invitations"] }); toast({ title: "Invitation deactivated" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "invitations"] }); toast({ title: t("cm_invitationDeactivated") }); },
     onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
@@ -610,7 +610,7 @@ export default function ChurchAdminPage() {
       const r = await fetch(`/api/churches/${church!.id}/invitations/${invId}?permanent=true`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       if (!r.ok) throw new Error((await r.json()).message);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "invitations"] }); toast({ title: "Invitation deleted" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "invitations"] }); toast({ title: t("cm_invitationDeleted") }); },
     onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
@@ -620,7 +620,7 @@ export default function ChurchAdminPage() {
       const r = await fetch(`/api/churches/${church!.id}/members/${memberId}/approve`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
       if (!r.ok) throw new Error((await r.json()).message);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: "Member approved" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: t("cm_memberApproved") }); },
     onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
@@ -630,7 +630,7 @@ export default function ChurchAdminPage() {
       const r = await fetch(`/api/churches/${church!.id}/members/${memberId}/decline`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
       if (!r.ok) throw new Error((await r.json()).message);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: "Request declined" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: t("cm_requestDeclined") }); },
     onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
@@ -672,7 +672,7 @@ export default function ChurchAdminPage() {
       qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "sermons"] });
       setSermonForm({ title: "", description: "", speakerName: "", videoUrl: "", audioUrl: "", audioUrl2: "", pdfNotesUrl: "", outlineUrl: "", imageUrl: "", bibleReference: "", sermonDate: "", scheduledDate: "", isPublished: true });
       setShowSermonForm(false);
-      toast({ title: "Sermon added" });
+      toast({ title: t("cm_sermonCreated") });
     } catch (e: any) { toast({ title: t("cm_error"), description: e.message, variant: "destructive" }); }
     finally { setAddingSermon(false); }
   };
@@ -683,7 +683,7 @@ export default function ChurchAdminPage() {
       const r = await fetch(`/api/churches/${church!.id}/sermons/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       if (!r.ok) throw new Error((await r.json()).message);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "sermons"] }); toast({ title: "Sermon deleted" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "sermons"] }); toast({ title: t("cm_sermonDeleted") }); },
     onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
@@ -707,7 +707,7 @@ export default function ChurchAdminPage() {
       qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "announcements"] });
       setAnnForm({ title: "", body: "", isPinned: false, expiresAt: "", imageUrl: "", pdfUrl: "", externalLink: "" });
       setShowAnnForm(false);
-      toast({ title: "Announcement published" });
+      toast({ title: t("cm_announcementPosted") });
     } catch (e: any) { toast({ title: t("cm_error"), description: e.message, variant: "destructive" }); }
   };
 
@@ -717,7 +717,7 @@ export default function ChurchAdminPage() {
       const r = await fetch(`/api/churches/${church!.id}/announcements/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       if (!r.ok) throw new Error((await r.json()).message);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "announcements"] }); toast({ title: "Announcement deleted" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "announcements"] }); toast({ title: t("cm_announcementDeleted") }); },
     onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
@@ -733,7 +733,7 @@ export default function ChurchAdminPage() {
       if (!r.ok) throw new Error((await r.json()).message);
       return r.json();
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: "Role updated" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: t("cm_roleUpdated") }); },
     onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
@@ -743,7 +743,7 @@ export default function ChurchAdminPage() {
       const r = await fetch(`/api/churches/${church!.id}/members/${memberId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       if (!r.ok) throw new Error((await r.json()).message);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: "Member removed" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: t("cm_memberRemoved") }); },
     onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
@@ -754,7 +754,7 @@ export default function ChurchAdminPage() {
       const r = await fetch(`/api/churches/${church!.id}/prayer/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       if (!r.ok) throw new Error((await r.json()).message);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "prayer"] }); toast({ title: "Request removed" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "prayer"] }); toast({ title: t("cm_prayerRequestRemoved") }); },
     onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
@@ -1020,7 +1020,7 @@ export default function ChurchAdminPage() {
                       <div className="space-y-1.5">
                         <Label>{t("cm_targetGroup")}</Label>
                         <Select value={invGroupId} onValueChange={setInvGroupId}>
-                          <SelectTrigger data-testid="select-invite-group"><SelectValue placeholder="Select group…" /></SelectTrigger>
+                          <SelectTrigger data-testid="select-invite-group"><SelectValue placeholder={t("cm_selectGroupAdmin")} /></SelectTrigger>
                           <SelectContent>
                             {groups?.map(g => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
                           </SelectContent>
@@ -1596,7 +1596,7 @@ export default function ChurchAdminPage() {
                     <div className="space-y-1.5">
                       <Label>{t("cm_description")} <span className="text-muted-foreground text-xs">({t("cm_optional")})</span></Label>
                       <Input value={newCatDesc} onChange={e => setNewCatDesc(e.target.value)}
-                        placeholder="Brief description" data-testid="input-category-desc" />
+                        placeholder={t("cm_categoryDescPlaceholder")} data-testid="input-category-desc" />
                     </div>
                   </div>
                   <Button onClick={addCategory} disabled={addingCat || !newCatName.trim()} variant="outline"
@@ -2128,23 +2128,23 @@ export default function ChurchAdminPage() {
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>{t("cm_welcomeMessageHero")}</label>
                   <Textarea value={websiteForm.welcomeMessage} onChange={e => setWebsiteForm(f => ({ ...f, welcomeMessage: e.target.value }))}
-                    placeholder="A warm welcome message shown on the homepage hero..." rows={2}
+                    placeholder={t("cm_welcomeMessagePlaceholder")} rows={2}
                     data-testid="input-website-welcome" />
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>{t("cm_missionStatement")}</label>
                   <Textarea value={websiteForm.missionStatement} onChange={e => setWebsiteForm(f => ({ ...f, missionStatement: e.target.value }))}
-                    placeholder="Our mission is to..." rows={2} data-testid="input-website-mission" />
+                    placeholder={t("cm_missionPlaceholder")} rows={2} data-testid="input-website-mission" />
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>{t("cm_vision")}</label>
                   <Textarea value={websiteForm.vision} onChange={e => setWebsiteForm(f => ({ ...f, vision: e.target.value }))}
-                    placeholder="We envision a world where..." rows={2} data-testid="input-website-vision" />
+                    placeholder={t("cm_visionPlaceholder")} rows={2} data-testid="input-website-vision" />
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>{t("cm_visitorInformation")}</label>
                   <Textarea value={websiteForm.visitorInfo} onChange={e => setWebsiteForm(f => ({ ...f, visitorInfo: e.target.value }))}
-                    placeholder="What to expect when you visit us for the first time..." rows={3}
+                    placeholder={t("cm_visitorInfoPlaceholder")} rows={3}
                     data-testid="input-website-visitor-info" />
                 </div>
               </CardContent>

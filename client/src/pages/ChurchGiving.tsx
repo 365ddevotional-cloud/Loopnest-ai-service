@@ -531,7 +531,7 @@ export default function ChurchGiving() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <Label className="text-sm">{t("cm_nameOptional")}</Label>
-                      <Input placeholder="Your name" value={donorName} onChange={e => setDonorName(e.target.value)} data-testid="input-donor-name" />
+                      <Input placeholder={t("cm_yourNamePlaceholder")} value={donorName} onChange={e => setDonorName(e.target.value)} data-testid="input-donor-name" />
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-sm">{t("cm_emailOptional")}</Label>

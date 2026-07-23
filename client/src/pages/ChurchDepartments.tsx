@@ -269,7 +269,7 @@ export default function ChurchDepartments() {
             <div className="space-y-1.5">
               <Label>{t("cm_deptDescription")} <span className="text-muted-foreground text-xs">{t("cm_optional")}</span></Label>
               <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                placeholder="Brief description of this department's purpose…" rows={3} data-testid="input-dept-description" />
+                placeholder={t("cm_deptDescPlaceholder")} rows={3} data-testid="input-dept-description" />
             </div>
             <div className="space-y-1.5">
               <Label>{t("cm_logoUrl")} <span className="text-muted-foreground text-xs">{t("cm_optional")}</span></Label>
