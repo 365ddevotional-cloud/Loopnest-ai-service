@@ -4289,6 +4289,32 @@ export async function registerRoutes(
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
+  app.post("/api/churches/departments/:deptId/logo", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin } = await deptAuth(req, deptId);
+      const isDeptLeader = deptMember?.role === "leader" || deptMember?.role === "assistant_leader";
+      if (!isDeptLeader && !isChurchAdmin) return res.status(403).json({ message: "Not authorized" });
+      const { logoUrl } = req.body;
+      if (!logoUrl || typeof logoUrl !== "string") return res.status(400).json({ message: "logoUrl is required" });
+      const updated = await storage.updateDepartment(deptId, { logoUrl });
+      res.json(updated);
+    } catch (e: any) { res.status(e.message === "Not found" ? 404 : e.message === "Unauthorized" ? 401 : 500).json({ message: e.message }); }
+  });
+
+  app.delete("/api/churches/departments/:deptId/logo", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const { deptMember, isChurchAdmin } = await deptAuth(req, deptId);
+      const isDeptLeader = deptMember?.role === "leader" || deptMember?.role === "assistant_leader";
+      if (!isDeptLeader && !isChurchAdmin) return res.status(403).json({ message: "Not authorized" });
+      const updated = await storage.updateDepartment(deptId, { logoUrl: null });
+      res.json(updated);
+    } catch (e: any) { res.status(e.message === "Not found" ? 404 : e.message === "Unauthorized" ? 401 : 500).json({ message: e.message }); }
+  });
+
   app.delete("/api/churches/departments/:deptId", async (req, res) => {
     const deptId = parseInt(req.params.deptId);
     if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });

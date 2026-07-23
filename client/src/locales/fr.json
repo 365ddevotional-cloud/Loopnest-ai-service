@@ -915,5 +915,9 @@
   "cm_photoUpdated": "Photo de profil mise à jour",
   "cm_photoRemoved": "Photo de profil supprimée",
   "cm_fileTooLarge": "L'image doit faire moins de 5 Mo",
-  "cm_invalidImage": "Veuillez sélectionner une image valide"
+  "cm_invalidImage": "Veuillez sélectionner une image valide",
+  "cm_deptLogo": "Logo du département",
+  "cm_changeLogo": "Changer le logo",
+  "cm_removeLogo": "Supprimer le logo",
+  "cm_useChurchLogo": "Logo de l'église utilisé par défaut"
 }

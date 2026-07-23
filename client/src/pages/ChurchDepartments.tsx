@@ -61,12 +61,12 @@ export default function ChurchDepartments() {
   const [form, setForm] = useState({ name: "", type: "Custom", description: "", logoUrl: "", bannerUrl: "" });
   const [creating, setCreating] = useState(false);
 
-  const { data: churchData } = useQuery<{ church: Church }>({
+  const { data: churchData } = useQuery<Church>({
     queryKey: ["/api/churches/slug", slug],
     queryFn: () => fetch(`/api/churches/slug/${slug}`).then(r => r.ok ? r.json() : Promise.reject()),
     enabled: !!slug,
   });
-  const church = churchData?.church ?? null;
+  const church = churchData ?? null;
 
   const { data: myRole } = useQuery<MyRole>({
     queryKey: ["/api/churches/slug", slug, "my-role"],
@@ -216,10 +216,12 @@ export default function ChurchDepartments() {
                   )}
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${color}18` }}>
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ backgroundColor: `${color}18` }}>
                         {dept.logoUrl
-                          ? <img src={dept.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />
-                          : <Icon className="w-5 h-5" style={{ color }} />
+                          ? <img src={dept.logoUrl} alt="" className="w-10 h-10 object-cover" />
+                          : church?.logoUrl
+                            ? <img src={church.logoUrl} alt="" className="w-10 h-10 object-cover" />
+                            : <Icon className="w-5 h-5" style={{ color }} />
                         }
                       </div>
                       <div className="flex-1 min-w-0">

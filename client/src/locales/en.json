@@ -915,5 +915,9 @@
   "cm_photoUpdated": "Profile photo updated",
   "cm_photoRemoved": "Profile photo removed",
   "cm_fileTooLarge": "Image must be under 5 MB",
-  "cm_invalidImage": "Please select a valid image file"
+  "cm_invalidImage": "Please select a valid image file",
+  "cm_deptLogo": "Department Logo",
+  "cm_changeLogo": "Change Logo",
+  "cm_removeLogo": "Remove Logo",
+  "cm_useChurchLogo": "Using church logo as fallback"
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Building2, MessageSquare, Megaphone, Heart, Calendar, CheckSquare,
   Users, ClipboardList, Loader2, Send, Trash2, Pin, Plus, ChevronLeft,
-  Copy, Check, User, Settings, AlertCircle, Flag,
+  Copy, Check, User, Settings, AlertCircle, Flag, Camera,
 } from "lucide-react";
 import type {
   Church, ChurchDepartment, ChurchDepartmentMember, ChurchDepartmentPost,
@@ -77,6 +77,8 @@ export default function ChurchDepartmentView() {
   const [showSettings, setShowSettings] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", type: "", description: "", logoUrl: "", bannerUrl: "" });
   const [saving, setSaving] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
 
   // Event form
   const [showEventForm, setShowEventForm] = useState(false);
@@ -95,12 +97,12 @@ export default function ChurchDepartmentView() {
   const [attendeeSelection, setAttendeeSelection] = useState<Set<number>>(new Set());
   const [recordingAttendance, setRecordingAttendance] = useState(false);
 
-  const { data: churchData } = useQuery<{ church: Church }>({
+  const { data: churchData } = useQuery<Church>({
     queryKey: ["/api/churches/slug", slug],
     queryFn: () => fetch(`/api/churches/slug/${slug}`).then(r => r.ok ? r.json() : Promise.reject()),
     enabled: !!slug,
   });
-  const church = churchData?.church ?? null;
+  const church = churchData ?? null;
 
   const { data: myRole } = useQuery<{ role: string | null; memberId: number | null }>({
     queryKey: ["/api/churches/slug", slug, "my-role"],
@@ -309,6 +311,55 @@ export default function ChurchDepartmentView() {
     } finally { setSaving(false); }
   };
 
+  const uploadDeptLogo = async (file: File) => {
+    if (!deptId) return;
+    if (!file.type.startsWith("image/")) { toast({ title: t("cm_invalidImage"), variant: "destructive" }); return; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: t("cm_fileTooLarge"), variant: "destructive" }); return; }
+    setLogoUploading(true);
+    try {
+      const token = (await getIdToken()) ?? "";
+      const urlRes = await fetch("/api/uploads/request-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+      });
+      if (!urlRes.ok) throw new Error("Could not get upload URL");
+      const { uploadURL, objectPath } = await urlRes.json();
+      const uploadRes = await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      const saveRes = await fetch(`/api/churches/departments/${deptId}/logo`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ logoUrl: objectPath }),
+      });
+      if (!saveRes.ok) throw new Error((await saveRes.json()).message ?? "Save failed");
+      qc.invalidateQueries({ queryKey: ["/api/churches", slug, "departments", deptSlug] });
+      toast({ title: t("cm_logoUpdated") });
+    } catch (err: any) {
+      toast({ title: t("cm_uploadFailed"), description: err.message, variant: "destructive" });
+    } finally {
+      setLogoUploading(false);
+      if (logoFileInputRef.current) logoFileInputRef.current.value = "";
+    }
+  };
+
+  const removeDeptLogo = async () => {
+    if (!deptId) return;
+    setLogoUploading(true);
+    try {
+      const token = (await getIdToken()) ?? "";
+      const r = await fetch(`/api/churches/departments/${deptId}/logo`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!r.ok) throw new Error((await r.json()).message ?? "Remove failed");
+      qc.invalidateQueries({ queryKey: ["/api/churches", slug, "departments", deptSlug] });
+      toast({ title: t("cm_logoUpdated") });
+    } catch (err: any) {
+      toast({ title: t("cm_uploadFailed"), description: err.message, variant: "destructive" });
+    } finally { setLogoUploading(false); }
+  };
+
   const copyInviteCode = () => {
     if (!deptData?.inviteCode) return;
     navigator.clipboard.writeText(deptData.inviteCode).then(() => {
@@ -431,11 +482,13 @@ export default function ChurchDepartmentView() {
               <img src={deptData.bannerUrl} alt="" className="w-full h-full object-cover" />
             </div>
           ) : (
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
               style={{ backgroundColor: "#1d346118" }}>
               {deptData.logoUrl
-                ? <img src={deptData.logoUrl} alt="" className="w-10 h-10 rounded-lg object-cover" />
-                : <Building2 className="w-7 h-7" style={{ color: "#1d3461" }} />
+                ? <img src={deptData.logoUrl} alt="" className="w-14 h-14 object-cover" />
+                : church?.logoUrl
+                  ? <img src={church.logoUrl} alt="" className="w-14 h-14 object-cover" />
+                  : <Building2 className="w-7 h-7" style={{ color: "#1d3461" }} />
               }
             </div>
           )}
@@ -747,15 +800,64 @@ export default function ChurchDepartmentView() {
               <Label>{t("cm_deptDescription")}</Label>
               <Textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} rows={3} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>{t("cm_logoUrl")}</Label>
-                <Input value={editForm.logoUrl} onChange={e => setEditForm(f => ({ ...f, logoUrl: e.target.value }))} placeholder="https://…" />
+            <div className="space-y-1.5">
+              <Label>{t("cm_deptLogo")}</Label>
+              <div className="flex items-center gap-3">
+                <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0" style={{ backgroundColor: "#1d346118" }}>
+                  {logoUploading ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-xl">
+                      <Loader2 className="w-5 h-5 text-white animate-spin" />
+                    </div>
+                  ) : null}
+                  {deptData?.logoUrl
+                    ? <img src={deptData.logoUrl} alt="" className="w-16 h-16 object-cover" />
+                    : church?.logoUrl
+                      ? <img src={church.logoUrl} alt="" className="w-16 h-16 object-cover opacity-50" title={t("cm_useChurchLogo")} />
+                      : <div className="w-16 h-16 flex items-center justify-center"><Building2 className="w-7 h-7" style={{ color: "#1d3461" }} /></div>
+                  }
+                </div>
+                <div className="flex flex-col gap-2">
+                  <input
+                    ref={logoFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadDeptLogo(f); }}
+                    data-testid="input-dept-logo-file"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => logoFileInputRef.current?.click()}
+                    disabled={logoUploading}
+                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg border transition-colors"
+                    style={{ borderColor: "#1d346130", color: "#1d3461", backgroundColor: "transparent" }}
+                    data-testid="button-upload-dept-logo"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    {deptData?.logoUrl ? t("cm_changeLogo") : t("cm_uploadLogo")}
+                  </button>
+                  {deptData?.logoUrl && (
+                    <button
+                      type="button"
+                      onClick={removeDeptLogo}
+                      disabled={logoUploading}
+                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg border transition-colors"
+                      style={{ borderColor: "#dc262630", color: "#dc2626", backgroundColor: "transparent" }}
+                      data-testid="button-remove-dept-logo"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      {t("cm_removeLogo")}
+                    </button>
+                  )}
+                  {!deptData?.logoUrl && church?.logoUrl && (
+                    <p className="text-xs" style={{ color: "#9a9080" }}>{t("cm_useChurchLogo")}</p>
+                  )}
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>{t("cm_bannerUrl")}</Label>
-                <Input value={editForm.bannerUrl} onChange={e => setEditForm(f => ({ ...f, bannerUrl: e.target.value }))} placeholder="https://…" />
-              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("cm_bannerUrl")}</Label>
+              <Input value={editForm.bannerUrl} onChange={e => setEditForm(f => ({ ...f, bannerUrl: e.target.value }))} placeholder="https://…" />
             </div>
             <div className="flex gap-3 pt-2">
               <Button variant="outline" onClick={() => setShowSettings(false)} className="flex-1">{t("cm_cancel")}</Button>
