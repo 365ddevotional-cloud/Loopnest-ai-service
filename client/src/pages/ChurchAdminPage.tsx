@@ -1081,7 +1081,7 @@ export default function ChurchAdminPage() {
                             <span className="flex items-center gap-1">→ {(inv as any).targetGroupName}</span>
                           )}
                           {inv.expiresAt && (
-                            <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />Expires {new Date(inv.expiresAt).toLocaleDateString()}</span>
+                            <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{t("cm_expires")} {new Date(inv.expiresAt).toLocaleDateString()}</span>
                           )}
                         </div>
                       </div>
@@ -1144,9 +1144,9 @@ export default function ChurchAdminPage() {
                     <div className="space-y-1.5"><Label>{t("cm_audioUrl")}</Label>
                       <Input type="url" value={sermonForm.audioUrl} onChange={e => setSermonForm(f => ({ ...f, audioUrl: e.target.value }))} /></div>
                     <div className="space-y-1.5"><Label>{t("cm_pdfNotesUrl")}</Label>
-                      <Input value={sermonForm.pdfNotesUrl} onChange={e => setSermonForm(f => ({ ...f, pdfNotesUrl: e.target.value }))} placeholder="Link to sermon notes PDF" /></div>
+                      <Input value={sermonForm.pdfNotesUrl} onChange={e => setSermonForm(f => ({ ...f, pdfNotesUrl: e.target.value }))} placeholder={t("cm_linkToPdf")} /></div>
                     <div className="space-y-1.5"><Label>{t("cm_outlineUrl")}</Label>
-                      <Input value={sermonForm.outlineUrl} onChange={e => setSermonForm(f => ({ ...f, outlineUrl: e.target.value }))} placeholder="Link to outline document" /></div>
+                      <Input value={sermonForm.outlineUrl} onChange={e => setSermonForm(f => ({ ...f, outlineUrl: e.target.value }))} placeholder={t("cm_outlineUrlPlaceholder")} /></div>
                     <div className="space-y-1.5"><Label>{t("cm_coverImageUrl")}</Label>
                       <Input value={sermonForm.imageUrl} onChange={e => setSermonForm(f => ({ ...f, imageUrl: e.target.value }))} placeholder="https://..." /></div>
                     <div className="space-y-1.5"><Label>{t("cm_scheduledDate")}</Label>
@@ -1209,7 +1209,7 @@ export default function ChurchAdminPage() {
                     <div className="space-y-1.5"><Label>{t("cm_imageUrl")} <span className="text-muted-foreground text-xs">({t("cm_optional")})</span></Label>
                       <Input value={annForm.imageUrl} onChange={e => setAnnForm(f => ({ ...f, imageUrl: e.target.value }))} placeholder="https://..." /></div>
                     <div className="space-y-1.5"><Label>{t("cm_pdfUrl")} <span className="text-muted-foreground text-xs">({t("cm_optional")})</span></Label>
-                      <Input value={annForm.pdfUrl} onChange={e => setAnnForm(f => ({ ...f, pdfUrl: e.target.value }))} placeholder="Link to PDF" /></div>
+                      <Input value={annForm.pdfUrl} onChange={e => setAnnForm(f => ({ ...f, pdfUrl: e.target.value }))} placeholder={t("cm_linkToPdf")} /></div>
                     <div className="space-y-1.5"><Label>{t("cm_externalLink")} <span className="text-muted-foreground text-xs">({t("cm_optional")})</span></Label>
                       <Input value={annForm.externalLink} onChange={e => setAnnForm(f => ({ ...f, externalLink: e.target.value }))} placeholder="https://..." /></div>
                     <div className="space-y-1.5"><Label>{t("cm_expiryDate")} <span className="text-muted-foreground text-xs">({t("cm_optional")})</span></Label>

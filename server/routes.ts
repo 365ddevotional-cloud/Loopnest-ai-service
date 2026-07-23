@@ -3136,6 +3136,8 @@ export async function registerRoutes(
       const requester = await storage.getChurchMember(id, uid);
       if (!requester || !["owner", "administrator"].includes(requester.role)) return res.status(403).json({ message: "Not authorized" });
       const { role, status } = req.body;
+      // Only owners can assign the owner role
+      if (role === "owner" && requester.role !== "owner") return res.status(403).json({ message: "Only owners can assign the owner role" });
       let updated;
       if (role !== undefined) updated = await storage.updateChurchMemberRole(memberId, role);
       if (status !== undefined) updated = await storage.updateChurchMemberStatus(memberId, status);
@@ -3668,7 +3670,10 @@ export async function registerRoutes(
     const uid = await getUid(req, res);
     if (!uid) return;
     try {
+      const id = Number(req.params.id);
       const groupId = Number(req.params.groupId);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not a member of this church" });
       await storage.removeChurchGroupMember(groupId, uid);
       res.json({ success: true });
     } catch { res.status(500).json({ message: "Failed to leave group" }); }
@@ -3713,6 +3718,9 @@ export async function registerRoutes(
       const prayerId = Number(req.params.prayerId);
       const m = await storage.getChurchMember(id, uid);
       if (!m || m.status !== "active") return res.status(403).json({ message: "Not a member" });
+      // Validate prayer request belongs to this church
+      const prayerReqs = await storage.getChurchPrayerRequests(id, true);
+      if (!prayerReqs.find(pr => pr.id === prayerId)) return res.status(404).json({ message: "Prayer request not found" });
       res.json(await storage.incrementPrayerCount(prayerId));
     } catch { res.status(500).json({ message: "Failed to register prayer" }); }
   });
@@ -3725,6 +3733,9 @@ export async function registerRoutes(
       const prayerId = Number(req.params.prayerId);
       const m = await storage.getChurchMember(id, uid);
       if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor", "prayer_team"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      // Validate prayer request belongs to this church
+      const prayerReqs = await storage.getChurchPrayerRequests(id, true);
+      if (!prayerReqs.find(pr => pr.id === prayerId)) return res.status(404).json({ message: "Prayer request not found" });
       const { status } = req.body;
       res.json(await storage.updateChurchPrayerStatus(prayerId, status));
     } catch { res.status(500).json({ message: "Failed to update prayer status" }); }
@@ -3738,6 +3749,9 @@ export async function registerRoutes(
       const prayerId = Number(req.params.prayerId);
       const m = await storage.getChurchMember(id, uid);
       if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      // Validate prayer request belongs to this church
+      const prayerReqs = await storage.getChurchPrayerRequests(id, true);
+      if (!prayerReqs.find(pr => pr.id === prayerId)) return res.status(404).json({ message: "Prayer request not found" });
       await storage.deleteChurchPrayerRequest(prayerId);
       res.json({ success: true });
     } catch { res.status(500).json({ message: "Failed to delete prayer request" }); }

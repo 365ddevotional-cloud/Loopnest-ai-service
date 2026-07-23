@@ -69,7 +69,7 @@ export default function ChurchPublicHome() {
     mutationFn: (body: typeof prayerForm) =>
       apiRequest("POST", `/api/public/churches/${slug}/prayer`, body),
     onSuccess: () => { setPrayerSent(true); setPrayerForm({ name: "", email: "", request: "" }); },
-    onError: () => toast({ title: t("cm_error"), description: t("cm_couldNotStartPayment"), variant: "destructive" }),
+    onError: () => toast({ title: t("cm_error"), description: t("cm_prayerSubmitError"), variant: "destructive" }),
   });
 
   if (isLoading) {

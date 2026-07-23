@@ -125,7 +125,7 @@ export default function ChurchMemberProfilePage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!r.ok) throw new Error((await r.json()).message);
-      toast({ title: t("cm_leftGroup") + " " + church.name });
+      toast({ title: t("cm_leftChurch") + " · " + church.name });
       setLocation("/church");
     } catch (e: any) {
       toast({ title: t("cm_error"), description: e.message, variant: "destructive" });

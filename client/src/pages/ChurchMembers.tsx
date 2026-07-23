@@ -124,7 +124,7 @@ export default function ChurchMembers() {
           <div>
             <h2 className="font-serif text-2xl font-bold" style={{ color: "#1a2744" }}>{t("cm_membersHeading")}</h2>
             <p className="text-sm mt-0.5" style={{ color: "#7a7570" }}>
-              {members?.length ?? 0} {t("cm_memberRole").toLowerCase()}{(members?.length ?? 0) !== 1 ? "s" : ""} in {church?.name ?? "this church"}
+              {members?.length ?? 0} {t("cm_memberCount")} · {church?.name ?? ""}
             </p>
           </div>
         </div>

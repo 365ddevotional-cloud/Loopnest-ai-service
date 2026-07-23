@@ -198,7 +198,7 @@ export default function ChurchPrayer() {
                                 <h4 className="font-semibold text-sm" style={{ color: "#1a2744" }}>{pr.title}</h4>
                                 {pr.isConfidential && canSeeConfidential && (
                                   <Badge className="text-xs gap-1" style={{ backgroundColor: "#7a152015", color: "#7a1520", border: "1px solid #7a152020" }}>
-                                    <Lock className="w-3 h-3" />Confidential
+                                    <Lock className="w-3 h-3" />{t("cm_confidential")}
                                   </Badge>
                                 )}
                               </div>

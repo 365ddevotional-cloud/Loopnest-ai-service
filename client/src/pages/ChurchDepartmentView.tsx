@@ -372,7 +372,7 @@ export default function ChurchDepartmentView() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <p className="text-xs font-semibold" style={{ color: "#1d3461" }}>{post.authorName ?? "Member"}</p>
+                      <p className="text-xs font-semibold" style={{ color: "#1d3461" }}>{post.authorName ?? t("cm_member")}</p>
                       <p className="text-xs" style={{ color: "#9a9080" }}>{timeAgo(post.createdAt)}</p>
                       {post.isPinned && <Pin className="w-3 h-3" style={{ color: "#b8962e" }} />}
                     </div>
@@ -381,7 +381,7 @@ export default function ChurchDepartmentView() {
                     {post.fileUrl && (
                       <a href={post.fileUrl} target="_blank" rel="noopener noreferrer"
                         className="text-xs mt-1 inline-flex items-center gap-1" style={{ color: "#1d3461" }}>
-                        📎 {post.fileName ?? "Attachment"}
+                        📎 {post.fileName ?? t("cm_attachment")}
                       </a>
                     )}
                   </div>
@@ -445,7 +445,7 @@ export default function ChurchDepartmentView() {
               <Badge className="text-xs" style={{ backgroundColor: "#1d346112", color: "#1d3461", border: "none" }}>
                 {deptData.type}
               </Badge>
-              <p className="text-xs" style={{ color: "#9a9080" }}>{deptData.memberCount} member{deptData.memberCount !== 1 ? "s" : ""}</p>
+              <p className="text-xs" style={{ color: "#9a9080" }}>{deptData.memberCount} {t("cm_memberCount")}</p>
               {myMembership && (
                 <span className="text-xs font-semibold" style={{ color: ROLE_COLORS[myMembership.role] ?? "#7a7570" }}>
                   {ROLE_LABELS[myMembership.role] ?? myMembership.role}
