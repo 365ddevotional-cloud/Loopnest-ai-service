@@ -46,43 +46,66 @@ const CHURCH_LANGS = [
 
 function LangPicker({ headerTextSecondary, headerBorder }: { headerTextSecondary: string; headerBorder: string }) {
   const [open, setOpen] = useState(false);
-  const current = getCurrentLang();
+  const [current, setCurrent] = useState(() => getCurrentLang());
 
-  const handleSelect = (code: string) => {
+  const handleSelect = (code: string, e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
     if (code === "en") localStorage.removeItem("devotionalLang");
     else localStorage.setItem("devotionalLang", code);
+    setCurrent(code);
     setOpen(false);
     window.location.reload();
   };
 
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpen(o => !o);
+  };
+
   return (
-    <div className="relative flex-shrink-0">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1 text-xs font-medium px-2.5 py-2 rounded-lg transition-all"
-        style={{ color: headerTextSecondary, border: `1px solid ${headerBorder}`, backgroundColor: "transparent" }}
-        title="Language"
-        data-testid="button-church-lang"
-      >
-        <Globe className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline uppercase">{current}</span>
-      </button>
+    <>
       {open && (
-        <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-1 min-w-28">
-          {CHURCH_LANGS.map(l => (
-            <button
-              key={l.code}
-              onClick={() => handleSelect(l.code)}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between gap-2"
-              data-testid={`button-church-lang-${l.code}`}
-            >
-              <span className={l.code === current ? "font-semibold text-primary" : "text-gray-700"}>{l.label}</span>
-              {l.code === current && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
-            </button>
-          ))}
-        </div>
+        <div
+          className="fixed inset-0"
+          style={{ zIndex: 9998 }}
+          onMouseDown={() => setOpen(false)}
+          onTouchStart={() => setOpen(false)}
+        />
       )}
-    </div>
+      <div className="relative flex-shrink-0" style={{ zIndex: open ? 9999 : "auto" }}>
+        <button
+          onClick={handleToggle}
+          className="flex items-center gap-1 text-xs font-medium px-2.5 py-2 rounded-lg transition-all"
+          style={{ color: headerTextSecondary, border: `1px solid ${headerBorder}`, backgroundColor: "transparent" }}
+          title="Language"
+          data-testid="button-church-lang"
+        >
+          <Globe className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline uppercase">{current}</span>
+        </button>
+        {open && (
+          <div
+            className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-36"
+            style={{ zIndex: 9999 }}
+          >
+            {CHURCH_LANGS.map(l => (
+              <button
+                key={l.code}
+                onMouseDown={(e) => handleSelect(l.code, e)}
+                onTouchEnd={(e) => handleSelect(l.code, e)}
+                className="w-full text-left px-4 flex items-center justify-between gap-2"
+                style={{ minHeight: "44px" }}
+                data-testid={`button-church-lang-${l.code}`}
+              >
+                <span className={l.code === current ? "font-semibold text-primary" : "text-gray-700"}>{l.label}</span>
+                {l.code === current && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 

@@ -1,0 +1,71 @@
+FIX CHURCH MODE LANGUAGE SELECTOR — ALL OPTIONS MUST REMAIN CLICKABLE
+
+There is a bug in the Church Mode language selector.
+
+Current behavior:
+- Spanish can be selected.
+- After selecting Spanish, French does not respond when tapped.
+- English also does not respond when tapped.
+- The dropdown opens, but some language options stop being clickable.
+
+Please fix only the language selector behavior.
+
+REQUIRED BEHAVIOR:
+
+1. English, Español, and Français must all be clickable at all times.
+2. The user must be able to switch:
+   - English → Spanish
+   - Spanish → French
+   - French → English
+   - and between any other combination repeatedly.
+3. The currently selected language should show a checkmark.
+4. Selecting another language should immediately:
+   - change the interface language
+   - move the checkmark to the new language
+   - close the dropdown cleanly
+5. Reopening the dropdown must still allow all three options to be selected.
+6. Make the full language row clickable, not only the text.
+7. Increase the mobile touch target to at least approximately 44px high.
+8. Prevent any invisible overlay, z-index issue, stale state, disabled state, pointer-events issue, or event propagation problem from blocking English or French.
+9. Ensure the dropdown remains above the page content and navigation.
+10. The selector must work on:
+    - iPhone Safari
+    - Android Chrome
+    - desktop browsers
+
+PLEASE CHECK FOR:
+
+- incorrect disabled logic
+- stale selected-language state
+- click handler attached only to one item
+- menu closing before the new selection is processed
+- overlay intercepting taps
+- pointer-events CSS
+- z-index conflict
+- language items being covered by another element
+- event bubbling or propagation issue
+- incorrect key values for en, es, and fr
+
+IMPORTANT:
+
+- Do not redesign Church Mode.
+- Do not change the translation files unless a key is genuinely missing.
+- Do not modify unrelated Church Mode features.
+- Do not add new languages.
+- Make the smallest safe fix.
+
+TEST:
+
+1. Open the language menu.
+2. Select Spanish.
+3. Reopen it and select French.
+4. Reopen it and select English.
+5. Repeat the cycle several times.
+6. Confirm every row is easy to tap on mobile.
+7. Confirm the selected language persists after refresh.
+
+After completion, report only:
+- root cause
+- files changed
+- exact fix
+- confirmation that English, Spanish, and French are all repeatedly clickable
