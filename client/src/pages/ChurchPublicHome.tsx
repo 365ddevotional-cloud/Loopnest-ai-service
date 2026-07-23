@@ -5,6 +5,7 @@ import { ChurchPublicShell } from "@/components/ChurchPublicShell";
 import { Loader2, Play, Calendar, Users, MapPin, Phone, Mail, Heart, ArrowRight, Share2, Clock } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/hooks/useI18n";
 
 const SECTION_ORDER = ["hero","serviceTimes","about","sermons","events","ministries","announcements","gallery","prayer","give","contact","join"];
 
@@ -56,6 +57,7 @@ function SEOHead({ church, slug }: { church: any; slug: string }) {
 export default function ChurchPublicHome() {
   const { slug } = useParams<{ slug: string }>();
   const { toast } = useToast();
+  const { t } = useI18n();
   const [prayerForm, setPrayerForm] = useState({ name: "", email: "", request: "" });
   const [prayerSent, setPrayerSent] = useState(false);
 
@@ -67,7 +69,7 @@ export default function ChurchPublicHome() {
     mutationFn: (body: typeof prayerForm) =>
       apiRequest("POST", `/api/public/churches/${slug}/prayer`, body),
     onSuccess: () => { setPrayerSent(true); setPrayerForm({ name: "", email: "", request: "" }); },
-    onError: () => toast({ title: "Error", description: "Could not submit prayer. Please try again.", variant: "destructive" }),
+    onError: () => toast({ title: t("cm_error"), description: t("cm_couldNotStartPayment"), variant: "destructive" }),
   });
 
   if (isLoading) {
@@ -81,9 +83,9 @@ export default function ChurchPublicHome() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-6 text-center">
         <div className="text-4xl">⛪</div>
-        <h1 className="text-xl font-bold" style={{ color: "#3d3a36" }}>Church not found</h1>
-        <p className="text-sm" style={{ color: "#9a9080" }}>This church page doesn't exist or isn't active.</p>
-        <Link href="/church" className="text-sm font-medium" style={{ color: "#b8962e" }}>Browse all churches</Link>
+        <h1 className="text-xl font-bold" style={{ color: "#3d3a36" }}>{t("cm_pub_churchNotFound")}</h1>
+        <p className="text-sm" style={{ color: "#9a9080" }}>{t("cm_pub_churchPageInactive")}</p>
+        <Link href="/church" className="text-sm font-medium" style={{ color: "#b8962e" }}>{t("cm_pub_browseChurches")}</Link>
       </div>
     );
   }
@@ -125,21 +127,21 @@ export default function ChurchPublicHome() {
                 <p className="text-base sm:text-lg mb-4 font-medium" style={{ color: "rgba(255,255,255,0.8)" }}>{church.denomination}</p>
               )}
               {church.pastorName && (
-                <p className="text-sm mb-6" style={{ color: "rgba(255,255,255,0.7)" }}>Led by Pastor {church.pastorName}</p>
+                <p className="text-sm mb-6" style={{ color: "rgba(255,255,255,0.7)" }}>{t("cm_pub_ledByPastor")} {church.pastorName}</p>
               )}
               <p className="text-lg sm:text-xl text-white/90 max-w-2xl mx-auto mb-8 leading-relaxed">
-                {church.welcomeMessage ?? church.description ?? "Welcome! Join us as we worship, grow, and serve together."}
+                {church.welcomeMessage ?? church.description ?? ""}
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <Link href={`${base}/visit`} className="px-6 py-3 text-sm font-semibold rounded-xl bg-white"
                   style={{ color: primary }}>
-                  Plan a Visit
+                  {t("cm_pub_planVisit")}
                 </Link>
                 <Link href={`${base}/watch`} className="px-6 py-3 text-sm font-semibold rounded-xl border-2 border-white text-white flex items-center gap-2">
-                  <Play className="w-4 h-4" /> Watch Online
+                  <Play className="w-4 h-4" /> {t("cm_pub_watchOnline")}
                 </Link>
                 <Link href={`${base}/give-online`} className="px-6 py-3 text-sm font-semibold rounded-xl text-white" style={{ backgroundColor: "rgba(255,255,255,0.2)" }}>
-                  Give
+                  {t("cm_pub_give")}
                 </Link>
               </div>
               {church.address && (
@@ -156,7 +158,7 @@ export default function ChurchPublicHome() {
           <section className="py-10 border-b" style={{ backgroundColor: "#fff", borderColor: "#ece8e0" }}>
             <div className="max-w-5xl mx-auto px-4 sm:px-6">
               <h2 className="text-center text-xs font-semibold uppercase tracking-widest mb-6" style={{ color: "#9a9080" }}>
-                Join Us for Worship
+                {t("cm_pub_joinUsForWorship")}
               </h2>
               <div className="flex flex-wrap justify-center gap-4">
                 {church.serviceTimes.map((s: any, i: number) => (
@@ -180,27 +182,27 @@ export default function ChurchPublicHome() {
             <div className="max-w-5xl mx-auto px-4 sm:px-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: primary }}>About Us</p>
+                  <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: primary }}>{t("cm_pub_aboutUs")}</p>
                   <h2 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: "#1a1a1a" }}>
-                    {church.denomination ? `A ${church.denomination} Church` : "Welcome to Our Community"}
+                    {church.denomination ? `A ${church.denomination} Church` : church.name}
                   </h2>
                   {church.description && (
                     <p className="text-base leading-relaxed mb-4" style={{ color: "#6b6460" }}>{church.description}</p>
                   )}
                   <Link href={`${base}/about`} className="inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: primary }}>
-                    Learn More <ArrowRight className="w-4 h-4" />
+                    {t("cm_pub_learnMore")} <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
                 <div className="space-y-4">
                   {church.missionStatement && (
                     <div className="p-5 rounded-xl border-l-4" style={{ backgroundColor: `${primary}08`, borderColor: primary }}>
-                      <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: primary }}>Mission</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: primary }}>{t("cm_pub_mission")}</p>
                       <p className="text-sm leading-relaxed" style={{ color: "#3d3a36" }}>{church.missionStatement}</p>
                     </div>
                   )}
                   {church.vision && (
                     <div className="p-5 rounded-xl border-l-4" style={{ backgroundColor: "#b8962e0a", borderColor: "#b8962e" }}>
-                      <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "#b8962e" }}>Vision</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "#b8962e" }}>{t("cm_pub_vision")}</p>
                       <p className="text-sm leading-relaxed" style={{ color: "#3d3a36" }}>{church.vision}</p>
                     </div>
                   )}
@@ -216,11 +218,11 @@ export default function ChurchPublicHome() {
             <div className="max-w-6xl mx-auto px-4 sm:px-6">
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>Messages</p>
-                  <h2 className="text-2xl font-bold" style={{ color: "#1a1a1a" }}>Latest Sermons</h2>
+                  <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>{t("cm_pub_messages")}</p>
+                  <h2 className="text-2xl font-bold" style={{ color: "#1a1a1a" }}>{t("cm_pub_latestSermons")}</h2>
                 </div>
                 <Link href={`${base}/watch`} className="text-sm font-medium flex items-center gap-1" style={{ color: primary }}>
-                  View all <ArrowRight className="w-4 h-4" />
+                  {t("cm_pub_viewAll")} <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -263,8 +265,8 @@ export default function ChurchPublicHome() {
             <div className="max-w-5xl mx-auto px-4 sm:px-6">
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>Updates</p>
-                  <h2 className="text-2xl font-bold" style={{ color: "#1a1a1a" }}>Announcements</h2>
+                  <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>{t("cm_pub_updates")}</p>
+                  <h2 className="text-2xl font-bold" style={{ color: "#1a1a1a" }}>{t("cm_pub_announcements")}</h2>
                 </div>
               </div>
               <div className="space-y-4">
@@ -291,11 +293,11 @@ export default function ChurchPublicHome() {
             <div className="max-w-6xl mx-auto px-4 sm:px-6">
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>Get Involved</p>
-                  <h2 className="text-2xl font-bold" style={{ color: "#1a1a1a" }}>Ministries & Departments</h2>
+                  <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>{t("cm_pub_getInvolved")}</p>
+                  <h2 className="text-2xl font-bold" style={{ color: "#1a1a1a" }}>{t("cm_pub_ministriesDepts")}</h2>
                 </div>
                 <Link href={`${base}/ministries`} className="text-sm font-medium flex items-center gap-1" style={{ color: primary }}>
-                  View all <ArrowRight className="w-4 h-4" />
+                  {t("cm_pub_viewAll")} <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -321,8 +323,8 @@ export default function ChurchPublicHome() {
           <section className="py-16" style={{ backgroundColor: "#fafaf8" }}>
             <div className="max-w-6xl mx-auto px-4 sm:px-6">
               <div className="text-center mb-8">
-                <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>Photos</p>
-                <h2 className="text-2xl font-bold" style={{ color: "#1a1a1a" }}>Church Gallery</h2>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>{t("cm_pub_photos")}</p>
+                <h2 className="text-2xl font-bold" style={{ color: "#1a1a1a" }}>{t("cm_pub_churchGallery")}</h2>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {church.publicPhotos.slice(0, 8).map((url: string, i: number) => (
@@ -345,34 +347,34 @@ export default function ChurchPublicHome() {
                   style={{ backgroundColor: `${primary}12` }}>
                   <Heart className="w-7 h-7" style={{ color: primary }} />
                 </div>
-                <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>Prayer</p>
-                <h2 className="text-2xl font-bold" style={{ color: "#1a1a1a" }}>Submit a Prayer Request</h2>
-                <p className="text-sm mt-2" style={{ color: "#9a9080" }}>We believe in the power of prayer. Share your need and we'll pray with you.</p>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>{t("cm_pub_prayer")}</p>
+                <h2 className="text-2xl font-bold" style={{ color: "#1a1a1a" }}>{t("cm_pub_submitPrayerRequest")}</h2>
+                <p className="text-sm mt-2" style={{ color: "#9a9080" }}>{t("cm_pub_prayerDesc")}</p>
               </div>
               {prayerSent ? (
                 <div className="text-center p-8 rounded-2xl border" style={{ borderColor: "#ece8e0", backgroundColor: "#fafaf8" }}>
                   <div className="text-4xl mb-3">🙏</div>
-                  <p className="font-semibold" style={{ color: "#1a1a1a" }}>Thank you — we're praying!</p>
-                  <p className="text-sm mt-1" style={{ color: "#9a9080" }}>Your request has been received.</p>
+                  <p className="font-semibold" style={{ color: "#1a1a1a" }}>{t("cm_pub_thankYouPraying")}</p>
+                  <p className="text-sm mt-1" style={{ color: "#9a9080" }}>{t("cm_pub_requestReceived")}</p>
                   <button onClick={() => setPrayerSent(false)} className="mt-4 text-sm font-medium" style={{ color: primary }}>
-                    Submit another
+                    {t("cm_pub_submitAnother")}
                   </button>
                 </div>
               ) : (
                 <form onSubmit={e => { e.preventDefault(); prayerMutation.mutate(prayerForm); }}
                   className="space-y-4" data-testid="form-prayer-request">
                   <input value={prayerForm.name} onChange={e => setPrayerForm(f => ({ ...f, name: e.target.value }))}
-                    placeholder="Your name" required
+                    placeholder={t("cm_pub_yourName")} required
                     className="w-full px-4 py-3 rounded-xl border text-sm outline-none focus:ring-2"
                     style={{ borderColor: "#ece8e0" }}
                     data-testid="input-prayer-name" />
                   <input value={prayerForm.email} onChange={e => setPrayerForm(f => ({ ...f, email: e.target.value }))}
-                    placeholder="Email (optional)" type="email"
+                    placeholder={t("cm_pub_emailOptional")} type="email"
                     className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
                     style={{ borderColor: "#ece8e0" }}
                     data-testid="input-prayer-email" />
                   <textarea value={prayerForm.request} onChange={e => setPrayerForm(f => ({ ...f, request: e.target.value }))}
-                    placeholder="Share your prayer request..." required rows={4}
+                    placeholder={t("cm_pub_sharePrayer")} required rows={4}
                     className="w-full px-4 py-3 rounded-xl border text-sm outline-none resize-none"
                     style={{ borderColor: "#ece8e0" }}
                     data-testid="input-prayer-request" />
@@ -381,7 +383,7 @@ export default function ChurchPublicHome() {
                     style={{ backgroundColor: primary }}
                     data-testid="button-submit-prayer">
                     {prayerMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Heart className="w-4 h-4" />}
-                    Send Prayer Request
+                    {t("cm_pub_sendPrayerRequest")}
                   </button>
                 </form>
               )}
@@ -393,16 +395,16 @@ export default function ChurchPublicHome() {
         {isEnabled("give") && (
           <section className="py-16" style={{ background: `linear-gradient(135deg, ${primary} 0%, ${primary}cc 100%)` }}>
             <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-              <p className="text-xs font-semibold uppercase tracking-widest mb-2 text-white/70">Support the Ministry</p>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">Give Online</h2>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-2 text-white/70">{t("cm_pub_supportMinistry")}</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">{t("cm_pub_giveOnline")}</h2>
               <p className="text-white/80 mb-8 max-w-xl mx-auto">
-                Your generosity fuels our mission. Give securely online and partner with us in spreading the Gospel.
+                {t("cm_pub_giveDesc")}
               </p>
               <Link href={`${base}/give-online`}
                 className="inline-flex items-center gap-2 px-8 py-3.5 text-sm font-semibold rounded-xl bg-white"
                 style={{ color: primary }}
                 data-testid="button-give-online">
-                <Heart className="w-4 h-4" /> Give Now
+                <Heart className="w-4 h-4" /> {t("cm_pub_giveNow")}
               </Link>
             </div>
           </section>
@@ -413,8 +415,8 @@ export default function ChurchPublicHome() {
           <section className="py-16" style={{ backgroundColor: "#fafaf8" }}>
             <div className="max-w-6xl mx-auto px-4 sm:px-6">
               <div className="text-center mb-10">
-                <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>Find Us</p>
-                <h2 className="text-2xl font-bold" style={{ color: "#1a1a1a" }}>Contact & Location</h2>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>{t("cm_pub_findUs")}</p>
+                <h2 className="text-2xl font-bold" style={{ color: "#1a1a1a" }}>{t("cm_pub_contactLocation")}</h2>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                 <div className="space-y-4">
@@ -422,7 +424,7 @@ export default function ChurchPublicHome() {
                     <div className="flex items-start gap-3 p-4 rounded-xl bg-white border" style={{ borderColor: "#ece8e0" }}>
                       <MapPin className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: primary }} />
                       <div>
-                        <p className="text-xs font-semibold mb-0.5" style={{ color: "#9a9080" }}>Address</p>
+                        <p className="text-xs font-semibold mb-0.5" style={{ color: "#9a9080" }}>{t("cm_pub_addressLabel")}</p>
                         <p className="text-sm" style={{ color: "#3d3a36" }}>{church.address}</p>
                       </div>
                     </div>
@@ -431,7 +433,7 @@ export default function ChurchPublicHome() {
                     <div className="flex items-start gap-3 p-4 rounded-xl bg-white border" style={{ borderColor: "#ece8e0" }}>
                       <Phone className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: primary }} />
                       <div>
-                        <p className="text-xs font-semibold mb-0.5" style={{ color: "#9a9080" }}>Phone</p>
+                        <p className="text-xs font-semibold mb-0.5" style={{ color: "#9a9080" }}>{t("cm_pub_phoneLabel")}</p>
                         <a href={`tel:${church.phone}`} className="text-sm font-medium" style={{ color: primary }}>{church.phone}</a>
                       </div>
                     </div>
@@ -440,7 +442,7 @@ export default function ChurchPublicHome() {
                     <div className="flex items-start gap-3 p-4 rounded-xl bg-white border" style={{ borderColor: "#ece8e0" }}>
                       <Mail className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: primary }} />
                       <div>
-                        <p className="text-xs font-semibold mb-0.5" style={{ color: "#9a9080" }}>Email</p>
+                        <p className="text-xs font-semibold mb-0.5" style={{ color: "#9a9080" }}>{t("cm_pub_emailLabel")}</p>
                         <a href={`mailto:${church.email}`} className="text-sm font-medium" style={{ color: primary }}>{church.email}</a>
                       </div>
                     </div>
@@ -448,7 +450,7 @@ export default function ChurchPublicHome() {
                   <Link href={`${base}/contact`}
                     className="flex items-center gap-2 px-5 py-3 rounded-xl border text-sm font-medium w-fit"
                     style={{ borderColor: primary, color: primary }}>
-                    <Mail className="w-4 h-4" /> Send us a message
+                    <Mail className="w-4 h-4" /> {t("cm_pub_sendMessage")}
                   </Link>
                 </div>
                 {church.mapEmbedUrl ? (
@@ -475,22 +477,22 @@ export default function ChurchPublicHome() {
                 style={{ backgroundColor: `${primary}12` }}>
                 <Users className="w-8 h-8" style={{ color: primary }} />
               </div>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: primary }}>Community</p>
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: "#1a1a1a" }}>Become Part of Our Family</h2>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: primary }}>{t("cm_pub_community")}</p>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: "#1a1a1a" }}>{t("cm_pub_becomePartFamily")}</h2>
               <p className="mb-8 max-w-xl mx-auto" style={{ color: "#6b6460" }}>
-                We'd love to have you join our church community. Connect with us today and grow in faith together.
+                {t("cm_pub_joinFamilyDesc")}
               </p>
               <div className="flex flex-wrap gap-3 justify-center">
                 <Link href={`${base}/join-us`}
                   className="px-8 py-3.5 text-sm font-semibold rounded-xl text-white"
                   style={{ backgroundColor: primary }}
                   data-testid="button-join-church">
-                  Join Our Church
+                  {t("cm_pub_joinOurChurch")}
                 </Link>
                 <Link href={`${base}/visit`}
                   className="px-8 py-3.5 text-sm font-semibold rounded-xl border"
                   style={{ borderColor: `${primary}40`, color: primary }}>
-                  Plan a Visit
+                  {t("cm_pub_planVisit")}
                 </Link>
               </div>
             </div>
@@ -506,14 +508,14 @@ export default function ChurchPublicHome() {
                   navigator.share({ title: church.name, url: window.location.href });
                 } else {
                   navigator.clipboard.writeText(window.location.href).then(() =>
-                    toast({ title: "Link copied!", description: "Share this page with others." })
+                    toast({ title: t("cm_pub_linkCopied"), description: t("cm_pub_sharePageDesc") })
                   );
                 }
               }}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border text-sm font-medium"
               style={{ borderColor: "#ece8e0", color: "#6b6460" }}
               data-testid="button-share-church">
-              <Share2 className="w-4 h-4" /> Share this church
+              <Share2 className="w-4 h-4" /> {t("cm_pub_shareChurchPage")}
             </button>
           </div>
         </section>

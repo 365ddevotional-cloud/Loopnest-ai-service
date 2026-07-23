@@ -2,27 +2,29 @@ import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { Menu, X, Building2, ChevronRight } from "lucide-react";
 import type { Church } from "@shared/schema";
+import { useI18n } from "@/hooks/useI18n";
 
 interface ChurchPublicShellProps {
   church: Church | null;
   children: React.ReactNode;
 }
 
-const NAV_ITEMS = [
-  { label: "Home", path: "" },
-  { label: "About", path: "/about" },
-  { label: "Sermons", path: "/watch" },
-  { label: "Events", path: "/events" },
-  { label: "Ministries", path: "/ministries" },
-  { label: "Give", path: "/give-online" },
-  { label: "Contact", path: "/contact" },
-];
-
 export function ChurchPublicShell({ church, children }: ChurchPublicShellProps) {
   const [location] = useLocation();
+  const { t } = useI18n();
   const slug = church?.slug ?? "";
   const base = `/church/${slug}`;
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const NAV_ITEMS = [
+    { label: t("cm_pub_home"), path: "" },
+    { label: t("cm_pub_about"), path: "/about" },
+    { label: t("cm_pub_sermons"), path: "/watch" },
+    { label: t("cm_pub_events"), path: "/events" },
+    { label: t("cm_pub_ministries"), path: "/ministries" },
+    { label: t("cm_pub_give"), path: "/give-online" },
+    { label: t("cm_pub_contact"), path: "/contact" },
+  ];
 
   const primary = church?.themeColor ?? "#1d3461";
   const currentSuffix = location.replace(base, "") || "/";
@@ -69,12 +71,12 @@ export function ChurchPublicShell({ church, children }: ChurchPublicShellProps) 
               <Link href={`${base}/join-us`}
                 className="px-4 py-2 text-sm font-semibold rounded-xl text-white shadow-sm"
                 style={{ backgroundColor: primary }}>
-                Join Us
+                {t("cm_pub_joinUs")}
               </Link>
               <Link href={`/church/${slug}`}
                 className="px-4 py-2 text-sm font-medium rounded-xl border"
                 style={{ borderColor: `${primary}40`, color: primary }}>
-                Member Login
+                {t("cm_pub_memberLogin")}
               </Link>
             </div>
 
@@ -102,13 +104,13 @@ export function ChurchPublicShell({ church, children }: ChurchPublicShellProps) 
                 className="text-center py-2.5 text-sm font-semibold rounded-xl text-white"
                 style={{ backgroundColor: primary }}
                 onClick={() => setMenuOpen(false)}>
-                Join Us
+                {t("cm_pub_joinUs")}
               </Link>
               <Link href={`/church/${slug}`}
                 className="text-center py-2.5 text-sm font-medium rounded-xl border"
                 style={{ borderColor: `${primary}40`, color: primary }}
                 onClick={() => setMenuOpen(false)}>
-                Member Login
+                {t("cm_pub_memberLogin")}
               </Link>
             </div>
           </div>
@@ -179,7 +181,7 @@ export function ChurchPublicShell({ church, children }: ChurchPublicShellProps) 
 
             {/* Quick Links */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: "#6b7280" }}>Quick Links</p>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: "#6b7280" }}>{t("cm_pub_quickLinks")}</p>
               <div className="space-y-2.5">
                 {NAV_ITEMS.slice(1).map(item => (
                   <Link key={item.path} href={`${base}${item.path}`}
@@ -191,19 +193,19 @@ export function ChurchPublicShell({ church, children }: ChurchPublicShellProps) 
                 <Link href={`${base}/join-us`}
                   className="block text-sm transition-colors hover:text-white"
                   style={{ color: "#9ca3af" }}>
-                  Join Us
+                  {t("cm_pub_joinUs")}
                 </Link>
                 <Link href={`${base}/visit`}
                   className="block text-sm transition-colors hover:text-white"
                   style={{ color: "#9ca3af" }}>
-                  Plan a Visit
+                  {t("cm_pub_planVisit")}
                 </Link>
               </div>
             </div>
 
             {/* Contact */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: "#6b7280" }}>Contact</p>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: "#6b7280" }}>{t("cm_pub_contact")}</p>
               <div className="space-y-2.5">
                 {church?.email && (
                   <a href={`mailto:${church.email}`} className="block text-sm transition-colors hover:text-white" style={{ color: "#9ca3af" }}>
@@ -218,11 +220,11 @@ export function ChurchPublicShell({ church, children }: ChurchPublicShellProps) 
                 {church?.websiteUrl && (
                   <a href={church.websiteUrl} target="_blank" rel="noopener noreferrer"
                     className="block text-sm transition-colors hover:text-white" style={{ color: "#9ca3af" }}>
-                    🌐 Official Website
+                    🌐 {t("cm_pub_officialWebsite")}
                   </a>
                 )}
                 {church?.pastorName && (
-                  <p className="text-sm" style={{ color: "#9ca3af" }}>⛪ Pastor: {church.pastorName}</p>
+                  <p className="text-sm" style={{ color: "#9ca3af" }}>⛪ {t("cm_pub_pastor")} {church.pastorName}</p>
                 )}
               </div>
             </div>
@@ -231,10 +233,10 @@ export function ChurchPublicShell({ church, children }: ChurchPublicShellProps) 
           <div className="border-t mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3"
             style={{ borderColor: "#1f2937" }}>
             <p className="text-xs" style={{ color: "#4b5563" }}>
-              © {new Date().getFullYear()} {church?.name}. All rights reserved.
+              © {new Date().getFullYear()} {church?.name}. {t("cm_pub_allRightsReserved")}
             </p>
             <p className="text-xs" style={{ color: "#4b5563" }}>
-              Powered by <a href="/" className="transition-colors hover:text-white">365 Daily Devotional</a>
+              {t("cm_pub_poweredBy")} <a href="/" className="transition-colors hover:text-white">365 Daily Devotional</a>
             </p>
           </div>
         </div>

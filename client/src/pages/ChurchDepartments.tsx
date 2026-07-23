@@ -39,10 +39,6 @@ const DEPT_TYPE_COLORS: Record<string, string> = {
   "Protocol": "#374151", "Follow-Up": "#b45309", "Missions": "#15803d",
 };
 
-const ROLE_LABELS: Record<string, string> = {
-  leader: "Leader", assistant_leader: "Asst. Leader", secretary: "Secretary", member: "Member",
-};
-
 export default function ChurchDepartments() {
   const [location, setLocation] = useLocation();
   const slug = (location.match(/\/church\/([^/]+)\/departments/) ?? [])[1] ?? "";
@@ -51,6 +47,11 @@ export default function ChurchDepartments() {
   const { t } = useI18n();
   const { toast } = useToast();
   const qc = useQueryClient();
+
+  const ROLE_LABELS: Record<string, string> = {
+    leader: t("cm_roleLeader"), assistant_leader: t("cm_roleAssistantLeader"),
+    secretary: t("cm_roleSecretary"), member: t("cm_member"),
+  };
 
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);

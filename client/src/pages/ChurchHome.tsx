@@ -320,7 +320,7 @@ export default function ChurchHome() {
                               {ann.externalLink && (
                                 <a href={ann.externalLink} target="_blank" rel="noopener noreferrer"
                                   className="flex items-center gap-1 text-xs font-medium" style={{ color: themeColor }}>
-                                  <ExternalLink className="w-3 h-3" />Link
+                                  <ExternalLink className="w-3 h-3" />{t("cm_link")}
                                 </a>
                               )}
                             </div>
@@ -369,10 +369,10 @@ export default function ChurchHome() {
                                 </p>
                               )}
                               {sermon.audioUrl && (
-                                <span className="text-xs font-medium" style={{ color: themeColor }}>🎧 Audio</span>
+                                <span className="text-xs font-medium" style={{ color: themeColor }}>🎧 {t("cm_audio")}</span>
                               )}
                               {sermon.videoUrl && (
-                                <span className="text-xs font-medium" style={{ color: themeColor }}>▶ Video</span>
+                                <span className="text-xs font-medium" style={{ color: themeColor }}>▶ {t("cm_video")}</span>
                               )}
                             </div>
                           </div>

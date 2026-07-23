@@ -1,0 +1,178 @@
+FINISH CHURCH MODE MULTI-LANGUAGE SUPPORT — ENGLISH, SPANISH, FRENCH
+
+ChurchAdminPage.tsx is already fully internationalized. Do not redo or refactor that work.
+
+Now complete multilingual support across every remaining Church Mode page and component.
+
+SUPPORTED LANGUAGES FOR THIS PHASE:
+
+- English
+- Spanish
+- French
+
+IMPORTANT:
+
+- Make only localization-related changes.
+- Do not redesign Church Mode.
+- Do not modify unrelated devotional, music, donation, authentication, analytics, or admin-platform features.
+- Do not replace or remove working Church Mode functionality.
+- Reuse the existing i18n system and current locale files:
+  - en.json
+  - es.json
+  - fr.json
+- Do not create a second translation system.
+- Do not hardcode new visible text inside components.
+
+====================================================
+1. COMPLETE ALL REMAINING CHURCH MODE PAGES
+====================================================
+
+Inspect all Church Mode routes and translate every remaining user-facing interface string, including where present:
+
+- Church Mode landing page
+- Create Church Space
+- Join Church
+- Church dashboard
+- Public church profile
+- Church settings
+- Member profile
+- Member list and member details
+- Invitations and invite-code flows
+- Departments landing page
+- Department dashboard
+- Department members
+- Department chat
+- Department announcements
+- Department prayer
+- Department events
+- Department tasks
+- Department attendance
+- Sermon pages
+- Prayer request pages
+- Events pages
+- Attendance pages
+- Messaging pages
+- Notification pages
+- Giving pages visible to members
+- Church website/public profile pages
+- Empty states
+- Loading states
+- Error states
+- Confirmation dialogs
+- Toast notifications
+- Form labels
+- Placeholders
+- Validation messages
+- Buttons
+- Tabs
+- Badges
+- Tooltips
+- Mobile navigation
+- Desktop navigation
+
+====================================================
+2. LANGUAGE SELECTOR
+====================================================
+
+Ensure a visible language selector is available in:
+
+- My Account / Profile
+- Church Mode header or settings
+- Church Settings
+
+Requirements:
+
+- English
+- Español
+- Français
+- Changing language must update the interface immediately.
+- Save the user’s preferred language.
+- Preserve the selection after refresh, sign-out, and later sign-in where the profile supports it.
+- Default to English when no preference exists.
+- Language selection must not affect church data, roles, or memberships.
+
+====================================================
+3. TRANSLATION RULES
+====================================================
+
+Translate only the application interface.
+
+Do not automatically translate user-generated content such as:
+
+- Church names
+- Pastor names
+- Sermons
+- Prayer requests
+- Messages
+- Announcements
+- Event titles and descriptions
+- Department names
+- Testimonies
+
+Preserve user-entered text exactly as submitted.
+
+Use natural, respectful church terminology in both Spanish and French. Avoid awkward word-for-word translations.
+
+Keep terminology consistent across all pages, especially for:
+
+- Church Owner
+- Church Admin
+- Church Member
+- Pastor
+- Department
+- Sermon
+- Prayer Request
+- Giving
+- Attendance
+- Announcement
+- Invitation
+- Join Church
+- Church Settings
+- Confidential
+- Anonymous
+- Answered Prayer
+
+====================================================
+4. FUTURE-LANGUAGE FOUNDATION
+====================================================
+
+Keep the localization structure easy to extend later.
+
+Do not add additional languages now.
+
+Ensure another locale can later be added by:
+
+- creating one new locale file
+- adding it to the language selector
+- without rewriting Church Mode components
+
+====================================================
+5. QUALITY CHECK
+====================================================
+
+Search all Church Mode files for remaining hardcoded user-facing English text.
+
+Confirm:
+
+- No untranslated English interface text remains when Spanish is selected.
+- No untranslated English interface text remains when French is selected.
+- No missing translation keys appear on screen.
+- No raw key names such as cm_example_label appear to users.
+- English remains complete and unchanged.
+- Spanish accents display correctly.
+- French accents and apostrophes display correctly.
+- Mobile layouts do not break because translated text is longer.
+- Buttons do not overflow.
+- Tabs remain readable.
+- Forms remain usable.
+- Existing Church Mode functionality continues working.
+
+Do not spend time fixing the 11 pre-existing TypeScript errors in unrelated files.
+
+After completion, provide a concise report containing only:
+
+- Church Mode files translated
+- New locale keys added
+- Confirmation that English, Spanish, and French were tested
+- Any remaining untranslated Church Mode page
+- Confirmation that no unrelated features were changed

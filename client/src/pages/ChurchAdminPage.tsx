@@ -55,7 +55,7 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
         body: JSON.stringify({ name: deptName.trim(), type: deptType }),
       });
       const data = await r.json();
-      if (!r.ok) { toast({ title: "Error", description: data.message, variant: "destructive" }); return; }
+      if (!r.ok) { toast({ title: t("cm_error"), description: data.message, variant: "destructive" }); return; }
       toast({ title: "Department created!" });
       qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "departments-admin"] });
       setShowCreate(false); setDeptName(""); setDeptType("Custom");
@@ -405,7 +405,7 @@ export default function ChurchAdminPage() {
       setGivingSettingsForm({});
       toast({ title: "Giving settings saved" });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("cm_error"), description: err.message, variant: "destructive" });
     } finally { setSavingGivingSettings(false); }
   };
 
@@ -425,7 +425,7 @@ export default function ChurchAdminPage() {
       refetchCategories();
       toast({ title: "Category added" });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("cm_error"), description: err.message, variant: "destructive" });
     } finally { setAddingCat(false); }
   };
 
@@ -452,7 +452,7 @@ export default function ChurchAdminPage() {
       });
       refetchCategories();
       toast({ title: "Category removed" });
-    } catch { toast({ title: "Error", variant: "destructive" }); }
+    } catch { toast({ title: t("cm_error"), variant: "destructive" }); }
   };
 
   // Save payout config
@@ -473,7 +473,7 @@ export default function ChurchAdminPage() {
       setPayoutForm({});
       toast({ title: "Payout details saved" });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("cm_error"), description: err.message, variant: "destructive" });
     } finally { setSavingPayout(false); }
   };
 
@@ -497,7 +497,7 @@ export default function ChurchAdminPage() {
       setBrandingForm({ logoUrl: "", bannerUrl: "", themeColor: "" });
       toast({ title: "Branding updated" });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("cm_error"), description: err.message, variant: "destructive" });
     } finally { setSavingBranding(false); }
   };
 
@@ -548,7 +548,7 @@ export default function ChurchAdminPage() {
       qc.invalidateQueries({ queryKey: ["/api/churches/slug", slug] });
       toast({ title: "✅ Website settings saved" });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("cm_error"), description: err.message, variant: "destructive" });
     } finally { setSavingWebsite(false); }
   };
 
@@ -565,7 +565,7 @@ export default function ChurchAdminPage() {
       return r.json();
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches/slug", slug] }); setForm({}); toast({ title: "Settings saved" }); },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
   // Create invitation
@@ -590,7 +590,7 @@ export default function ChurchAdminPage() {
       setInvLabel(""); setInvExpiry(""); setInvMaxUses(""); setInvType("membership"); setInvGroupId("");
       setShowInvForm(false);
       toast({ title: "Invitation created" });
-    } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+    } catch (e: any) { toast({ title: t("cm_error"), description: e.message, variant: "destructive" }); }
     finally { setCreatingInv(false); }
   };
 
@@ -601,7 +601,7 @@ export default function ChurchAdminPage() {
       if (!r.ok) throw new Error((await r.json()).message);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "invitations"] }); toast({ title: "Invitation deactivated" }); },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
   const deleteInv = useMutation({
@@ -611,7 +611,7 @@ export default function ChurchAdminPage() {
       if (!r.ok) throw new Error((await r.json()).message);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "invitations"] }); toast({ title: "Invitation deleted" }); },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
   const approveMember = useMutation({
@@ -621,7 +621,7 @@ export default function ChurchAdminPage() {
       if (!r.ok) throw new Error((await r.json()).message);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: "Member approved" }); },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
   const declineMember = useMutation({
@@ -631,7 +631,7 @@ export default function ChurchAdminPage() {
       if (!r.ok) throw new Error((await r.json()).message);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: "Request declined" }); },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
   function copyText(text: string, label = "Copied") {
@@ -673,7 +673,7 @@ export default function ChurchAdminPage() {
       setSermonForm({ title: "", description: "", speakerName: "", videoUrl: "", audioUrl: "", audioUrl2: "", pdfNotesUrl: "", outlineUrl: "", imageUrl: "", bibleReference: "", sermonDate: "", scheduledDate: "", isPublished: true });
       setShowSermonForm(false);
       toast({ title: "Sermon added" });
-    } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+    } catch (e: any) { toast({ title: t("cm_error"), description: e.message, variant: "destructive" }); }
     finally { setAddingSermon(false); }
   };
 
@@ -684,7 +684,7 @@ export default function ChurchAdminPage() {
       if (!r.ok) throw new Error((await r.json()).message);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "sermons"] }); toast({ title: "Sermon deleted" }); },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
   // Create announcement
@@ -708,7 +708,7 @@ export default function ChurchAdminPage() {
       setAnnForm({ title: "", body: "", isPinned: false, expiresAt: "", imageUrl: "", pdfUrl: "", externalLink: "" });
       setShowAnnForm(false);
       toast({ title: "Announcement published" });
-    } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+    } catch (e: any) { toast({ title: t("cm_error"), description: e.message, variant: "destructive" }); }
   };
 
   const deleteAnn = useMutation({
@@ -718,7 +718,7 @@ export default function ChurchAdminPage() {
       if (!r.ok) throw new Error((await r.json()).message);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "announcements"] }); toast({ title: "Announcement deleted" }); },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
   // Member role update
@@ -734,7 +734,7 @@ export default function ChurchAdminPage() {
       return r.json();
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: "Role updated" }); },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
   const removeMember = useMutation({
@@ -744,7 +744,7 @@ export default function ChurchAdminPage() {
       if (!r.ok) throw new Error((await r.json()).message);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: "Member removed" }); },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
   // Delete prayer request
@@ -755,7 +755,7 @@ export default function ChurchAdminPage() {
       if (!r.ok) throw new Error((await r.json()).message);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "prayer"] }); toast({ title: "Request removed" }); },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
   if (churchLoading) {

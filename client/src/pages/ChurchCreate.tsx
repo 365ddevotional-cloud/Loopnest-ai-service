@@ -30,14 +30,14 @@ export default function ChurchCreate() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) {
-      toast({ title: "Church name is required", variant: "destructive" });
+      toast({ title: t("cm_churchNameRequired"), variant: "destructive" });
       return;
     }
     setSubmitting(true);
     try {
       const token = await getIdToken();
       if (!token) {
-        toast({ title: "Please sign in to create a church", variant: "destructive" });
+        toast({ title: t("cm_pleaseSignInCreate"), variant: "destructive" });
         setLocation("/signin");
         return;
       }
@@ -55,7 +55,7 @@ export default function ChurchCreate() {
         throw new Error(err.message ?? "Failed to create church");
       }
       const church = await r.json();
-      toast({ title: "Church created!", description: `"${church.name}" is ready.` });
+      toast({ title: t("cm_churchCreated"), description: `"${church.name}" ${t("cm_churchIsReady")}` });
       setLocation(`/church/${church.slug}`);
     } catch (err: any) {
       toast({ title: t("cm_error"), description: err.message, variant: "destructive" });

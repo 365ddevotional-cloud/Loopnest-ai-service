@@ -26,15 +26,6 @@ interface InvitePreview {
   };
 }
 
-const INVITATION_TYPE_LABELS: Record<string, string> = {
-  membership: "General Membership",
-  group: "Group Membership",
-  leadership: "Leadership Team",
-  ministry: "Ministry Team",
-  event: "Event Attendee",
-  volunteer: "Volunteer",
-};
-
 function copyToClipboard(text: string, onSuccess: () => void) {
   if (navigator.clipboard) {
     navigator.clipboard.writeText(text).then(onSuccess).catch(() => {
@@ -60,6 +51,15 @@ export default function ChurchJoin() {
   const { t } = useI18n();
   const { toast } = useToast();
   const isSignedIn = !!user && !!emailVerified;
+
+  const INVITATION_TYPE_LABELS: Record<string, string> = {
+    membership: t("cm_invTypeGeneralMembership"),
+    group: t("cm_invTypeGroupMembership"),
+    leadership: t("cm_invTypeLeadershipTeam"),
+    ministry: t("cm_invTypeMinistryTeam"),
+    event: t("cm_invTypeEventAttendee"),
+    volunteer: t("cm_invTypeVolunteer"),
+  };
 
   const [code, setCode] = useState("");
   const [preview, setPreview] = useState<InvitePreview | null>(null);
@@ -100,7 +100,7 @@ export default function ChurchJoin() {
       }
       setPreview(await r.json());
     } catch {
-      setPreviewError("Could not verify invitation code");
+      setPreviewError(t("cm_couldNotVerifyCode"));
     } finally {
       setPreviewing(false);
     }
@@ -276,13 +276,13 @@ export default function ChurchJoin() {
                     {preview.invitation.invitationType && preview.invitation.invitationType !== "membership" && (
                       <div className="flex items-center gap-1.5 text-xs" style={{ color: "#5a4e3d" }}>
                         <CheckCircle className="w-3 h-3" />
-                        <span>Purpose: {INVITATION_TYPE_LABELS[preview.invitation.invitationType] ?? preview.invitation.invitationType}</span>
+                        <span>{t("cm_purpose")}: {INVITATION_TYPE_LABELS[preview.invitation.invitationType] ?? preview.invitation.invitationType}</span>
                       </div>
                     )}
                     {preview.invitation.targetGroupName && (
                       <div className="flex items-center gap-1.5 text-xs" style={{ color: "#5a4e3d" }}>
                         <Users className="w-3 h-3" />
-                        <span>You'll be added to: <strong>{preview.invitation.targetGroupName}</strong></span>
+                        <span>{t("cm_youllBeAddedTo")}: <strong>{preview.invitation.targetGroupName}</strong></span>
                       </div>
                     )}
                     {preview.invitation.expiresAt && (
@@ -294,7 +294,7 @@ export default function ChurchJoin() {
                     {preview.invitation.remaining !== null && (
                       <div className="flex items-center gap-1.5 text-xs" style={{ color: "#5a4e3d" }}>
                         <Users className="w-3 h-3" />
-                        <span>{preview.invitation.remaining} {preview.invitation.remaining === 1 ? "spot" : "spots"} remaining</span>
+                        <span>{preview.invitation.remaining} {preview.invitation.remaining === 1 ? t("cm_spotRemaining") : t("cm_spotsRemaining")}</span>
                       </div>
                     )}
                     {requiresApproval && (
@@ -325,8 +325,8 @@ export default function ChurchJoin() {
                 <>
                   {!isSignedIn ? (
                     <div className="space-y-3 pt-1 p-4 rounded-xl border" style={{ borderColor: "#1a274433", backgroundColor: "#1a274408" }}>
-                      <p className="text-sm font-medium" style={{ color: "#1a2744" }}>Sign in to join this church community</p>
-                      <p className="text-xs text-muted-foreground">You need a free account to join. Your code will be remembered.</p>
+                      <p className="text-sm font-medium" style={{ color: "#1a2744" }}>{t("cm_signInToJoinCommunity")}</p>
+                      <p className="text-xs text-muted-foreground">{t("cm_needAccountToJoin")}</p>
                       <div className="flex gap-2">
                         <Button
                           onClick={() => {
@@ -348,7 +348,7 @@ export default function ChurchJoin() {
                           className="flex-1"
                           data-testid="button-signup-to-join"
                         >
-                          Create Account
+                          {t("cm_createAccount")}
                         </Button>
                       </div>
                     </div>
@@ -363,8 +363,8 @@ export default function ChurchJoin() {
                           data-testid="checkbox-join-consent"
                         />
                         <span className="text-sm text-muted-foreground">
-                          I understand that by joining, my display name and email may be visible to church leaders and administrators of <strong>{preview.church.name}</strong>.
-                          {requiresApproval && " My request will be reviewed before I gain access."}
+                          {t("cm_joinConsentText")} <strong>{preview.church.name}</strong>.
+                          {requiresApproval && ` ${t("cm_reviewBeforeAccess")}`}
                         </span>
                       </label>
                       <Button
@@ -377,7 +377,7 @@ export default function ChurchJoin() {
                         {joining ? (
                           <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("cm_joining")}</>
                         ) : requiresApproval ? (
-                          `Request to Join ${preview.church.name}`
+                          `${t("cm_requestToJoin")} ${preview.church.name}`
                         ) : (
                           `${t("cm_join")} ${preview.church.name}`
                         )}

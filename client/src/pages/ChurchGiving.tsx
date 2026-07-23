@@ -182,12 +182,12 @@ export default function ChurchGiving() {
       });
       const data = await r.json();
       if (!r.ok) {
-        toast({ title: "Error", description: data.message, variant: "destructive" });
+        toast({ title: t("cm_error"), description: data.message, variant: "destructive" });
         return;
       }
       window.location.href = data.checkoutUrl;
     } catch {
-      toast({ title: "Error", description: "Could not start payment. Please try again.", variant: "destructive" });
+      toast({ title: t("cm_error"), description: t("cm_couldNotStartPayment"), variant: "destructive" });
     } finally {
       setLoading(false);
     }

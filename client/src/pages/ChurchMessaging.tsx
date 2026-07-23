@@ -31,24 +31,10 @@ interface Message {
   isSystemMessage: boolean; deletedBySender: boolean; createdAt: string;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  general: "General", prayer: "Prayer Request", counseling: "Counseling",
-  scripture: "Scripture Question", pastoral: "Pastoral Care", support: "Support",
-};
-
 const LEADER_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor", "counselor"];
 const ADMIN_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor"];
 
 type InboxTab = "all" | "unassigned" | "mine" | "counseling" | "prayer" | "closed";
-
-const INBOX_TABS: { id: InboxTab; label: string }[] = [
-  { id: "all", label: "All Open" },
-  { id: "unassigned", label: "Unassigned" },
-  { id: "mine", label: "Assigned to Me" },
-  { id: "counseling", label: "Counseling" },
-  { id: "prayer", label: "Prayer" },
-  { id: "closed", label: "Closed" },
-];
 
 export default function ChurchMessaging() {
   const [, params] = useRoute("/church/:slug/messages");
@@ -58,6 +44,20 @@ export default function ChurchMessaging() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const isSignedIn = !!user && !!emailVerified;
+
+  const CATEGORY_LABELS: Record<string, string> = {
+    general: t("cm_catGeneral"), prayer: t("cm_catPrayer"), counseling: t("cm_catCounseling"),
+    scripture: t("cm_catScripture"), pastoral: t("cm_catPastoral"), support: t("cm_catSupport"),
+  };
+
+  const INBOX_TABS: { id: InboxTab; label: string }[] = [
+    { id: "all", label: t("cm_tabAllOpen") },
+    { id: "unassigned", label: t("cm_tabUnassigned") },
+    { id: "mine", label: t("cm_tabAssignedToMe") },
+    { id: "counseling", label: t("cm_catCounseling") },
+    { id: "prayer", label: t("cm_catPrayer") },
+    { id: "closed", label: t("cm_tabClosed") },
+  ];
 
   const [selectedConvId, setSelectedConvId] = useState<number | null>(null);
   const [showNewForm, setShowNewForm] = useState(false);
@@ -175,8 +175,8 @@ export default function ChurchMessaging() {
       setShowNewForm(false);
       setNewSubject(""); setNewCategory("general"); setNewMessage("");
       setNewTargetType("direct"); setNewTargetGroupId("");
-      toast({ title: "Message sent" });
-    } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+      toast({ title: t("cm_messageSent") });
+    } catch (e: any) { toast({ title: t("cm_error"), description: e.message, variant: "destructive" }); }
     finally { setSubmitting(false); }
   };
 
@@ -193,7 +193,7 @@ export default function ChurchMessaging() {
       if (!r.ok) throw new Error((await r.json()).message);
       setReplyText("");
       qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "conversations", selectedConvId] });
-    } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+    } catch (e: any) { toast({ title: t("cm_error"), description: e.message, variant: "destructive" }); }
     finally { setSubmitting(false); }
   };
 
@@ -210,8 +210,8 @@ export default function ChurchMessaging() {
       if (!r.ok) throw new Error((await r.json()).message);
       qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "conversations", selectedConvId] });
       qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "conversations"] });
-      toast({ title: "Updated" });
-    } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+      toast({ title: t("cm_updated") });
+    } catch (e: any) { toast({ title: t("cm_error"), description: e.message, variant: "destructive" }); }
     finally { setUpdatingConv(false); }
   };
 
@@ -229,8 +229,8 @@ export default function ChurchMessaging() {
       qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "conversations", selectedConvId] });
       setShowAddParticipantPanel(false);
       setAddParticipantUid("");
-      toast({ title: "Pastoral assistant added" });
-    } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+      toast({ title: t("cm_pastoralAssistantAdded") });
+    } catch (e: any) { toast({ title: t("cm_error"), description: e.message, variant: "destructive" }); }
     finally { setUpdatingConv(false); }
   };
 

@@ -32,9 +32,6 @@ interface DeptDetail extends ChurchDepartment {
 type PostWithAuthor = ChurchDepartmentPost & { authorName: string | null };
 type MemberWithInfo = ChurchDepartmentMember & { member: { id: number; displayName: string | null; avatarUrl: string | null; role: string | null } };
 
-const ROLE_LABELS: Record<string, string> = {
-  leader: "Leader", assistant_leader: "Asst. Leader", secretary: "Secretary", member: "Member",
-};
 const ROLE_COLORS: Record<string, string> = {
   leader: "#b8962e", assistant_leader: "#0891b2", secretary: "#059669", member: "#7a7570",
 };
@@ -67,6 +64,11 @@ export default function ChurchDepartmentView() {
   const { t } = useI18n();
   const { toast } = useToast();
   const qc = useQueryClient();
+
+  const ROLE_LABELS: Record<string, string> = {
+    leader: t("cm_roleLeader"), assistant_leader: t("cm_roleAssistantLeader"),
+    secretary: t("cm_roleSecretary"), member: t("cm_member"),
+  };
 
   const [activeTab, setActiveTab] = useState<DeptTab>("chat");
   const [message, setMessage] = useState("");
@@ -205,7 +207,7 @@ export default function ChurchDepartmentView() {
         body: JSON.stringify({ type, content: message.trim() }),
       });
       const data = await r.json();
-      if (!r.ok) { toast({ title: "Error", description: data.message, variant: "destructive" }); return; }
+      if (!r.ok) { toast({ title: t("cm_error"), description: data.message, variant: "destructive" }); return; }
       setMessage("");
       qc.invalidateQueries({ queryKey: ["/api/churches/departments", deptId, "posts", activeTab] });
     } finally { setSending(false); }
@@ -227,7 +229,7 @@ export default function ChurchDepartmentView() {
         method: "POST", headers, body: JSON.stringify(eventForm),
       });
       const data = await r.json();
-      if (!r.ok) { toast({ title: "Error", description: data.message, variant: "destructive" }); return; }
+      if (!r.ok) { toast({ title: t("cm_error"), description: data.message, variant: "destructive" }); return; }
       qc.invalidateQueries({ queryKey: ["/api/churches/departments", deptId, "events"] });
       setShowEventForm(false);
       setEventForm({ title: "", description: "", location: "", startDate: "", endDate: "", isAllDay: false });
@@ -254,7 +256,7 @@ export default function ChurchDepartmentView() {
         }),
       });
       const data = await r.json();
-      if (!r.ok) { toast({ title: "Error", description: data.message, variant: "destructive" }); return; }
+      if (!r.ok) { toast({ title: t("cm_error"), description: data.message, variant: "destructive" }); return; }
       qc.invalidateQueries({ queryKey: ["/api/churches/departments", deptId, "tasks"] });
       setShowTaskForm(false);
       setTaskForm({ title: "", description: "", assignedTo: "", dueDate: "", priority: "normal" });
@@ -285,8 +287,8 @@ export default function ChurchDepartmentView() {
         body: JSON.stringify({ sessionDate: attendanceDate, sessionTitle: attendanceTitle || null, attendeeIds: Array.from(attendeeSelection) }),
       });
       const data = await r.json();
-      if (!r.ok) { toast({ title: "Error", description: data.message, variant: "destructive" }); return; }
-      toast({ title: "Attendance recorded!" });
+      if (!r.ok) { toast({ title: t("cm_error"), description: data.message, variant: "destructive" }); return; }
+      toast({ title: t("cm_attendanceRecorded") });
       qc.invalidateQueries({ queryKey: ["/api/churches/departments", deptId, "attendance"] });
       setShowAttendanceForm(false);
       setAttendeeSelection(new Set());
@@ -300,8 +302,8 @@ export default function ChurchDepartmentView() {
       const headers = { ...(await authHeaders()), "Content-Type": "application/json" };
       const r = await fetch(`/api/churches/departments/${deptId}`, { method: "PUT", headers, body: JSON.stringify(editForm) });
       const data = await r.json();
-      if (!r.ok) { toast({ title: "Error", description: data.message, variant: "destructive" }); return; }
-      toast({ title: "Settings saved" });
+      if (!r.ok) { toast({ title: t("cm_error"), description: data.message, variant: "destructive" }); return; }
+      toast({ title: t("cm_settingsSaved") });
       qc.invalidateQueries({ queryKey: ["/api/churches", slug, "departments", deptSlug] });
       setShowSettings(false);
     } finally { setSaving(false); }

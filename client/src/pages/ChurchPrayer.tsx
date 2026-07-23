@@ -107,7 +107,7 @@ export default function ChurchPrayer() {
             </div>
             <div>
               <h2 className="font-serif text-2xl font-bold" style={{ color: "#1a2744" }}>{t("cm_prayerWallHeading")}</h2>
-              <p className="text-sm mt-0.5" style={{ color: "#7a7570" }}>Share requests and stand in prayer together</p>
+              <p className="text-sm mt-0.5" style={{ color: "#7a7570" }}>{t("cm_prayerWallSubtitle")}</p>
             </div>
           </div>
           {isMember && !showForm && (
