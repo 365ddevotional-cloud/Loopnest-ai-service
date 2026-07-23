@@ -2571,6 +2571,14 @@ export default function Admin() {
               <Building2 className="w-4 h-4 mr-1.5 flex-shrink-0" />
               Churches
             </TabsTrigger>
+            <TabsTrigger value="church-oversight" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-church-oversight">
+              <TrendingUp className="w-4 h-4 mr-1.5 flex-shrink-0" />
+              Oversight
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-analytics">
+              <BarChart3 className="w-4 h-4 mr-1.5 flex-shrink-0" />
+              Analytics
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -2724,6 +2732,40 @@ export default function Admin() {
             <ChurchModerationAdmin />
             <ChurchFinanceAdmin />
           </div>
+        </TabsContent>
+
+        <TabsContent value="church-oversight">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+                <TrendingUp className="w-6 h-6" />
+                Church Oversight
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Operational statistics for all registered churches. Private messages and counseling content are not shown here.
+              </p>
+            </CardHeader>
+            <CardContent className="p-6">
+              <ChurchOversightAdmin />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="analytics">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+                <BarChart3 className="w-6 h-6" />
+                App Analytics
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Database-backed user activity. Counts distinct signed-in users per day, week, and month.
+              </p>
+            </CardHeader>
+            <CardContent className="p-6">
+              <AppAnalyticsAdmin />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
@@ -4265,6 +4307,308 @@ function ChurchFinanceAdmin() {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// ── Church Oversight Admin ─────────────────────────────────────────────────────
+
+interface ChurchOversightRow {
+  id: number;
+  name: string;
+  slug: string;
+  logoUrl: string | null;
+  status: string;
+  country: string | null;
+  createdAt: string;
+  ownerId: string;
+  ownerEmail: string | null;
+  ownerDisplayName: string | null;
+  activeMembers: number;
+  pendingMembers: number;
+  inactiveMembers: number;
+  adminCount: number;
+  departmentCount: number;
+  announcementCount: number;
+  sermonCount: number;
+  lastActivity: string | null;
+}
+
+interface OversightSummary {
+  total: number;
+  active: number;
+  inactive: number;
+  newThisWeek: number;
+  newThisMonth: number;
+  totalActiveMembers: number;
+  churchesByCountry: { country: string; count: number }[];
+  membersByCountry: { country: string; count: number }[];
+  largestChurches: { id: number; name: string; slug: string; logoUrl: string | null; activeMembers: number }[];
+}
+
+function ChurchOversightAdmin() {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const { data, isLoading } = useQuery<{ churches: ChurchOversightRow[]; summary: OversightSummary }>({
+    queryKey: ["/api/admin/church-oversight"],
+    queryFn: () => fetch("/api/admin/church-oversight", { credentials: "include" }).then(r => r.ok ? r.json() : Promise.reject()),
+  });
+
+  const churches = data?.churches ?? [];
+  const summary = data?.summary;
+
+  const filtered = churches.filter(c => {
+    const matchSearch = !search ||
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      (c.ownerEmail ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (c.ownerDisplayName ?? "").toLowerCase().includes(search.toLowerCase());
+    const matchStatus = statusFilter === "all" || c.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  if (isLoading) return <div className="flex items-center gap-2 text-muted-foreground py-8"><Loader2 className="w-4 h-4 animate-spin" />Loading church data…</div>;
+
+  return (
+    <div className="space-y-6">
+      {/* Summary cards */}
+      {summary && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {[
+            { label: "Total Churches", value: summary.total },
+            { label: "Active", value: summary.active },
+            { label: "Inactive/Suspended", value: summary.inactive },
+            { label: "New This Week", value: summary.newThisWeek },
+            { label: "New This Month", value: summary.newThisMonth },
+            { label: "Total Members", value: summary.totalActiveMembers },
+          ].map(s => (
+            <div key={s.label} className="bg-muted/40 rounded-lg p-3 text-center" data-testid={`stat-oversight-${s.label.replace(/\s+/g, "-").toLowerCase()}`}>
+              <p className="text-2xl font-bold text-primary">{s.value}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Country breakdowns */}
+      {summary && summary.churchesByCountry.length > 0 && (
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Churches by Country</p>
+            <div className="space-y-1 max-h-40 overflow-y-auto">
+              {summary.churchesByCountry.slice(0, 15).map((r) => (
+                <div key={r.country} className="flex justify-between text-sm">
+                  <span className="text-foreground">{r.country}</span>
+                  <span className="font-medium text-primary">{r.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Members by Country</p>
+            <div className="space-y-1 max-h-40 overflow-y-auto">
+              {summary.membersByCountry.slice(0, 15).map((r) => (
+                <div key={r.country} className="flex justify-between text-sm">
+                  <span className="text-foreground">{r.country}</span>
+                  <span className="font-medium text-primary">{r.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Search + filter */}
+      <div className="flex gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-48">
+          <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name, owner, email…"
+            className="w-full pl-9 h-9 rounded-md border bg-background text-sm px-3 focus:outline-none focus:ring-1 focus:ring-ring"
+            data-testid="input-oversight-search"
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          className="h-9 rounded-md border bg-background text-sm px-3 focus:outline-none focus:ring-1 focus:ring-ring"
+          data-testid="select-oversight-status"
+        >
+          <option value="all">All statuses</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="suspended">Suspended</option>
+        </select>
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        Showing {filtered.length} of {churches.length} churches.
+        Private messages, counseling, and prayer requests are not accessible from this view.
+      </p>
+
+      {/* Church rows */}
+      <div className="space-y-3">
+        {filtered.map(c => (
+          <Card key={c.id} className="border-primary/10" data-testid={`card-oversight-church-${c.id}`}>
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                  {c.logoUrl
+                    ? <img src={c.logoUrl} alt={c.name} className="w-10 h-10 rounded-lg object-cover" />
+                    : <Building2 className="w-5 h-5 text-muted-foreground" />
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-semibold text-foreground">{c.name}</p>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium border ${c.status === "active" ? "bg-green-50 text-green-700 border-green-300" : "bg-red-50 text-red-700 border-red-300"}`}>
+                      {c.status}
+                    </span>
+                    {c.country && <span className="text-xs text-muted-foreground">{c.country}</span>}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Owner: {c.ownerDisplayName ?? "—"} &middot; {c.ownerEmail ?? "—"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Registered: {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : "—"}
+                    {c.lastActivity && ` · Last active: ${new Date(c.lastActivity).toLocaleDateString()}`}
+                  </p>
+                </div>
+              </div>
+              {/* Stat badges */}
+              <div className="flex flex-wrap gap-2 mt-3">
+                {[
+                  { label: "Active members", value: c.activeMembers },
+                  { label: "Pending", value: c.pendingMembers },
+                  { label: "Inactive", value: c.inactiveMembers },
+                  { label: "Admins", value: c.adminCount },
+                  { label: "Departments", value: c.departmentCount },
+                  { label: "Announcements", value: c.announcementCount },
+                  { label: "Sermons", value: c.sermonCount },
+                ].map(s => (
+                  <div key={s.label} className="bg-muted/50 rounded px-2 py-1 text-center min-w-14">
+                    <p className="text-sm font-bold text-primary leading-none">{s.value}</p>
+                    <p className="text-xs text-muted-foreground leading-tight mt-0.5">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {filtered.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-8">No churches match your search.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── App Analytics Admin ────────────────────────────────────────────────────────
+
+interface AnalyticsData {
+  dau: number;
+  wau: number;
+  mau: number;
+  totalUsers: number;
+  newThisWeek: number;
+  newThisMonth: number;
+  dailyTrend: { date: string; users: number }[];
+  usersByCountry: { country: string; count: number }[];
+}
+
+function AppAnalyticsAdmin() {
+  const { data, isLoading } = useQuery<AnalyticsData>({
+    queryKey: ["/api/admin/analytics"],
+    queryFn: () => fetch("/api/admin/analytics", { credentials: "include" }).then(r => r.ok ? r.json() : Promise.reject()),
+  });
+
+  if (isLoading) return <div className="flex items-center gap-2 text-muted-foreground py-8"><Loader2 className="w-4 h-4 animate-spin" />Loading analytics…</div>;
+
+  if (!data) return <p className="text-muted-foreground py-8 text-center">Could not load analytics.</p>;
+
+  const mainStats = [
+    { label: "Daily Active Users (today)", value: data.dau, note: "Distinct signed-in users active today" },
+    { label: "Weekly Active Users (7d)", value: data.wau, note: "Distinct signed-in users, last 7 days" },
+    { label: "Monthly Active Users (30d)", value: data.mau, note: "Distinct signed-in users, last 30 days" },
+    { label: "Total Registered Accounts", value: data.totalUsers, note: "All user_profiles rows" },
+    { label: "New Accounts This Week", value: data.newThisWeek, note: "Registered in the last 7 days" },
+    { label: "New Accounts This Month", value: data.newThisMonth, note: "Registered in the last 30 days" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <p className="text-xs text-muted-foreground bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+        <strong>Data source:</strong> Database-backed activity log. Only signed-in (verified) users are counted.
+        Anonymous page visits are not included. Google Analytics integration would require a service-account key added server-side.
+      </p>
+
+      {/* Main stat cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {mainStats.map(s => (
+          <div key={s.label} className="bg-muted/40 rounded-lg p-4 space-y-1" data-testid={`stat-analytics-${s.label.replace(/\s+/g, "-").toLowerCase().slice(0, 20)}`}>
+            <p className="text-3xl font-bold text-primary">{s.value.toLocaleString()}</p>
+            <p className="text-xs font-medium text-foreground leading-snug">{s.label}</p>
+            <p className="text-xs text-muted-foreground leading-snug">{s.note}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* 30-day trend table */}
+      {data.dailyTrend.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Daily Active Users — Last 30 Days</p>
+          <div className="border rounded-lg overflow-hidden">
+            <div className="max-h-64 overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 sticky top-0">
+                  <tr>
+                    <th className="text-left px-4 py-2 font-medium text-muted-foreground">Date</th>
+                    <th className="text-right px-4 py-2 font-medium text-muted-foreground">Active Users</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...data.dailyTrend].reverse().map((row) => (
+                    <tr key={row.date} className="border-t">
+                      <td className="px-4 py-2 text-foreground">{row.date}</td>
+                      <td className="px-4 py-2 text-right font-medium text-primary">{row.users}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Users by country */}
+      {data.usersByCountry.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Registered Users by Country</p>
+          <div className="space-y-1 max-h-48 overflow-y-auto">
+            {data.usersByCountry.map((r) => (
+              <div key={r.country} className="flex justify-between text-sm py-0.5">
+                <span className="text-foreground">{r.country}</span>
+                <span className="font-medium text-primary">{r.count}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">Only users who have set their country are shown.</p>
+        </div>
+      )}
+
+      <div className="bg-muted/30 rounded-lg p-4 text-xs text-muted-foreground space-y-1">
+        <p className="font-semibold text-foreground">Metrics requiring additional Google Analytics configuration:</p>
+        <ul className="list-disc list-inside space-y-0.5 mt-1">
+          <li>Anonymous visitor counts (not signed in)</li>
+          <li>Users by platform (web vs Android PWA vs iOS browser)</li>
+          <li>Most visited app areas (page-view tracking)</li>
+          <li>Average engagement time per session</li>
+          <li>Church Mode vs Devotional vs Song page breakdown</li>
+        </ul>
+        <p className="mt-2">These require a Google Analytics 4 property + Data API service-account key added to the server environment.</p>
+      </div>
+    </div>
   );
 }
 

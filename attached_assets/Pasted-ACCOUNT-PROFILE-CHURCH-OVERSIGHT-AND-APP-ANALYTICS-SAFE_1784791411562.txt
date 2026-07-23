@@ -1,0 +1,326 @@
+ACCOUNT PROFILE, CHURCH OVERSIGHT, AND APP ANALYTICS — SAFE MINIMAL IMPLEMENTATION
+
+Please enhance the existing 365 Daily Devotional account and platform-admin systems.
+
+IMPORTANT:
+
+- Preserve all existing users, churches, memberships, and app data.
+- Do not redesign or rebuild the application.
+- Do not modify songs, donations, devotionals, Church Mode functions, authentication architecture, or unrelated files except where directly required.
+- Do not add large libraries unnecessarily.
+- Do not expose secrets or analytics credentials in frontend code.
+- Make focused, production-safe changes only.
+- Reuse existing components and database structures where reasonably possible.
+
+==================================================
+PART 1 — ENHANCE MY ACCOUNT / PROFILE
+==================================================
+
+Enhance the existing My Account page.
+
+Display:
+
+- Profile picture
+- Full name
+- Email address
+- Country
+- Account type:
+  - User
+  - Church Owner
+  - Church Admin
+  - Church Member
+- Account creation date
+- Churches the user belongs to
+- Role held in each church
+
+Add an “Edit Profile” function allowing the user to:
+
+- Change their full name
+- Select or change their country
+- Upload, replace, or remove their profile picture at any time
+
+PROFILE PICTURE REQUIREMENTS:
+
+- Accept standard image formats only
+- Validate file type and reasonable file size
+- Resize/compress large images before or during upload where supported
+- Store the image securely in the existing storage system
+- Use a default profile avatar when no image exists
+- Ensure one user cannot modify another user’s profile image
+- Immediately refresh the displayed image after an update
+- Preserve the existing account if an image upload fails
+
+Keep:
+
+- Sign Out
+- Switch Account
+
+Do not create duplicate account pages.
+
+For password management:
+
+- If Firebase email/password authentication supports password reset, add “Change or Reset Password.”
+- Use Firebase’s secure password-reset process.
+- Do not store passwords in the application database.
+- If the user signed in through another provider, show the appropriate login-management wording instead of a password form.
+
+==================================================
+PART 2 — COUNTRY INFORMATION
+==================================================
+
+Add a standardized searchable country dropdown.
+
+Collect country in the following relevant flows:
+
+1. General account creation
+2. Church owner/account creation
+3. Church registration
+4. Member joining a church
+5. Existing user profile editing
+
+Requirements:
+
+- Church registration must store the church’s country.
+- User profiles must store the user’s self-reported country.
+- Joining members should use the country already saved in their profile.
+- If no country exists, ask them to select one during the joining process.
+- Do not ask repeatedly after it has been saved.
+- Allow users to update their country later.
+- Do not collect precise GPS location.
+- Do not store raw IP addresses merely to determine country.
+- Existing accounts without a country must continue working and may be invited to complete their profile later.
+
+Use ISO country codes internally where practical while displaying full country names.
+
+==================================================
+PART 3 — PLATFORM ADMIN CHURCH OVERSIGHT
+==================================================
+
+Add a secure platform-admin-only section named:
+
+“Church Management” or “Church Oversight”
+
+Only the authenticated 365 Daily Devotional platform administrator may access it.
+
+For every registered church, display:
+
+- Church name
+- Church logo
+- Church owner’s name
+- Church owner’s email
+- Church country
+- Registration date
+- Church status
+- Total active members
+- Pending members
+- Removed/inactive members
+- Number of church administrators
+- Number of departments
+- Number of announcements
+- Number of sermons
+- Number of events
+- Number of attendance records
+- Date of most recent church activity
+
+Provide aggregate summaries:
+
+- Total registered churches
+- Active churches
+- Inactive churches
+- New churches this week
+- New churches this month
+- Total church members
+- Members by country
+- Churches by country
+- Largest churches by active membership
+- Recently active churches
+
+Add search and filtering by:
+
+- Church name
+- Owner name
+- Owner email
+- Country
+- Status
+- Registration date
+
+PRIVACY BOUNDARY:
+
+The platform administrator may see operational information, counts, account status, and moderation reports.
+
+Do NOT expose the contents of:
+
+- Private member-to-member messages
+- Pastor counseling conversations
+- Confidential counseling requests
+- Private prayer requests
+- Private pastoral communication
+
+The administrator should see such private content only when:
+
+- a user formally reports specific content for moderation, or
+- access is required through an explicitly designed and logged safety/moderation process
+
+Do not silently grant unrestricted access to confidential church conversations.
+
+Log important administrative actions, including:
+
+- church suspension
+- church reactivation
+- role changes
+- moderation actions
+
+Do not delete church records as part of this task.
+
+==================================================
+PART 4 — GENERAL APP USAGE ANALYTICS
+==================================================
+
+Determine whether Google Analytics 4 or Firebase Analytics is already configured.
+
+If it is already configured:
+
+- Reuse the existing analytics configuration.
+- Do not create a duplicate analytics property.
+- Do not expose measurement secrets or service-account credentials.
+
+Add a platform-admin-only “App Analytics” dashboard showing, where supported:
+
+- Active users today
+- Active users in the last 7 days
+- Active users in the last 30 days
+- Daily active users trend
+- Weekly active users trend
+- Monthly active users trend
+- New users
+- Returning users
+- Total registered accounts
+- Currently active users or recent activity where available
+- Users by country
+- Users by platform:
+  - Web
+  - Android/PWA where identifiable
+  - iOS/browser where identifiable
+- Most visited major app areas
+- Church Mode usage
+- Devotional page usage
+- Song page usage
+- Donation page visits
+- Average engagement time where available
+
+Use aggregate statistics wherever possible.
+
+Do not show private individual browsing histories to the platform administrator.
+
+Do not store raw IP addresses.
+
+If the analytics reporting API cannot safely be embedded in the admin dashboard without additional credentials or configuration:
+
+1. Do not fabricate statistics.
+2. Keep the existing analytics collection intact.
+3. Build only the safe database-backed statistics that are genuinely available.
+4. Report exactly what additional Google Analytics access or configuration is needed for the remaining metrics.
+5. Do not place a Google service-account private key in frontend code.
+
+For signed-in usage, where safely possible, record a lightweight lastActiveAt timestamp or daily activity record so the admin can obtain accurate registered-user activity counts.
+
+Avoid writing a database record on every page movement. Use a reasonable once-per-day or controlled activity update to reduce database usage and cost.
+
+Definitions should be clear:
+
+- Daily Active Users: distinct users active during the selected day
+- Weekly Active Users: distinct users active during the last 7 days
+- Monthly Active Users: distinct users active during the last 30 days
+
+Anonymous visitors should be counted through aggregate analytics rather than being added as fake user accounts.
+
+==================================================
+PART 5 — EMAIL ADDRESSES AND COMMUNICATION CONSENT
+==================================================
+
+Continue securely storing the email address required for authentication and essential account communication.
+
+Add communication preferences to the user profile:
+
+- Essential account emails: required
+- Ministry news and announcements: optional
+- New devotional/song notifications: optional
+- Church-related notifications: configurable where applicable
+
+Requirements:
+
+- Optional email communication must be opt-in.
+- Do not automatically subscribe every existing user to promotional communication.
+- Provide a clear unsubscribe or communication-preferences option.
+- Do not expose user email lists to church members or other users.
+- Church owners may communicate only with members of their own church through authorized church tools.
+- Platform admin access to email addresses must remain protected by server-side admin authorization.
+- Never place a public downloadable email list in the frontend.
+
+Update the Privacy Policy or prepare clearly identified privacy-policy text covering:
+
+- profile information
+- profile photos
+- country
+- account email
+- church membership information
+- aggregate analytics
+- communication preferences
+- how users may update or request deletion of their information
+
+Do not publish legal-policy wording silently. Report the proposed changes for administrator review before replacing the current policy.
+
+==================================================
+SECURITY AND AUTHORIZATION
+==================================================
+
+All platform-admin routes and APIs must verify the administrator server-side.
+
+Do not rely only on:
+
+- hidden menu items
+- frontend role checks
+- query parameters
+- browser-supplied user IDs
+
+Confirm:
+
+- users can edit only their own profiles
+- church owners see only their authorized church information
+- ordinary users cannot access platform-wide analytics
+- church administrators cannot access other churches
+- platform analytics contain aggregates rather than private message content
+- country and email fields are not publicly exposed
+
+==================================================
+TESTING
+==================================================
+
+Test:
+
+1. A user uploads and later replaces their profile picture.
+2. Another user cannot edit or access the first user’s private profile data.
+3. Country is saved during registration and can be updated.
+4. A church owner registers a church with a country.
+5. A joining member’s country is saved correctly.
+6. Platform admin sees church counts and country summaries.
+7. Ordinary users cannot open admin analytics URLs directly.
+8. Daily, weekly, and monthly active-user counts use distinct users.
+9. Private counseling and messages are not visible in the analytics or oversight dashboard.
+10. Optional email consent defaults safely and can be changed.
+11. Existing users and churches continue functioning.
+12. Mobile and desktop layouts remain usable.
+
+After completion, provide a concise report containing:
+
+- Files changed
+- Database fields or tables added
+- Profile-picture storage implementation
+- Country collection locations
+- Church Oversight features added
+- Analytics source used
+- Metrics successfully implemented
+- Metrics requiring additional Google configuration
+- Email consent implementation
+- Privacy protections added
+- Confirmation that unrelated app functionality was not changed

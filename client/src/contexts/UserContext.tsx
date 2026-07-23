@@ -88,6 +88,34 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const syncUserProfile = useCallback(async (firebaseUser: User) => {
+    try {
+      const token = await firebaseUser.getIdToken();
+      await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          email: firebaseUser.email ?? "",
+          displayName: firebaseUser.displayName ?? null,
+        }),
+      });
+    } catch { /* silently ignore — auth still works without profile row */ }
+  }, []);
+
+  const recordDailyActivity = useCallback(async (firebaseUser: User) => {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const key = `activity-pinged-${today}`;
+      if (localStorage.getItem(key)) return;
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch("/api/user/activity", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) localStorage.setItem(key, "1");
+    } catch { /* silently ignore */ }
+  }, []);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
@@ -95,15 +123,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
       if (firebaseUser) {
         await mergeLocalFavorites(firebaseUser);
         await mergeLocalDevotionalSaves(firebaseUser);
+        syncUserProfile(firebaseUser);
+        recordDailyActivity(firebaseUser);
         queryClient.invalidateQueries({ queryKey: ["/api/user/library/saved"] });
         queryClient.invalidateQueries({ queryKey: ["/api/user/library/favorites"] });
         queryClient.invalidateQueries({ queryKey: ["/api/user/devotional/saved"] });
         queryClient.invalidateQueries({ queryKey: ["/api/user/devotional/history"] });
         queryClient.invalidateQueries({ queryKey: ["/api/user/devotional/streak"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/user/profile"] });
       }
     });
     return unsubscribe;
-  }, [mergeLocalFavorites, mergeLocalDevotionalSaves]);
+  }, [mergeLocalFavorites, mergeLocalDevotionalSaves, syncUserProfile, recordDailyActivity]);
 
   const getIdToken = useCallback(async (): Promise<string | null> => {
     if (!user) return null;

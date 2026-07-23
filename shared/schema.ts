@@ -750,6 +750,7 @@ export const churches = pgTable("churches", {
   visitorInfo: text("visitor_info"),
   websiteHeroImage: text("website_hero_image"),
   homepageSections: jsonb("homepage_sections").$type<Array<{ id: string; enabled: boolean; order: number }>>(),
+  country: text("country"), // ISO 3166-1 alpha-2, e.g. "US"
 });
 
 export const insertChurchSchema = createInsertSchema(churches).omit({
@@ -1225,3 +1226,31 @@ export const churchDepartmentAttendance = pgTable("church_department_attendance"
 export const insertChurchDepartmentAttendanceSchema = createInsertSchema(churchDepartmentAttendance).omit({ id: true, createdAt: true });
 export type ChurchDepartmentAttendance = typeof churchDepartmentAttendance.$inferSelect;
 export type InsertChurchDepartmentAttendance = z.infer<typeof insertChurchDepartmentAttendanceSchema>;
+
+// ─── Global User Profiles ────────────────────────────────────────────────────
+// One row per Firebase UID. Complements Firebase auth with app-specific profile data.
+export const userProfiles = pgTable("user_profiles", {
+  firebaseUid: text("firebase_uid").primaryKey(),
+  displayName: text("display_name"),
+  email: text("email").notNull(),
+  country: text("country"), // ISO 3166-1 alpha-2
+  profilePictureUrl: text("profile_picture_url"), // object storage path
+  createdAt: timestamp("created_at").defaultNow(),
+  lastActiveAt: timestamp("last_active_at").defaultNow(),
+  emailConsentMinistry: boolean("email_consent_ministry").notNull().default(false),
+  emailConsentNotifications: boolean("email_consent_notifications").notNull().default(false),
+});
+export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({ createdAt: true, lastActiveAt: true });
+export type UserProfile = typeof userProfiles.$inferSelect;
+export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
+
+// ─── User Activity Days ──────────────────────────────────────────────────────
+// One row per (firebase_uid, date) pair — for DAU/WAU/MAU analytics.
+export const userActivityDays = pgTable("user_activity_days", {
+  id: serial("id").primaryKey(),
+  firebaseUid: text("firebase_uid").notNull(),
+  activityDate: date("activity_date").notNull(),
+}, (t) => ({
+  uniqueUserDay: unique().on(t.firebaseUid, t.activityDate),
+}));
+export type UserActivityDay = typeof userActivityDays.$inferSelect;

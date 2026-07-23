@@ -151,8 +151,12 @@ import {
   churchSermonNotes,
   type ChurchSermonBookmark,
   type ChurchSermonNote,
+  userProfiles,
+  userActivityDays,
+  type UserProfile,
+  type InsertUserProfile,
 } from "@shared/schema";
-import { eq, desc, and, isNull, or, ilike, lte, notInArray, sql } from "drizzle-orm";
+import { eq, desc, and, isNull, or, ilike, lte, notInArray, sql, gte, count, countDistinct } from "drizzle-orm";
 
 export interface IStorage {
   getDevotionals(): Promise<Devotional[]>;
@@ -431,6 +435,21 @@ export interface IStorage {
   getDepartmentAttendance(departmentId: number): Promise<ChurchDepartmentAttendance[]>;
   createDepartmentAttendance(data: InsertChurchDepartmentAttendance): Promise<ChurchDepartmentAttendance>;
   updateDepartmentAttendance(id: number, data: Partial<InsertChurchDepartmentAttendance>): Promise<ChurchDepartmentAttendance>;
+
+  // User Profiles
+  getUserProfile(firebaseUid: string): Promise<UserProfile | undefined>;
+  upsertUserProfile(data: InsertUserProfile): Promise<UserProfile>;
+  updateUserProfile(firebaseUid: string, data: Partial<Omit<InsertUserProfile, "firebaseUid" | "email">>): Promise<UserProfile>;
+
+  // Activity tracking (DAU/WAU/MAU)
+  recordUserActivity(firebaseUid: string): Promise<void>;
+
+  // Admin: church oversight aggregates
+  getChurchOversightData(): Promise<any[]>;
+  getChurchOversightSummary(): Promise<any>;
+
+  // Admin: app analytics
+  getAppAnalytics(): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2230,6 +2249,195 @@ export class DatabaseStorage implements IStorage {
   async updateDepartmentAttendance(id: number, data: Partial<InsertChurchDepartmentAttendance>): Promise<ChurchDepartmentAttendance> {
     const [row] = await db.update(churchDepartmentAttendance).set(data).where(eq(churchDepartmentAttendance.id, id)).returning();
     return row;
+  }
+
+  // ── User Profiles ───────────────────────────────────────────────────────────
+
+  async getUserProfile(firebaseUid: string): Promise<UserProfile | undefined> {
+    const [row] = await db.select().from(userProfiles).where(eq(userProfiles.firebaseUid, firebaseUid));
+    return row;
+  }
+
+  async upsertUserProfile(data: InsertUserProfile): Promise<UserProfile> {
+    const [row] = await db
+      .insert(userProfiles)
+      .values(data)
+      .onConflictDoUpdate({
+        target: userProfiles.firebaseUid,
+        set: {
+          displayName: data.displayName,
+          email: data.email,
+          country: data.country,
+          profilePictureUrl: data.profilePictureUrl,
+          emailConsentMinistry: data.emailConsentMinistry,
+          emailConsentNotifications: data.emailConsentNotifications,
+          lastActiveAt: sql`now()`,
+        },
+      })
+      .returning();
+    return row;
+  }
+
+  async updateUserProfile(
+    firebaseUid: string,
+    data: Partial<Omit<InsertUserProfile, "firebaseUid" | "email">>
+  ): Promise<UserProfile> {
+    const [row] = await db
+      .update(userProfiles)
+      .set({ ...data, lastActiveAt: sql`now()` })
+      .where(eq(userProfiles.firebaseUid, firebaseUid))
+      .returning();
+    return row;
+  }
+
+  // ── Activity tracking ───────────────────────────────────────────────────────
+
+  async recordUserActivity(firebaseUid: string): Promise<void> {
+    const today = new Date().toISOString().slice(0, 10);
+    await db
+      .insert(userActivityDays)
+      .values({ firebaseUid, activityDate: today })
+      .onConflictDoNothing();
+    // Also update last_active_at on the profile (best-effort, non-blocking)
+    await db
+      .update(userProfiles)
+      .set({ lastActiveAt: sql`now()` })
+      .where(eq(userProfiles.firebaseUid, firebaseUid));
+  }
+
+  // ── Admin: church oversight ─────────────────────────────────────────────────
+
+  async getChurchOversightData(): Promise<any[]> {
+    // Returns per-church stats using aggregation sub-selects
+    const rows = await db.execute(sql`
+      SELECT
+        c.id,
+        c.name,
+        c.slug,
+        c.logo_url         AS "logoUrl",
+        c.status,
+        c.country,
+        c.created_at       AS "createdAt",
+        c.owner_id         AS "ownerId",
+        owner.email        AS "ownerEmail",
+        owner.display_name AS "ownerDisplayName",
+        (SELECT COUNT(*) FROM church_members m WHERE m.church_id = c.id AND m.status = 'active')   AS "activeMembers",
+        (SELECT COUNT(*) FROM church_members m WHERE m.church_id = c.id AND m.status = 'pending')  AS "pendingMembers",
+        (SELECT COUNT(*) FROM church_members m WHERE m.church_id = c.id AND m.status IN ('removed','suspended','left')) AS "inactiveMembers",
+        (SELECT COUNT(*) FROM church_members m WHERE m.church_id = c.id AND m.role IN ('administrator','lead_pastor','pastor')) AS "adminCount",
+        (SELECT COUNT(*) FROM church_departments d WHERE d.church_id = c.id) AS "departmentCount",
+        (SELECT COUNT(*) FROM church_announcements a WHERE a.church_id = c.id) AS "announcementCount",
+        (SELECT COUNT(*) FROM church_sermons s WHERE s.church_id = c.id) AS "sermonCount",
+        (SELECT MAX(ca.created_at) FROM church_activity_log ca WHERE ca.church_id = c.id) AS "lastActivity"
+      FROM churches c
+      LEFT JOIN user_profiles owner ON owner.firebase_uid = c.owner_id
+      ORDER BY c.created_at DESC
+    `);
+    return rows.rows as any[];
+  }
+
+  async getChurchOversightSummary(): Promise<any> {
+    const now = new Date();
+    const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - 7);
+    const startOfMonth = new Date(now); startOfMonth.setDate(now.getDate() - 30);
+
+    const totalsResult = await db.execute(sql`
+      SELECT
+        COUNT(*)                                                            AS "total",
+        COUNT(*) FILTER (WHERE status = 'active')                          AS "active",
+        COUNT(*) FILTER (WHERE status != 'active')                         AS "inactive",
+        COUNT(*) FILTER (WHERE created_at >= ${startOfWeek.toISOString()}) AS "newThisWeek",
+        COUNT(*) FILTER (WHERE created_at >= ${startOfMonth.toISOString()}) AS "newThisMonth"
+      FROM churches
+    `);
+    const totals = totalsResult.rows[0];
+
+    const memberTotalsResult = await db.execute(sql`
+      SELECT
+        COUNT(*) FILTER (WHERE status = 'active') AS "totalActiveMembers"
+      FROM church_members
+    `);
+    const memberTotals = memberTotalsResult.rows[0];
+
+    const byCountry = await db.execute(sql`
+      SELECT country, COUNT(*) AS "count"
+      FROM churches
+      WHERE country IS NOT NULL
+      GROUP BY country
+      ORDER BY "count" DESC
+    `);
+
+    const membersByCountry = await db.execute(sql`
+      SELECT up.country, COUNT(*) AS "count"
+      FROM church_members cm
+      JOIN user_profiles up ON up.firebase_uid = cm.firebase_uid
+      WHERE cm.status = 'active' AND up.country IS NOT NULL
+      GROUP BY up.country
+      ORDER BY "count" DESC
+    `);
+
+    const largest = await db.execute(sql`
+      SELECT c.id, c.name, c.slug, c.logo_url AS "logoUrl",
+        COUNT(m.id) FILTER (WHERE m.status = 'active') AS "activeMembers"
+      FROM churches c
+      LEFT JOIN church_members m ON m.church_id = c.id
+      GROUP BY c.id, c.name, c.slug, c.logo_url
+      ORDER BY "activeMembers" DESC
+      LIMIT 10
+    `);
+
+    return {
+      ...(totals as any),
+      totalActiveMembers: Number((memberTotals as any)?.totalActiveMembers ?? 0),
+      churchesByCountry: byCountry.rows,
+      membersByCountry: membersByCountry.rows,
+      largestChurches: largest.rows,
+    };
+  }
+
+  // ── Admin: app analytics ────────────────────────────────────────────────────
+
+  async getAppAnalytics(): Promise<any> {
+    const today = new Date().toISOString().slice(0, 10);
+    const d7  = new Date(); d7.setDate(d7.getDate() - 7);
+    const d30 = new Date(); d30.setDate(d30.getDate() - 30);
+    const d7str  = d7.toISOString().slice(0, 10);
+    const d30str = d30.toISOString().slice(0, 10);
+
+    const dauRes      = await db.execute(sql`SELECT COUNT(DISTINCT firebase_uid) AS "dau" FROM user_activity_days WHERE activity_date = ${today}`);
+    const wauRes      = await db.execute(sql`SELECT COUNT(DISTINCT firebase_uid) AS "wau" FROM user_activity_days WHERE activity_date >= ${d7str}`);
+    const mauRes      = await db.execute(sql`SELECT COUNT(DISTINCT firebase_uid) AS "mau" FROM user_activity_days WHERE activity_date >= ${d30str}`);
+    const totalRes    = await db.execute(sql`SELECT COUNT(*) AS "total" FROM user_profiles`);
+    const weekRes     = await db.execute(sql`SELECT COUNT(*) AS "count" FROM user_profiles WHERE created_at >= ${d7.toISOString()}`);
+    const monthRes    = await db.execute(sql`SELECT COUNT(*) AS "count" FROM user_profiles WHERE created_at >= ${d30.toISOString()}`);
+
+    const dailyTrend = await db.execute(sql`
+      SELECT activity_date AS "date", COUNT(DISTINCT firebase_uid) AS "users"
+      FROM user_activity_days
+      WHERE activity_date >= ${d30str}
+      GROUP BY activity_date
+      ORDER BY activity_date ASC
+    `);
+
+    const byCountry = await db.execute(sql`
+      SELECT country, COUNT(*) AS "count"
+      FROM user_profiles
+      WHERE country IS NOT NULL
+      GROUP BY country
+      ORDER BY "count" DESC
+      LIMIT 20
+    `);
+
+    return {
+      dau:           Number((dauRes.rows[0]   as any)?.dau   ?? 0),
+      wau:           Number((wauRes.rows[0]   as any)?.wau   ?? 0),
+      mau:           Number((mauRes.rows[0]   as any)?.mau   ?? 0),
+      totalUsers:    Number((totalRes.rows[0] as any)?.total ?? 0),
+      newThisWeek:   Number((weekRes.rows[0]  as any)?.count ?? 0),
+      newThisMonth:  Number((monthRes.rows[0] as any)?.count ?? 0),
+      dailyTrend:    dailyTrend.rows,
+      usersByCountry: byCountry.rows,
+    };
   }
 }
 

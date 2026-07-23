@@ -4588,6 +4588,118 @@ export async function registerRoutes(
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // USER PROFILE ENDPOINTS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // GET  /api/user/profile  — fetch authenticated user's global profile
+  app.get("/api/user/profile", requireUser, async (req, res) => {
+    const uid = (req as any).uid as string;
+    try {
+      const profile = await storage.getUserProfile(uid);
+      res.json(profile ?? null);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // PUT  /api/user/profile  — create/update authenticated user's profile
+  app.put("/api/user/profile", requireUser, async (req, res) => {
+    const uid = (req as any).uid as string;
+    const { displayName, email, country, profilePictureUrl, emailConsentMinistry, emailConsentNotifications } = req.body;
+    if (!email) return res.status(400).json({ message: "email is required" });
+    try {
+      const profile = await storage.upsertUserProfile({
+        firebaseUid: uid,
+        email,
+        displayName: displayName ?? null,
+        country: country ?? null,
+        profilePictureUrl: profilePictureUrl ?? null,
+        emailConsentMinistry: !!emailConsentMinistry,
+        emailConsentNotifications: !!emailConsentNotifications,
+      });
+      res.json(profile);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // PATCH /api/user/profile  — partial update (name, country, pic, prefs)
+  app.patch("/api/user/profile", requireUser, async (req, res) => {
+    const uid = (req as any).uid as string;
+    try {
+      const allowed: Record<string, any> = {};
+      const fields = ["displayName", "country", "profilePictureUrl", "emailConsentMinistry", "emailConsentNotifications"];
+      for (const f of fields) {
+        if (f in req.body) allowed[f] = req.body[f];
+      }
+      const profile = await storage.updateUserProfile(uid, allowed);
+      res.json(profile);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // GET /api/user/profile/picture  — stream profile picture from object storage
+  app.get("/api/user/profile/picture", requireUser, async (req, res) => {
+    const uid = (req as any).uid as string;
+    try {
+      const profile = await storage.getUserProfile(uid);
+      if (!profile?.profilePictureUrl) return res.status(404).json({ message: "No profile picture" });
+      const { ObjectStorageService } = await import("./replit_integrations/object_storage/index.js");
+      const svc = new ObjectStorageService();
+      const file = await svc.getObjectEntityFile(profile.profilePictureUrl);
+      const [metadata] = await file.getMetadata();
+      res.set({
+        "Content-Type": (metadata.contentType as string) || "image/jpeg",
+        "Cache-Control": "private, max-age=300",
+      });
+      if (metadata.size) res.set("Content-Length", String(metadata.size));
+      const stream = file.createReadStream();
+      stream.on("error", () => { if (!res.headersSent) res.status(500).end(); });
+      stream.pipe(res);
+    } catch (err: any) {
+      if (err?.name === "ObjectNotFoundError") return res.status(404).json({ message: "Picture not found" });
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // POST /api/user/activity  — record one activity entry per day (idempotent)
+  app.post("/api/user/activity", requireUser, async (req, res) => {
+    const uid = (req as any).uid as string;
+    try {
+      await storage.recordUserActivity(uid);
+      res.json({ ok: true });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ADMIN — CHURCH OVERSIGHT
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // GET /api/admin/church-oversight  — per-church stats for admin
+  app.get("/api/admin/church-oversight", requireAdmin, async (req, res) => {
+    try {
+      const [churches, summary] = await Promise.all([
+        storage.getChurchOversightData(),
+        storage.getChurchOversightSummary(),
+      ]);
+      res.json({ churches, summary });
+    } catch (err) {
+      console.error("Church oversight error:", err);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ADMIN — APP ANALYTICS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // GET /api/admin/analytics  — DAU/WAU/MAU + user stats for admin
+  app.get("/api/admin/analytics", requireAdmin, async (req, res) => {
+    try {
+      const analytics = await storage.getAppAnalytics();
+      res.json(analytics);
+    } catch (err) {
+      console.error("Analytics error:", err);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   return httpServer;
 }
 
