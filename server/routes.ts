@@ -2827,25 +2827,43 @@ export async function registerRoutes(
   // Public: preview an invite code — returns full context for the join page
   app.get("/api/church-invite/:code", async (req, res) => {
     try {
-      const inv = await storage.getChurchInvitation(req.params.code.toUpperCase().replace(/\s/g, ""));
-      if (!inv || !inv.isActive) return res.status(404).json({ message: "Invitation not found or no longer active" });
-      if (inv.expiresAt && new Date(inv.expiresAt) < new Date()) return res.status(410).json({ message: "Invitation has expired" });
-      if (inv.maxUses && inv.approvedUses >= inv.maxUses) return res.status(410).json({ message: "Invitation has reached its limit" });
-      const church = await storage.getChurch(inv.churchId);
-      if (!church) return res.status(404).json({ message: "Church not found" });
-      let groupName: string | null = inv.targetGroupName ?? null;
-      if (!groupName && inv.targetGroupId) {
-        const groups = await storage.getChurchGroups(inv.churchId);
-        groupName = groups.find(g => g.id === inv.targetGroupId)?.name ?? null;
+      const code = req.params.code.toUpperCase().replace(/\s/g, "");
+      const inv = await storage.getChurchInvitation(code);
+      if (inv && inv.isActive) {
+        if (inv.expiresAt && new Date(inv.expiresAt) < new Date()) return res.status(410).json({ message: "Invitation has expired" });
+        if (inv.maxUses && inv.approvedUses >= inv.maxUses) return res.status(410).json({ message: "Invitation has reached its limit" });
+        const church = await storage.getChurch(inv.churchId);
+        if (!church) return res.status(404).json({ message: "Church not found" });
+        let groupName: string | null = inv.targetGroupName ?? null;
+        if (!groupName && inv.targetGroupId) {
+          const groups = await storage.getChurchGroups(inv.churchId);
+          groupName = groups.find(g => g.id === inv.targetGroupId)?.name ?? null;
+        }
+        return res.json({
+          church: { id: church.id, name: church.name, slug: church.slug, description: church.description, logoUrl: church.logoUrl, denomination: church.denomination, approvalMode: church.approvalMode },
+          invitation: {
+            id: inv.id, label: inv.label, expiresAt: inv.expiresAt,
+            invitationType: inv.invitationType, targetGroupId: inv.targetGroupId,
+            targetGroupName: groupName, maxUses: inv.maxUses,
+            approvedUses: inv.approvedUses, remaining: inv.maxUses ? Math.max(0, inv.maxUses - inv.approvedUses) : null,
+          },
+        });
       }
-      res.json({
+      // Fallback: check department invite codes
+      const dept = await storage.getDepartmentByInviteCode(code);
+      if (!dept || !dept.isActive) return res.status(404).json({ message: "Invitation not found or no longer active" });
+      const church = await storage.getChurch(dept.churchId);
+      if (!church) return res.status(404).json({ message: "Church not found" });
+      return res.json({
         church: { id: church.id, name: church.name, slug: church.slug, description: church.description, logoUrl: church.logoUrl, denomination: church.denomination, approvalMode: church.approvalMode },
         invitation: {
-          id: inv.id, label: inv.label, expiresAt: inv.expiresAt,
-          invitationType: inv.invitationType, targetGroupId: inv.targetGroupId,
-          targetGroupName: groupName, maxUses: inv.maxUses,
-          approvedUses: inv.approvedUses, remaining: inv.maxUses ? Math.max(0, inv.maxUses - inv.approvedUses) : null,
+          id: dept.id, label: dept.name, expiresAt: null,
+          invitationType: "department", targetGroupId: dept.id,
+          targetGroupName: dept.name, maxUses: null,
+          approvedUses: 0, remaining: null,
         },
+        isDepartmentInvite: true,
+        deptId: dept.id,
       });
     } catch { res.status(500).json({ message: "Server error" }); }
   });
@@ -4380,18 +4398,34 @@ export async function registerRoutes(
 
   app.post("/api/churches/departments/join", async (req, res) => {
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ message: "Unauthorized" });
-      const { auth } = await import("./firebase-admin.js");
-      const decoded = await auth.verifyIdToken(authHeader.slice(7));
-      const { inviteCode } = req.body;
+      const uid = await getUid(req, res);
+      if (!uid) return;
+      const { inviteCode, email, displayName } = req.body;
       if (!inviteCode) return res.status(400).json({ message: "Invite code required" });
       const dept = await storage.getDepartmentByInviteCode(inviteCode.trim().toUpperCase());
-      if (!dept) return res.status(404).json({ message: "Invalid invite code" });
-      const member = await storage.getChurchMember(dept.churchId, decoded.uid);
-      if (!member || member.status !== "active") return res.status(403).json({ message: "Not an active church member" });
+      if (!dept || !dept.isActive) return res.status(404).json({ message: "Invalid or inactive invite code" });
+      const church = await storage.getChurch(dept.churchId);
+      if (!church) return res.status(404).json({ message: "Church not found" });
+      // If user is not yet a church member, add them first
+      let member = await storage.getChurchMember(dept.churchId, uid);
+      if (!member) {
+        const initialStatus = church.approvalMode === "auto_approve" ? "active" : "pending";
+        member = await storage.addChurchMember({
+          churchId: dept.churchId, firebaseUid: uid, email: email || "",
+          displayName: displayName || null, role: "member", status: initialStatus,
+          invitedGroupId: null, inviteCodeUsed: null,
+        });
+        if (initialStatus === "pending") {
+          return res.json({ message: "Your church membership request is pending approval.", pending: true, church });
+        }
+      } else if (member.status !== "active") {
+        return res.json({ message: "Your church membership is pending approval.", pending: true, church });
+      }
+      // Add to department (idempotent)
+      const existing = await storage.getMyDepartmentMembership(dept.id, member.id);
+      if (existing) return res.json({ message: "Already a member of this department", dept, church });
       const deptMember = await storage.addDepartmentMember(dept.id, member.id, "member");
-      res.json({ dept, deptMember });
+      res.json({ message: "Joined department successfully", dept, deptMember, church });
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 

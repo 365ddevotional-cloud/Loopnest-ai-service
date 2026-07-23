@@ -200,9 +200,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         handleCodeInApp: false,
       });
     } catch (err: any) {
-      if (import.meta.env.DEV) {
-        console.error("[signUp] sendEmailVerification error:", err?.code, err?.message);
-      }
+      console.error("[signUp] sendEmailVerification error:", err?.code, err?.message);
       // Account was created; verification email failed (domain auth, quota, etc.)
       // Return success so the user can reach the verification screen and resend
     }
@@ -233,16 +231,31 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resendVerification = useCallback(async () => {
-    if (user && !user.emailVerified) {
-      try {
-        await sendEmailVerification(user, {
-          url: "https://365dailydevotional.com",
-          handleCodeInApp: false,
-        });
-        toast({ title: "Verification email sent", description: "Check your inbox." });
-      } catch {
-        toast({ title: "Could not resend email", variant: "destructive" });
-      }
+    if (!user) {
+      toast({ title: "Session expired", description: "Please sign in again to resend the verification email.", variant: "destructive" });
+      return;
+    }
+    if (user.emailVerified) return;
+    try {
+      await sendEmailVerification(user, {
+        url: "https://365dailydevotional.com",
+        handleCodeInApp: false,
+      });
+      toast({ title: "Verification email sent", description: "Check your inbox and spam folder." });
+    } catch (err: any) {
+      const code = err?.code ?? "";
+      console.error("[resendVerification] Firebase error:", code, err?.message);
+      const description =
+        code === "auth/too-many-requests"
+          ? "Too many attempts. Please wait a few minutes and try again."
+          : code === "auth/user-not-found"
+          ? "Account not found. Please sign in again."
+          : code === "auth/unauthorized-continue-uri" || code === "auth/unauthorized-domain"
+          ? "Email delivery is temporarily unavailable for this address. Please contact support."
+          : code === "auth/network-request-failed"
+          ? "Network error. Check your connection and try again."
+          : `Could not send email${code ? ` (${code})` : ""}. Please try again.`;
+      toast({ title: "Could not resend email", description, variant: "destructive" });
     }
   }, [user, toast]);
 

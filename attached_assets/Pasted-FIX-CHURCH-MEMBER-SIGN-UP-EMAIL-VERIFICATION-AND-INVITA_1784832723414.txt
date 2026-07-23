@@ -1,0 +1,127 @@
+FIX CHURCH MEMBER SIGN-UP, EMAIL VERIFICATION, AND INVITATION-CODE JOIN FLOW
+
+There are two connected bugs in Church Mode.
+
+BUG 1 — EMAIL VERIFICATION
+
+Current behavior:
+- A new user creates an account with a different email address.
+- The app says a verification email was sent.
+- No verification email arrives.
+- Tapping “Resend Verification Email” shows:
+  “Could not resend email.”
+
+Required investigation:
+
+1. Confirm whether Firebase sendEmailVerification() is actually being called.
+2. Log and inspect the real Firebase error code instead of showing only a generic message.
+3. Check:
+   - Firebase Authentication email/password provider is enabled
+   - authorized domains include 365dailydevotional.com and the active Replit deployment domain
+   - actionCodeSettings continue URL is valid
+   - the resend button still has access to the authenticated currentUser
+   - the user has not been signed out before resend
+   - email verification is not blocked by an incorrect auth state
+   - rate limiting / too-many-requests is handled clearly
+4. Ensure the first verification email is sent only after Firebase confirms account creation.
+5. Ensure resend works while the unverified user is still signed in.
+6. Show the real translated reason where appropriate, such as:
+   - user session expired
+   - too many attempts
+   - invalid continue URL
+   - network error
+   - Firebase configuration error
+7. Do not claim that an email was sent unless Firebase confirms success.
+8. Add a safe fallback:
+   - “Return to Sign In”
+   - allow the user to sign in again and resend verification
+9. Keep the user’s account intact if email delivery fails.
+
+BUG 2 — INVITATION CODE NOT ACCEPTED
+
+Current behavior:
+- A church owner created a department, such as Bible Study.
+- A department invitation code was generated.
+- A different user enters that exact code in “Join with Invite Code.”
+- The app responds:
+  “Invitation not found or no longer active.”
+
+Required investigation:
+
+1. Confirm what type of invitation was generated:
+   - church-wide invitation
+   - department invitation
+2. Check whether the general Church Mode join page validates both church and department invitation codes.
+3. Confirm the code is saved in the database exactly as displayed.
+4. Normalize the entered code safely:
+   - trim spaces
+   - convert to uppercase
+   - preserve letters and numbers
+5. Check whether the query is incorrectly filtering by:
+   - wrong invitation table
+   - wrong church ID
+   - wrong department ID
+   - inactive status
+   - expired status
+   - one-use status
+   - already-used status
+6. Confirm department invitations are multi-use if that is the existing intended design.
+7. Confirm creating or copying a department code does not deactivate it.
+8. Confirm the invitation remains valid after refresh.
+9. Confirm the code works for a different authenticated user.
+10. Do not expose private church information before successful verification.
+
+REQUIRED JOIN FLOW
+
+The safest flow should be:
+
+1. User enters invitation code.
+2. Server verifies the code.
+3. App shows:
+   - church name
+   - department/group name, where applicable
+   - invitation type
+4. If the user is signed out:
+   - preserve the verified invitation temporarily
+   - take the user to Sign Up or Sign In
+5. After the user verifies their email and signs in:
+   - restore the pending invitation
+   - complete the church/department join request
+6. Do not make the user re-enter the code unnecessarily.
+7. Do not mark the invitation as used until the join is successfully completed.
+8. If the church requires approval, create a pending membership request.
+9. If approval is not required, activate the membership according to the existing invitation rules.
+
+IMPORTANT
+
+- Do not redesign Church Mode.
+- Do not modify unrelated songs, donations, analytics, devotionals, or main navigation.
+- Do not delete existing users, churches, departments, invitations, or memberships.
+- Do not generate replacement codes unless the existing record is genuinely invalid.
+- Make the smallest safe fix.
+- Preserve English, Spanish, and French translations.
+
+TEST WITH THIS EXACT SCENARIO
+
+1. Church owner creates “Bible Study” department.
+2. Generate a department invitation code.
+3. Open Safari or another browser with no existing session.
+4. Enter the code.
+5. Confirm the code is recognized.
+6. Create a new account with a different email.
+7. Confirm the verification email sends.
+8. Tap resend and confirm it works.
+9. Verify the email.
+10. Return to the app.
+11. Confirm the pending invitation is restored.
+12. Confirm the user joins the correct church and Bible Study department.
+13. Refresh and confirm membership persists.
+14. Confirm another unrelated church cannot access the invitation.
+
+After completion, report only:
+- root cause of the email verification failure
+- Firebase error code found
+- root cause of invitation-code rejection
+- files changed
+- exact fixes
+- confirmation that the complete new-user join flow now works

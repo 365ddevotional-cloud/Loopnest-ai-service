@@ -21,7 +21,10 @@ export default function SignIn() {
   const { user, loading, emailVerified, signIn, signUp, resetPassword, getIdToken, resendVerification } = useUser();
   const { toast } = useToast();
 
-  const [tab, setTab] = useState<"signin" | "signup" | "reset">("signin");
+  const tabParam = params.get("tab");
+  const [tab, setTab] = useState<"signin" | "signup" | "reset">(
+    tabParam === "signup" ? "signup" : tabParam === "reset" ? "reset" : "signin"
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

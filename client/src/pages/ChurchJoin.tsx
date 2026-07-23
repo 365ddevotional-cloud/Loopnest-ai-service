@@ -24,6 +24,8 @@ interface InvitePreview {
     targetGroupName: string | null; maxUses: number | null;
     approvedUses: number; remaining: number | null;
   };
+  isDepartmentInvite?: boolean;
+  deptId?: number;
 }
 
 function copyToClipboard(text: string, onSuccess: () => void) {
@@ -108,24 +110,28 @@ export default function ChurchJoin() {
 
   const handleJoin = async () => {
     if (!preview || !consented) return;
+    const savedCode = code.trim().toUpperCase();
     if (!isSignedIn) {
-      sessionStorage.setItem("church-join-code", code.trim().toUpperCase());
-      setLocation("/signin");
+      sessionStorage.setItem("church-join-code", savedCode);
+      setLocation("/signin?return=/church/join");
       return;
     }
     setJoining(true);
     try {
       const token = await getIdToken();
       if (!token) {
-        sessionStorage.setItem("church-join-code", code.trim().toUpperCase());
-        setLocation("/signin");
+        sessionStorage.setItem("church-join-code", savedCode);
+        setLocation("/signin?return=/church/join");
         return;
       }
-      const r = await fetch("/api/churches/join", {
+      const endpoint = preview.isDepartmentInvite
+        ? "/api/churches/departments/join"
+        : "/api/churches/join";
+      const r = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          inviteCode: code.trim().toUpperCase(),
+          inviteCode: savedCode,
           email: user?.email ?? "",
           displayName: user?.displayName ?? null,
         }),
@@ -331,7 +337,7 @@ export default function ChurchJoin() {
                         <Button
                           onClick={() => {
                             sessionStorage.setItem("church-join-code", code.trim().toUpperCase());
-                            setLocation("/signin");
+                            setLocation("/signin?return=/church/join");
                           }}
                           style={{ backgroundColor: "#1a2744" }}
                           className="flex-1"
@@ -343,7 +349,7 @@ export default function ChurchJoin() {
                           variant="outline"
                           onClick={() => {
                             sessionStorage.setItem("church-join-code", code.trim().toUpperCase());
-                            setLocation("/signup");
+                            setLocation("/signin?return=/church/join&tab=signup");
                           }}
                           className="flex-1"
                           data-testid="button-signup-to-join"
