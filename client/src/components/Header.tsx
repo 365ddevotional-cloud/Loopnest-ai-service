@@ -297,7 +297,20 @@ export function Header() {
                 My Library
               </button>
               <button
-                onClick={async () => { await signUserOut(); setLocation("/"); }}
+                onClick={() => navigateWithTransition("/account")}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer",
+                  location === "/account"
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                    : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                )}
+                data-testid="button-my-account-nav"
+              >
+                <UserCircle className="w-4 h-4" />
+                My Account
+              </button>
+              <button
+                onClick={async () => { await signUserOut(); setLocation("/signin"); }}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 data-testid="button-user-signout-nav"
               >
@@ -543,8 +556,15 @@ export function Header() {
                       label="My Library"
                       data-testid="button-my-library-nav-mobile"
                     />
+                    <MobileNavItem
+                      onClick={() => navigateWithTransition("/account")}
+                      isActive={location === "/account"}
+                      icon={UserCircle}
+                      label="My Account"
+                      data-testid="button-my-account-nav-mobile"
+                    />
                     <button
-                      onClick={async () => { setMobileMenuOpen(false); await signUserOut(); setLocation("/"); }}
+                      onClick={async () => { setMobileMenuOpen(false); await signUserOut(); setLocation("/signin"); }}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                       data-testid="button-user-signout-nav-mobile"
                     >

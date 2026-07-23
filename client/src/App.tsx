@@ -65,6 +65,7 @@ import Music from "@/pages/Music";
 import SongDetail from "@/pages/SongDetail";
 import SignIn from "@/pages/SignIn";
 import MyLibrary from "@/pages/MyLibrary";
+import AccountPage from "@/pages/AccountPage";
 import PromisePopup from "@/components/PromisePopup";
 import NotFound from "@/pages/not-found";
 import { lazy, Suspense } from "react";
@@ -169,6 +170,7 @@ function Router() {
       <Route path="/music" component={Music} />
       <Route path="/signin" component={SignIn} />
       <Route path="/my-library" component={MyLibrary} />
+      <Route path="/account" component={AccountPage} />
       <Route path="/devotional/today" component={PublicDevotionalToday} />
       <Route path="/devotional/:date" component={SingleDevotional} />
       <Route path="/public/archive" component={PublicArchive} />
