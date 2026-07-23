@@ -59,6 +59,7 @@ export default function ChurchDepartments() {
   const [inviteCode, setInviteCode] = useState("");
   const [joining, setJoining] = useState(false);
   const [form, setForm] = useState({ name: "", type: "Custom", description: "", logoUrl: "", bannerUrl: "" });
+  const [formError, setFormError] = useState<{ desc?: string; logoUrl?: string; bannerUrl?: string }>({});
   const [creating, setCreating] = useState(false);
 
   const { data: churchData } = useQuery<Church>({
@@ -97,15 +98,30 @@ export default function ChurchDepartments() {
     !search || d.name.toLowerCase().includes(search.toLowerCase()) || (d.type ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
+  const isValidHttpsUrl = (v: string) => { try { const u = new URL(v); return u.protocol === "https:"; } catch { return false; } };
+
   const handleCreate = async () => {
     if (!form.name.trim() || !church) return;
+    const errors: { desc?: string; logoUrl?: string; bannerUrl?: string } = {};
+    if (!form.description.trim()) errors.desc = t("cm_deptDescRequired");
+    if (form.logoUrl.trim() && !isValidHttpsUrl(form.logoUrl.trim())) errors.logoUrl = t("cm_invalidUrlFmt");
+    if (form.bannerUrl.trim() && !isValidHttpsUrl(form.bannerUrl.trim())) errors.bannerUrl = t("cm_invalidUrlFmt");
+    if (Object.keys(errors).length > 0) { setFormError(errors); return; }
+    setFormError({});
     setCreating(true);
     try {
       const token = await getIdToken();
+      const payload = {
+        name: form.name.trim(),
+        type: form.type,
+        description: form.description.trim(),
+        logoUrl: form.logoUrl.trim() || null,
+        bannerUrl: form.bannerUrl.trim() || null,
+      };
       const r = await fetch(`/api/churches/${church.id}/departments`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token ?? ""}` },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       const data = await r.json();
       if (!r.ok) { toast({ title: t("cm_error"), description: data.message, variant: "destructive" }); return; }
@@ -113,6 +129,7 @@ export default function ChurchDepartments() {
       qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "departments"] });
       setShowCreate(false);
       setForm({ name: "", type: "Custom", description: "", logoUrl: "", bannerUrl: "" });
+      setFormError({});
       setLocation(`/church/${slug}/departments/${data.slug}`);
     } finally { setCreating(false); }
   };
@@ -249,7 +266,7 @@ export default function ChurchDepartments() {
       </div>
 
       {/* Create Department Modal */}
-      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+      <Dialog open={showCreate} onOpenChange={v => { setShowCreate(v); if (!v) setFormError({}); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-serif text-xl" style={{ color: "#1d3461" }}>{t("cm_createDepartment")}</DialogTitle>
@@ -261,7 +278,7 @@ export default function ChurchDepartments() {
                 placeholder="e.g. Youth Ministry, Choir" data-testid="input-dept-name" />
             </div>
             <div className="space-y-1.5">
-              <Label>{t("cm_deptType")}</Label>
+              <Label>{t("cm_deptType")} <span className="text-red-500">*</span></Label>
               <select className="w-full border rounded-md px-3 py-2 text-sm" style={{ borderColor: "#e8e3dc" }}
                 value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
                 data-testid="select-dept-type">
@@ -269,23 +286,29 @@ export default function ChurchDepartments() {
               </select>
             </div>
             <div className="space-y-1.5">
-              <Label>{t("cm_deptDescription")} <span className="text-muted-foreground text-xs">{t("cm_optional")}</span></Label>
-              <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              <Label>{t("cm_deptDescription")} <span className="text-red-500">*</span></Label>
+              <Textarea value={form.description}
+                onChange={e => { setForm(f => ({ ...f, description: e.target.value })); setFormError(fe => ({ ...fe, desc: undefined })); }}
                 placeholder={t("cm_deptDescPlaceholder")} rows={3} data-testid="input-dept-description" />
+              {formError.desc && <p className="text-xs text-destructive">{formError.desc}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>{t("cm_logoUrl")} <span className="text-muted-foreground text-xs">{t("cm_optional")}</span></Label>
-              <Input value={form.logoUrl} onChange={e => setForm(f => ({ ...f, logoUrl: e.target.value }))}
+              <Input value={form.logoUrl}
+                onChange={e => { setForm(f => ({ ...f, logoUrl: e.target.value })); setFormError(fe => ({ ...fe, logoUrl: undefined })); }}
                 placeholder="https://…" data-testid="input-dept-logo-url" />
+              {formError.logoUrl && <p className="text-xs text-destructive">{formError.logoUrl}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>{t("cm_bannerUrl")} <span className="text-muted-foreground text-xs">{t("cm_optional")}</span></Label>
-              <Input value={form.bannerUrl} onChange={e => setForm(f => ({ ...f, bannerUrl: e.target.value }))}
+              <Input value={form.bannerUrl}
+                onChange={e => { setForm(f => ({ ...f, bannerUrl: e.target.value })); setFormError(fe => ({ ...fe, bannerUrl: undefined })); }}
                 placeholder="https://…" data-testid="input-dept-banner-url" />
+              {formError.bannerUrl && <p className="text-xs text-destructive">{formError.bannerUrl}</p>}
             </div>
             <div className="flex gap-3 pt-2">
-              <Button variant="outline" onClick={() => setShowCreate(false)} className="flex-1">{t("cm_cancel")}</Button>
-              <Button onClick={handleCreate} disabled={creating || !form.name.trim()} className="flex-1"
+              <Button variant="outline" onClick={() => { setShowCreate(false); setFormError({}); }} className="flex-1">{t("cm_cancel")}</Button>
+              <Button onClick={handleCreate} disabled={creating || !form.name.trim() || !form.description.trim()} className="flex-1"
                 style={{ backgroundColor: "#1d3461" }} data-testid="button-confirm-create-dept">
                 {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("cm_creating")}</> : t("cm_createDepartment")}
               </Button>

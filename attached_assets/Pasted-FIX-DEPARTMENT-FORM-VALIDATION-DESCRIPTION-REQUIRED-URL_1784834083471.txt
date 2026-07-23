@@ -1,0 +1,89 @@
+FIX DEPARTMENT FORM VALIDATION — DESCRIPTION REQUIRED, URLS OPTIONAL
+
+There is a validation bug in the Church Mode department creation form.
+
+Current behavior:
+- Department Name is entered.
+- Department Type is selected.
+- Description is left blank.
+- Logo URL and Banner URL are left blank.
+- The “Create Department” button does not create the department.
+
+The form labels say the URL fields are optional, so blank URL fields must never block department creation.
+
+REQUIRED FORM RULES:
+
+1. Department Name:
+   - Required
+
+2. Department Type:
+   - Required
+
+3. Description:
+   - Change from optional to required
+   - Add a visible required marker
+   - Require a meaningful description before submission
+
+4. Logo URL:
+   - Optional
+   - Blank value must be accepted
+   - Do not validate a blank value as an invalid URL
+
+5. Banner URL:
+   - Optional
+   - Blank value must be accepted
+   - Do not validate a blank value as an invalid URL
+
+REQUIRED FIX:
+
+- Update frontend validation so only:
+  - department name
+  - department type
+  - description
+  are required.
+
+- Normalize optional URL fields:
+  - trim whitespace
+  - convert empty strings to null or undefined before sending to the server
+
+- Update backend validation so:
+  - logoUrl may be null, undefined, or empty after normalization
+  - bannerUrl may be null, undefined, or empty after normalization
+  - URL validation runs only when a non-empty value is supplied
+
+- Do not use the 365 Daily Devotional website URL as a default value.
+- Do not require users to enter any website address.
+- If a valid optional logo or banner URL is supplied, save it normally.
+- If no URL is supplied, use the existing church-logo or generic-icon fallback.
+
+USER EXPERIENCE:
+
+- Keep “Create Department” disabled until:
+  - Department Name is entered
+  - Department Type is selected
+  - Description is entered
+
+- Once those three required fields are completed, the button must become active even when Logo URL and Banner URL are blank.
+
+- If the description is missing, show a clear translated validation message.
+
+- If a non-empty URL is invalid, show an error only for that URL field.
+
+TEST:
+
+1. Enter name, type, and description.
+2. Leave Logo URL and Banner URL blank.
+3. Confirm the department creates successfully.
+4. Refresh and confirm it persists.
+5. Enter an invalid non-empty URL and confirm a clear error appears.
+6. Enter valid optional URLs and confirm they are saved.
+7. Confirm English, Spanish, and French labels and validation messages work.
+8. Confirm existing department logo fallback still works.
+9. Do not modify unrelated Church Mode features.
+
+After completion, report only:
+- root cause
+- files changed
+- frontend validation fix
+- backend validation fix
+- confirmation that blank optional URL fields no longer block department creation

@@ -632,6 +632,8 @@
   "cm_deptDescription": "Description",
   "cm_logoUrl": "URL du logo",
   "cm_bannerUrl": "URL de bannière",
+  "cm_deptDescRequired": "La description est obligatoire.",
+  "cm_invalidUrlFmt": "Veuillez entrer une URL valide (doit commencer par https://).",
   "cm_add": "Ajouter",
   "cm_accessDenied": "Accès Refusé",
   "cm_accessDeniedDesc": "Seuls les administrateurs de l'église peuvent accéder à cette zone.",

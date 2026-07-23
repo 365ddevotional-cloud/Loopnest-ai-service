@@ -632,6 +632,8 @@
   "cm_deptDescription": "Description",
   "cm_logoUrl": "Logo URL",
   "cm_bannerUrl": "Banner URL",
+  "cm_deptDescRequired": "Description is required.",
+  "cm_invalidUrlFmt": "Please enter a valid URL (must start with https://).",
   "cm_add": "Add",
   "cm_accessDenied": "Access Denied",
   "cm_accessDeniedDesc": "Only church administrators can access this area.",

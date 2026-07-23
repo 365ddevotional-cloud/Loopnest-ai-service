@@ -4270,9 +4270,15 @@ export async function registerRoutes(
       if (!member || !ADMIN_ROLES.includes(member.role ?? "")) return res.status(403).json({ message: "Insufficient permissions" });
       const { name, type, description, logoUrl, bannerUrl } = req.body;
       if (!name?.trim()) return res.status(400).json({ message: "Name is required" });
+      if (!description?.trim()) return res.status(400).json({ message: "Description is required" });
+      const normalizedLogoUrl = logoUrl?.trim() || null;
+      const normalizedBannerUrl = bannerUrl?.trim() || null;
+      const isValidHttpsUrl = (v: string) => { try { const u = new URL(v); return u.protocol === "https:"; } catch { return false; } };
+      if (normalizedLogoUrl && !isValidHttpsUrl(normalizedLogoUrl)) return res.status(400).json({ message: "Logo URL must be a valid https:// URL" });
+      if (normalizedBannerUrl && !isValidHttpsUrl(normalizedBannerUrl)) return res.status(400).json({ message: "Banner URL must be a valid https:// URL" });
       const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Date.now().toString(36);
       const inviteCode = Math.random().toString(36).slice(2, 8).toUpperCase();
-      const dept = await storage.createDepartment({ churchId, name: name.trim(), slug, type: type ?? "Custom", description, logoUrl, bannerUrl, inviteCode, isActive: true, createdBy: member.id });
+      const dept = await storage.createDepartment({ churchId, name: name.trim(), slug, type: type ?? "Custom", description: description.trim(), logoUrl: normalizedLogoUrl, bannerUrl: normalizedBannerUrl, inviteCode, isActive: true, createdBy: member.id });
       await storage.addDepartmentMember(dept.id, member.id, "leader");
       res.status(201).json(dept);
     } catch (e: any) { res.status(500).json({ message: e.message ?? "Server error" }); }
