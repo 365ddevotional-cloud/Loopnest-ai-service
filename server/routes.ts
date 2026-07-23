@@ -4216,43 +4216,38 @@ export async function registerRoutes(
   const deptAuth = async (req: any, deptId: number) => {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) throw new Error("Unauthorized");
-    const { auth } = await import("./firebase-admin.js");
-    const decoded = await auth.verifyIdToken(authHeader.slice(7));
+    const uid = await verifyFirebaseToken(authHeader.slice(7));
     const dept = await storage.getDepartment(deptId);
     if (!dept) throw new Error("Not found");
-    const churchMember = await storage.getChurchMember(dept.churchId, decoded.uid);
+    const churchMember = await storage.getChurchMember(dept.churchId, uid);
     if (!churchMember || churchMember.status !== "active") throw new Error("Not a church member");
     const deptMember = await storage.getMyDepartmentMembership(deptId, churchMember.id);
     const ADMIN_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor"];
     const isChurchAdmin = ADMIN_ROLES.includes(churchMember.role ?? "");
-    return { uid: decoded.uid, churchMember, deptMember, dept, isChurchAdmin };
+    return { uid, churchMember, deptMember, dept, isChurchAdmin };
   };
 
   app.get("/api/churches/:churchId/departments", async (req, res) => {
     const churchId = parseInt(req.params.churchId);
     if (isNaN(churchId)) return res.status(400).json({ message: "Invalid ID" });
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ message: "Unauthorized" });
-      const { auth } = await import("./firebase-admin.js");
-      const decoded = await auth.verifyIdToken(authHeader.slice(7));
-      const member = await storage.getChurchMember(churchId, decoded.uid);
+      const uid = await getUid(req, res);
+      if (!uid) return;
+      const member = await storage.getChurchMember(churchId, uid);
       if (!member || member.status !== "active") return res.status(403).json({ message: "Not a member" });
       const depts = await storage.getDepartments(churchId);
       const deptMembers = await Promise.all(depts.map(d => storage.getMyDepartmentMembership(d.id, member.id)));
       res.json(depts.map((d, i) => ({ ...d, myMembership: deptMembers[i] ?? null })));
-    } catch { res.status(500).json({ message: "Server error" }); }
+    } catch (e: any) { res.status(500).json({ message: e.message ?? "Server error" }); }
   });
 
   app.post("/api/churches/:churchId/departments", async (req, res) => {
     const churchId = parseInt(req.params.churchId);
     if (isNaN(churchId)) return res.status(400).json({ message: "Invalid ID" });
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ message: "Unauthorized" });
-      const { auth } = await import("./firebase-admin.js");
-      const decoded = await auth.verifyIdToken(authHeader.slice(7));
-      const member = await storage.getChurchMember(churchId, decoded.uid);
+      const uid = await getUid(req, res);
+      if (!uid) return;
+      const member = await storage.getChurchMember(churchId, uid);
       const ADMIN_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor", "ministry_leader"];
       if (!member || !ADMIN_ROLES.includes(member.role ?? "")) return res.status(403).json({ message: "Insufficient permissions" });
       const { name, type, description, logoUrl, bannerUrl } = req.body;

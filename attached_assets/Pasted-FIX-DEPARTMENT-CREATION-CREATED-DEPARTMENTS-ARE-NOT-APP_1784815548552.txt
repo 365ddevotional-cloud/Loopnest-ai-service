@@ -1,0 +1,86 @@
+FIX DEPARTMENT CREATION — CREATED DEPARTMENTS ARE NOT APPEARING
+
+There is a Church Mode bug.
+
+Current behavior:
+- Church owner taps “Create Department.”
+- Enters a department such as “Women Department” or “Men Department.”
+- Taps Save.
+- The app returns to the Departments page.
+- The new department does not appear.
+- The page still shows “0 departments” and “No departments yet.”
+
+Please fix only this department-creation issue.
+
+IMPORTANT:
+
+- Do not redesign the Departments page.
+- Do not modify unrelated Church Mode features.
+- Do not change department permissions, logos, translations, or invitations unless directly required for this fix.
+- Preserve all existing church and department data.
+- Make the smallest safe correction.
+
+INVESTIGATE:
+
+1. Confirm whether the POST/create-department API request is actually being sent.
+2. Confirm the request includes the correct:
+   - church ID
+   - authenticated Firebase user
+   - department name
+   - optional description
+   - optional logo
+3. Check whether the server is:
+   - rejecting the request silently
+   - returning an error that is not displayed
+   - creating the record under the wrong church
+   - creating the record with an inactive or hidden status
+   - failing a database insert
+4. Check whether the frontend redirects before the create request finishes.
+5. Check whether the create mutation is missing:
+   - await
+   - success handling
+   - error handling
+   - query invalidation
+   - refetch
+6. Check whether the department list query uses the correct response shape and correct church ID.
+7. Confirm that the recent logo-related query-type fix did not break department list or create behavior.
+8. Check the browser/server logs for the actual create response.
+
+REQUIRED FIX:
+
+1. Save the department successfully before navigating away.
+2. If creation succeeds:
+   - close the form or modal
+   - return to the Departments page
+   - invalidate/refetch the department list
+   - immediately show the new department
+   - update the department count
+   - show a clear success message
+3. If creation fails:
+   - do not silently return to the empty page
+   - keep the form open where practical
+   - show a clear translated error message
+   - log the real server error safely
+4. Prevent duplicate submissions if the Save button is tapped repeatedly.
+5. Disable the Save button while the request is processing.
+6. Do not claim success unless the server confirms the record was created.
+
+TEST:
+
+- Create “Women Department.”
+- Confirm it appears immediately.
+- Create “Men Department.”
+- Confirm both departments appear.
+- Refresh the page and confirm both remain.
+- Confirm the count changes from 0 to 2.
+- Confirm both belong only to the correct church.
+- Confirm another church cannot see them.
+- Confirm English, Spanish, and French success/error messages work.
+- Confirm department logo fallback still works.
+
+After completion, report only:
+- root cause
+- files changed
+- server response issue, if any
+- exact fix
+- confirmation that Women Department and Men Department persist and appear after refresh
