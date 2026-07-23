@@ -181,12 +181,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const signUserOut = useCallback(async () => {
     await signOut(auth);
-    queryClient.invalidateQueries({ queryKey: ["/api/user/library/saved"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/user/library/favorites"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/user/library/downloads"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/user/devotional/saved"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/user/devotional/history"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/user/devotional/streak"] });
+    queryClient.clear();
   }, []);
 
   const resetPassword = useCallback(async (email: string) => {

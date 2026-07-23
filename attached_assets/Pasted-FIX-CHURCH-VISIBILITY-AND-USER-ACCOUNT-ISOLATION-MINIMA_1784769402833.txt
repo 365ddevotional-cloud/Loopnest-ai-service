@@ -1,0 +1,119 @@
+FIX CHURCH VISIBILITY AND USER ACCOUNT ISOLATION — MINIMAL SAFE CHANGE ONLY
+
+There is a privacy and ownership bug in Church Mode.
+
+A church created under one user account is appearing in the “My Churches” section when a completely different user account opens the app.
+
+This is incorrect.
+
+REQUIRED BEHAVIOR:
+
+The “My Churches” section must display only churches where the currently authenticated user is:
+
+1. The church creator/owner, OR
+2. An accepted/active member of that church.
+
+A user must NOT see:
+
+- Churches created by unrelated users
+- Churches they have not joined
+- Churches where their membership is pending, rejected, removed, or inactive
+- Another person’s church presented as though they are the owner
+
+The following options may remain visible to every authenticated user:
+
+- Create a Church Space
+- Join a Church
+
+IMPORTANT INVESTIGATION:
+
+Please inspect the data flow that loads “My Churches,” including:
+
+- frontend query or fetch
+- backend API route
+- database query
+- authentication user ID
+- church owner ID
+- church membership table
+- localStorage or cached church data
+- React Query or other client-side cache
+- logout/account-switch behavior
+
+Confirm whether the bug is caused by:
+
+- an unfiltered query returning all churches
+- a missing authenticated-user condition
+- stale cached data from the previous account
+- church ownership being stored locally instead of tied to the authenticated user
+- an incorrect fallback that shows the first available church
+- missing database access rules
+
+REQUIRED FIX:
+
+1. Load the current authenticated user ID from the secure server-side session/JWT.
+2. Return only churches where:
+   - churches.owner_user_id equals the authenticated user ID, OR
+   - the authenticated user has an active/accepted membership record.
+3. Do not trust a user ID supplied by the browser for authorization.
+4. Clear or invalidate all Church Mode queries and cached church data on logout and account change.
+5. Ensure the displayed role is accurate:
+   - “Church Owner” only for the actual creator/owner
+   - the correct member role for joined members
+6. If the user has no owned or joined churches, show an empty-state message instead of another user’s church.
+7. Preserve the existing Create Church and Join Church flows.
+8. Apply server-side authorization to individual church detail routes as well, so an unrelated user cannot open a church by manually entering its URL or ID.
+
+DATABASE SECURITY:
+
+Review only the relevant Church Mode access policies or authorization code.
+
+Ensure that:
+
+- unrelated users cannot read private church information
+- church owners can access their own churches
+- active members can access churches they joined
+- pending or removed members do not receive normal church access
+- public invitation validation reveals only the minimum information needed to join
+
+Do not expose the full list of registered churches publicly.
+
+TEST WITH AT LEAST THREE ACCOUNTS:
+
+Account A:
+- Creates Church A
+- Must see Church A as Church Owner
+
+Account B:
+- Has not joined Church A
+- Must not see or open Church A
+
+Account C:
+- Joins Church A and is accepted
+- Must see Church A with the correct member role
+
+Also test:
+
+- Sign into Account A, then log out and sign into Account B on the same browser
+- Confirm Church A disappears immediately
+- Refresh the page
+- Confirm it does not return from cache
+- Confirm direct URL access by Account B is denied
+- Confirm Create a Church Space and Join a Church remain available
+
+IMPORTANT:
+
+- Do not redesign Church Mode.
+- Do not modify donations, songs, devotionals, authentication beyond the necessary account-isolation fix, or unrelated features.
+- Do not delete any church or membership records.
+- Do not rebuild or refactor unrelated files.
+- Make the smallest secure change necessary.
+- Preserve all existing owner and member data.
+
+After completion, report only:
+
+- root cause
+- files changed
+- backend filtering added
+- cache/account-switch fix added
+- authorization protection added
+- confirmation of the three-account test

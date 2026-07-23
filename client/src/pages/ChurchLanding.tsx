@@ -24,7 +24,7 @@ export default function ChurchLanding() {
   const isSignedIn = !!user && !!emailVerified;
 
   const { data: memberships, isLoading } = useQuery<Membership[]>({
-    queryKey: ["/api/churches/my"],
+    queryKey: ["/api/churches/my", user?.uid],
     queryFn: async () => {
       const token = await getIdToken();
       if (!token) return [];
@@ -32,7 +32,7 @@ export default function ChurchLanding() {
       if (!r.ok) return [];
       return r.json();
     },
-    enabled: isSignedIn,
+    enabled: isSignedIn && !!user?.uid,
   });
 
   return (
