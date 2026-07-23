@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import type { Church } from "@shared/schema";
 import { CHURCH_ROLE_LABELS, type ChurchRole } from "@shared/schema";
-import { Home, Mic2, Megaphone, Users, Heart, Shield, Settings, ChevronRight, HandCoins, MessageSquare, UserCircle, Building2, Globe, Check } from "lucide-react";
+import { Home, Mic2, Megaphone, Users, Heart, Shield, Settings, ChevronRight, HandCoins, MessageSquare, UserCircle, Building2, Globe, Check, Menu, X, CalendarDays, ClipboardList } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
 import { getCurrentLang } from "@/utils/i18n";
 
@@ -112,6 +112,7 @@ function LangPicker({ headerTextSecondary, headerBorder }: { headerTextSecondary
 export function ChurchModeShell({ church, currentRole, children, unreadMessages = 0 }: ChurchModeShellProps) {
   const [location, setLocation] = useLocation();
   const { t } = useI18n();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const slug = church?.slug;
   const isAdmin = ADMIN_ROLES.includes(currentRole ?? "");
@@ -139,6 +140,11 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
     return location.startsWith(path);
   };
 
+  const handleNavClick = (path: string) => {
+    setMenuOpen(false);
+    setLocation(path);
+  };
+
   const headerBg = church?.themeColor ?? "#1d3461";
   const bright = hexIsBright(headerBg);
   const headerText = bright ? "#1a2744" : "#ffffff";
@@ -146,7 +152,6 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
   const headerAccent = bright ? "#b8962e" : "#d4a83a";
   const headerBorder = bright ? "#1a274418" : "#ffffff1a";
   const navActiveColor = headerAccent;
-  const navInactiveColor = headerTextSecondary;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#f8f4ee" }}>
@@ -159,7 +164,17 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
         }}
       />
 
-      <header className="relative z-10" style={{ backgroundColor: headerBg }}>
+      {/* Hamburger menu backdrop */}
+      {menuOpen && (
+        <div
+          className="fixed inset-0"
+          style={{ zIndex: 100 }}
+          onClick={() => setMenuOpen(false)}
+          onTouchStart={() => setMenuOpen(false)}
+        />
+      )}
+
+      <header className="relative" style={{ backgroundColor: headerBg, zIndex: 200 }}>
         {church?.bannerUrl && (
           <div className="w-full h-24 overflow-hidden opacity-30">
             <img src={church.bannerUrl} alt="" className="w-full h-full object-cover" />
@@ -206,6 +221,22 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
+            {navItems.length > 0 && (
+              <button
+                onClick={() => setMenuOpen(o => !o)}
+                className="flex items-center justify-center w-9 h-9 rounded-lg transition-all"
+                style={{
+                  color: menuOpen ? headerText : headerTextSecondary,
+                  border: `1px solid ${headerBorder}`,
+                  backgroundColor: menuOpen ? (bright ? "#1a274410" : "#ffffff15") : "transparent",
+                }}
+                aria-label={menuOpen ? t("cm_close") : t("cm_menu")}
+                aria-expanded={menuOpen}
+                data-testid="button-church-hamburger"
+              >
+                {menuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              </button>
+            )}
             <LangPicker headerTextSecondary={headerTextSecondary} headerBorder={headerBorder} />
             <button
               onClick={() => setLocation("/")}
@@ -217,14 +248,24 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
             >
               <ChevronRight className="w-4 h-4 rotate-180" />
               <span className="hidden sm:inline">365 Daily Devotional</span>
-              <span className="sm:hidden">{t("cm_home")}</span>
             </button>
           </div>
         </div>
 
-        {navItems.length > 0 && (
-          <div className="border-t" style={{ borderColor: headerBorder }}>
-            <nav className="max-w-5xl mx-auto px-2 flex items-center overflow-x-auto scrollbar-hide" data-testid="nav-church-mode">
+        {/* Hamburger dropdown menu */}
+        {menuOpen && navItems.length > 0 && (
+          <div
+            className="absolute left-0 right-0 top-full"
+            style={{
+              backgroundColor: headerBg,
+              borderTop: `1px solid ${headerBorder}`,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+              zIndex: 200,
+              maxHeight: "75vh",
+              overflowY: "auto",
+            }}
+          >
+            <nav className="max-w-5xl mx-auto px-2 py-2" data-testid="nav-church-mode">
               {navItems.map(item => {
                 const active = isNavActive(item.path);
                 const Icon = item.icon;
@@ -232,23 +273,28 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
                 return (
                   <button
                     key={item.path}
-                    onClick={() => setLocation(item.path)}
-                    className={cn(
-                      "relative flex items-center gap-2 px-3.5 py-3.5 text-sm font-semibold transition-all duration-150 border-b-2 flex-shrink-0 whitespace-nowrap",
-                      active ? "" : "border-transparent"
-                    )}
+                    onClick={() => handleNavClick(item.path)}
+                    className="relative w-full flex items-center gap-3 px-4 rounded-xl transition-all duration-150"
                     style={{
-                      borderBottomColor: active ? navActiveColor : "transparent",
-                      color: active ? navActiveColor : navInactiveColor,
+                      minHeight: "48px",
+                      color: active ? navActiveColor : headerTextSecondary,
+                      backgroundColor: active ? (bright ? "#1a274410" : "#ffffff12") : "transparent",
+                      fontWeight: active ? 700 : 500,
                     }}
-                    onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = headerText; }}
-                    onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = navInactiveColor; }}
+                    onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = bright ? "#1a274408" : "#ffffff0d"; }}
+                    onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; }}
                     data-testid={`link-church-nav-${item.label.toLowerCase()}`}
                   >
+                    {active && (
+                      <span
+                        className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full"
+                        style={{ backgroundColor: navActiveColor }}
+                      />
+                    )}
                     <Icon className="w-4 h-4 flex-shrink-0" />
-                    {item.label}
+                    <span className="text-sm">{item.label}</span>
                     {badge > 0 && (
-                      <span className="absolute -top-0.5 right-0.5 min-w-[16px] h-4 px-1 text-[10px] font-bold rounded-full flex items-center justify-center"
+                      <span className="ml-auto min-w-[20px] h-5 px-1.5 text-[11px] font-bold rounded-full flex items-center justify-center"
                         style={{ backgroundColor: "#e53e3e", color: "#fff" }}>
                         {badge > 99 ? "99+" : badge}
                       </span>
@@ -261,11 +307,11 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
         )}
       </header>
 
-      <main className="relative z-10 flex-grow max-w-5xl mx-auto w-full px-4 py-6 sm:py-8">
+      <main className="relative flex-grow max-w-5xl mx-auto w-full px-4 py-6 sm:py-8" style={{ zIndex: 10 }}>
         {children}
       </main>
 
-      <footer className="relative z-10 py-4 text-center border-t" style={{ borderColor: "#c9b99033", backgroundColor: "#efe8d8" }}>
+      <footer className="relative py-4 text-center border-t" style={{ borderColor: "#c9b99033", backgroundColor: "#efe8d8", zIndex: 10 }}>
         <p className="text-sm" style={{ color: "#9a9080" }}>
           {t("cm_churchModeOn")}{" "}
           <button onClick={() => setLocation("/")} className="underline hover:opacity-75 transition-opacity font-medium">

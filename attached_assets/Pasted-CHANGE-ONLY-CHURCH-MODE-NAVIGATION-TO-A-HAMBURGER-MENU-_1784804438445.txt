@@ -1,0 +1,81 @@
+CHANGE ONLY CHURCH MODE NAVIGATION TO A HAMBURGER MENU
+
+The current Church Mode navigation is displayed horizontally across the top and requires sideways scrolling on mobile.
+
+Replace only the Church Mode horizontal navigation with a hamburger menu.
+
+IMPORTANT:
+
+- Do not touch the main 365 Daily Devotional header or main app menu.
+- Do not change the general website navigation.
+- Do not redesign unrelated Church Mode pages.
+- Preserve all current Church Mode routes, permissions, translations, and functionality.
+- Make the smallest safe UI change.
+
+REQUIRED BEHAVIOR:
+
+1. In Church Mode, remove the horizontally scrolling navigation bar on mobile.
+
+2. Add a clear hamburger menu button in the Church Mode header.
+
+3. When tapped, open a dropdown or slide-down menu containing all existing Church Mode navigation items, including:
+
+- Home
+- Sermons
+- Announcements
+- Groups / Departments
+- Prayer
+- Events
+- Attendance
+- Messages
+- Giving
+- Church Administration
+- Church Settings
+- Any other Church Mode items currently available to that user
+
+4. Show only the items the current user is authorized to access.
+
+5. The menu must:
+
+- open and close reliably
+- close after a menu item is selected
+- close when the user taps outside it
+- include a visible close button or allow the hamburger icon to toggle it
+- remain above page content using the correct z-index
+- not be hidden behind the header
+- work smoothly on iPhone Safari and Android Chrome
+
+6. Make each menu row easy to tap:
+
+- full-width clickable row
+- minimum touch height around 44px
+- icon and label aligned clearly
+- active page visibly highlighted
+
+7. Keep the language selector available in the Church Mode header and ensure it does not conflict with the hamburger menu.
+
+8. Preserve English, Spanish, and French translations for every menu item.
+
+9. On desktop, either:
+- keep the existing desktop navigation if it fits cleanly, or
+- use the same hamburger menu if that gives a more consistent design.
+
+Prefer the hamburger menu on mobile.
+
+TEST:
+
+- Open and close the Church Mode menu repeatedly.
+- Select every available Church Mode page.
+- Confirm the menu closes after selection.
+- Confirm active-page highlighting works.
+- Confirm all menu labels change correctly in English, Spanish, and French.
+- Confirm no horizontal Church Mode menu remains on mobile.
+- Confirm the main 365 Daily Devotional menu was not changed.
+
+After completion, report only:
+
+- files changed
+- navigation component changed
+- mobile behavior
+- desktop behavior
+- confirmation that the main app menu was untouched
