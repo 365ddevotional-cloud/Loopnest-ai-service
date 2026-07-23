@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
+import { useI18n } from "@/hooks/useI18n";
 import { ChurchModeShell } from "@/components/ChurchModeShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,7 @@ export default function ChurchDepartmentView() {
 
   const { getIdToken, user, emailVerified } = useUser();
   const isSignedIn = !!user && !!emailVerified;
+  const { t } = useI18n();
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -314,13 +316,13 @@ export default function ChurchDepartmentView() {
   };
 
   const TABS: Array<{ id: DeptTab; label: string; icon: typeof MessageSquare; leaderOnly?: boolean }> = [
-    { id: "chat", label: "Chat", icon: MessageSquare },
-    { id: "announcements", label: "Announcements", icon: Megaphone },
-    { id: "prayer", label: "Prayer", icon: Heart },
-    { id: "events", label: "Events", icon: Calendar },
-    { id: "tasks", label: "Tasks", icon: CheckSquare },
-    { id: "members", label: "Members", icon: Users },
-    { id: "attendance", label: "Attendance", icon: ClipboardList, leaderOnly: true },
+    { id: "chat", label: t("cm_chat"), icon: MessageSquare },
+    { id: "announcements", label: t("cm_announcementsTab"), icon: Megaphone },
+    { id: "prayer", label: t("cm_prayerTab"), icon: Heart },
+    { id: "events", label: t("cm_eventsTab"), icon: Calendar },
+    { id: "tasks", label: t("cm_tasksTab"), icon: CheckSquare },
+    { id: "members", label: t("cm_membersTab"), icon: Users },
+    { id: "attendance", label: t("cm_attendanceTab"), icon: ClipboardList, leaderOnly: true },
   ];
 
   if (deptLoading) {
@@ -336,9 +338,9 @@ export default function ChurchDepartmentView() {
       <ChurchModeShell church={church} currentRole={myRole?.role ?? null}>
         <div className="max-w-md mx-auto pt-12 text-center space-y-4">
           <AlertCircle className="w-12 h-12 mx-auto" style={{ color: "#9a9080" }} />
-          <p className="font-semibold" style={{ color: "#1d3461" }}>Department not found</p>
+          <p className="font-semibold" style={{ color: "#1d3461" }}>{t("cm_deptNotFound")}</p>
           <Button variant="outline" onClick={() => setLocation(`/church/${slug}/departments`)} className="gap-2">
-            <ChevronLeft className="w-4 h-4" />Back to Departments
+            <ChevronLeft className="w-4 h-4" />{t("cm_backToDepartments")}
           </Button>
         </div>
       </ChurchModeShell>
@@ -354,7 +356,7 @@ export default function ChurchDepartmentView() {
           <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "#b8962e" }} /></div>
         ) : !posts?.length ? (
           <div className="text-center py-12">
-            <p className="text-sm" style={{ color: "#9a9080" }}>No messages yet. Be the first to post!</p>
+            <p className="text-sm" style={{ color: "#9a9080" }}>{t("cm_noMessagesPost")}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -468,15 +470,15 @@ export default function ChurchDepartmentView() {
         {isDeptLeader && (
           <div className="rounded-xl px-4 py-3 flex items-center gap-3" style={{ backgroundColor: "#fffbf0", border: "1px solid #b8962e30" }}>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold" style={{ color: "#92400e" }}>Department Invite Code</p>
+              <p className="text-xs font-semibold" style={{ color: "#92400e" }}>{t("cm_deptInviteCode")}</p>
               <p className="text-lg font-mono font-bold tracking-widest" style={{ color: "#1d3461" }}>{deptData.inviteCode}</p>
-              <p className="text-xs mt-0.5" style={{ color: "#9a9080" }}>Share this with church members to join this department</p>
+              <p className="text-xs mt-0.5" style={{ color: "#9a9080" }}>{t("cm_shareInviteCode")}</p>
             </div>
             <button onClick={copyInviteCode}
               className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg flex-shrink-0"
               style={{ backgroundColor: "#1d346110", color: "#1d3461" }} data-testid="button-copy-invite-code">
               {codeCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              {codeCopied ? "Copied!" : "Copy"}
+              {codeCopied ? t("cm_copied") : t("cm_copy")}
             </button>
           </div>
         )}
@@ -499,22 +501,22 @@ export default function ChurchDepartmentView() {
         {/* Tab content */}
         <div>
           {/* Chat */}
-          {activeTab === "chat" && <PostsPanel type="message" placeholder="Type a message… (Enter to send)" />}
+          {activeTab === "chat" && <PostsPanel type="message" placeholder={t("cm_typeMessage")} />}
 
           {/* Announcements */}
           {activeTab === "announcements" && (
             <div className="space-y-4">
               {isDeptLeader && (
                 <div className="rounded-xl p-3 text-xs" style={{ backgroundColor: "#f0f8ff", border: "1px solid #3b82f620" }}>
-                  <p style={{ color: "#1e40af" }}>As a leader, announcements you post will be visible to all department members.</p>
+                  <p style={{ color: "#1e40af" }}>{t("cm_leaderAnnouncementNote")}</p>
                 </div>
               )}
-              <PostsPanel type="announcement" placeholder="Write an announcement for all members…" />
+              <PostsPanel type="announcement" placeholder={t("cm_writeAnnouncement")} />
             </div>
           )}
 
           {/* Prayer */}
-          {activeTab === "prayer" && <PostsPanel type="prayer" placeholder="Share a prayer request or intercede for someone…" />}
+          {activeTab === "prayer" && <PostsPanel type="prayer" placeholder={t("cm_sharePrayerRequest")} />}
 
           {/* Events */}
           {activeTab === "events" && (
@@ -522,13 +524,13 @@ export default function ChurchDepartmentView() {
               {isDeptLeader && (
                 <Button size="sm" onClick={() => setShowEventForm(true)} className="gap-2" style={{ backgroundColor: "#1d3461" }}
                   data-testid="button-add-event">
-                  <Plus className="w-3.5 h-3.5" />Add Event
+                  <Plus className="w-3.5 h-3.5" />{t("cm_addEvent")}
                 </Button>
               )}
               {!events?.length ? (
                 <div className="text-center py-10">
                   <Calendar className="w-10 h-10 mx-auto mb-2" style={{ color: "#c9b99060" }} />
-                  <p className="text-sm" style={{ color: "#9a9080" }}>No upcoming events</p>
+                  <p className="text-sm" style={{ color: "#9a9080" }}>{t("cm_noUpcomingEvents")}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -576,13 +578,13 @@ export default function ChurchDepartmentView() {
               {isDeptLeader && (
                 <Button size="sm" onClick={() => setShowTaskForm(true)} className="gap-2" style={{ backgroundColor: "#1d3461" }}
                   data-testid="button-add-task">
-                  <Plus className="w-3.5 h-3.5" />Add Task
+                  <Plus className="w-3.5 h-3.5" />{t("cm_addTask")}
                 </Button>
               )}
               {!tasks?.length ? (
                 <div className="text-center py-10">
                   <CheckSquare className="w-10 h-10 mx-auto mb-2" style={{ color: "#c9b99060" }} />
-                  <p className="text-sm" style={{ color: "#9a9080" }}>No tasks yet</p>
+                  <p className="text-sm" style={{ color: "#9a9080" }}>{t("cm_noTasksYet")}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -641,7 +643,7 @@ export default function ChurchDepartmentView() {
               ) : !members?.length ? (
                 <div className="text-center py-10">
                   <Users className="w-10 h-10 mx-auto mb-2" style={{ color: "#c9b99060" }} />
-                  <p className="text-sm" style={{ color: "#9a9080" }}>No members yet</p>
+                  <p className="text-sm" style={{ color: "#9a9080" }}>{t("cm_noMembersYet")}</p>
                 </div>
               ) : (
                 members.map(m => (
@@ -677,12 +679,12 @@ export default function ChurchDepartmentView() {
             <div className="space-y-4">
               <Button size="sm" onClick={() => { setAttendeeSelection(new Set()); setShowAttendanceForm(true); }}
                 className="gap-2" style={{ backgroundColor: "#1d3461" }} data-testid="button-record-attendance">
-                <Plus className="w-3.5 h-3.5" />Record Attendance
+                <Plus className="w-3.5 h-3.5" />{t("cm_recordAttendance")}
               </Button>
               {!attendance?.length ? (
                 <div className="text-center py-10">
                   <ClipboardList className="w-10 h-10 mx-auto mb-2" style={{ color: "#c9b99060" }} />
-                  <p className="text-sm" style={{ color: "#9a9080" }}>No attendance records yet</p>
+                  <p className="text-sm" style={{ color: "#9a9080" }}>{t("cm_noAttendanceYet")}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -728,36 +730,36 @@ export default function ChurchDepartmentView() {
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-serif text-xl" style={{ color: "#1d3461" }}>Department Settings</DialogTitle>
+            <DialogTitle className="font-serif text-xl" style={{ color: "#1d3461" }}>{t("cm_deptSettings")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>Name</Label>
+              <Label>{t("cm_name")}</Label>
               <Input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} data-testid="input-edit-dept-name" />
             </div>
             <div className="space-y-1.5">
-              <Label>Type</Label>
+              <Label>{t("cm_deptType")}</Label>
               <Input value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label>Description</Label>
+              <Label>{t("cm_deptDescription")}</Label>
               <Textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} rows={3} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Logo URL</Label>
+                <Label>{t("cm_logoUrl")}</Label>
                 <Input value={editForm.logoUrl} onChange={e => setEditForm(f => ({ ...f, logoUrl: e.target.value }))} placeholder="https://…" />
               </div>
               <div className="space-y-1.5">
-                <Label>Banner URL</Label>
+                <Label>{t("cm_bannerUrl")}</Label>
                 <Input value={editForm.bannerUrl} onChange={e => setEditForm(f => ({ ...f, bannerUrl: e.target.value }))} placeholder="https://…" />
               </div>
             </div>
             <div className="flex gap-3 pt-2">
-              <Button variant="outline" onClick={() => setShowSettings(false)} className="flex-1">Cancel</Button>
+              <Button variant="outline" onClick={() => setShowSettings(false)} className="flex-1">{t("cm_cancel")}</Button>
               <Button onClick={saveDeptSettings} disabled={saving} className="flex-1" style={{ backgroundColor: "#1d3461" }}
                 data-testid="button-save-dept-settings">
-                {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : "Save Changes"}
+                {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("cm_saving")}</> : t("cm_saveChanges")}
               </Button>
             </div>
           </div>
@@ -768,36 +770,36 @@ export default function ChurchDepartmentView() {
       <Dialog open={showEventForm} onOpenChange={setShowEventForm}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-serif text-xl" style={{ color: "#1d3461" }}>Add Event</DialogTitle>
+            <DialogTitle className="font-serif text-xl" style={{ color: "#1d3461" }}>{t("cm_addEvent")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>Title <span className="text-red-500">*</span></Label>
+              <Label>{t("cm_title")} <span className="text-red-500">*</span></Label>
               <Input value={eventForm.title} onChange={e => setEventForm(f => ({ ...f, title: e.target.value }))} data-testid="input-event-title" />
             </div>
             <div className="space-y-1.5">
-              <Label>Description</Label>
+              <Label>{t("cm_deptDescription")}</Label>
               <Textarea value={eventForm.description} onChange={e => setEventForm(f => ({ ...f, description: e.target.value }))} rows={2} />
             </div>
             <div className="space-y-1.5">
-              <Label>Location</Label>
+              <Label>{t("cm_location")}</Label>
               <Input value={eventForm.location} onChange={e => setEventForm(f => ({ ...f, location: e.target.value }))} placeholder="e.g. Church Hall, Main Auditorium" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Start Date/Time <span className="text-red-500">*</span></Label>
+                <Label>{t("cm_startDateTime")} <span className="text-red-500">*</span></Label>
                 <Input type="datetime-local" value={eventForm.startDate} onChange={e => setEventForm(f => ({ ...f, startDate: e.target.value }))} data-testid="input-event-start" />
               </div>
               <div className="space-y-1.5">
-                <Label>End Date/Time</Label>
+                <Label>{t("cm_endDateTime")}</Label>
                 <Input type="datetime-local" value={eventForm.endDate} onChange={e => setEventForm(f => ({ ...f, endDate: e.target.value }))} />
               </div>
             </div>
             <div className="flex gap-3 pt-2">
-              <Button variant="outline" onClick={() => setShowEventForm(false)} className="flex-1">Cancel</Button>
+              <Button variant="outline" onClick={() => setShowEventForm(false)} className="flex-1">{t("cm_cancel")}</Button>
               <Button onClick={createEvent} disabled={creatingEvent || !eventForm.title.trim() || !eventForm.startDate}
                 className="flex-1" style={{ backgroundColor: "#1d3461" }} data-testid="button-confirm-event">
-                {creatingEvent ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}Save Event
+                {creatingEvent ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}{t("cm_saveEvent")}
               </Button>
             </div>
           </div>
@@ -808,47 +810,47 @@ export default function ChurchDepartmentView() {
       <Dialog open={showTaskForm} onOpenChange={setShowTaskForm}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-serif text-xl" style={{ color: "#1d3461" }}>Add Task</DialogTitle>
+            <DialogTitle className="font-serif text-xl" style={{ color: "#1d3461" }}>{t("cm_addTask")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>Title <span className="text-red-500">*</span></Label>
+              <Label>{t("cm_title")} <span className="text-red-500">*</span></Label>
               <Input value={taskForm.title} onChange={e => setTaskForm(f => ({ ...f, title: e.target.value }))} data-testid="input-task-title" />
             </div>
             <div className="space-y-1.5">
-              <Label>Description</Label>
+              <Label>{t("cm_deptDescription")}</Label>
               <Textarea value={taskForm.description} onChange={e => setTaskForm(f => ({ ...f, description: e.target.value }))} rows={2} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Assign To</Label>
+                <Label>{t("cm_assignTo")}</Label>
                 <select className="w-full border rounded-md px-3 py-2 text-sm" style={{ borderColor: "#e8e3dc" }}
                   value={taskForm.assignedTo} onChange={e => setTaskForm(f => ({ ...f, assignedTo: e.target.value }))}>
-                  <option value="">Unassigned</option>
+                  <option value="">{t("cm_unassigned")}</option>
                   {(members ?? []).map(m => (
                     <option key={m.id} value={m.churchMemberId}>{m.member.displayName ?? "Member"}</option>
                   ))}
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label>Priority</Label>
+                <Label>{t("cm_priority")}</Label>
                 <select className="w-full border rounded-md px-3 py-2 text-sm" style={{ borderColor: "#e8e3dc" }}
                   value={taskForm.priority} onChange={e => setTaskForm(f => ({ ...f, priority: e.target.value }))}>
-                  <option value="low">Low</option>
-                  <option value="normal">Normal</option>
-                  <option value="high">High</option>
+                  <option value="low">{t("cm_priorityLow")}</option>
+                  <option value="normal">{t("cm_priorityNormal")}</option>
+                  <option value="high">{t("cm_priorityHigh")}</option>
                 </select>
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Due Date</Label>
+              <Label>{t("cm_dueDate")}</Label>
               <Input type="date" value={taskForm.dueDate} onChange={e => setTaskForm(f => ({ ...f, dueDate: e.target.value }))} data-testid="input-task-due-date" />
             </div>
             <div className="flex gap-3 pt-2">
-              <Button variant="outline" onClick={() => setShowTaskForm(false)} className="flex-1">Cancel</Button>
+              <Button variant="outline" onClick={() => setShowTaskForm(false)} className="flex-1">{t("cm_cancel")}</Button>
               <Button onClick={createTask} disabled={creatingTask || !taskForm.title.trim()}
                 className="flex-1" style={{ backgroundColor: "#1d3461" }} data-testid="button-confirm-task">
-                {creatingTask ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}Add Task
+                {creatingTask ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}{t("cm_addTask")}
               </Button>
             </div>
           </div>
@@ -859,21 +861,21 @@ export default function ChurchDepartmentView() {
       <Dialog open={showAttendanceForm} onOpenChange={setShowAttendanceForm}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-serif text-xl" style={{ color: "#1d3461" }}>Record Attendance</DialogTitle>
+            <DialogTitle className="font-serif text-xl" style={{ color: "#1d3461" }}>{t("cm_recordAttendance")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Session Date <span className="text-red-500">*</span></Label>
+                <Label>{t("cm_sessionDate")} <span className="text-red-500">*</span></Label>
                 <Input type="date" value={attendanceDate} onChange={e => setAttendanceDate(e.target.value)} data-testid="input-attendance-date" />
               </div>
               <div className="space-y-1.5">
-                <Label>Session Title</Label>
+                <Label>{t("cm_sessionTitle")}</Label>
                 <Input value={attendanceTitle} onChange={e => setAttendanceTitle(e.target.value)} placeholder="e.g. Sunday Practice" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Present Members ({attendeeSelection.size} selected)</Label>
+              <Label>{t("cm_presentMembers")} ({attendeeSelection.size} {t("cm_selected")})</Label>
               <div className="max-h-48 overflow-y-auto space-y-1.5 border rounded-lg p-3" style={{ borderColor: "#e8e3dc" }}>
                 {(members ?? []).map(m => {
                   const isSelected = attendeeSelection.has(m.churchMemberId);
@@ -894,11 +896,11 @@ export default function ChurchDepartmentView() {
               </div>
             </div>
             <div className="flex gap-3 pt-2">
-              <Button variant="outline" onClick={() => setShowAttendanceForm(false)} className="flex-1">Cancel</Button>
+              <Button variant="outline" onClick={() => setShowAttendanceForm(false)} className="flex-1">{t("cm_cancel")}</Button>
               <Button onClick={recordAttendance} disabled={recordingAttendance || !attendanceDate}
                 className="flex-1" style={{ backgroundColor: "#1d3461" }} data-testid="button-confirm-attendance">
                 {recordingAttendance ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                Record ({attendeeSelection.size} present)
+                {t("cm_recordAttendance")} ({attendeeSelection.size} {t("cm_present")})
               </Button>
             </div>
           </div>

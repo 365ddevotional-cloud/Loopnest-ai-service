@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "@/hooks/useI18n";
 import { useRoute } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
@@ -27,6 +28,7 @@ interface MyRole { role: string | null; memberId: number | null; status: string 
 function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdToken: () => Promise<string | null> }) {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { t } = useI18n();
   const [showCreate, setShowCreate] = useState(false);
   const [deptName, setDeptName] = useState("");
   const [deptType, setDeptType] = useState("Custom");
@@ -71,7 +73,7 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
     <div className="space-y-4">
       <Button size="sm" onClick={() => setShowCreate(true)} className="gap-2" style={{ backgroundColor: "#1a2744" }}
         data-testid="button-admin-create-dept">
-        <Plus className="w-4 h-4" />Create Department
+        <Plus className="w-4 h-4" />{t("cm_createDepartment")}
       </Button>
 
       {isLoading ? (
@@ -79,7 +81,7 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
       ) : !departments?.length ? (
         <div className="text-center py-10">
           <Building2 className="w-10 h-10 mx-auto mb-2" style={{ color: "#c9b99060" }} />
-          <p className="text-sm" style={{ color: "#7a7570" }}>No departments yet</p>
+          <p className="text-sm" style={{ color: "#7a7570" }}>{t("cm_noDepartmentsYet")}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -93,7 +95,7 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
                 </div>
                 <a href={`/church/${church.slug}/departments/${dept.slug}`}
                   className="text-xs px-2.5 py-1.5 rounded-lg font-medium"
-                  style={{ backgroundColor: "#1a274412", color: "#1a2744" }}>Open</a>
+                  style={{ backgroundColor: "#1a274412", color: "#1a2744" }}>{t("cm_open")}</a>
                 <button onClick={() => handleDelete(dept.id)} className="p-1.5 rounded hover:bg-red-50">
                   <Trash2 className="w-3.5 h-3.5 text-red-400" />
                 </button>
@@ -106,19 +108,19 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
       {showCreate && (
         <Card className="border" style={{ borderColor: "#e8e3dc" }}>
           <CardContent className="pt-4 pb-4 px-4 space-y-3">
-            <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>New Department</p>
+            <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>{t("cm_newDept")}</p>
             <Input value={deptName} onChange={e => setDeptName(e.target.value)} placeholder="Department name…" data-testid="input-admin-dept-name" />
             <select className="w-full border rounded-md px-3 py-2 text-sm" style={{ borderColor: "#e8e3dc" }}
               value={deptType} onChange={e => setDeptType(e.target.value)}>
-              {["Youth Ministry","Children's Ministry","Women's Fellowship","Men's Fellowship","Choir","Ushering","Media","Evangelism","Prayer Team","Sunday School","Hospitality","Finance","Protocol","Follow-Up","Missions","Custom"].map(t => (
-                <option key={t} value={t}>{t}</option>
+              {["Youth Ministry","Children's Ministry","Women's Fellowship","Men's Fellowship","Choir","Ushering","Media","Evangelism","Prayer Team","Sunday School","Hospitality","Finance","Protocol","Follow-Up","Missions","Custom"].map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>
             <div className="flex gap-3">
-              <Button variant="outline" size="sm" onClick={() => setShowCreate(false)} className="flex-1">Cancel</Button>
+              <Button variant="outline" size="sm" onClick={() => setShowCreate(false)} className="flex-1">{t("cm_cancel")}</Button>
               <Button size="sm" onClick={handleCreate} disabled={creating || !deptName.trim()} className="flex-1"
                 style={{ backgroundColor: "#1a2744" }} data-testid="button-admin-confirm-dept">
-                {creating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}Create
+                {creating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}{t("cm_createDepartment")}
               </Button>
             </div>
           </CardContent>
@@ -150,6 +152,7 @@ export default function ChurchAdminPage() {
   const slug = params?.slug ?? "";
   const { getIdToken, user, emailVerified } = useUser();
   const { toast } = useToast();
+  const { t } = useI18n();
   const qc = useQueryClient();
   const isSignedIn = !!user && !!emailVerified;
 
@@ -772,8 +775,8 @@ export default function ChurchAdminPage() {
           <CardContent className="pt-5 flex items-center gap-3">
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
             <div>
-              <p className="font-semibold text-sm">Access Denied</p>
-              <p className="text-xs text-muted-foreground">Only church administrators can access this area.</p>
+              <p className="font-semibold text-sm">{t("cm_accessDenied")}</p>
+              <p className="text-xs text-muted-foreground">{t("cm_accessDeniedDesc")}</p>
             </div>
           </CardContent>
         </Card>
@@ -782,18 +785,18 @@ export default function ChurchAdminPage() {
   }
 
   const tabs: { key: AdminTab; label: string; icon: typeof Settings }[] = [
-    { key: "settings", label: "Settings", icon: Settings },
-    { key: "branding", label: "Branding", icon: ImageIcon },
-    { key: "invitations", label: "Invitations", icon: LinkIcon },
-    { key: "sermons", label: "Sermons", icon: Mic2 },
-    { key: "announcements", label: "Announcements", icon: Megaphone },
-    { key: "members", label: "Members", icon: Users },
-    { key: "prayer", label: "Prayer", icon: Heart },
-    { key: "giving", label: "Giving", icon: HandCoins },
-    { key: "departments", label: "Departments", icon: Building2 },
-    { key: "website", label: "Website", icon: Globe },
-    { key: "reports", label: "Reports", icon: BarChart3 },
-    { key: "insights", label: "Insights", icon: BarChart3 },
+    { key: "settings", label: t("cm_settings"), icon: Settings },
+    { key: "branding", label: t("cm_branding"), icon: ImageIcon },
+    { key: "invitations", label: t("cm_invitationsTab"), icon: LinkIcon },
+    { key: "sermons", label: t("cm_sermons"), icon: Mic2 },
+    { key: "announcements", label: t("cm_announcements"), icon: Megaphone },
+    { key: "members", label: t("cm_membersTab"), icon: Users },
+    { key: "prayer", label: t("cm_prayerTab"), icon: Heart },
+    { key: "giving", label: t("cm_benefitGiving"), icon: HandCoins },
+    { key: "departments", label: t("cm_departments"), icon: Building2 },
+    { key: "website", label: t("cm_websiteSettings"), icon: Globe },
+    { key: "reports", label: t("cm_reports"), icon: BarChart3 },
+    { key: "insights", label: t("cm_insightsTab"), icon: BarChart3 },
   ];
 
   const activityLabels: Record<string, string> = {
@@ -812,8 +815,8 @@ export default function ChurchAdminPage() {
             <Settings className="w-5 h-5" style={{ color: "#b8962e" }} />
           </div>
           <div>
-            <h2 className="font-serif text-2xl font-bold" style={{ color: "#1a2744" }}>Church Administration</h2>
-            <p className="text-sm mt-0.5" style={{ color: "#7a7570" }}>Manage your church space and community</p>
+            <h2 className="font-serif text-2xl font-bold" style={{ color: "#1a2744" }}>{t("cm_churchAdministration")}</h2>
+            <p className="text-sm mt-0.5" style={{ color: "#7a7570" }}>{t("cm_manageChurchSpace")}</p>
           </div>
         </div>
 
@@ -840,7 +843,7 @@ export default function ChurchAdminPage() {
             <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2" style={{ color: "#1a2744" }}>
-                  <ImageIcon className="w-4 h-4" />Church Logo
+                  <ImageIcon className="w-4 h-4" />{t("cm_churchLogo")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -855,17 +858,17 @@ export default function ChurchAdminPage() {
                   </div>
                   <div className="space-y-2">
                     <p className="text-sm" style={{ color: "#4a4540" }}>
-                      Upload a square image (PNG or JPG, minimum 256×256px).
+                      {t("cm_logoSquareHint")}
                     </p>
                     <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
                       style={{ backgroundColor: "#1a2744", color: "#fff" }}
                       data-testid="button-upload-logo">
                       {logoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                      {logoUploading ? "Uploading…" : "Upload Logo"}
+                      {logoUploading ? t("cm_uploading") : t("cm_uploadLogo")}
                       <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={logoUploading} />
                     </label>
                     {church.logoUrl && (
-                      <p className="text-xs" style={{ color: "#9a9080" }}>Logo is currently set. Upload a new image to replace it.</p>
+                      <p className="text-xs" style={{ color: "#9a9080" }}>{t("cm_logoIsSet")}</p>
                     )}
                   </div>
                 </div>
@@ -874,21 +877,21 @@ export default function ChurchAdminPage() {
 
             {/* Church Identity */}
             <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
-              <CardHeader className="pb-3"><CardTitle className="text-base" style={{ color: "#1a2744" }}>Church Identity</CardTitle></CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-base" style={{ color: "#1a2744" }}>{t("cm_churchIdentity")}</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-1.5"><Label>Church Name</Label>
+                <div className="space-y-1.5"><Label>{t("cm_churchName")}</Label>
                   <Input value={formVal("name")} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} data-testid="input-admin-church-name" /></div>
-                <div className="space-y-1.5"><Label>Denomination</Label>
+                <div className="space-y-1.5"><Label>{t("cm_denomination")}</Label>
                   <Input value={formVal("denomination") as string} onChange={e => setForm(f => ({ ...f, denomination: e.target.value || null }))} placeholder="e.g. Baptist, Pentecostal, Non-denominational" /></div>
-                <div className="space-y-1.5"><Label>Description</Label>
+                <div className="space-y-1.5"><Label>{t("cm_deptDescription")}</Label>
                   <Textarea value={formVal("description") as string} onChange={e => setForm(f => ({ ...f, description: e.target.value || null }))} rows={3} /></div>
-                <div className="space-y-1.5"><Label>Address</Label>
+                <div className="space-y-1.5"><Label>{t("cm_addressLabel")}</Label>
                   <Input value={formVal("address") as string} onChange={e => setForm(f => ({ ...f, address: e.target.value || null }))} /></div>
-                <div className="space-y-1.5"><Label>Website URL</Label>
+                <div className="space-y-1.5"><Label>{t("cm_websiteUrl")}</Label>
                   <Input type="url" value={formVal("websiteUrl") as string} onChange={e => setForm(f => ({ ...f, websiteUrl: e.target.value || null }))} /></div>
                 <Button onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending || Object.keys(form).length === 0}
                   style={{ backgroundColor: "#1a2744" }} data-testid="button-save-church-settings">
-                  {saveSettings.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : "Save Changes"}
+                  {saveSettings.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("cm_saving")}</> : t("cm_saveChanges")}
                 </Button>
               </CardContent>
             </Card>
@@ -901,13 +904,13 @@ export default function ChurchAdminPage() {
             <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2" style={{ color: "#1a2744" }}>
-                  <ImageIcon className="w-4 h-4" />Church Branding
+                  <ImageIcon className="w-4 h-4" />{t("cm_churchBranding")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
                 {/* Logo */}
                 <div>
-                  <p className="text-sm font-medium mb-2" style={{ color: "#1a2744" }}>Logo</p>
+                  <p className="text-sm font-medium mb-2" style={{ color: "#1a2744" }}>{t("cm_logoLabel")}</p>
                   <div className="flex items-center gap-5 mb-3">
                     <div className="w-20 h-20 rounded-xl flex-shrink-0 overflow-hidden border-2 flex items-center justify-center"
                       style={{ borderColor: "#e8e3dc", backgroundColor: "#f8f4ee" }}>
@@ -920,20 +923,20 @@ export default function ChurchAdminPage() {
                     <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
                       style={{ backgroundColor: "#1a2744", color: "#fff" }} data-testid="button-upload-logo">
                       {logoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                      {logoUploading ? "Uploading…" : "Upload Logo"}
+                      {logoUploading ? t("cm_uploading") : t("cm_uploadLogo")}
                       <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={logoUploading} />
                     </label>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm">Or enter Logo URL directly</Label>
+                    <Label className="text-sm">{t("cm_logoUrlDirect")}</Label>
                     <Input value={brandingForm.logoUrl} onChange={e => setBrandingForm(f => ({ ...f, logoUrl: e.target.value }))} placeholder="https://..." data-testid="input-branding-logo-url" />
                   </div>
                 </div>
 
                 {/* Banner */}
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Banner Image URL</Label>
-                  <p className="text-xs" style={{ color: "#7a7570" }}>A wide image shown at the top of the church header (optional).</p>
+                  <Label className="text-sm">{t("cm_bannerImageUrl")}</Label>
+                  <p className="text-xs" style={{ color: "#7a7570" }}>{t("cm_bannerImageHint")}</p>
                   {church.bannerUrl && (
                     <div className="h-20 rounded-lg overflow-hidden border" style={{ borderColor: "#e8e3dc" }}>
                       <img src={church.bannerUrl} alt="Banner" className="w-full h-full object-cover" />
@@ -944,8 +947,8 @@ export default function ChurchAdminPage() {
 
                 {/* Theme Color */}
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Header Theme Color</Label>
-                  <p className="text-xs" style={{ color: "#7a7570" }}>Sets the background color of the church navigation header.</p>
+                  <Label className="text-sm">{t("cm_headerThemeColor")}</Label>
+                  <p className="text-xs" style={{ color: "#7a7570" }}>{t("cm_headerThemeHint")}</p>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
@@ -963,7 +966,7 @@ export default function ChurchAdminPage() {
                       data-testid="input-branding-theme-hex"
                     />
                     <button onClick={() => setBrandingForm(f => ({ ...f, themeColor: "" }))} className="text-xs px-2 py-1 rounded" style={{ color: "#7a7570" }}>
-                      Reset
+                      {t("cm_reset")}
                     </button>
                   </div>
                   <div className="flex gap-2 flex-wrap mt-2">
@@ -978,7 +981,7 @@ export default function ChurchAdminPage() {
                 </div>
 
                 <Button onClick={saveBranding} disabled={savingBranding} style={{ backgroundColor: "#1a2744", color: "#fff" }} data-testid="button-save-branding">
-                  {savingBranding ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : "Save Branding"}
+                  {savingBranding ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("cm_saving")}</> : t("cm_saveBranding")}
                 </Button>
               </CardContent>
             </Card>
@@ -990,32 +993,32 @@ export default function ChurchAdminPage() {
           <div className="space-y-5">
             <div className="flex justify-end">
               <Button onClick={() => setShowInvForm(v => !v)} style={{ backgroundColor: "#1a2744" }} data-testid="button-create-invitation">
-                <Plus className="w-4 h-4 mr-1.5" />{showInvForm ? "Cancel" : "New Invitation"}
+                <Plus className="w-4 h-4 mr-1.5" />{showInvForm ? t("cm_cancel") : t("cm_newInvitation")}
               </Button>
             </div>
 
             {showInvForm && (
               <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
-                <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2" style={{ color: "#1a2744" }}><LinkIcon className="w-4 h-4" />Create Invitation Code</CardTitle></CardHeader>
+                <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2" style={{ color: "#1a2744" }}><LinkIcon className="w-4 h-4" />{t("cm_createInvitationCode")}</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <Label>Purpose</Label>
+                      <Label>{t("cm_purpose")}</Label>
                       <Select value={invType} onValueChange={setInvType}>
                         <SelectTrigger data-testid="select-invite-type"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="membership">General Membership</SelectItem>
-                          <SelectItem value="group">Group Membership</SelectItem>
-                          <SelectItem value="leadership">Leadership Team</SelectItem>
-                          <SelectItem value="ministry">Ministry Team</SelectItem>
-                          <SelectItem value="event">Event Attendee</SelectItem>
-                          <SelectItem value="volunteer">Volunteer</SelectItem>
+                          <SelectItem value="membership">{t("cm_generalMembership")}</SelectItem>
+                          <SelectItem value="group">{t("cm_groupMembership")}</SelectItem>
+                          <SelectItem value="leadership">{t("cm_leadershipTeam")}</SelectItem>
+                          <SelectItem value="ministry">{t("cm_ministryTeam")}</SelectItem>
+                          <SelectItem value="event">{t("cm_eventAttendee")}</SelectItem>
+                          <SelectItem value="volunteer">{t("cm_volunteer")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     {invType === "group" && (groups?.length ?? 0) > 0 && (
                       <div className="space-y-1.5">
-                        <Label>Target Group</Label>
+                        <Label>{t("cm_targetGroup")}</Label>
                         <Select value={invGroupId} onValueChange={setInvGroupId}>
                           <SelectTrigger data-testid="select-invite-group"><SelectValue placeholder="Select group…" /></SelectTrigger>
                           <SelectContent>
@@ -1027,20 +1030,20 @@ export default function ChurchAdminPage() {
                   </div>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <Label>Label <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                      <Label>{t("cm_inviteLabel")} <span className="text-muted-foreground text-xs">({t("cm_optional")})</span></Label>
                       <Input value={invLabel} onChange={e => setInvLabel(e.target.value)} placeholder="e.g. Sunday Service Invite" data-testid="input-invite-label" />
                     </div>
                     <div className="space-y-1.5">
-                      <Label>Max Uses <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                      <Input type="number" min="1" value={invMaxUses} onChange={e => setInvMaxUses(e.target.value)} placeholder="Unlimited" data-testid="input-invite-max-uses" />
+                      <Label>{t("cm_maxUses")} <span className="text-muted-foreground text-xs">({t("cm_optional")})</span></Label>
+                      <Input type="number" min="1" value={invMaxUses} onChange={e => setInvMaxUses(e.target.value)} placeholder={t("cm_unlimited")} data-testid="input-invite-max-uses" />
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Expiry Date <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                    <Label>{t("cm_expiryDate")} <span className="text-muted-foreground text-xs">({t("cm_optional")})</span></Label>
                     <Input type="datetime-local" value={invExpiry} onChange={e => setInvExpiry(e.target.value)} data-testid="input-invite-expiry" />
                   </div>
                   <Button onClick={createInvitation} disabled={creatingInv} style={{ backgroundColor: "#1a2744" }} data-testid="button-generate-invitation">
-                    {creatingInv ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating…</> : "Generate Invitation Code"}
+                    {creatingInv ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("cm_generating")}</> : t("cm_generateInvitationCode")}
                   </Button>
                 </CardContent>
               </Card>
@@ -1048,10 +1051,10 @@ export default function ChurchAdminPage() {
 
             <div className="space-y-3">
               <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#7a7570" }}>
-                {invitations?.filter(i => i.isActive).length ?? 0} Active Invitation{(invitations?.filter(i => i.isActive).length ?? 0) !== 1 ? "s" : ""}
+                {invitations?.filter(i => i.isActive).length ?? 0} {t("cm_activeInvitations")}{(invitations?.filter(i => i.isActive).length ?? 0) !== 1 ? "s" : ""}
               </h3>
               {!invitations?.length ? (
-                <p className="text-sm text-center py-6" style={{ color: "#7a7570" }}>No invitations yet. Create one to invite members.</p>
+                <p className="text-sm text-center py-6" style={{ color: "#7a7570" }}>{t("cm_noInvitationsYet")}</p>
               ) : invitations.map(inv => (
                 <Card key={inv.id} className={`border-0 shadow-sm ${!inv.isActive ? "opacity-50" : ""}`} style={{ backgroundColor: "#fff" }}>
                   <CardContent className="pt-4 pb-4 space-y-3">
@@ -1067,12 +1070,12 @@ export default function ChurchAdminPage() {
                               {(inv as any).invitationType}
                             </Badge>
                           )}
-                          {!inv.isActive && <Badge variant="secondary" className="text-xs">Inactive</Badge>}
+                          {!inv.isActive && <Badge variant="secondary" className="text-xs">{t("cm_inactive")}</Badge>}
                         </div>
                         <div className="flex flex-wrap gap-3 text-xs" style={{ color: "#7a7570" }}>
                           <span className="flex items-center gap-1">
                             <Users className="w-3 h-3" />
-                            {(inv as any).approvedUses ?? inv.usedCount}{inv.maxUses ? `/${inv.maxUses}` : ""} approved
+                            {(inv as any).approvedUses ?? inv.usedCount}{inv.maxUses ? `/${inv.maxUses}` : ""} {t("cm_approved")}
                           </span>
                           {(inv as any).targetGroupName && (
                             <span className="flex items-center gap-1">→ {(inv as any).targetGroupName}</span>
@@ -1085,13 +1088,13 @@ export default function ChurchAdminPage() {
                       {inv.isActive && (
                         <div className="flex gap-1.5 flex-shrink-0 flex-wrap justify-end">
                           <Button size="sm" variant="outline" onClick={() => copyInviteCode(inv.inviteCode)} data-testid={`button-copy-code-${inv.id}`}>
-                            <Copy className="w-3 h-3 mr-1" />Code
+                            <Copy className="w-3 h-3 mr-1" />{t("cm_code")}
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => copyInviteLink(inv.inviteCode)} data-testid={`button-copy-link-${inv.id}`}>
-                            <Copy className="w-3 h-3 mr-1" />Link
+                            <Copy className="w-3 h-3 mr-1" />{t("cm_link")}
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => shareInvite(inv.inviteCode, church?.name ?? "")} data-testid={`button-share-invite-${inv.id}`}>
-                            <Share2 className="w-3 h-3 mr-1" />Share
+                            <Share2 className="w-3 h-3 mr-1" />{t("cm_share")}
                           </Button>
                           <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-amber-600"
                             title="Deactivate (keep record)"
@@ -1120,50 +1123,50 @@ export default function ChurchAdminPage() {
           <div className="space-y-5">
             <div className="flex justify-end">
               <Button onClick={() => setShowSermonForm(v => !v)} style={{ backgroundColor: "#1a2744" }} data-testid="button-add-sermon">
-                <Plus className="w-4 h-4 mr-1.5" />{showSermonForm ? "Cancel" : "Add Sermon"}
+                <Plus className="w-4 h-4 mr-1.5" />{showSermonForm ? t("cm_cancel") : t("cm_addSermon")}
               </Button>
             </div>
             {showSermonForm && (
               <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
-                <CardHeader className="pb-3"><CardTitle className="text-base" style={{ color: "#1a2744" }}>New Sermon</CardTitle></CardHeader>
+                <CardHeader className="pb-3"><CardTitle className="text-base" style={{ color: "#1a2744" }}>{t("cm_newSermon")}</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5"><Label>Title *</Label>
+                    <div className="space-y-1.5"><Label>{t("cm_sermonTitleLabel")} *</Label>
                       <Input value={sermonForm.title} onChange={e => setSermonForm(f => ({ ...f, title: e.target.value }))} data-testid="input-sermon-title" /></div>
-                    <div className="space-y-1.5"><Label>Speaker</Label>
+                    <div className="space-y-1.5"><Label>{t("cm_speaker")}</Label>
                       <Input value={sermonForm.speakerName} onChange={e => setSermonForm(f => ({ ...f, speakerName: e.target.value }))} /></div>
-                    <div className="space-y-1.5"><Label>Bible Reference</Label>
+                    <div className="space-y-1.5"><Label>{t("cm_bibleReference")}</Label>
                       <Input value={sermonForm.bibleReference} onChange={e => setSermonForm(f => ({ ...f, bibleReference: e.target.value }))} placeholder="e.g. John 3:16" /></div>
-                    <div className="space-y-1.5"><Label>Sermon Date</Label>
+                    <div className="space-y-1.5"><Label>{t("cm_sermonDate")}</Label>
                       <Input type="date" value={sermonForm.sermonDate} onChange={e => setSermonForm(f => ({ ...f, sermonDate: e.target.value }))} /></div>
-                    <div className="space-y-1.5"><Label>Video URL</Label>
+                    <div className="space-y-1.5"><Label>{t("cm_videoUrl")}</Label>
                       <Input type="url" value={sermonForm.videoUrl} onChange={e => setSermonForm(f => ({ ...f, videoUrl: e.target.value }))} placeholder="YouTube, Vimeo, etc." /></div>
-                    <div className="space-y-1.5"><Label>Audio URL</Label>
+                    <div className="space-y-1.5"><Label>{t("cm_audioUrl")}</Label>
                       <Input type="url" value={sermonForm.audioUrl} onChange={e => setSermonForm(f => ({ ...f, audioUrl: e.target.value }))} /></div>
-                    <div className="space-y-1.5"><Label>PDF Notes URL</Label>
+                    <div className="space-y-1.5"><Label>{t("cm_pdfNotesUrl")}</Label>
                       <Input value={sermonForm.pdfNotesUrl} onChange={e => setSermonForm(f => ({ ...f, pdfNotesUrl: e.target.value }))} placeholder="Link to sermon notes PDF" /></div>
-                    <div className="space-y-1.5"><Label>Outline URL</Label>
+                    <div className="space-y-1.5"><Label>{t("cm_outlineUrl")}</Label>
                       <Input value={sermonForm.outlineUrl} onChange={e => setSermonForm(f => ({ ...f, outlineUrl: e.target.value }))} placeholder="Link to outline document" /></div>
-                    <div className="space-y-1.5"><Label>Cover Image URL</Label>
+                    <div className="space-y-1.5"><Label>{t("cm_coverImageUrl")}</Label>
                       <Input value={sermonForm.imageUrl} onChange={e => setSermonForm(f => ({ ...f, imageUrl: e.target.value }))} placeholder="https://..." /></div>
-                    <div className="space-y-1.5"><Label>Scheduled Date</Label>
+                    <div className="space-y-1.5"><Label>{t("cm_scheduledDate")}</Label>
                       <Input type="date" value={sermonForm.scheduledDate} onChange={e => setSermonForm(f => ({ ...f, scheduledDate: e.target.value }))} /></div>
                   </div>
-                  <div className="space-y-1.5"><Label>Description / Notes</Label>
+                  <div className="space-y-1.5"><Label>{t("cm_descriptionNotes")}</Label>
                     <Textarea value={sermonForm.description} onChange={e => setSermonForm(f => ({ ...f, description: e.target.value }))} rows={3} /></div>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={sermonForm.isPublished} onChange={e => setSermonForm(f => ({ ...f, isPublished: e.target.checked }))} className="rounded" />
-                    <span className="text-sm">Published (visible to members)</span>
+                    <span className="text-sm">{t("cm_publishedVisible")}</span>
                   </label>
                   <Button onClick={createSermon} disabled={addingSermon || !sermonForm.title.trim()} style={{ backgroundColor: "#1a2744" }}>
-                    {addingSermon ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Adding…</> : "Add Sermon"}
+                    {addingSermon ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("cm_adding")}</> : t("cm_addSermon")}
                   </Button>
                 </CardContent>
               </Card>
             )}
             <div className="space-y-3">
               {!sermons?.length ? (
-                <p className="text-sm text-center py-8" style={{ color: "#7a7570" }}>No sermons yet. Add your first one above.</p>
+                <p className="text-sm text-center py-8" style={{ color: "#7a7570" }}>{t("cm_noSermonsYet")}</p>
               ) : sermons.map(s => (
                 <Card key={s.id} className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
                   <CardContent className="pt-4 pb-4 flex items-center gap-4">
@@ -1191,47 +1194,47 @@ export default function ChurchAdminPage() {
           <div className="space-y-5">
             <div className="flex justify-end">
               <Button onClick={() => setShowAnnForm(v => !v)} style={{ backgroundColor: "#1a2744" }} data-testid="button-add-announcement">
-                <Plus className="w-4 h-4 mr-1.5" />{showAnnForm ? "Cancel" : "New Announcement"}
+                <Plus className="w-4 h-4 mr-1.5" />{showAnnForm ? t("cm_cancel") : t("cm_newAnnouncement")}
               </Button>
             </div>
             {showAnnForm && (
               <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
-                <CardHeader className="pb-3"><CardTitle className="text-base" style={{ color: "#1a2744" }}>New Announcement</CardTitle></CardHeader>
+                <CardHeader className="pb-3"><CardTitle className="text-base" style={{ color: "#1a2744" }}>{t("cm_newAnnouncement")}</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-1.5"><Label>Title *</Label>
+                  <div className="space-y-1.5"><Label>{t("cm_title")} *</Label>
                     <Input value={annForm.title} onChange={e => setAnnForm(f => ({ ...f, title: e.target.value }))} data-testid="input-ann-title" /></div>
-                  <div className="space-y-1.5"><Label>Body *</Label>
+                  <div className="space-y-1.5"><Label>{t("cm_body")} *</Label>
                     <Textarea value={annForm.body} onChange={e => setAnnForm(f => ({ ...f, body: e.target.value }))} rows={4} data-testid="input-ann-body" /></div>
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5"><Label>Image URL <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                    <div className="space-y-1.5"><Label>{t("cm_imageUrl")} <span className="text-muted-foreground text-xs">({t("cm_optional")})</span></Label>
                       <Input value={annForm.imageUrl} onChange={e => setAnnForm(f => ({ ...f, imageUrl: e.target.value }))} placeholder="https://..." /></div>
-                    <div className="space-y-1.5"><Label>PDF URL <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                    <div className="space-y-1.5"><Label>{t("cm_pdfUrl")} <span className="text-muted-foreground text-xs">({t("cm_optional")})</span></Label>
                       <Input value={annForm.pdfUrl} onChange={e => setAnnForm(f => ({ ...f, pdfUrl: e.target.value }))} placeholder="Link to PDF" /></div>
-                    <div className="space-y-1.5"><Label>External Link <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                    <div className="space-y-1.5"><Label>{t("cm_externalLink")} <span className="text-muted-foreground text-xs">({t("cm_optional")})</span></Label>
                       <Input value={annForm.externalLink} onChange={e => setAnnForm(f => ({ ...f, externalLink: e.target.value }))} placeholder="https://..." /></div>
-                    <div className="space-y-1.5"><Label>Expiry Date <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                    <div className="space-y-1.5"><Label>{t("cm_expiryDate")} <span className="text-muted-foreground text-xs">({t("cm_optional")})</span></Label>
                       <Input type="datetime-local" value={annForm.expiresAt} onChange={e => setAnnForm(f => ({ ...f, expiresAt: e.target.value }))} /></div>
                   </div>
                   <div className="flex items-center gap-2">
                     <input type="checkbox" id="pin-ann" checked={annForm.isPinned} onChange={e => setAnnForm(f => ({ ...f, isPinned: e.target.checked }))} className="rounded" />
-                    <Label htmlFor="pin-ann">Pin to top</Label>
+                    <Label htmlFor="pin-ann">{t("cm_pinToTop")}</Label>
                   </div>
                   <Button onClick={createAnnouncement} disabled={!annForm.title.trim() || !annForm.body.trim()} style={{ backgroundColor: "#1a2744" }}>
-                    Publish Announcement
+                    {t("cm_publishAnnouncement")}
                   </Button>
                 </CardContent>
               </Card>
             )}
             <div className="space-y-3">
               {!announcements?.length ? (
-                <p className="text-sm text-center py-8" style={{ color: "#7a7570" }}>No announcements yet.</p>
+                <p className="text-sm text-center py-8" style={{ color: "#7a7570" }}>{t("cm_noAnnouncementsYet")}</p>
               ) : announcements.map(a => (
                 <Card key={a.id} className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
                   <CardContent className="pt-4 pb-4 flex items-start gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         <p className="font-semibold text-sm" style={{ color: "#1a2744" }}>{a.title}</p>
-                        {a.isPinned && <Badge className="text-xs" style={{ backgroundColor: "#b8962e20", color: "#b8962e", border: "1px solid #b8962e30" }}>Pinned</Badge>}
+                        {a.isPinned && <Badge className="text-xs" style={{ backgroundColor: "#b8962e20", color: "#b8962e", border: "1px solid #b8962e30" }}>{t("cm_pinned")}</Badge>}
                       </div>
                       <p className="text-xs line-clamp-2" style={{ color: "#5a5450" }}>{a.body}</p>
                       <p className="text-xs mt-1" style={{ color: "#9a9080" }}>{new Date(a.createdAt!).toLocaleDateString()}</p>
@@ -1260,7 +1263,7 @@ export default function ChurchAdminPage() {
                   <div className="flex items-center gap-2">
                     <ClockIcon className="w-4 h-4 text-amber-600" />
                     <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">
-                      {pending.length} Pending Approval{pending.length !== 1 ? "s" : ""}
+                      {pending.length} {t("cm_pendingApprovals")}{pending.length !== 1 ? "s" : ""}
                     </p>
                   </div>
                   {pending.map(m => (
@@ -1281,12 +1284,12 @@ export default function ChurchAdminPage() {
                           <Button size="sm" onClick={() => approveMember.mutate(m.id)} disabled={approveMember.isPending}
                             className="h-8" style={{ backgroundColor: "#16a34a" }}
                             data-testid={`button-approve-member-${m.id}`}>
-                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />Approve
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />{t("cm_approve")}
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => { if (confirm(`Decline ${m.displayName ?? m.email}'s request?`)) declineMember.mutate(m.id); }}
                             disabled={declineMember.isPending} className="h-8 text-red-600 border-red-200 hover:bg-red-50"
                             data-testid={`button-decline-member-${m.id}`}>
-                            <XCircle className="w-3.5 h-3.5 mr-1" />Decline
+                            <XCircle className="w-3.5 h-3.5 mr-1" />{t("cm_decline")}
                           </Button>
                         </div>
                       </CardContent>
@@ -1299,10 +1302,10 @@ export default function ChurchAdminPage() {
             {/* Active Members */}
             <div className="space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#7a7570" }}>
-                {members?.filter(m => m.status === "active").length ?? 0} Active Members
+                {members?.filter(m => m.status === "active").length ?? 0} {t("cm_activeMembers")}
               </p>
               {!members?.filter(m => m.status === "active").length ? (
-                <p className="text-sm text-center py-8" style={{ color: "#7a7570" }}>No active members yet.</p>
+                <p className="text-sm text-center py-8" style={{ color: "#7a7570" }}>{t("cm_noActiveMembersYet")}</p>
               ) : members?.filter(m => m.status === "active").map(m => {
                 const isCurrentUser = m.firebaseUid === user?.uid;
                 const canManage = !isCurrentUser && m.role !== "owner";
@@ -1316,7 +1319,7 @@ export default function ChurchAdminPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-medium text-sm truncate" style={{ color: "#1a2744" }}>{m.displayName ?? m.email}</span>
-                          {isCurrentUser && <Badge variant="outline" className="text-xs py-0 px-1.5 flex-shrink-0">You</Badge>}
+                          {isCurrentUser && <Badge variant="outline" className="text-xs py-0 px-1.5 flex-shrink-0">{t("cm_youLabel")}</Badge>}
                         </div>
                         <p className="text-xs truncate" style={{ color: "#7a7570" }}>{m.email}</p>
                       </div>
@@ -1357,10 +1360,10 @@ export default function ChurchAdminPage() {
         {activeTab === "prayer" && (
           <div className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#7a7570" }}>
-              All Prayer Requests (admin view — including confidential)
+              {t("cm_allPrayerRequests")}
             </p>
             {!prayers?.length ? (
-              <p className="text-sm text-center py-8" style={{ color: "#7a7570" }}>No prayer requests yet.</p>
+              <p className="text-sm text-center py-8" style={{ color: "#7a7570" }}>{t("cm_noPrayerRequestsYet")}</p>
             ) : prayers.map(pr => (
               <Card key={pr.id} className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
                 <CardContent className="pt-4 pb-4 flex items-start gap-4">
@@ -1369,18 +1372,18 @@ export default function ChurchAdminPage() {
                       <p className="font-semibold text-sm" style={{ color: "#1a2744" }}>{pr.title}</p>
                       {pr.isConfidential && (
                         <Badge className="text-xs gap-1" style={{ backgroundColor: "#7a152015", color: "#7a1520", border: "1px solid #7a152020" }}>
-                          Confidential
+                          {t("cm_confidential")}
                         </Badge>
                       )}
                       {pr.status === "answered" && (
                         <Badge className="text-xs" style={{ backgroundColor: "#1a574420", color: "#1a5744", border: "1px solid #1a574430" }}>
-                          Answered
+                          {t("cm_answered")}
                         </Badge>
                       )}
                     </div>
                     <p className="text-xs" style={{ color: "#5a5450" }}>{pr.body}</p>
                     <p className="text-xs mt-1" style={{ color: "#9a9080" }}>
-                      {pr.displayName ?? "Anonymous"} · {pr.prayerCount} praying · {new Date(pr.createdAt!).toLocaleDateString()}
+                      {pr.displayName ?? t("cm_anonymous")} · {pr.prayerCount} {t("cm_praying")} · {new Date(pr.createdAt!).toLocaleDateString()}
                     </p>
                   </div>
                   <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive flex-shrink-0"
@@ -1400,10 +1403,10 @@ export default function ChurchAdminPage() {
             {/* Summary stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: "Members", count: members?.length },
-                { label: "Sermons", count: sermons?.length },
-                { label: "Prayer Requests", count: prayers?.length },
-                { label: "Announcements", count: announcements?.length },
+                { label: t("cm_membersTab"), count: members?.length },
+                { label: t("cm_sermons"), count: sermons?.length },
+                { label: t("cm_prayerTab"), count: prayers?.length },
+                { label: t("cm_announcements"), count: announcements?.length },
               ].map(stat => (
                 <Card key={stat.label} className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
                   <CardContent className="pt-4 pb-4 px-4">
@@ -1415,9 +1418,9 @@ export default function ChurchAdminPage() {
             </div>
 
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "#7a7570" }}>Recent Activity</p>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "#7a7570" }}>{t("cm_recentActivity")}</p>
               {!activity?.length ? (
-                <p className="text-sm text-center py-8" style={{ color: "#7a7570" }}>No activity recorded yet.</p>
+                <p className="text-sm text-center py-8" style={{ color: "#7a7570" }}>{t("cm_noActivityYet")}</p>
               ) : (
                 <div className="space-y-2">
                   {activity.slice(0, 50).map(act => (
@@ -1454,14 +1457,14 @@ export default function ChurchAdminPage() {
             <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2" style={{ color: "#1a2744" }}>
-                  <HandCoins className="w-4 h-4" />Online Giving Settings
+                  <HandCoins className="w-4 h-4" />{t("cm_onlineGivingSettings")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: "#f8f4ee" }}>
                   <div>
-                    <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>Enable Online Giving</p>
-                    <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>Allow members and visitors to give online via this church page</p>
+                    <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>{t("cm_enableOnlineGiving")}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>{t("cm_enableOnlineGivingDesc")}</p>
                   </div>
                   <button
                     onClick={() => setGivingSettingsForm(f => ({ ...f, isEnabled: !(givingSettingsForm.isEnabled ?? givingSettings?.isEnabled ?? false) }))}
@@ -1475,7 +1478,7 @@ export default function ChurchAdminPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label>Currency</Label>
+                  <Label>{t("cm_currency")}</Label>
                   <select
                     className="w-full border rounded-md px-3 py-2 text-sm"
                     style={{ borderColor: "#e8e3dc" }}
@@ -1491,11 +1494,11 @@ export default function ChurchAdminPage() {
                     <option value="GHS">GHS — Ghanaian Cedi</option>
                     <option value="ZAR">ZAR — South African Rand</option>
                   </select>
-                  <p className="text-xs" style={{ color: "#9a9080" }}>Payments are processed in USD by Stripe. Other currencies shown as approximate.</p>
+                  <p className="text-xs" style={{ color: "#9a9080" }}>{t("cm_currencyNote")}</p>
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label>Giving Statement <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                  <Label>{t("cm_givingStatement")} <span className="text-muted-foreground text-xs">({t("cm_optional")})</span></Label>
                   <Textarea
                     placeholder="e.g. Your generosity helps us fulfill our mission. All gifts are tax-deductible."
                     value={givingSettingsForm.givingStatement ?? givingSettings?.givingStatement ?? ""}
@@ -1506,8 +1509,8 @@ export default function ChurchAdminPage() {
                 </div>
 
                 <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "#fffbf0", border: "1px solid #b8962e30" }}>
-                  <p className="font-semibold" style={{ color: "#92400e" }}>Platform Fee</p>
-                  <p className="mt-1" style={{ color: "#92400e" }}>A small platform fee (configured by the platform admin) is deducted from each gift, along with the Stripe processing fee. Your church receives the remainder. Automatic bank transfer requires Stripe Connect setup — contact support to enable it.</p>
+                  <p className="font-semibold" style={{ color: "#92400e" }}>{t("cm_platformFee")}</p>
+                  <p className="mt-1" style={{ color: "#92400e" }}>{t("cm_platformFeeDesc")}</p>
                 </div>
 
                 <Button
@@ -1516,7 +1519,7 @@ export default function ChurchAdminPage() {
                   style={{ backgroundColor: "#1a2744" }}
                   data-testid="button-save-giving-settings"
                 >
-                  {savingGivingSettings ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : "Save Settings"}
+                  {savingGivingSettings ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("cm_saving")}</> : t("cm_saveSettings")}
                 </Button>
               </CardContent>
             </Card>
@@ -1526,7 +1529,7 @@ export default function ChurchAdminPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <CardTitle className="text-base flex items-center gap-2" style={{ color: "#1a2744" }}>
-                    <DollarSign className="w-4 h-4" />Giving Categories
+                    <DollarSign className="w-4 h-4" />{t("cm_givingCategories")}
                   </CardTitle>
                   {!givingCategories?.length && (
                     <Button
@@ -1542,20 +1545,20 @@ export default function ChurchAdminPage() {
                           });
                           if (r.ok) {
                             qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "giving", "categories"] });
-                            toast({ title: "Default categories added" });
+                            toast({ title: t("cm_defaultCategoriesAdded") });
                           }
-                        } catch { toast({ title: "Error seeding categories", variant: "destructive" }); }
+                        } catch { toast({ title: t("cm_errorSeedingCategories"), variant: "destructive" }); }
                       }}
                       data-testid="button-seed-categories"
                     >
-                      <Plus className="w-3.5 h-3.5 mr-1" />Seed Defaults
+                      <Plus className="w-3.5 h-3.5 mr-1" />{t("cm_seedDefaults")}
                     </Button>
                   )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 {!givingCategories?.length ? (
-                  <p className="text-sm py-2" style={{ color: "#7a7570" }}>No categories yet. Click "Seed Defaults" to add Tithes, Offering, Thanksgiving, Building Fund, Mission, Welfare, and more.</p>
+                  <p className="text-sm py-2" style={{ color: "#7a7570" }}>{t("cm_noCategoriesYet")}</p>
                 ) : (
                   <div className="space-y-2">
                     {givingCategories.map(cat => (
@@ -1565,12 +1568,12 @@ export default function ChurchAdminPage() {
                           {cat.description && <p className="text-xs mt-0.5 truncate" style={{ color: "#7a7570" }}>{cat.description}</p>}
                         </div>
                         <Badge variant={cat.isActive ? "default" : "secondary"} className="text-xs flex-shrink-0">
-                          {cat.isActive ? "Active" : "Hidden"}
+                          {cat.isActive ? t("cm_active") : t("cm_hidden")}
                         </Badge>
                         <button onClick={() => toggleCategory(cat)} className="text-xs px-2 py-1 rounded"
                           style={{ color: "#7a7570", border: "1px solid #e8e3dc" }}
                           data-testid={`button-toggle-category-${cat.id}`}>
-                          {cat.isActive ? "Hide" : "Show"}
+                          {cat.isActive ? t("cm_hide") : t("cm_show")}
                         </button>
                         <button onClick={() => deleteCategory(cat.id)}
                           className="p-1 rounded hover:bg-red-50 transition-colors"
@@ -1583,15 +1586,15 @@ export default function ChurchAdminPage() {
                 )}
 
                 <div className="border-t pt-4 space-y-3" style={{ borderColor: "#e8e3dc" }}>
-                  <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>Add Category</p>
+                  <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>{t("cm_addCategory")}</p>
                   <div className="grid sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <Label>Name <span className="text-red-500">*</span></Label>
+                      <Label>{t("cm_name")} <span className="text-red-500">*</span></Label>
                       <Input value={newCatName} onChange={e => setNewCatName(e.target.value)}
                         placeholder="e.g. Tithe, Building Fund" data-testid="input-category-name" />
                     </div>
                     <div className="space-y-1.5">
-                      <Label>Description <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                      <Label>{t("cm_description")} <span className="text-muted-foreground text-xs">({t("cm_optional")})</span></Label>
                       <Input value={newCatDesc} onChange={e => setNewCatDesc(e.target.value)}
                         placeholder="Brief description" data-testid="input-category-desc" />
                     </div>
@@ -1599,7 +1602,7 @@ export default function ChurchAdminPage() {
                   <Button onClick={addCategory} disabled={addingCat || !newCatName.trim()} variant="outline"
                     style={{ borderColor: "#1a2744", color: "#1a2744" }} data-testid="button-add-category">
                     {addingCat ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
-                    Add Category
+                    {t("cm_addCategory")}
                   </Button>
                 </div>
               </CardContent>
@@ -1609,29 +1612,29 @@ export default function ChurchAdminPage() {
             <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2" style={{ color: "#1a2744" }}>
-                  <Building2 className="w-4 h-4" />Payout Details
+                  <Building2 className="w-4 h-4" />{t("cm_payoutDetails")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "#f0f8ff", border: "1px solid #3b82f620" }}>
-                  <p style={{ color: "#1e40af" }}>These details are used by the platform admin to process payouts to your church. Your account number is stored securely and masked in the UI.</p>
+                  <p style={{ color: "#1e40af" }}>{t("cm_payoutDetailsNote")}</p>
                 </div>
 
                 {/* Country + Legal Name */}
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label>Legal Name (of church)</Label>
+                    <Label>{t("cm_legalName")}</Label>
                     <Input value={payoutForm.legalName ?? payoutConfig?.legalName ?? ""}
                       onChange={e => setPayoutForm(f => ({ ...f, legalName: e.target.value }))}
                       placeholder="Registered legal name" data-testid="input-payout-legal-name" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Country</Label>
+                    <Label>{t("cm_country")}</Label>
                     <select className="w-full border rounded-md px-3 py-2 text-sm" style={{ borderColor: "#e8e3dc" }}
                       value={payoutForm.country ?? payoutConfig?.country ?? ""}
                       onChange={e => setPayoutForm(f => ({ ...f, country: e.target.value }))}
                       data-testid="select-payout-country">
-                      <option value="">Select country…</option>
+                      <option value="">{t("cm_selectCountry")}</option>
                       <option value="US">🇺🇸 United States</option>
                       <option value="GB">🇬🇧 United Kingdom</option>
                       <option value="NG">🇳🇬 Nigeria</option>
@@ -1644,7 +1647,7 @@ export default function ChurchAdminPage() {
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Contact Email</Label>
+                    <Label>{t("cm_contactEmail")}</Label>
                     <Input type="email" value={payoutForm.contactEmail ?? payoutConfig?.contactEmail ?? ""}
                       onChange={e => setPayoutForm(f => ({ ...f, contactEmail: e.target.value }))} />
                   </div>
@@ -1656,19 +1659,19 @@ export default function ChurchAdminPage() {
                     <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>🇳🇬 Nigeria — Bank Transfer</p>
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label>Bank Name</Label>
+                        <Label>{t("cm_bankName")}</Label>
                         <Input value={payoutForm.bankName ?? payoutConfig?.bankName ?? ""}
                           onChange={e => setPayoutForm(f => ({ ...f, bankName: e.target.value }))}
                           placeholder="e.g. GTBank, First Bank, Zenith" />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>Account Name</Label>
+                        <Label>{t("cm_accountName")}</Label>
                         <Input value={payoutForm.accountHolderName ?? payoutConfig?.accountHolderName ?? ""}
                           onChange={e => setPayoutForm(f => ({ ...f, accountHolderName: e.target.value }))}
                           placeholder="Account holder name" />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>Account Number (10 digits)</Label>
+                        <Label>{t("cm_accountNumber")} (10 digits)</Label>
                         <Input value={payoutForm.accountNumber ?? ""}
                           onChange={e => setPayoutForm(f => ({ ...f, accountNumber: e.target.value }))}
                           placeholder={payoutConfig?.accountNumber ? "•••• (saved)" : "10-digit NUBAN"}
@@ -1676,10 +1679,10 @@ export default function ChurchAdminPage() {
                       </div>
                     </div>
                     <div className="border-t pt-3" style={{ borderColor: "#e8e3dc" }}>
-                      <p className="text-sm font-semibold mb-3" style={{ color: "#1a2744" }}>Mobile Money <span className="font-normal text-xs text-muted-foreground">(optional)</span></p>
+                      <p className="text-sm font-semibold mb-3" style={{ color: "#1a2744" }}>{t("cm_mobileMoney")} <span className="font-normal text-xs text-muted-foreground">({t("cm_optional")})</span></p>
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <Label>Provider</Label>
+                          <Label>{t("cm_provider")}</Label>
                           <select className="w-full border rounded-md px-3 py-2 text-sm" style={{ borderColor: "#e8e3dc" }}
                             value={payoutForm.mobileMoneyProvider ?? payoutConfig?.mobileMoneyProvider ?? ""}
                             onChange={e => setPayoutForm(f => ({ ...f, mobileMoneyProvider: e.target.value }))}>
@@ -1690,7 +1693,7 @@ export default function ChurchAdminPage() {
                           </select>
                         </div>
                         <div className="space-y-1.5">
-                          <Label>Phone Number</Label>
+                          <Label>{t("cm_phoneNumber")}</Label>
                           <Input value={payoutForm.mobileMoneyNumber ?? payoutConfig?.mobileMoneyNumber ?? ""}
                             onChange={e => setPayoutForm(f => ({ ...f, mobileMoneyNumber: e.target.value }))}
                             placeholder="+234..." />
@@ -1705,36 +1708,36 @@ export default function ChurchAdminPage() {
                   <div className="border rounded-lg p-4 space-y-4" style={{ borderColor: "#e8e3dc", backgroundColor: "#fafaf8" }}>
                     <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>🇺🇸 United States — Bank / Digital</p>
                     <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "#fffbf0", border: "1px solid #b8962e30" }}>
-                      <p style={{ color: "#92400e" }}>For automatic payouts, Stripe Connect is required. Until connected, provide your bank or digital payment details below for manual reconciliation.</p>
+                      <p style={{ color: "#92400e" }}>{t("cm_stripeConnectNote")}</p>
                     </div>
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label>Bank Name</Label>
+                        <Label>{t("cm_bankName")}</Label>
                         <Input value={payoutForm.bankName ?? payoutConfig?.bankName ?? ""}
                           onChange={e => setPayoutForm(f => ({ ...f, bankName: e.target.value }))}
                           placeholder="e.g. Chase, Bank of America" />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>Account Holder Name</Label>
+                        <Label>{t("cm_accountHolderName")}</Label>
                         <Input value={payoutForm.accountHolderName ?? payoutConfig?.accountHolderName ?? ""}
                           onChange={e => setPayoutForm(f => ({ ...f, accountHolderName: e.target.value }))} />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>Account Number</Label>
+                        <Label>{t("cm_accountNumber")}</Label>
                         <Input value={payoutForm.accountNumber ?? ""}
                           onChange={e => setPayoutForm(f => ({ ...f, accountNumber: e.target.value }))}
                           placeholder={payoutConfig?.accountNumber ? "•••• (saved)" : "Account number"}
                           type="password" autoComplete="off" />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>ACH Routing Number</Label>
+                        <Label>{t("cm_achRoutingNumber")}</Label>
                         <Input value={payoutForm.routingNumber ?? payoutConfig?.routingNumber ?? ""}
                           onChange={e => setPayoutForm(f => ({ ...f, routingNumber: e.target.value }))}
                           placeholder="9-digit routing number" />
                       </div>
                     </div>
                     <div className="border-t pt-3" style={{ borderColor: "#e8e3dc" }}>
-                      <p className="text-sm font-semibold mb-3" style={{ color: "#1a2744" }}>Digital Payment Handles <span className="font-normal text-xs text-muted-foreground">(optional)</span></p>
+                      <p className="text-sm font-semibold mb-3" style={{ color: "#1a2744" }}>{t("cm_digitalPaymentHandles")} <span className="font-normal text-xs text-muted-foreground">({t("cm_optional")})</span></p>
                       <div className="grid sm:grid-cols-2 gap-3">
                         {["PayPal", "CashApp", "Venmo", "Zelle"].map(provider => (
                           <div key={provider} className="space-y-1.5">
@@ -1753,33 +1756,33 @@ export default function ChurchAdminPage() {
                 {/* UK / EU */}
                 {["GB", "CA", "AU", "OTHER"].includes(payoutForm.country ?? payoutConfig?.country ?? "") && (
                   <div className="border rounded-lg p-4 space-y-4" style={{ borderColor: "#e8e3dc", backgroundColor: "#fafaf8" }}>
-                    <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>Bank Details</p>
+                    <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>{t("cm_bankDetails")}</p>
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label>Bank Name</Label>
+                        <Label>{t("cm_bankName")}</Label>
                         <Input value={payoutForm.bankName ?? payoutConfig?.bankName ?? ""}
                           onChange={e => setPayoutForm(f => ({ ...f, bankName: e.target.value }))} />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>Account Holder Name</Label>
+                        <Label>{t("cm_accountHolderName")}</Label>
                         <Input value={payoutForm.accountHolderName ?? payoutConfig?.accountHolderName ?? ""}
                           onChange={e => setPayoutForm(f => ({ ...f, accountHolderName: e.target.value }))} />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>Account Number / IBAN</Label>
+                        <Label>{t("cm_accountNumberIban")}</Label>
                         <Input value={payoutForm.accountNumber ?? ""}
                           onChange={e => setPayoutForm(f => ({ ...f, accountNumber: e.target.value }))}
                           placeholder={payoutConfig?.accountNumber ? "•••• (saved)" : "Account / IBAN"}
                           type="password" autoComplete="off" />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>Sort Code / Routing</Label>
+                        <Label>{t("cm_sortCodeRouting")}</Label>
                         <Input value={payoutForm.routingNumber ?? payoutConfig?.routingNumber ?? ""}
                           onChange={e => setPayoutForm(f => ({ ...f, routingNumber: e.target.value }))}
                           placeholder="Sort code or routing number" />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>SWIFT / BIC</Label>
+                        <Label>{t("cm_swiftBic")}</Label>
                         <Input value={payoutForm.swiftBic ?? payoutConfig?.swiftBic ?? ""}
                           onChange={e => setPayoutForm(f => ({ ...f, swiftBic: e.target.value }))}
                           placeholder="e.g. BARCGB22" />
@@ -1791,20 +1794,20 @@ export default function ChurchAdminPage() {
                 {/* Africa (KE, GH, ZA) */}
                 {["KE", "GH", "ZA"].includes(payoutForm.country ?? payoutConfig?.country ?? "") && (
                   <div className="border rounded-lg p-4 space-y-4" style={{ borderColor: "#e8e3dc", backgroundColor: "#fafaf8" }}>
-                    <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>Bank + Mobile Money</p>
+                    <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>{t("cm_bankMobileMoney")}</p>
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label>Bank Name</Label>
+                        <Label>{t("cm_bankName")}</Label>
                         <Input value={payoutForm.bankName ?? payoutConfig?.bankName ?? ""}
                           onChange={e => setPayoutForm(f => ({ ...f, bankName: e.target.value }))} />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>Account Holder Name</Label>
+                        <Label>{t("cm_accountHolderName")}</Label>
                         <Input value={payoutForm.accountHolderName ?? payoutConfig?.accountHolderName ?? ""}
                           onChange={e => setPayoutForm(f => ({ ...f, accountHolderName: e.target.value }))} />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>Account Number</Label>
+                        <Label>{t("cm_accountNumber")}</Label>
                         <Input value={payoutForm.accountNumber ?? ""}
                           onChange={e => setPayoutForm(f => ({ ...f, accountNumber: e.target.value }))}
                           placeholder={payoutConfig?.accountNumber ? "•••• (saved)" : "Account number"}
@@ -1812,10 +1815,10 @@ export default function ChurchAdminPage() {
                       </div>
                     </div>
                     <div className="border-t pt-3" style={{ borderColor: "#e8e3dc" }}>
-                      <p className="text-sm font-semibold mb-3" style={{ color: "#1a2744" }}>Mobile Money</p>
+                      <p className="text-sm font-semibold mb-3" style={{ color: "#1a2744" }}>{t("cm_mobileMoney")}</p>
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <Label>Provider</Label>
+                          <Label>{t("cm_provider")}</Label>
                           <select className="w-full border rounded-md px-3 py-2 text-sm" style={{ borderColor: "#e8e3dc" }}
                             value={payoutForm.mobileMoneyProvider ?? payoutConfig?.mobileMoneyProvider ?? ""}
                             onChange={e => setPayoutForm(f => ({ ...f, mobileMoneyProvider: e.target.value }))}>
@@ -1828,7 +1831,7 @@ export default function ChurchAdminPage() {
                           </select>
                         </div>
                         <div className="space-y-1.5">
-                          <Label>Mobile Number</Label>
+                          <Label>{t("cm_mobileNumber")}</Label>
                           <Input value={payoutForm.mobileMoneyNumber ?? payoutConfig?.mobileMoneyNumber ?? ""}
                             onChange={e => setPayoutForm(f => ({ ...f, mobileMoneyNumber: e.target.value }))}
                             placeholder="+254..." />
@@ -1840,7 +1843,7 @@ export default function ChurchAdminPage() {
 
                 <Button onClick={savePayout} disabled={savingPayout} style={{ backgroundColor: "#1a2744" }}
                   data-testid="button-save-payout">
-                  {savingPayout ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : "Save Payout Details"}
+                  {savingPayout ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("cm_saving")}</> : t("cm_savePayoutDetails")}
                 </Button>
               </CardContent>
             </Card>
@@ -1849,22 +1852,22 @@ export default function ChurchAdminPage() {
             <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2" style={{ color: "#1a2744" }}>
-                  <ArrowDownToLine className="w-4 h-4" />Transaction History
+                  <ArrowDownToLine className="w-4 h-4" />{t("cm_transactionHistory")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {!transactions?.length ? (
-                  <p className="text-sm py-4 text-center" style={{ color: "#7a7570" }}>No transactions yet. Once giving is enabled and gifts are received, they will appear here.</p>
+                  <p className="text-sm py-4 text-center" style={{ color: "#7a7570" }}>{t("cm_noTransactionsYet")}</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr style={{ borderBottom: "1px solid #e8e3dc" }}>
-                          <th className="text-left py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>Date</th>
-                          <th className="text-left py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>Category</th>
-                          <th className="text-left py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>Donor</th>
-                          <th className="text-right py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>Amount</th>
-                          <th className="text-right py-2 text-xs font-semibold" style={{ color: "#7a7570" }}>Status</th>
+                          <th className="text-left py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>{t("cm_date")}</th>
+                          <th className="text-left py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>{t("cm_category")}</th>
+                          <th className="text-left py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>{t("cm_donor")}</th>
+                          <th className="text-right py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>{t("cm_amount")}</th>
+                          <th className="text-right py-2 text-xs font-semibold" style={{ color: "#7a7570" }}>{t("cm_status")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1875,7 +1878,7 @@ export default function ChurchAdminPage() {
                             </td>
                             <td className="py-2 pr-4 text-xs font-medium" style={{ color: "#1a2744" }}>{txn.categoryName}</td>
                             <td className="py-2 pr-4 text-xs" style={{ color: "#4a4540" }}>
-                              {txn.isAnonymous ? "Anonymous" : (txn.donorName ?? txn.donorEmail ?? "—")}
+                              {txn.isAnonymous ? t("cm_anonymous") : (txn.donorName ?? txn.donorEmail ?? "—")}
                             </td>
                             <td className="py-2 pr-4 text-xs text-right font-semibold" style={{ color: "#1a2744" }}>
                               ${(txn.grossAmount / 100).toFixed(2)}
@@ -1893,12 +1896,12 @@ export default function ChurchAdminPage() {
                     {transactions.length > 0 && (
                       <div className="mt-4 pt-3 border-t" style={{ borderColor: "#e8e3dc" }}>
                         <div className="flex justify-between text-sm font-semibold" style={{ color: "#1a2744" }}>
-                          <span>Total received ({transactions.filter(t => t.status === "completed").length} gifts)</span>
-                          <span>${(transactions.filter(t => t.status === "completed").reduce((s, t) => s + t.grossAmount, 0) / 100).toFixed(2)}</span>
+                          <span>{t("cm_totalReceived")} ({transactions.filter(txn2 => txn2.status === "completed").length} {t("cm_gifts")})</span>
+                          <span>${(transactions.filter(txn2 => txn2.status === "completed").reduce((s, txn2) => s + txn2.grossAmount, 0) / 100).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-xs mt-1" style={{ color: "#7a7570" }}>
-                          <span>Church net (after fees)</span>
-                          <span>${(transactions.filter(t => t.status === "completed").reduce((s, t) => s + t.churchNetAmount, 0) / 100).toFixed(2)}</span>
+                          <span>{t("cm_churchNet")}</span>
+                          <span>${(transactions.filter(txn2 => txn2.status === "completed").reduce((s, txn2) => s + txn2.churchNetAmount, 0) / 100).toFixed(2)}</span>
                         </div>
                       </div>
                     )}
@@ -1913,7 +1916,7 @@ export default function ChurchAdminPage() {
         {activeTab === "reports" && (
           <div className="space-y-5">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <h3 className="font-semibold" style={{ color: "#1a2744" }}>Giving Reports</h3>
+              <h3 className="font-semibold" style={{ color: "#1a2744" }}>{t("cm_givingReports")}</h3>
               {church && (
                 <a
                   href={`/api/churches/${church.id}/giving/export-csv`}
@@ -1922,7 +1925,7 @@ export default function ChurchAdminPage() {
                   data-testid="button-export-csv"
                 >
                   <ArrowDownToLine className="w-4 h-4" />
-                  Export CSV
+                  {t("cm_exportCsv")}
                 </a>
               )}
             </div>
@@ -1936,17 +1939,17 @@ export default function ChurchAdminPage() {
                 {/* Summary cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
-                    { label: "Today", data: givingReports.today },
-                    { label: "This Week", data: givingReports.week },
-                    { label: "This Month", data: givingReports.month },
-                    { label: "This Year", data: givingReports.year },
+                    { label: t("cm_today"), data: givingReports.today },
+                    { label: t("cm_thisWeek"), data: givingReports.week },
+                    { label: t("cm_thisMonth"), data: givingReports.month },
+                    { label: t("cm_thisYear"), data: givingReports.year },
                   ].map(({ label, data }) => (
                     <Card key={label} className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
                       <CardContent className="pt-4 pb-4 px-4">
                         <p className="text-xs font-semibold" style={{ color: "#7a7570" }}>{label}</p>
                         <p className="text-xl font-bold mt-1" style={{ color: "#1a2744" }}>${(data.gross / 100).toFixed(2)}</p>
                         <p className="text-xs mt-1" style={{ color: "#22c55e" }}>Net: ${(data.net / 100).toFixed(2)}</p>
-                        <p className="text-xs" style={{ color: "#9a9080" }}>{data.count} gift{data.count !== 1 ? "s" : ""}</p>
+                        <p className="text-xs" style={{ color: "#9a9080" }}>{data.count} {t("cm_gifts")}</p>
                       </CardContent>
                     </Card>
                   ))}
@@ -1955,23 +1958,23 @@ export default function ChurchAdminPage() {
                 {/* All-time totals */}
                 <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
                   <CardContent className="pt-5 pb-5 px-5">
-                    <p className="text-sm font-semibold mb-4" style={{ color: "#1a2744" }}>All-Time Totals</p>
+                    <p className="text-sm font-semibold mb-4" style={{ color: "#1a2744" }}>{t("cm_allTimeTotals")}</p>
                     <div className="grid sm:grid-cols-3 gap-4 text-center">
                       <div>
                         <p className="text-2xl font-bold" style={{ color: "#1a2744" }}>${(givingReports.all.gross / 100).toFixed(2)}</p>
-                        <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>Total Received</p>
+                        <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>{t("cm_totalReceived")}</p>
                       </div>
                       <div>
                         <p className="text-2xl font-bold" style={{ color: "#22c55e" }}>${(givingReports.all.net / 100).toFixed(2)}</p>
-                        <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>Church Net</p>
+                        <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>{t("cm_churchNet")}</p>
                       </div>
                       <div>
                         <p className="text-2xl font-bold" style={{ color: "#b8962e" }}>{givingReports.all.count}</p>
-                        <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>Total Gifts</p>
+                        <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>{t("cm_totalGifts")}</p>
                       </div>
                     </div>
                     <div className="mt-4 pt-3 border-t text-xs text-center" style={{ borderColor: "#e8e3dc", color: "#9a9080" }}>
-                      Platform fees: ${(givingReports.all.fee / 100).toFixed(2)}
+                      {t("cm_platformFees")}: ${(givingReports.all.fee / 100).toFixed(2)}
                     </div>
                   </CardContent>
                 </Card>
@@ -1980,18 +1983,18 @@ export default function ChurchAdminPage() {
                 {givingReports.recent.length > 0 && (
                   <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm" style={{ color: "#1a2744" }}>Recent Gifts</CardTitle>
+                      <CardTitle className="text-sm" style={{ color: "#1a2744" }}>{t("cm_recentGifts")}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                           <thead>
                             <tr style={{ borderBottom: "1px solid #e8e3dc" }}>
-                              <th className="text-left py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>Date</th>
-                              <th className="text-left py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>Category</th>
-                              <th className="text-left py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>Donor</th>
-                              <th className="text-right py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>Gross</th>
-                              <th className="text-right py-2 text-xs font-semibold" style={{ color: "#7a7570" }}>Net</th>
+                              <th className="text-left py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>{t("cm_date")}</th>
+                              <th className="text-left py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>{t("cm_category")}</th>
+                              <th className="text-left py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>{t("cm_donor")}</th>
+                              <th className="text-right py-2 pr-4 text-xs font-semibold" style={{ color: "#7a7570" }}>{t("cm_gross")}</th>
+                              <th className="text-right py-2 text-xs font-semibold" style={{ color: "#7a7570" }}>{t("cm_net")}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -2002,7 +2005,7 @@ export default function ChurchAdminPage() {
                                 </td>
                                 <td className="py-2 pr-4 text-xs" style={{ color: "#4a4540" }}>{txn.categoryName ?? "—"}</td>
                                 <td className="py-2 pr-4 text-xs" style={{ color: "#4a4540" }}>
-                                  {txn.isAnonymous ? "Anonymous" : (txn.donorName ?? txn.donorEmail ?? "—")}
+                                  {txn.isAnonymous ? t("cm_anonymous") : (txn.donorName ?? txn.donorEmail ?? "—")}
                                 </td>
                                 <td className="py-2 pr-4 text-xs text-right font-medium" style={{ color: "#1a2744" }}>
                                   ${(txn.grossAmount / 100).toFixed(2)}
@@ -2026,7 +2029,7 @@ export default function ChurchAdminPage() {
         {activeTab === "departments" && (
           <div className="space-y-5">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <h3 className="font-semibold" style={{ color: "#1a2744" }}>Department Management</h3>
+              <h3 className="font-semibold" style={{ color: "#1a2744" }}>{t("cm_departmentManagement")}</h3>
               <Button
                 size="sm"
                 className="gap-2"
@@ -2034,7 +2037,7 @@ export default function ChurchAdminPage() {
                 onClick={() => church && window.open(`/church/${church.slug}/departments`, "_self")}
                 data-testid="button-manage-departments"
               >
-                <Building2 className="w-4 h-4" />View All Departments
+                <Building2 className="w-4 h-4" />{t("cm_viewAllDepartments")}
               </Button>
             </div>
 
@@ -2053,9 +2056,9 @@ export default function ChurchAdminPage() {
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold" style={{ color: "#1a2744" }}>Public Church Website</h3>
+                <h3 className="font-semibold" style={{ color: "#1a2744" }}>{t("cm_publicChurchWebsite")}</h3>
                 <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>
-                  Customize your church's public website at{" "}
+                  {t("cm_customizeWebsiteAt")}{" "}
                   <a href={`/church/${church?.slug ?? ""}`} target="_blank" rel="noopener noreferrer"
                     className="font-medium underline" style={{ color: "#b8962e" }}>
                     /church/{church?.slug}
@@ -2067,7 +2070,7 @@ export default function ChurchAdminPage() {
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border"
                   style={{ borderColor: "#b8962e30", color: "#b8962e" }}
                   data-testid="button-view-public-website">
-                  <ExternalLink className="w-3.5 h-3.5" /> View Website
+                  <ExternalLink className="w-3.5 h-3.5" /> {t("cm_viewWebsite")}
                 </a>
               )}
             </div>
@@ -2077,8 +2080,8 @@ export default function ChurchAdminPage() {
               <CardContent className="pt-5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>Public Website</p>
-                    <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>Enable your church's public website</p>
+                    <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>{t("cm_publicWebsite")}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>{t("cm_enablePublicWebsiteDesc")}</p>
                   </div>
                   <button onClick={() => setWebsiteForm(f => ({ ...f, publicWebsiteEnabled: !f.publicWebsiteEnabled }))}
                     data-testid="toggle-public-website">
@@ -2093,22 +2096,22 @@ export default function ChurchAdminPage() {
             {/* Contact Info */}
             <Card className="border-0 shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base" style={{ color: "#1a2744" }}>Contact Information</CardTitle>
+                <CardTitle className="text-base" style={{ color: "#1a2744" }}>{t("cm_contactInformation")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>Pastor / Leader Name</label>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>{t("cm_pastorLeaderName")}</label>
                   <Input value={websiteForm.pastorName} onChange={e => setWebsiteForm(f => ({ ...f, pastorName: e.target.value }))}
                     placeholder="e.g. Pastor John Smith" data-testid="input-website-pastor-name" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>Phone</label>
+                    <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>{t("cm_phone")}</label>
                     <Input value={websiteForm.phone} onChange={e => setWebsiteForm(f => ({ ...f, phone: e.target.value }))}
                       placeholder="+1 555 000 0000" data-testid="input-website-phone" />
                   </div>
                   <div>
-                    <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>Email</label>
+                    <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>{t("cm_email")}</label>
                     <Input value={websiteForm.email} onChange={e => setWebsiteForm(f => ({ ...f, email: e.target.value }))}
                       placeholder="church@email.com" type="email" data-testid="input-website-email" />
                   </div>
@@ -2119,27 +2122,27 @@ export default function ChurchAdminPage() {
             {/* Welcome & Content */}
             <Card className="border-0 shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base" style={{ color: "#1a2744" }}>Content & Messaging</CardTitle>
+                <CardTitle className="text-base" style={{ color: "#1a2744" }}>{t("cm_contentMessaging")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>Welcome Message (Hero)</label>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>{t("cm_welcomeMessageHero")}</label>
                   <Textarea value={websiteForm.welcomeMessage} onChange={e => setWebsiteForm(f => ({ ...f, welcomeMessage: e.target.value }))}
                     placeholder="A warm welcome message shown on the homepage hero..." rows={2}
                     data-testid="input-website-welcome" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>Mission Statement</label>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>{t("cm_missionStatement")}</label>
                   <Textarea value={websiteForm.missionStatement} onChange={e => setWebsiteForm(f => ({ ...f, missionStatement: e.target.value }))}
                     placeholder="Our mission is to..." rows={2} data-testid="input-website-mission" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>Vision</label>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>{t("cm_vision")}</label>
                   <Textarea value={websiteForm.vision} onChange={e => setWebsiteForm(f => ({ ...f, vision: e.target.value }))}
                     placeholder="We envision a world where..." rows={2} data-testid="input-website-vision" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>Visitor Information</label>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>{t("cm_visitorInformation")}</label>
                   <Textarea value={websiteForm.visitorInfo} onChange={e => setWebsiteForm(f => ({ ...f, visitorInfo: e.target.value }))}
                     placeholder="What to expect when you visit us for the first time..." rows={3}
                     data-testid="input-website-visitor-info" />
@@ -2150,8 +2153,8 @@ export default function ChurchAdminPage() {
             {/* Service Times */}
             <Card className="border-0 shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base" style={{ color: "#1a2744" }}>Service Times</CardTitle>
-                <p className="text-xs" style={{ color: "#7a7570" }}>One per line: Day | Time | Type (e.g. "Sunday | 9:00 AM | Main Service")</p>
+                <CardTitle className="text-base" style={{ color: "#1a2744" }}>{t("cm_serviceTimes")}</CardTitle>
+                <p className="text-xs" style={{ color: "#7a7570" }}>{t("cm_serviceTimesNote")}</p>
               </CardHeader>
               <CardContent>
                 <Textarea value={websiteForm.serviceTimesRaw} onChange={e => setWebsiteForm(f => ({ ...f, serviceTimesRaw: e.target.value }))}
@@ -2163,22 +2166,22 @@ export default function ChurchAdminPage() {
             {/* Hero Image & Map */}
             <Card className="border-0 shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base" style={{ color: "#1a2744" }}>Media & Location</CardTitle>
+                <CardTitle className="text-base" style={{ color: "#1a2744" }}>{t("cm_mediaLocation")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>Hero Image URL</label>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>{t("cm_heroImageUrl")}</label>
                   <Input value={websiteForm.websiteHeroImage} onChange={e => setWebsiteForm(f => ({ ...f, websiteHeroImage: e.target.value }))}
                     placeholder="https://..." data-testid="input-website-hero-image" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>Google Maps Embed URL</label>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>{t("cm_googleMapsUrl")}</label>
                   <Input value={websiteForm.mapEmbedUrl} onChange={e => setWebsiteForm(f => ({ ...f, mapEmbedUrl: e.target.value }))}
                     placeholder="https://www.google.com/maps/embed?..." data-testid="input-website-map-url" />
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>
-                    Gallery Photos (one URL per line)
+                    {t("cm_galleryPhotos")}
                   </label>
                   <Textarea value={websiteForm.publicPhotosRaw} onChange={e => setWebsiteForm(f => ({ ...f, publicPhotosRaw: e.target.value }))}
                     placeholder={"https://example.com/photo1.jpg\nhttps://example.com/photo2.jpg"}
@@ -2190,7 +2193,7 @@ export default function ChurchAdminPage() {
             {/* Social Links */}
             <Card className="border-0 shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base" style={{ color: "#1a2744" }}>Social Media Links</CardTitle>
+                <CardTitle className="text-base" style={{ color: "#1a2744" }}>{t("cm_socialMediaLinks")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {[
@@ -2212,7 +2215,7 @@ export default function ChurchAdminPage() {
             {/* Load current values helper */}
             {church && (
               <div className="p-4 rounded-xl border" style={{ borderColor: "#ece8e0", backgroundColor: "#fafaf8" }}>
-                <p className="text-xs font-medium mb-2" style={{ color: "#7a7570" }}>Load current values from database</p>
+                <p className="text-xs font-medium mb-2" style={{ color: "#7a7570" }}>{t("cm_loadCurrentValues")}</p>
                 <Button size="sm" variant="outline"
                   onClick={() => setWebsiteForm({
                     pastorName: church.pastorName ?? "",
@@ -2234,7 +2237,7 @@ export default function ChurchAdminPage() {
                     publicPhotosRaw: church.publicPhotos?.join("\n") ?? "",
                   })}
                   data-testid="button-load-website-values">
-                  Load Current Values
+                  {t("cm_loadCurrentValues")}
                 </Button>
               </div>
             )}
@@ -2242,7 +2245,7 @@ export default function ChurchAdminPage() {
             <Button onClick={saveWebsite} disabled={savingWebsite}
               className="w-full text-white" style={{ backgroundColor: "#1a2744" }}
               data-testid="button-save-website-settings">
-              {savingWebsite ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : <><Globe className="w-4 h-4 mr-2" />Save Website Settings</>}
+              {savingWebsite ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("cm_saving")}</> : <><Globe className="w-4 h-4 mr-2" />{t("cm_saveWebsiteSettings")}</>}
             </Button>
           </div>
         )}

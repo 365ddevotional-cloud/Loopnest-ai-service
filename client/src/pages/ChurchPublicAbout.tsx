@@ -1,10 +1,12 @@
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useI18n } from "@/hooks/useI18n";
 import { ChurchPublicShell } from "@/components/ChurchPublicShell";
-import { Loader2, MapPin, Phone, Mail, Clock } from "lucide-react";
+import { Loader2, Clock } from "lucide-react";
 
 export default function ChurchPublicAbout() {
   const { slug } = useParams<{ slug: string }>();
+  const { t } = useI18n();
   const { data, isLoading } = useQuery<any>({ queryKey: [`/api/public/churches/${slug}`] });
 
   const church = data?.church ?? null;
@@ -14,11 +16,10 @@ export default function ChurchPublicAbout() {
   return (
     <ChurchPublicShell church={church}>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
-        {/* Header */}
         <div className="mb-10">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>Our Story</p>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>{t("cm_ourStory")}</p>
           <h1 className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>
-            About {church?.name ?? "Our Church"}
+            {t("cm_aboutUs")} {church?.name ?? ""}
           </h1>
         </div>
 
@@ -28,7 +29,6 @@ export default function ChurchPublicAbout() {
           </div>
         ) : (
           <>
-            {/* Hero banner */}
             {(church?.bannerUrl || church?.websiteHeroImage) && (
               <div className="rounded-2xl overflow-hidden mb-10 aspect-video max-h-64">
                 <img src={church.bannerUrl ?? church.websiteHeroImage} alt={church.name}
@@ -36,61 +36,57 @@ export default function ChurchPublicAbout() {
               </div>
             )}
 
-            {/* Identity */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
               {church?.denomination && (
                 <div className="p-5 rounded-2xl border bg-white text-center" style={{ borderColor: "#ece8e0" }}>
                   <p className="text-2xl mb-2">⛪</p>
-                  <p className="text-xs font-semibold uppercase tracking-wide mb-0.5" style={{ color: "#9a9080" }}>Denomination</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide mb-0.5" style={{ color: "#9a9080" }}>{t("cm_denominationLabel")}</p>
                   <p className="font-semibold text-sm" style={{ color: "#1a1a1a" }}>{church.denomination}</p>
                 </div>
               )}
               {church?.pastorName && (
                 <div className="p-5 rounded-2xl border bg-white text-center" style={{ borderColor: "#ece8e0" }}>
                   <p className="text-2xl mb-2">👤</p>
-                  <p className="text-xs font-semibold uppercase tracking-wide mb-0.5" style={{ color: "#9a9080" }}>Lead Pastor</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide mb-0.5" style={{ color: "#9a9080" }}>{t("cm_leadPastor")}</p>
                   <p className="font-semibold text-sm" style={{ color: "#1a1a1a" }}>{church.pastorName}</p>
                 </div>
               )}
               {church?.address && (
                 <div className="p-5 rounded-2xl border bg-white text-center" style={{ borderColor: "#ece8e0" }}>
                   <p className="text-2xl mb-2">📍</p>
-                  <p className="text-xs font-semibold uppercase tracking-wide mb-0.5" style={{ color: "#9a9080" }}>Location</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide mb-0.5" style={{ color: "#9a9080" }}>{t("cm_locationLabel")}</p>
                   <p className="font-semibold text-sm" style={{ color: "#1a1a1a" }}>{church.address}</p>
                 </div>
               )}
             </div>
 
-            {/* Description */}
             {church?.description && (
               <div className="mb-10">
-                <h2 className="text-xl font-bold mb-4" style={{ color: "#1a1a1a" }}>Who We Are</h2>
+                <h2 className="text-xl font-bold mb-4" style={{ color: "#1a1a1a" }}>{t("cm_whoWeAre")}</h2>
                 <p className="text-base leading-loose" style={{ color: "#6b6460" }}>{church.description}</p>
               </div>
             )}
 
-            {/* Mission & Vision */}
             {(church?.missionStatement || church?.vision) && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
                 {church.missionStatement && (
                   <div className="p-6 rounded-2xl border-l-4" style={{ backgroundColor: `${primary}06`, borderColor: primary }}>
-                    <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: primary }}>Our Mission</p>
+                    <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: primary }}>{t("cm_ourMission")}</p>
                     <p className="text-base leading-relaxed" style={{ color: "#3d3a36" }}>{church.missionStatement}</p>
                   </div>
                 )}
                 {church.vision && (
                   <div className="p-6 rounded-2xl border-l-4" style={{ backgroundColor: "#b8962e08", borderColor: "#b8962e" }}>
-                    <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#b8962e" }}>Our Vision</p>
+                    <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#b8962e" }}>{t("cm_ourVision")}</p>
                     <p className="text-base leading-relaxed" style={{ color: "#3d3a36" }}>{church.vision}</p>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Service Times */}
             {church?.serviceTimes && church.serviceTimes.length > 0 && (
               <div className="mb-12">
-                <h2 className="text-xl font-bold mb-5" style={{ color: "#1a1a1a" }}>Service Times</h2>
+                <h2 className="text-xl font-bold mb-5" style={{ color: "#1a1a1a" }}>{t("cm_serviceTimes")}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {church.serviceTimes.map((s: any, i: number) => (
                     <div key={i} className="flex items-center gap-4 p-4 rounded-xl border bg-white" style={{ borderColor: "#ece8e0" }}>
@@ -105,32 +101,30 @@ export default function ChurchPublicAbout() {
               </div>
             )}
 
-            {/* Visitor Info */}
             {church?.visitorInfo && (
               <div className="mb-12">
-                <h2 className="text-xl font-bold mb-4" style={{ color: "#1a1a1a" }}>Planning a Visit?</h2>
+                <h2 className="text-xl font-bold mb-4" style={{ color: "#1a1a1a" }}>{t("cm_planningVisit")}</h2>
                 <div className="p-6 rounded-2xl border bg-white" style={{ borderColor: "#ece8e0" }}>
                   <p className="text-sm leading-loose" style={{ color: "#6b6460" }}>{church.visitorInfo}</p>
                 </div>
               </div>
             )}
 
-            {/* CTA row */}
             <div className="flex flex-wrap gap-3 pt-6 border-t" style={{ borderColor: "#ece8e0" }}>
               <Link href={`${base}/visit`}
                 className="px-6 py-3 text-sm font-semibold rounded-xl text-white"
                 style={{ backgroundColor: primary }}>
-                Plan a Visit
+                {t("cm_planAVisit")}
               </Link>
               <Link href={`${base}/contact`}
                 className="px-6 py-3 text-sm font-semibold rounded-xl border"
                 style={{ borderColor: primary, color: primary }}>
-                Contact Us
+                {t("cm_contactUsHeading")}
               </Link>
               <Link href={`${base}/join-us`}
                 className="px-6 py-3 text-sm font-semibold rounded-xl border"
                 style={{ borderColor: "#ece8e0", color: "#6b6460" }}>
-                Join Our Church
+                {t("cm_joinOurChurch")}
               </Link>
             </div>
           </>

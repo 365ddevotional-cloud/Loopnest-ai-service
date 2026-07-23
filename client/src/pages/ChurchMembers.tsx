@@ -1,6 +1,7 @@
 import { useRoute } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
+import { useI18n } from "@/hooks/useI18n";
 import { ChurchModeShell } from "@/components/ChurchModeShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ export default function ChurchMembers() {
   const [, params] = useRoute("/church/:slug/members");
   const slug = params?.slug ?? "";
   const { getIdToken, user, emailVerified } = useUser();
+  const { t } = useI18n();
   const { toast } = useToast();
   const qc = useQueryClient();
   const isSignedIn = !!user && !!emailVerified;
@@ -85,8 +87,8 @@ export default function ChurchMembers() {
       if (!r.ok) throw new Error((await r.json()).message);
       return r.json();
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: "Role updated" }); },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: t("cm_roleUpdated") }); },
+    onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
   const removeMember = useMutation({
@@ -98,8 +100,8 @@ export default function ChurchMembers() {
       });
       if (!r.ok) throw new Error((await r.json()).message);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: "Member removed" }); },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: t("cm_memberRemoved") }); },
+    onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
   const grouped = members ? {
@@ -107,10 +109,9 @@ export default function ChurchMembers() {
     congregation: members.filter(m => m.role === "member"),
   } : { leadership: [], congregation: [] };
 
-  // Display name — never show email to non-leaders
   const getDisplayName = (m: ChurchMember) => {
     if (isLeader) return m.displayName ?? m.email;
-    return m.displayName ?? "Member";
+    return m.displayName ?? t("cm_memberRole");
   };
 
   return (
@@ -121,9 +122,9 @@ export default function ChurchMembers() {
             <Users className="w-5 h-5" style={{ color: "#1a2744" }} />
           </div>
           <div>
-            <h2 className="font-serif text-2xl font-bold" style={{ color: "#1a2744" }}>Members</h2>
+            <h2 className="font-serif text-2xl font-bold" style={{ color: "#1a2744" }}>{t("cm_membersHeading")}</h2>
             <p className="text-sm mt-0.5" style={{ color: "#7a7570" }}>
-              {members?.length ?? 0} {members?.length === 1 ? "member" : "members"} in {church?.name ?? "this church"}
+              {members?.length ?? 0} {t("cm_memberRole").toLowerCase()}{(members?.length ?? 0) !== 1 ? "s" : ""} in {church?.name ?? "this church"}
             </p>
           </div>
         </div>
@@ -132,7 +133,7 @@ export default function ChurchMembers() {
           <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff", borderLeft: "4px solid #b8962e" }}>
             <CardContent className="pt-4 pb-4 flex items-center gap-3">
               <AlertCircle className="w-5 h-5 flex-shrink-0" style={{ color: "#b8962e" }} />
-              <p className="text-sm" style={{ color: "#1a2744" }}>You must be a member to view the member list.</p>
+              <p className="text-sm" style={{ color: "#1a2744" }}>{t("cm_mustBeMemberToView")}</p>
             </CardContent>
           </Card>
         ) : isLoading ? (
@@ -141,12 +142,11 @@ export default function ChurchMembers() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Leadership section */}
             {grouped.leadership.length > 0 && (
               <div className="space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: "#7a7570" }}>
                   <Shield className="w-3.5 h-3.5" />
-                  Leadership &amp; Ministry Team ({grouped.leadership.length})
+                  {t("cm_leadershipTeam")} ({grouped.leadership.length})
                 </p>
                 {grouped.leadership.map(m => {
                   const isCurrentUser = m.firebaseUid === user?.uid;
@@ -162,9 +162,8 @@ export default function ChurchMembers() {
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {roleIcon(m.role)}
                             <span className="font-medium text-sm truncate" style={{ color: "#1a2744" }}>{getDisplayName(m)}</span>
-                            {isCurrentUser && <Badge variant="outline" className="text-xs py-0 px-1.5 flex-shrink-0">You</Badge>}
+                            {isCurrentUser && <Badge variant="outline" className="text-xs py-0 px-1.5 flex-shrink-0">{t("cm_youLabel")}</Badge>}
                           </div>
-                          {/* Only leaders/admins see email */}
                           {isLeader && m.email && (
                             <p className="text-xs truncate mt-0.5" style={{ color: "#7a7570" }}>{m.email}</p>
                           )}
@@ -188,7 +187,7 @@ export default function ChurchMembers() {
                           )}
                           {canManage && (
                             <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                              onClick={() => { if (confirm(`Remove ${getDisplayName(m)} from this church?`)) removeMember.mutate(m.id); }}
+                              onClick={() => { if (confirm(t("cm_removeMemberConfirm"))) removeMember.mutate(m.id); }}
                               data-testid={`button-remove-member-${m.id}`}>
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>
@@ -201,12 +200,11 @@ export default function ChurchMembers() {
               </div>
             )}
 
-            {/* Congregation section */}
             {grouped.congregation.length > 0 && (
               <div className="space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: "#7a7570" }}>
                   <Users className="w-3.5 h-3.5" />
-                  Congregation ({grouped.congregation.length})
+                  {t("cm_congregation")} ({grouped.congregation.length})
                 </p>
                 {grouped.congregation.map(m => {
                   const isCurrentUser = m.firebaseUid === user?.uid;
@@ -221,9 +219,8 @@ export default function ChurchMembers() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-medium text-sm truncate" style={{ color: "#1a2744" }}>{getDisplayName(m)}</span>
-                            {isCurrentUser && <Badge variant="outline" className="text-xs py-0 px-1.5 flex-shrink-0">You</Badge>}
+                            {isCurrentUser && <Badge variant="outline" className="text-xs py-0 px-1.5 flex-shrink-0">{t("cm_youLabel")}</Badge>}
                           </div>
-                          {/* Only leaders/admins see email */}
                           {isLeader && m.email && (
                             <p className="text-xs truncate mt-0.5" style={{ color: "#7a7570" }}>{m.email}</p>
                           )}
@@ -242,12 +239,12 @@ export default function ChurchMembers() {
                             </Select>
                           ) : (
                             <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${roleColors[m.role] ?? ""}`}>
-                              Member
+                              {t("cm_memberRole")}
                             </span>
                           )}
                           {canManage && (
                             <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                              onClick={() => { if (confirm(`Remove ${getDisplayName(m)}?`)) removeMember.mutate(m.id); }}
+                              onClick={() => { if (confirm(t("cm_removeMemberConfirm"))) removeMember.mutate(m.id); }}
                               data-testid={`button-remove-member-${m.id}`}>
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>

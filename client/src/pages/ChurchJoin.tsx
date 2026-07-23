@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, useRoute } from "wouter";
 import { useUser } from "@/contexts/UserContext";
+import { useI18n } from "@/hooks/useI18n";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,7 @@ export default function ChurchJoin() {
   const [, setLocation] = useLocation();
   const [matchCode, paramsCode] = useRoute("/church/join/:code");
   const { user, emailVerified, getIdToken } = useUser();
+  const { t } = useI18n();
   const { toast } = useToast();
   const isSignedIn = !!user && !!emailVerified;
 
@@ -68,14 +70,12 @@ export default function ChurchJoin() {
   const [joined, setJoined] = useState(false);
   const [pending, setPending] = useState(false);
 
-  // Auto-load if code in URL
   useEffect(() => {
     if (matchCode && paramsCode?.code) {
       const c = paramsCode.code.toUpperCase();
       setCode(c);
       loadPreview(c);
     } else {
-      // Restore code from sessionStorage if returning from sign-in
       const savedCode = sessionStorage.getItem("church-join-code");
       if (savedCode) {
         setCode(savedCode);
@@ -95,7 +95,7 @@ export default function ChurchJoin() {
       const r = await fetch(`/api/church-invite/${c}`);
       if (!r.ok) {
         const err = await r.json();
-        setPreviewError(err.message ?? "Invalid invitation code");
+        setPreviewError(err.message ?? t("cm_invalidCode"));
         return;
       }
       setPreview(await r.json());
@@ -109,7 +109,6 @@ export default function ChurchJoin() {
   const handleJoin = async () => {
     if (!preview || !consented) return;
     if (!isSignedIn) {
-      // Save code to sessionStorage before redirecting to sign-in
       sessionStorage.setItem("church-join-code", code.trim().toUpperCase());
       setLocation("/signin");
       return;
@@ -143,7 +142,7 @@ export default function ChurchJoin() {
         setTimeout(() => setLocation(`/church/${res.church?.slug ?? preview.church.slug}`), 1800);
       }
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("cm_error"), description: err.message, variant: "destructive" });
     } finally {
       setJoining(false);
     }
@@ -154,8 +153,8 @@ export default function ChurchJoin() {
     return `${origin}/church/join/${code.trim().toUpperCase()}`;
   })();
 
-  const handleCopyCode = () => copyToClipboard(code.trim().toUpperCase(), () => toast({ title: "Code copied!" }));
-  const handleCopyLink = () => copyToClipboard(inviteLink, () => toast({ title: "Link copied!" }));
+  const handleCopyCode = () => copyToClipboard(code.trim().toUpperCase(), () => toast({ title: t("cm_codeCopied") }));
+  const handleCopyLink = () => copyToClipboard(inviteLink, () => toast({ title: t("cm_linkCopied") }));
   const handleShare = async () => {
     if (navigator.share && preview) {
       try {
@@ -179,7 +178,7 @@ export default function ChurchJoin() {
         className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to Church Mode
+        {t("cm_backToChurchMode")}
       </button>
 
       <div className="flex items-center gap-3">
@@ -187,33 +186,31 @@ export default function ChurchJoin() {
           <UserPlus className="w-6 h-6" style={{ color: "#b8962e" }} />
         </div>
         <div>
-          <h1 className="font-serif text-2xl font-semibold">Join a Church</h1>
-          <p className="text-sm text-muted-foreground">Enter an invitation code shared by your church.</p>
+          <h1 className="font-serif text-2xl font-semibold">{t("cm_joinAChurchHeading")}</h1>
+          <p className="text-sm text-muted-foreground">{t("cm_enterInviteCode")}</p>
         </div>
       </div>
 
-      {/* Joined successfully */}
       {joined && (
         <Card className="border-green-300/60 bg-green-50/40">
           <CardContent className="pt-6 text-center space-y-2">
             <CheckCircle2 className="w-10 h-10 mx-auto text-green-600" />
-            <p className="font-semibold">You've joined {preview?.church.name}!</p>
-            <p className="text-sm text-muted-foreground">Taking you to your church space…</p>
+            <p className="font-semibold">{t("cm_joinedSuccessfullyHeading")} {preview?.church.name}!</p>
+            <p className="text-sm text-muted-foreground">{t("cm_loading")}</p>
           </CardContent>
         </Card>
       )}
 
-      {/* Pending approval */}
       {pending && (
         <Card className="border-amber-300/60 bg-amber-50/40">
           <CardContent className="pt-6 text-center space-y-3">
             <Clock className="w-10 h-10 mx-auto text-amber-600" />
-            <p className="font-semibold text-amber-900">Request Submitted!</p>
+            <p className="font-semibold text-amber-900">{t("cm_requestSubmitted")}</p>
             <p className="text-sm text-muted-foreground">
               Your request to join <strong>{preview?.church.name}</strong> has been sent to the church leadership for approval. You'll be notified once they review it.
             </p>
             <Button variant="outline" onClick={() => setLocation("/church")} className="mt-2">
-              Return to Church Mode
+              {t("cm_returnToChurchMode")}
             </Button>
           </CardContent>
         </Card>
@@ -221,11 +218,10 @@ export default function ChurchJoin() {
 
       {!joined && !pending && (
         <>
-          {/* Code input */}
           <Card>
             <CardContent className="pt-5 space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="invite-code">Invitation Code</Label>
+                <Label htmlFor="invite-code">{t("cm_invitationCodeHeading")}</Label>
                 <div className="flex gap-2">
                   <Input
                     id="invite-code"
@@ -242,12 +238,11 @@ export default function ChurchJoin() {
                     variant="outline"
                     data-testid="button-verify-code"
                   >
-                    {previewing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify"}
+                    {previewing ? <Loader2 className="w-4 h-4 animate-spin" /> : t("cm_verify")}
                   </Button>
                 </div>
               </div>
 
-              {/* Preview error */}
               {previewError && (
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -255,10 +250,8 @@ export default function ChurchJoin() {
                 </div>
               )}
 
-              {/* Church preview */}
               {preview && (
                 <div className="rounded-xl border p-4 space-y-3" style={{ borderColor: "#b8962e44", backgroundColor: "#b8962e08" }}>
-                  {/* Church info */}
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#1a274418" }}>
                       {preview.church.logoUrl ? (
@@ -273,7 +266,6 @@ export default function ChurchJoin() {
                     </div>
                   </div>
 
-                  {/* Invitation context */}
                   <div className="space-y-1.5">
                     {preview.invitation.label && (
                       <div className="flex items-center gap-1.5 text-xs" style={{ color: "#5a4e3d" }}>
@@ -296,7 +288,7 @@ export default function ChurchJoin() {
                     {preview.invitation.expiresAt && (
                       <div className="flex items-center gap-1.5 text-xs" style={{ color: "#5a4e3d" }}>
                         <Clock className="w-3 h-3" />
-                        <span>Expires {new Date(preview.invitation.expiresAt).toLocaleDateString()}</span>
+                        <span>{t("cm_expires")} {new Date(preview.invitation.expiresAt).toLocaleDateString()}</span>
                       </div>
                     )}
                     {preview.invitation.remaining !== null && (
@@ -307,7 +299,7 @@ export default function ChurchJoin() {
                     )}
                     {requiresApproval && (
                       <Badge variant="outline" className="text-xs border-amber-400 text-amber-700 bg-amber-50">
-                        Requires approval from church leadership
+                        {t("cm_requiresApproval")}
                       </Badge>
                     )}
                   </div>
@@ -316,22 +308,19 @@ export default function ChurchJoin() {
                     <p className="text-sm text-muted-foreground border-t pt-3" style={{ borderColor: "#b8962e22" }}>{preview.church.description}</p>
                   )}
 
-                  {/* Copy / Share controls */}
                   <div className="flex gap-2 pt-1 flex-wrap">
                     <Button size="sm" variant="outline" onClick={handleCopyCode} data-testid="button-copy-invite-code">
-                      <Copy className="w-3 h-3 mr-1.5" />Copy Code
+                      <Copy className="w-3 h-3 mr-1.5" />{t("cm_copyCode")}
                     </Button>
                     <Button size="sm" variant="outline" onClick={handleCopyLink} data-testid="button-copy-invite-link">
-                      <Copy className="w-3 h-3 mr-1.5" />Copy Link
+                      <Copy className="w-3 h-3 mr-1.5" />{t("cm_copyLink")}
                     </Button>
                     <Button size="sm" variant="outline" onClick={handleShare} data-testid="button-share-invite">
-                      <Share2 className="w-3 h-3 mr-1.5" />Share
-                    </Button>
+                      <Share2 className="w-3 h-3 mr-1.5" />{t("cm_share") ?? "Share"}</Button>
                   </div>
                 </div>
               )}
 
-              {/* Auth gate + join section */}
               {preview && (
                 <>
                   {!isSignedIn ? (
@@ -348,7 +337,7 @@ export default function ChurchJoin() {
                           className="flex-1"
                           data-testid="button-signin-to-join"
                         >
-                          Sign In to Join
+                          {t("cm_signIn")}
                         </Button>
                         <Button
                           variant="outline"
@@ -386,11 +375,11 @@ export default function ChurchJoin() {
                         data-testid="button-join-church-confirm"
                       >
                         {joining ? (
-                          <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Joining…</>
+                          <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("cm_joining")}</>
                         ) : requiresApproval ? (
                           `Request to Join ${preview.church.name}`
                         ) : (
-                          `Join ${preview.church.name}`
+                          `${t("cm_join")} ${preview.church.name}`
                         )}
                       </Button>
                     </div>

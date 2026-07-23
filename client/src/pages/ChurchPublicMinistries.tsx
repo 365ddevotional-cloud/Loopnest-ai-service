@@ -1,5 +1,6 @@
 import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useI18n } from "@/hooks/useI18n";
 import { ChurchPublicShell } from "@/components/ChurchPublicShell";
 import { Loader2, Users } from "lucide-react";
 import { Link } from "wouter";
@@ -12,6 +13,7 @@ const TYPE_ICONS: Record<string, string> = {
 
 export default function ChurchPublicMinistries() {
   const { slug } = useParams<{ slug: string }>();
+  const { t } = useI18n();
   const { data, isLoading } = useQuery<any>({ queryKey: [`/api/public/churches/${slug}`] });
 
   const church = data?.church ?? null;
@@ -23,11 +25,9 @@ export default function ChurchPublicMinistries() {
     <ChurchPublicShell church={church}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
         <div className="mb-10 text-center">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>Get Involved</p>
-          <h1 className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>Ministries & Departments</h1>
-          <p className="mt-2 text-sm max-w-xl mx-auto" style={{ color: "#9a9080" }}>
-            Find a community where you belong and use your gifts to serve.
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>{t("cm_getInvolvedHeading")}</p>
+          <h1 className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>{t("cm_ministriesDepsHeading")}</h1>
+          <p className="mt-2 text-sm max-w-xl mx-auto" style={{ color: "#9a9080" }}>{t("cm_findCommunity")}</p>
         </div>
 
         {isLoading ? (
@@ -37,8 +37,8 @@ export default function ChurchPublicMinistries() {
         ) : departments.length === 0 ? (
           <div className="text-center py-20">
             <div className="text-4xl mb-3">⛪</div>
-            <p className="font-semibold" style={{ color: "#3d3a36" }}>No departments listed yet</p>
-            <p className="text-sm mt-1" style={{ color: "#9a9080" }}>Check back soon for ministry information.</p>
+            <p className="font-semibold" style={{ color: "#3d3a36" }}>{t("cm_noDepartmentsListed")}</p>
+            <p className="text-sm mt-1" style={{ color: "#9a9080" }}>{t("cm_checkBackSoon")}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -60,7 +60,7 @@ export default function ChurchPublicMinistries() {
                   <div className="flex items-center gap-3">
                     {d.leaderName && (
                       <p className="text-xs" style={{ color: "#9a9080" }}>
-                        👤 Led by {d.leaderName}
+                        👤 {t("cm_ledByLabel")} {d.leaderName}
                       </p>
                     )}
                   </div>
@@ -68,7 +68,7 @@ export default function ChurchPublicMinistries() {
                     <Link href={`${base}/join-us`}
                       className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white"
                       style={{ backgroundColor: primary }}>
-                      Get Involved
+                      {t("cm_getInvolved")}
                     </Link>
                     {d.meetingSchedule && (
                       <p className="text-xs" style={{ color: "#c0b8b0" }}>{d.meetingSchedule}</p>
@@ -80,16 +80,15 @@ export default function ChurchPublicMinistries() {
           </div>
         )}
 
-        {/* CTA */}
         <div className="mt-14 p-8 rounded-2xl text-center" style={{ backgroundColor: `${primary}08`, border: `1px solid ${primary}20` }}>
           <Users className="w-8 h-8 mx-auto mb-3" style={{ color: primary }} />
-          <h2 className="text-xl font-bold mb-2" style={{ color: "#1a1a1a" }}>Ready to get connected?</h2>
-          <p className="text-sm mb-5" style={{ color: "#6b6460" }}>Join our church and become part of a ministry team.</p>
+          <h2 className="text-xl font-bold mb-2" style={{ color: "#1a1a1a" }}>{t("cm_readyToConnect")}</h2>
+          <p className="text-sm mb-5" style={{ color: "#6b6460" }}>{t("cm_joinAndBelong")}</p>
           <Link href={`${base}/join-us`}
             className="inline-flex px-6 py-3 text-sm font-semibold rounded-xl text-white"
             style={{ backgroundColor: primary }}
             data-testid="button-join-ministries">
-            Join {church?.name ?? "Our Church"}
+            {t("cm_joinOurChurch")}
           </Link>
         </div>
       </div>

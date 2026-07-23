@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
+import { useI18n } from "@/hooks/useI18n";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Building2, Plus, UserPlus, ChevronRight, Crown, Users, Shield } from "lucide-react";
@@ -21,6 +22,7 @@ const roleIcon: Record<string, React.ReactNode> = {
 export default function ChurchLanding() {
   const [, setLocation] = useLocation();
   const { user, emailVerified, getIdToken } = useUser();
+  const { t } = useI18n();
   const isSignedIn = !!user && !!emailVerified;
 
   const { data: memberships, isLoading } = useQuery<Membership[]>({
@@ -37,38 +39,35 @@ export default function ChurchLanding() {
 
   return (
     <div className="max-w-2xl mx-auto py-8 space-y-8">
-      {/* Header */}
       <div className="text-center space-y-2">
         <div className="flex justify-center mb-4">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-md" style={{ backgroundColor: "#1a2744" }}>
             <Building2 className="w-8 h-8" style={{ color: "#b8962e" }} />
           </div>
         </div>
-        <h1 className="font-serif text-3xl font-semibold text-foreground">Church Mode</h1>
+        <h1 className="font-serif text-3xl font-semibold text-foreground">{t("cm_churchMode")}</h1>
         <p className="text-muted-foreground text-sm max-w-md mx-auto">
-          A dedicated space for your church community — organize, connect, and grow together in faith.
+          {t("cm_landingTagline")}
         </p>
       </div>
 
-      {/* Not signed in */}
       {!isSignedIn && (
         <Card className="border-primary/20">
           <CardContent className="pt-6 space-y-4 text-center">
-            <p className="text-sm text-muted-foreground">Sign in to create a church space or access your existing church community.</p>
+            <p className="text-sm text-muted-foreground">{t("cm_landingSignIn")}</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button onClick={() => setLocation("/signin")} data-testid="button-church-signin">
-                Sign In to Continue
+                {t("cm_signInToContinue")}
               </Button>
               <Button variant="outline" onClick={() => setLocation("/church/join")} data-testid="button-church-join-guest">
                 <UserPlus className="w-4 h-4 mr-2" />
-                Join with Invite Code
+                {t("cm_joinWithInviteCode")}
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Signed in — My Churches */}
       {isSignedIn && (
         <>
           {isLoading ? (
@@ -77,7 +76,7 @@ export default function ChurchLanding() {
             </div>
           ) : memberships && memberships.length > 0 ? (
             <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">My Churches</h2>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{t("cm_myChurches")}</h2>
               {memberships.map(m => (
                 <button
                   key={m.id}
@@ -116,12 +115,11 @@ export default function ChurchLanding() {
             <Card className="border-dashed border-primary/25">
               <CardContent className="pt-6 text-center space-y-2">
                 <Building2 className="w-10 h-10 mx-auto text-muted-foreground/40" />
-                <p className="text-sm text-muted-foreground">You are not part of any church yet.</p>
+                <p className="text-sm text-muted-foreground">{t("cm_notPartOfChurch")}</p>
               </CardContent>
             </Card>
           )}
 
-          {/* Action cards */}
           <div className="grid sm:grid-cols-2 gap-4">
             <button
               onClick={() => setLocation("/church/create")}
@@ -134,8 +132,8 @@ export default function ChurchLanding() {
                     <Plus className="w-5 h-5" style={{ color: "#1a2744" }} />
                   </div>
                   <div>
-                    <p className="font-semibold text-foreground">Create a Church Space</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Set up your own church community on 365 Daily Devotional.</p>
+                    <p className="font-semibold text-foreground">{t("cm_createChurchSpace")}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t("cm_createChurchDesc")}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -151,8 +149,8 @@ export default function ChurchLanding() {
                     <UserPlus className="w-5 h-5" style={{ color: "#b8962e" }} />
                   </div>
                   <div>
-                    <p className="font-semibold text-foreground">Join a Church</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Enter an invitation code to join your church's space.</p>
+                    <p className="font-semibold text-foreground">{t("cm_joinAChurch")}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t("cm_joinAChurchDesc")}</p>
                   </div>
                 </CardContent>
               </Card>

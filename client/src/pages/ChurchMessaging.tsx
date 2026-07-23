@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRoute } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
+import { useI18n } from "@/hooks/useI18n";
 import { ChurchModeShell } from "@/components/ChurchModeShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,7 @@ export default function ChurchMessaging() {
   const [, params] = useRoute("/church/:slug/messages");
   const slug = params?.slug ?? "";
   const { getIdToken, user, emailVerified } = useUser();
+  const { t } = useI18n();
   const { toast } = useToast();
   const qc = useQueryClient();
   const isSignedIn = !!user && !!emailVerified;
@@ -246,8 +248,8 @@ export default function ChurchMessaging() {
           <CardContent className="pt-5 flex items-center gap-3">
             <AlertCircle className="w-5 h-5 flex-shrink-0" style={{ color: "#b8962e" }} />
             <div>
-              <p className="font-semibold text-sm">Active Membership Required</p>
-              <p className="text-xs text-muted-foreground">Sign in and be an active member to access messages.</p>
+              <p className="font-semibold text-sm">{t("cm_activeMembershipRequired")}</p>
+              <p className="text-xs text-muted-foreground">{t("cm_signInForMessages")}</p>
             </div>
           </CardContent>
         </Card>
@@ -292,16 +294,16 @@ export default function ChurchMessaging() {
             </div>
             <div>
               <h2 className="font-serif text-2xl font-bold" style={{ color: "#1a2744" }}>
-                {isLeader ? "Pastoral Inbox" : "Messages"}
+                {isLeader ? t("cm_pastoralInbox") : t("cm_messages")}
               </h2>
               <p className="text-xs mt-0.5 flex items-center gap-1" style={{ color: "#7a7570" }}>
-                <Lock className="w-3 h-3" /> Private Church Messaging
+                <Lock className="w-3 h-3" /> {t("cm_privateChurchMessaging")}
               </p>
             </div>
           </div>
           {!showNewForm && !selectedConvId && (
             <Button onClick={() => setShowNewForm(true)} style={{ backgroundColor: "#1a2744" }} data-testid="button-new-message">
-              <Plus className="w-4 h-4 mr-1.5" />New Message
+              <Plus className="w-4 h-4 mr-1.5" />{t("cm_newMessage")}
             </Button>
           )}
         </div>
@@ -351,7 +353,7 @@ export default function ChurchMessaging() {
           <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center justify-between" style={{ color: "#1a2744" }}>
-                {isLeader ? "New Message" : "New Message to Church Leadership"}
+                {isLeader ? t("cm_newMessage") : t("cm_newMessageToLeadership")}
                 <button onClick={() => setShowNewForm(false)}><X className="w-4 h-4 text-muted-foreground" /></button>
               </CardTitle>
             </CardHeader>
@@ -359,16 +361,16 @@ export default function ChurchMessaging() {
               {/* Leader: target type selector */}
               {isLeader && (
                 <div className="space-y-1.5">
-                  <Label>Send To</Label>
+                  <Label>{t("cm_sendTo")}</Label>
                   <Select value={newTargetType} onValueChange={setNewTargetType}>
                     <SelectTrigger data-testid="select-target-type">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="direct">Direct Message (to a member)</SelectItem>
-                      <SelectItem value="all">All Church Members</SelectItem>
-                      <SelectItem value="leaders">Leaders Only</SelectItem>
-                      <SelectItem value="group">Specific Group</SelectItem>
+                      <SelectItem value="direct">{t("cm_directMessage")}</SelectItem>
+                      <SelectItem value="all">{t("cm_allChurchMembers")}</SelectItem>
+                      <SelectItem value="leaders">{t("cm_leadersOnly")}</SelectItem>
+                      <SelectItem value="group">{t("cm_specificGroup")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -377,7 +379,7 @@ export default function ChurchMessaging() {
               {/* Group selector when target = group */}
               {isLeader && newTargetType === "group" && (
                 <div className="space-y-1.5">
-                  <Label>Group</Label>
+                  <Label>{t("cm_group")}</Label>
                   <Select value={newTargetGroupId} onValueChange={setNewTargetGroupId}>
                     <SelectTrigger data-testid="select-target-group">
                       <SelectValue placeholder="Select a group…" />
@@ -392,7 +394,7 @@ export default function ChurchMessaging() {
               )}
 
               <div className="space-y-1.5">
-                <Label>Category</Label>
+                <Label>{t("cm_messageCategory")}</Label>
                 <Select value={newCategory} onValueChange={setNewCategory}>
                   <SelectTrigger data-testid="select-message-category">
                     <SelectValue />
@@ -405,18 +407,18 @@ export default function ChurchMessaging() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Subject *</Label>
-                <Input value={newSubject} onChange={e => setNewSubject(e.target.value)} placeholder="What's this about?" data-testid="input-message-subject" />
+                <Label>{t("cm_subjectRequired")}</Label>
+                <Input value={newSubject} onChange={e => setNewSubject(e.target.value)} placeholder={t("cm_whatsThisAbout")} data-testid="input-message-subject" />
               </div>
               <div className="space-y-1.5">
-                <Label>Message *</Label>
-                <Textarea value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Write your message here…" rows={4} data-testid="input-message-body" />
+                <Label>{t("cm_messageBody")}</Label>
+                <Textarea value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder={t("cm_writeYourMessage")} rows={4} data-testid="input-message-body" />
               </div>
               <div className="flex gap-2">
                 <Button onClick={createConversation} disabled={submitting || !newSubject.trim() || !newMessage.trim()} style={{ backgroundColor: "#1a2744" }} data-testid="button-send-message">
-                  {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending…</> : <><Send className="w-4 h-4 mr-1.5" />Send</>}
+                  {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("cm_sending")}</> : <><Send className="w-4 h-4 mr-1.5" />{t("cm_send")}</>}
                 </Button>
-                <Button variant="outline" onClick={() => setShowNewForm(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setShowNewForm(false)}>{t("cm_cancel")}</Button>
               </div>
             </CardContent>
           </Card>
@@ -429,14 +431,14 @@ export default function ChurchMessaging() {
             <div className="flex items-start gap-3">
               <button onClick={() => { setSelectedConvId(null); setShowAssignPanel(false); setShowAddParticipantPanel(false); refetchConvs(); }}
                 className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mt-0.5">
-                <ArrowLeft className="w-4 h-4" />Back
+                <ArrowLeft className="w-4 h-4" />{t("cm_back")}
               </button>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate" style={{ color: "#1a2744" }}>{selectedConv.subject}</p>
                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                   <Badge variant="outline" className="text-xs">{CATEGORY_LABELS[selectedConv.category] ?? selectedConv.category}</Badge>
-                  {selectedConv.status === "closed" && <Badge variant="secondary" className="text-xs">Closed</Badge>}
-                  {selectedConv.isUrgent && <Badge className="text-xs bg-red-100 text-red-700 border-red-300">Urgent</Badge>}
+                  {selectedConv.status === "closed" && <Badge variant="secondary" className="text-xs">{t("cm_closedLabel")}</Badge>}
+                  {selectedConv.isUrgent && <Badge className="text-xs bg-red-100 text-red-700 border-red-300">{t("cm_urgentLabel")}</Badge>}
                   {assignedMember && (
                     <Badge variant="outline" className="text-xs flex items-center gap-1">
                       <UserCheck className="w-3 h-3" />
@@ -451,11 +453,11 @@ export default function ChurchMessaging() {
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   {selectedConv.status !== "closed" ? (
                     <Button size="sm" variant="outline" onClick={() => updateConversation({ status: "closed" })} disabled={updatingConv} data-testid="button-close-conversation">
-                      Close
+                      {t("cm_closeConversation")}
                     </Button>
                   ) : (
                     <Button size="sm" variant="outline" onClick={() => updateConversation({ status: "open" })} disabled={updatingConv} data-testid="button-reopen-conversation">
-                      <RotateCcw className="w-3.5 h-3.5 mr-1" />Reopen
+                      <RotateCcw className="w-3.5 h-3.5 mr-1" />{t("cm_reopenConversation")}
                     </Button>
                   )}
 
@@ -489,13 +491,13 @@ export default function ChurchMessaging() {
               <Card className="border-0 shadow-sm" style={{ backgroundColor: "#f0ebe3" }}>
                 <CardContent className="pt-3 pb-3 flex items-center gap-2">
                   <UserCheck className="w-4 h-4 flex-shrink-0" style={{ color: "#1a2744" }} />
-                  <span className="text-xs font-medium" style={{ color: "#1a2744" }}>Assign to:</span>
+                  <span className="text-xs font-medium" style={{ color: "#1a2744" }}>{t("cm_assignTo")}</span>
                   <Select value={assignToUid} onValueChange={setAssignToUid}>
                     <SelectTrigger className="h-7 text-xs flex-1" data-testid="select-assign-to">
-                      <SelectValue placeholder="Select a leader…" />
+                      <SelectValue placeholder={t("cm_selectLeader")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none__">Unassigned</SelectItem>
+                      <SelectItem value="__none__">{t("cm_unassigned")}</SelectItem>
                       {leaderMembers.map(m => (
                         <SelectItem key={m.firebaseUid} value={m.firebaseUid}>
                           {m.displayName ?? m.email}
@@ -504,7 +506,7 @@ export default function ChurchMessaging() {
                     </SelectContent>
                   </Select>
                   <Button size="sm" onClick={assignConversation} disabled={!assignToUid || updatingConv} style={{ backgroundColor: "#1a2744" }} data-testid="button-assign-confirm">
-                    {updatingConv ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Assign"}
+                    {updatingConv ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : t("cm_assign")}
                   </Button>
                   <button onClick={() => setShowAssignPanel(false)} className="ml-1"><X className="w-3.5 h-3.5 text-muted-foreground" /></button>
                 </CardContent>
@@ -516,10 +518,10 @@ export default function ChurchMessaging() {
               <Card className="border-0 shadow-sm" style={{ backgroundColor: "#f0ebe3" }}>
                 <CardContent className="pt-3 pb-3 flex items-center gap-2">
                   <UserPlus className="w-4 h-4 flex-shrink-0" style={{ color: "#1a2744" }} />
-                  <span className="text-xs font-medium whitespace-nowrap" style={{ color: "#1a2744" }}>Add pastoral assistant:</span>
+                  <span className="text-xs font-medium whitespace-nowrap" style={{ color: "#1a2744" }}>{t("cm_addPastoralAssistant")}</span>
                   <Select value={addParticipantUid} onValueChange={setAddParticipantUid}>
                     <SelectTrigger className="h-7 text-xs flex-1" data-testid="select-add-participant">
-                      <SelectValue placeholder="Select a member…" />
+                      <SelectValue placeholder={t("cm_selectMember")} />
                     </SelectTrigger>
                     <SelectContent>
                       {leaderMembers.map(m => (
@@ -530,7 +532,7 @@ export default function ChurchMessaging() {
                     </SelectContent>
                   </Select>
                   <Button size="sm" onClick={addParticipant} disabled={!addParticipantUid || updatingConv} style={{ backgroundColor: "#1a2744" }} data-testid="button-add-participant-confirm">
-                    {updatingConv ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Add"}
+                    {updatingConv ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : t("cm_add")}
                   </Button>
                   <button onClick={() => setShowAddParticipantPanel(false)} className="ml-1"><X className="w-3.5 h-3.5 text-muted-foreground" /></button>
                 </CardContent>
@@ -540,7 +542,7 @@ export default function ChurchMessaging() {
             {/* Participants summary (visible to leaders) */}
             {isLeader && participants.length > 1 && (
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs text-muted-foreground">Participants:</span>
+                <span className="text-xs text-muted-foreground">{t("cm_participants")}</span>
                 {participants.map((p: any) => (
                   <Badge key={p.id} variant="outline" className="text-xs">{p.displayName ?? p.firebaseUid}</Badge>
                 ))}
@@ -552,7 +554,7 @@ export default function ChurchMessaging() {
               <CardContent className="pt-4">
                 <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
                   {messages.length === 0 && (
-                    <p className="text-center text-sm py-6" style={{ color: "#7a7570" }}>No messages yet.</p>
+                    <p className="text-center text-sm py-6" style={{ color: "#7a7570" }}>{t("cm_noMessagesThread")}</p>
                   )}
                   {messages.map(msg => {
                     const isMe = msg.senderUid === myUid;
@@ -604,10 +606,10 @@ export default function ChurchMessaging() {
                 )}
                 {selectedConv.status === "closed" && (
                   <div className="pt-4 mt-4 border-t flex items-center justify-between gap-3" style={{ borderColor: "#e0dcd8" }}>
-                    <p className="text-sm" style={{ color: "#7a7570" }}>This conversation is closed.</p>
+                    <p className="text-sm" style={{ color: "#7a7570" }}>{t("cm_closedLabel")}.</p>
                     {isLeader && (
                       <Button size="sm" variant="outline" onClick={() => updateConversation({ status: "open" })} disabled={updatingConv} data-testid="button-reopen-inline">
-                        <RotateCcw className="w-3.5 h-3.5 mr-1" />Reopen
+                        <RotateCcw className="w-3.5 h-3.5 mr-1" />{t("cm_reopenConversation")}
                       </Button>
                     )}
                   </div>
@@ -650,14 +652,14 @@ export default function ChurchMessaging() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-semibold text-sm truncate" style={{ color: "#1a2744" }}>{conv.subject}</p>
-                        {conv.isUrgent && <Badge className="text-xs bg-red-100 text-red-700 border-red-300">Urgent</Badge>}
+                        {conv.isUrgent && <Badge className="text-xs bg-red-100 text-red-700 border-red-300">{t("cm_urgentLabel")}</Badge>}
                         {!conv.assignedTo && conv.status !== "closed" && isLeader && (
-                          <Badge variant="outline" className="text-xs text-amber-700 border-amber-300">Unassigned</Badge>
+                          <Badge variant="outline" className="text-xs text-amber-700 border-amber-300">{t("cm_unassigned")}</Badge>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <Badge variant="outline" className="text-xs">{CATEGORY_LABELS[conv.category] ?? conv.category}</Badge>
-                        {conv.status === "closed" && <Badge variant="secondary" className="text-xs">Closed</Badge>}
+                        {conv.status === "closed" && <Badge variant="secondary" className="text-xs">{t("cm_closedLabel")}</Badge>}
                         <span className="text-xs" style={{ color: "#7a7570" }}>
                           {new Date(conv.updatedAt).toLocaleDateString()}
                         </span>

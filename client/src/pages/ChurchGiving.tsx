@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
+import { useI18n } from "@/hooks/useI18n";
 import { ChurchModeShell } from "@/components/ChurchModeShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -100,6 +101,7 @@ export default function ChurchGiving() {
 
   const { getIdToken, user, emailVerified } = useUser();
   const isSignedIn = !!user && !!emailVerified;
+  const { t } = useI18n();
   const { toast } = useToast();
 
   const isSuccess = location.includes("/giving/success");
@@ -205,7 +207,7 @@ export default function ChurchGiving() {
         <Card className="border-0 shadow-sm max-w-md mx-auto mt-8" style={{ borderLeft: "4px solid #dc2626", backgroundColor: "#fff" }}>
           <CardContent className="pt-5 flex items-center gap-3">
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-            <p className="text-sm font-medium">Church not found.</p>
+            <p className="text-sm font-medium">{t("cm_churchNotFound")}</p>
           </CardContent>
         </Card>
       </ChurchModeShell>
@@ -221,9 +223,9 @@ export default function ChurchGiving() {
             <CheckCircle2 className="w-10 h-10" style={{ color: "#22c55e" }} />
           </div>
           <div>
-            <h2 className="font-serif text-3xl font-bold mb-2" style={{ color: "#1d3461" }}>Thank You!</h2>
+            <h2 className="font-serif text-3xl font-bold mb-2" style={{ color: "#1d3461" }}>{t("cm_thankYouGiving")}</h2>
             <p className="text-lg" style={{ color: "#4a4540" }}>
-              Your gift to <strong>{church.name}</strong> has been received. God bless your generosity.
+              {t("cm_yourGift")} {t("cm_to")} <strong>{church.name}</strong> {t("cm_giftReceived")}
             </p>
             {refParam && (
               <p className="text-xs mt-3 font-mono px-4 py-2 rounded-lg inline-block" style={{ color: "#9a9080", backgroundColor: "#f8f4ee" }}>
@@ -240,12 +242,12 @@ export default function ChurchGiving() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button onClick={() => setLocation(`/church/${church.slug}/giving`)} variant="outline" className="gap-2"
               style={{ borderColor: "#1d3461", color: "#1d3461" }}>
-              <HandCoins className="w-4 h-4" />Give Again
+              <HandCoins className="w-4 h-4" />{t("cm_giveAgain")}
             </Button>
             {isSignedIn && (
               <Button onClick={() => { setLocation(`/church/${church.slug}/giving`); setActiveTab("history"); }}
                 variant="outline" className="gap-2" style={{ borderColor: "#b8962e", color: "#b8962e" }}>
-                <History className="w-4 h-4" />View My Giving History
+                <History className="w-4 h-4" />{t("cm_viewGivingHistory")}
               </Button>
             )}
           </div>
@@ -262,9 +264,9 @@ export default function ChurchGiving() {
             style={{ backgroundColor: "#b8962e18" }}>
             <HandCoins className="w-8 h-8" style={{ color: "#b8962e" }} />
           </div>
-          <h2 className="font-serif text-2xl font-bold" style={{ color: "#1d3461" }}>Online Giving</h2>
-          <p style={{ color: "#7a7570" }}>Online giving is not yet enabled for {church.name}.</p>
-          <p className="text-sm" style={{ color: "#9a9080" }}>Please contact your church administrator to set up online giving.</p>
+          <h2 className="font-serif text-2xl font-bold" style={{ color: "#1d3461" }}>{t("cm_onlineGiving")}</h2>
+          <p style={{ color: "#7a7570" }}>{t("cm_onlineGivingNotEnabled")} {church.name}.</p>
+          <p className="text-sm" style={{ color: "#9a9080" }}>{t("cm_contactAdminForGiving")}</p>
         </div>
       </ChurchModeShell>
     );
@@ -281,7 +283,7 @@ export default function ChurchGiving() {
             <HandCoins className="w-6 h-6" style={{ color: "#b8962e" }} />
           </div>
           <div>
-            <h1 className="font-serif text-3xl font-bold" style={{ color: "#1d3461" }}>Give Online</h1>
+            <h1 className="font-serif text-3xl font-bold" style={{ color: "#1d3461" }}>{t("cm_giveOnline")}</h1>
             <p className="text-sm mt-0.5" style={{ color: "#7a7570" }}>{church.name}</p>
           </div>
         </div>
@@ -290,8 +292,8 @@ export default function ChurchGiving() {
         {isSignedIn && (
           <div className="flex gap-1 p-1 rounded-xl" style={{ backgroundColor: "#f8f4ee" }}>
             {[
-              { id: "give" as const, label: "Give Now", icon: HandCoins },
-              { id: "history" as const, label: "My Giving", icon: History },
+              { id: "give" as const, label: t("cm_giveNow"), icon: HandCoins },
+              { id: "history" as const, label: t("cm_myGiving"), icon: History },
             ].map(tab => {
               const Icon = tab.icon;
               return (
@@ -325,11 +327,11 @@ export default function ChurchGiving() {
               <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
                 <CardContent className="pt-12 pb-12 text-center">
                   <Receipt className="w-10 h-10 mx-auto mb-3" style={{ color: "#c9b99060" }} />
-                  <p className="font-semibold" style={{ color: "#1d3461" }}>No giving history yet</p>
-                  <p className="text-sm mt-1" style={{ color: "#7a7570" }}>Your giving records will appear here after your first gift.</p>
+                  <p className="font-semibold" style={{ color: "#1d3461" }}>{t("cm_noGivingHistoryYet")}</p>
+                  <p className="text-sm mt-1" style={{ color: "#7a7570" }}>{t("cm_givingHistoryEmpty")}</p>
                   <Button className="mt-4 gap-2" onClick={() => setActiveTab("give")}
                     style={{ backgroundColor: "#1d3461" }}>
-                    <HandCoins className="w-4 h-4" />Give Now
+                    <HandCoins className="w-4 h-4" />{t("cm_giveNow")}
                   </Button>
                 </CardContent>
               </Card>
@@ -365,7 +367,7 @@ export default function ChurchGiving() {
                             <p className="text-xs mt-0.5" style={{ color: "#9a9080" }}>
                               {txn.createdAt ? new Date(txn.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "—"}
                             </p>
-                            <p className="text-xs mt-0.5 font-mono" style={{ color: "#9a9080" }}>Ref: {txn.reference}</p>
+                            <p className="text-xs mt-0.5 font-mono" style={{ color: "#9a9080" }}>{t("cm_ref")} {txn.reference}</p>
                           </div>
                           {txn.status === "completed" && (
                             <button
@@ -375,7 +377,7 @@ export default function ChurchGiving() {
                               data-testid={`button-receipt-${txn.id}`}
                             >
                               <Printer className="w-3.5 h-3.5" />
-                              Receipt
+                              {t("cm_receipt")}
                             </button>
                           )}
                         </div>
@@ -385,17 +387,17 @@ export default function ChurchGiving() {
                         {txn.status === "completed" && (
                           <div className="mt-3 pt-3 border-t grid grid-cols-3 gap-2 text-center text-xs" style={{ borderColor: "#f0ece6" }}>
                             <div>
-                              <p className="text-muted-foreground">Your gift</p>
+                              <p className="text-muted-foreground">{t("cm_yourGift")}</p>
                               <p className="font-semibold" style={{ color: "#1d3461" }}>{fmt(txn.grossAmount, txn.currency)}</p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">Fees</p>
+                              <p className="text-muted-foreground">{t("cm_fees")}</p>
                               <p className="font-semibold" style={{ color: "#7a7570" }}>
                                 −{fmt(txn.platformFeeAmount + txn.providerFeeAmount, txn.currency)}
                               </p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">Church received</p>
+                              <p className="text-muted-foreground">{t("cm_churchReceived")}</p>
                               <p className="font-semibold" style={{ color: "#166534" }}>{fmt(txn.churchNetAmount, txn.currency)}</p>
                             </div>
                           </div>
@@ -422,7 +424,7 @@ export default function ChurchGiving() {
             {categories.length > 0 && (
               <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base font-semibold" style={{ color: "#1d3461" }}>Giving Category</CardTitle>
+                  <CardTitle className="text-base font-semibold" style={{ color: "#1d3461" }}>{t("cm_givingCategory")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -449,7 +451,7 @@ export default function ChurchGiving() {
             {/* Amount Selection */}
             <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold" style={{ color: "#1d3461" }}>Select Amount</CardTitle>
+                <CardTitle className="text-base font-semibold" style={{ color: "#1d3461" }}>{t("cm_selectAmount")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
@@ -470,7 +472,7 @@ export default function ChurchGiving() {
                   ))}
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm" style={{ color: "#4a4540" }}>Custom Amount</Label>
+                  <Label className="text-sm" style={{ color: "#4a4540" }}>{t("cm_customAmount")}</Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium" style={{ color: "#9a9080" }}>{currencySym}</span>
                     <Input
@@ -488,19 +490,19 @@ export default function ChurchGiving() {
                 {amount >= 1 && (
                   <div className="rounded-xl p-4 space-y-2 text-sm" style={{ backgroundColor: "#f8f4ee", border: "1px solid #e8e3dc" }}>
                     <div className="flex justify-between" style={{ color: "#4a4540" }}>
-                      <span>Your gift</span>
+                      <span>{t("cm_yourGift")}</span>
                       <span className="font-semibold">{fmt(amountCents, currency)}</span>
                     </div>
                     <div className="flex justify-between" style={{ color: "#7a7570" }}>
-                      <span>Platform fee ({platformFeePercent}%)</span>
+                      <span>{t("cm_platformFee")} ({platformFeePercent}%)</span>
                       <span>−{fmt(platformFeeCents, currency)}</span>
                     </div>
                     <div className="flex justify-between" style={{ color: "#7a7570" }}>
-                      <span>Processing fee (~2.9% + 30¢)</span>
+                      <span>{t("cm_processingFee")}</span>
                       <span>−{fmt(providerFeeCents, currency)}</span>
                     </div>
                     <div className="flex justify-between border-t pt-2 font-bold" style={{ borderColor: "#d8d0c4", color: "#1d3461" }}>
-                      <span>Church receives</span>
+                      <span>{t("cm_churchReceives")}</span>
                       <span>{fmt(Math.max(0, churchNetCents), currency)}</span>
                     </div>
                   </div>
@@ -511,7 +513,7 @@ export default function ChurchGiving() {
             {/* Donor Details */}
             <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold" style={{ color: "#1d3461" }}>Your Details</CardTitle>
+                <CardTitle className="text-base font-semibold" style={{ color: "#1d3461" }}>{t("cm_yourDetails")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <label className="flex items-center gap-3 cursor-pointer">
@@ -522,25 +524,25 @@ export default function ChurchGiving() {
                   >
                     {isAnonymous && <div className="w-2.5 h-2.5 bg-white rounded-sm" />}
                   </div>
-                  <span className="text-sm font-medium" style={{ color: "#4a4540" }}>Give anonymously</span>
+                  <span className="text-sm font-medium" style={{ color: "#4a4540" }}>{t("cm_giveAnonymously")}</span>
                 </label>
 
                 {!isAnonymous && (
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <Label className="text-sm">Name <span style={{ color: "#9a9080" }}>(optional)</span></Label>
+                      <Label className="text-sm">{t("cm_nameOptional")}</Label>
                       <Input placeholder="Your name" value={donorName} onChange={e => setDonorName(e.target.value)} data-testid="input-donor-name" />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-sm">Email <span style={{ color: "#9a9080" }}>(optional)</span></Label>
+                      <Label className="text-sm">{t("cm_emailOptional")}</Label>
                       <Input type="email" placeholder="you@email.com" value={donorEmail} onChange={e => setDonorEmail(e.target.value)} data-testid="input-donor-email" />
                     </div>
                   </div>
                 )}
 
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Note <span style={{ color: "#9a9080" }}>(optional)</span></Label>
-                  <Textarea placeholder="A short message or dedication..." value={note} onChange={e => setNote(e.target.value)} rows={2} data-testid="input-giving-note" />
+                  <Label className="text-sm">{t("cm_noteOptional")}</Label>
+                  <Textarea placeholder={t("cm_shortDedication")} value={note} onChange={e => setNote(e.target.value)} rows={2} data-testid="input-giving-note" />
                 </div>
               </CardContent>
             </Card>
@@ -555,10 +557,10 @@ export default function ChurchGiving() {
                 data-testid="button-give-now"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <HandCoins className="w-5 h-5" />}
-                {loading ? "Starting checkout…" : amount >= 1 ? `Give ${currencySym}${amount.toFixed(2)}` : "Give Now"}
+                {loading ? t("cm_startingCheckout") : amount >= 1 ? `${t("cm_giveNow")} ${currencySym}${amount.toFixed(2)}` : t("cm_giveNow")}
               </Button>
               <p className="text-xs text-center" style={{ color: "#9a9080" }}>
-                Secure payment via Stripe · Your card details are never stored on our servers
+                {t("cm_securePayment")}
               </p>
               <p className="text-xs text-center flex items-center justify-center gap-1" style={{ color: "#b8962e" }}>
                 <Info className="w-3 h-3" />

@@ -1,6 +1,7 @@
 import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
+import { useI18n } from "@/hooks/useI18n";
 import { ChurchModeShell } from "@/components/ChurchModeShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ export default function ChurchHome() {
   const [, setLocation] = useLocation();
   const slug = params?.slug ?? "";
   const { getIdToken, user, emailVerified } = useUser();
+  const { t } = useI18n();
   const isSignedIn = !!user && !!emailVerified;
 
   const { data: church, isLoading: churchLoading } = useQuery<Church>({
@@ -98,10 +100,10 @@ export default function ChurchHome() {
         <div className="text-center py-20 space-y-4">
           <Building2 className="w-14 h-14 mx-auto" style={{ color: "#c9b99060" }} />
           <div>
-            <p className="font-semibold text-lg" style={{ color: "#1a2744" }}>Church not found</p>
-            <p className="text-sm mt-1" style={{ color: "#7a7570" }}>This church space may have been removed or the link is incorrect.</p>
+            <p className="font-semibold text-lg" style={{ color: "#1a2744" }}>{t("cm_churchNotFound")}</p>
+            <p className="text-sm mt-1" style={{ color: "#7a7570" }}>{t("cm_churchLinkIncorrect")}</p>
           </div>
-          <Button variant="outline" onClick={() => setLocation("/church")}>Return to Church Mode</Button>
+          <Button variant="outline" onClick={() => setLocation("/church")}>{t("cm_returnToChurchMode")}</Button>
         </div>
       </ChurchModeShell>
     );
@@ -161,7 +163,6 @@ export default function ChurchHome() {
               </CardContent>
             </>
           )}
-          {/* Info row below banner */}
           {(church.description || church.address || church.websiteUrl) && (
             <CardContent className="pt-0 pb-5 px-5">
               {church.description && (
@@ -178,7 +179,7 @@ export default function ChurchHome() {
                   <a href={church.websiteUrl} target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-1.5 text-xs font-medium hover:underline" style={{ color: "#b8962e" }}>
                     <Globe className="w-3.5 h-3.5" />
-                    Website
+                    {t("cm_website")}
                   </a>
                 )}
               </div>
@@ -192,10 +193,10 @@ export default function ChurchHome() {
             <CardContent className="pt-4 pb-4 flex items-center gap-3">
               <Info className="w-5 h-5 flex-shrink-0" style={{ color: themeColor }} />
               <div className="flex-1">
-                <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>Sign in to access your church community</p>
-                <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>You need to be signed in to view member content.</p>
+                <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>{t("cm_signInToAccess")}</p>
+                <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>{t("cm_notSignedIn")}</p>
               </div>
-              <Button size="sm" onClick={() => setLocation("/signin")} style={{ backgroundColor: themeColor }}>Sign In</Button>
+              <Button size="sm" onClick={() => setLocation("/signin")} style={{ backgroundColor: themeColor }}>{t("cm_signIn")}</Button>
             </CardContent>
           </Card>
         )}
@@ -206,10 +207,10 @@ export default function ChurchHome() {
             <CardContent className="pt-4 pb-4 flex items-center gap-3">
               <Info className="w-5 h-5 flex-shrink-0" style={{ color: "#b8962e" }} />
               <div className="flex-1">
-                <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>You are not a member of this church</p>
-                <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>You need an invitation to join this community.</p>
+                <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>{t("cm_notAMember")}</p>
+                <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>{t("cm_needInvitation")}</p>
               </div>
-              <Button size="sm" variant="outline" onClick={() => setLocation("/church/join")}>Join with Code</Button>
+              <Button size="sm" variant="outline" onClick={() => setLocation("/church/join")}>{t("cm_joinWithInviteCode")}</Button>
             </CardContent>
           </Card>
         )}
@@ -220,14 +221,14 @@ export default function ChurchHome() {
             {/* Quick stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: "Members", value: members?.length ?? "—", icon: Users, path: `/church/${slug}/members` },
-                { label: "Sermons", value: sermons?.length ?? "—", icon: Mic2, path: `/church/${slug}/sermons` },
-                { label: "Announcements", value: announcements?.length ?? "—", icon: Megaphone, path: `/church/${slug}/announcements` },
-                { label: "Prayer Wall", value: "Open", icon: Heart, path: `/church/${slug}/prayer` },
+                { label: t("cm_membersHeading"), key: "members", value: members?.length ?? "—", icon: Users, path: `/church/${slug}/members` },
+                { label: t("cm_sermons"), key: "sermons", value: sermons?.length ?? "—", icon: Mic2, path: `/church/${slug}/sermons` },
+                { label: t("cm_announcements"), key: "announcements", value: announcements?.length ?? "—", icon: Megaphone, path: `/church/${slug}/announcements` },
+                { label: t("cm_prayerWall"), key: "prayer-wall", value: t("cm_open"), icon: Heart, path: `/church/${slug}/prayer` },
               ].map(stat => {
                 const Icon = stat.icon;
                 return (
-                  <button key={stat.label} onClick={() => setLocation(stat.path)} className="text-left" data-testid={`stat-${stat.label.toLowerCase().replace(/\s+/g, "-")}`}>
+                  <button key={stat.key} onClick={() => setLocation(stat.path)} className="text-left" data-testid={`stat-${stat.key}`}>
                     <Card className="border-0 shadow-sm hover:shadow-md transition-shadow" style={{ backgroundColor: "#fff" }}>
                       <CardContent className="pt-4 pb-4 px-4">
                         <Icon className="w-5 h-5 mb-2" style={{ color: themeColor }} />
@@ -244,7 +245,7 @@ export default function ChurchHome() {
             {upcomingSermons.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-serif font-semibold text-lg" style={{ color: "#1a2744" }}>Coming Up</h3>
+                  <h3 className="font-serif font-semibold text-lg" style={{ color: "#1a2744" }}>{t("cm_comingUp")}</h3>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {upcomingSermons.map(sermon => (
@@ -264,7 +265,7 @@ export default function ChurchHome() {
                           )}
                           <div className="flex-1 min-w-0">
                             <Badge className="text-xs mb-1.5" style={{ backgroundColor: `${themeColor}15`, color: themeColor, border: "none" }}>
-                              Upcoming
+                              {t("cm_upcoming")}
                             </Badge>
                             <p className="font-semibold text-sm truncate" style={{ color: "#1a2744" }}>{sermon.title}</p>
                             {sermon.speakerName && <p className="text-xs mt-0.5" style={{ color: "#b8962e" }}>{sermon.speakerName}</p>}
@@ -287,9 +288,9 @@ export default function ChurchHome() {
             {displayAnnouncements.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-serif font-semibold text-lg" style={{ color: "#1a2744" }}>Announcements</h3>
+                  <h3 className="font-serif font-semibold text-lg" style={{ color: "#1a2744" }}>{t("cm_announcements")}</h3>
                   <button onClick={() => setLocation(`/church/${slug}/announcements`)} className="text-xs font-medium hover:underline" style={{ color: "#b8962e" }}>
-                    View all →
+                    {t("cm_viewAll")} →
                   </button>
                 </div>
                 <div className="space-y-2.5">
@@ -336,9 +337,9 @@ export default function ChurchHome() {
             {recentSermons.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-serif font-semibold text-lg" style={{ color: "#1a2744" }}>Recent Sermons</h3>
+                  <h3 className="font-serif font-semibold text-lg" style={{ color: "#1a2744" }}>{t("cm_recentSermons")}</h3>
                   <button onClick={() => setLocation(`/church/${slug}/sermons`)} className="text-xs font-medium hover:underline" style={{ color: "#b8962e" }}>
-                    View all →
+                    {t("cm_viewAll")} →
                   </button>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-3">
@@ -390,8 +391,8 @@ export default function ChurchHome() {
                   <CardContent className="pt-4 pb-4 px-5 flex items-center gap-3">
                     <Settings className="w-5 h-5 flex-shrink-0" style={{ color: "#d4a83a" }} />
                     <div className="flex-1">
-                      <p className="font-semibold text-sm text-white">Church Administration</p>
-                      <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.6)" }}>Manage sermons, announcements, members &amp; settings</p>
+                      <p className="font-semibold text-sm text-white">{t("cm_churchAdministration")}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.6)" }}>{t("cm_manageChurch")}</p>
                     </div>
                     <Settings className="w-4 h-4 opacity-40 text-white" />
                   </CardContent>

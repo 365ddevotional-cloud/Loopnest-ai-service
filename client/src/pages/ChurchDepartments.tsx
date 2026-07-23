@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
+import { useI18n } from "@/hooks/useI18n";
 import { ChurchModeShell } from "@/components/ChurchModeShell";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,13 +15,12 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Building2, Plus, Users, ChevronRight, Loader2, Search, Key,
   Music, BookOpen, Heart, Shield, Hand, Globe, Star,
-  Megaphone, Camera, Mic2, Briefcase, UserCheck, AlertCircle,
+  Megaphone, Camera, Briefcase, UserCheck, AlertCircle,
 } from "lucide-react";
 import type { Church, ChurchDepartment, ChurchDepartmentMember } from "@shared/schema";
 import { PREDEFINED_DEPARTMENT_TYPES } from "@shared/schema";
 
 type DeptWithMembership = ChurchDepartment & { myMembership: ChurchDepartmentMember | null };
-
 interface MyRole { role: string | null; memberId: number | null; status: string | null; }
 
 const DEPT_TYPE_ICONS: Record<string, typeof Building2> = {
@@ -48,6 +48,7 @@ export default function ChurchDepartments() {
   const slug = (location.match(/\/church\/([^/]+)\/departments/) ?? [])[1] ?? "";
   const { getIdToken, user, emailVerified } = useUser();
   const isSignedIn = !!user && !!emailVerified;
+  const { t } = useI18n();
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -56,7 +57,6 @@ export default function ChurchDepartments() {
   const [showJoin, setShowJoin] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
   const [joining, setJoining] = useState(false);
-
   const [form, setForm] = useState({ name: "", type: "Custom", description: "", logoUrl: "", bannerUrl: "" });
   const [creating, setCreating] = useState(false);
 
@@ -65,7 +65,6 @@ export default function ChurchDepartments() {
     queryFn: () => fetch(`/api/churches/slug/${slug}`).then(r => r.ok ? r.json() : Promise.reject()),
     enabled: !!slug,
   });
-
   const church = churchData?.church ?? null;
 
   const { data: myRole } = useQuery<MyRole>({
@@ -84,9 +83,7 @@ export default function ChurchDepartments() {
     queryFn: async () => {
       const token = await getIdToken();
       if (!token) return [];
-      const r = await fetch(`/api/churches/${church!.id}/departments`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const r = await fetch(`/api/churches/${church!.id}/departments`, { headers: { Authorization: `Bearer ${token}` } });
       return r.ok ? r.json() : [];
     },
     enabled: !!church?.id && isSignedIn,
@@ -110,8 +107,8 @@ export default function ChurchDepartments() {
         body: JSON.stringify(form),
       });
       const data = await r.json();
-      if (!r.ok) { toast({ title: "Error", description: data.message, variant: "destructive" }); return; }
-      toast({ title: "Department created!" });
+      if (!r.ok) { toast({ title: t("cm_error"), description: data.message, variant: "destructive" }); return; }
+      toast({ title: t("cm_createDepartment") + "!" });
       qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "departments"] });
       setShowCreate(false);
       setForm({ name: "", type: "Custom", description: "", logoUrl: "", bannerUrl: "" });
@@ -130,8 +127,8 @@ export default function ChurchDepartments() {
         body: JSON.stringify({ inviteCode: inviteCode.trim() }),
       });
       const data = await r.json();
-      if (!r.ok) { toast({ title: "Error", description: data.message, variant: "destructive" }); return; }
-      toast({ title: "Joined successfully!" });
+      if (!r.ok) { toast({ title: t("cm_error"), description: data.message, variant: "destructive" }); return; }
+      toast({ title: t("cm_joined") + "!" });
       qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "departments"] });
       setShowJoin(false);
       setInviteCode("");
@@ -142,47 +139,43 @@ export default function ChurchDepartments() {
   return (
     <ChurchModeShell church={church} currentRole={myRole?.role ?? null}>
       <div className="space-y-5">
-        {/* Header */}
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: "#1d346118" }}>
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#1d346118" }}>
               <Building2 className="w-6 h-6" style={{ color: "#1d3461" }} />
             </div>
             <div>
-              <h1 className="font-serif text-2xl font-bold" style={{ color: "#1d3461" }}>Departments</h1>
+              <h1 className="font-serif text-2xl font-bold" style={{ color: "#1d3461" }}>{t("cm_departments")}</h1>
               <p className="text-sm mt-0.5" style={{ color: "#7a7570" }}>
-                {departments?.length ?? 0} department{(departments?.length ?? 0) !== 1 ? "s" : ""}
+                {departments?.length ?? 0} {(departments?.length ?? 0) !== 1 ? t("cm_departments").toLowerCase() : t("cm_departments").toLowerCase().replace(/s$/, "")}
               </p>
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={() => setShowJoin(true)} className="gap-1.5"
               style={{ borderColor: "#1d3461", color: "#1d3461" }} data-testid="button-join-department">
-              <Key className="w-3.5 h-3.5" />Join via Code
+              <Key className="w-3.5 h-3.5" />{t("cm_joinViaCode")}
             </Button>
             {isAdmin && (
               <Button size="sm" onClick={() => setShowCreate(true)} className="gap-1.5"
                 style={{ backgroundColor: "#1d3461" }} data-testid="button-create-department">
-                <Plus className="w-3.5 h-3.5" />New Department
+                <Plus className="w-3.5 h-3.5" />{t("cm_newDepartment")}
               </Button>
             )}
           </div>
         </div>
 
-        {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#9a9080" }} />
-          <Input className="pl-9" placeholder="Search departments…" value={search} onChange={e => setSearch(e.target.value)} data-testid="input-search-departments" />
+          <Input className="pl-9" placeholder={t("cm_searchDepartments")} value={search} onChange={e => setSearch(e.target.value)} data-testid="input-search-departments" />
         </div>
 
-        {/* Departments list */}
         {!isSignedIn ? (
           <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
             <CardContent className="pt-12 pb-12 text-center">
               <AlertCircle className="w-10 h-10 mx-auto mb-3" style={{ color: "#b8962e" }} />
-              <p className="font-semibold" style={{ color: "#1d3461" }}>Sign in to view departments</p>
-              <p className="text-sm mt-1" style={{ color: "#7a7570" }}>You need to be a church member to access departments.</p>
+              <p className="font-semibold" style={{ color: "#1d3461" }}>{t("cm_signInForDepts")}</p>
+              <p className="text-sm mt-1" style={{ color: "#7a7570" }}>{t("cm_churchMemberForDepts")}</p>
             </CardContent>
           </Card>
         ) : isLoading ? (
@@ -192,14 +185,14 @@ export default function ChurchDepartments() {
             <CardContent className="pt-12 pb-12 text-center">
               <Building2 className="w-10 h-10 mx-auto mb-3" style={{ color: "#c9b99060" }} />
               <p className="font-semibold" style={{ color: "#1d3461" }}>
-                {search ? "No departments found" : "No departments yet"}
+                {search ? t("cm_noDepartmentsFound") : t("cm_noDepartmentsYet")}
               </p>
               <p className="text-sm mt-1" style={{ color: "#7a7570" }}>
-                {search ? "Try a different search term." : isAdmin ? "Create the first department for your church." : "Ask your church admin to set up departments."}
+                {search ? t("cm_tryDifferentSearch") : isAdmin ? t("cm_createFirstDepartment") : t("cm_askAdminForDepts")}
               </p>
               {isAdmin && !search && (
                 <Button className="mt-4 gap-2" onClick={() => setShowCreate(true)} style={{ backgroundColor: "#1d3461" }}>
-                  <Plus className="w-4 h-4" />Create Department
+                  <Plus className="w-4 h-4" />{t("cm_createDepartment")}
                 </Button>
               )}
             </CardContent>
@@ -222,8 +215,7 @@ export default function ChurchDepartments() {
                   )}
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: `${color}18` }}>
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${color}18` }}>
                         {dept.logoUrl
                           ? <img src={dept.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />
                           : <Icon className="w-5 h-5" style={{ color }} />
@@ -257,42 +249,42 @@ export default function ChurchDepartments() {
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-serif text-xl" style={{ color: "#1d3461" }}>Create Department</DialogTitle>
+            <DialogTitle className="font-serif text-xl" style={{ color: "#1d3461" }}>{t("cm_createDepartment")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>Department Name <span className="text-red-500">*</span></Label>
+              <Label>{t("cm_departmentName")} <span className="text-red-500">*</span></Label>
               <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="e.g. Youth Ministry, Choir" data-testid="input-dept-name" />
             </div>
             <div className="space-y-1.5">
-              <Label>Type</Label>
+              <Label>{t("cm_deptType")}</Label>
               <select className="w-full border rounded-md px-3 py-2 text-sm" style={{ borderColor: "#e8e3dc" }}
                 value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
                 data-testid="select-dept-type">
-                {PREDEFINED_DEPARTMENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                {PREDEFINED_DEPARTMENT_TYPES.map(tp => <option key={tp} value={tp}>{tp}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
-              <Label>Description <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Label>{t("cm_deptDescription")} <span className="text-muted-foreground text-xs">{t("cm_optional")}</span></Label>
               <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                 placeholder="Brief description of this department's purpose…" rows={3} data-testid="input-dept-description" />
             </div>
             <div className="space-y-1.5">
-              <Label>Logo URL <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Label>{t("cm_logoUrl")} <span className="text-muted-foreground text-xs">{t("cm_optional")}</span></Label>
               <Input value={form.logoUrl} onChange={e => setForm(f => ({ ...f, logoUrl: e.target.value }))}
                 placeholder="https://…" data-testid="input-dept-logo-url" />
             </div>
             <div className="space-y-1.5">
-              <Label>Banner URL <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Label>{t("cm_bannerUrl")} <span className="text-muted-foreground text-xs">{t("cm_optional")}</span></Label>
               <Input value={form.bannerUrl} onChange={e => setForm(f => ({ ...f, bannerUrl: e.target.value }))}
                 placeholder="https://…" data-testid="input-dept-banner-url" />
             </div>
             <div className="flex gap-3 pt-2">
-              <Button variant="outline" onClick={() => setShowCreate(false)} className="flex-1">Cancel</Button>
+              <Button variant="outline" onClick={() => setShowCreate(false)} className="flex-1">{t("cm_cancel")}</Button>
               <Button onClick={handleCreate} disabled={creating || !form.name.trim()} className="flex-1"
                 style={{ backgroundColor: "#1d3461" }} data-testid="button-confirm-create-dept">
-                {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating…</> : "Create Department"}
+                {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("cm_creating")}</> : t("cm_createDepartment")}
               </Button>
             </div>
           </div>
@@ -303,21 +295,21 @@ export default function ChurchDepartments() {
       <Dialog open={showJoin} onOpenChange={setShowJoin}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-serif text-xl" style={{ color: "#1d3461" }}>Join Department</DialogTitle>
+            <DialogTitle className="font-serif text-xl" style={{ color: "#1d3461" }}>{t("cm_joinDepartment")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <p className="text-sm" style={{ color: "#7a7570" }}>Enter the 6-character invite code shared by your department leader.</p>
+            <p className="text-sm" style={{ color: "#7a7570" }}>{t("cm_joinDeptInstructions")}</p>
             <div className="space-y-1.5">
-              <Label>Invite Code <span className="text-red-500">*</span></Label>
+              <Label>{t("cm_inviteCode")} <span className="text-red-500">*</span></Label>
               <Input value={inviteCode} onChange={e => setInviteCode(e.target.value.toUpperCase())}
                 placeholder="ABC123" maxLength={8} className="text-center text-xl font-mono tracking-widest font-bold"
                 data-testid="input-invite-code" />
             </div>
             <div className="flex gap-3 pt-1">
-              <Button variant="outline" onClick={() => setShowJoin(false)} className="flex-1">Cancel</Button>
+              <Button variant="outline" onClick={() => setShowJoin(false)} className="flex-1">{t("cm_cancel")}</Button>
               <Button onClick={handleJoin} disabled={joining || !inviteCode.trim()} className="flex-1"
                 style={{ backgroundColor: "#1d3461" }} data-testid="button-confirm-join-dept">
-                {joining ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Joining…</> : "Join"}
+                {joining ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("cm_joining")}</> : t("cm_join")}
               </Button>
             </div>
           </div>

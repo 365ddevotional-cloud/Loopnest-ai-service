@@ -1,11 +1,13 @@
-import { useParams, Link } from "wouter";
+import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useI18n } from "@/hooks/useI18n";
 import { ChurchPublicShell } from "@/components/ChurchPublicShell";
 import { Loader2, Play, Download, BookOpen, Search, X } from "lucide-react";
 
 export default function ChurchPublicWatch() {
   const { slug } = useParams<{ slug: string }>();
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [playing, setPlaying] = useState<any>(null);
 
@@ -27,20 +29,16 @@ export default function ChurchPublicWatch() {
   return (
     <ChurchPublicShell church={church}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
-        {/* Header */}
         <div className="mb-8">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>Media</p>
-          <h1 className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>Sermons & Messages</h1>
-          <p className="mt-2 text-sm" style={{ color: "#9a9080" }}>
-            Watch, listen, and be encouraged by the Word of God.
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>{t("cm_mediaLabel")}</p>
+          <h1 className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>{t("cm_sermonMessagesHeading")}</h1>
+          <p className="mt-2 text-sm" style={{ color: "#9a9080" }}>{t("cm_watchEncouraged")}</p>
         </div>
 
-        {/* Search */}
         <div className="relative mb-8">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#c0b8b0" }} />
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search sermons..."
+            placeholder={t("cm_searchSermonsPlaceholder")}
             className="w-full pl-10 pr-4 py-3 rounded-xl border text-sm outline-none"
             style={{ borderColor: "#ece8e0" }}
             data-testid="input-search-sermons" />
@@ -51,7 +49,6 @@ export default function ChurchPublicWatch() {
           )}
         </div>
 
-        {/* Video player modal */}
         {playing && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setPlaying(null)}>
             <div className="w-full max-w-3xl" onClick={e => e.stopPropagation()}>
@@ -82,7 +79,6 @@ export default function ChurchPublicWatch() {
           </div>
         )}
 
-        {/* Sermon grid */}
         {(isLoading || sermonsLoading) ? (
           <div className="flex justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin" style={{ color: primary }} />
@@ -90,15 +86,14 @@ export default function ChurchPublicWatch() {
         ) : filtered.length === 0 ? (
           <div className="text-center py-20">
             <div className="text-4xl mb-3">🎙️</div>
-            <p className="font-semibold" style={{ color: "#3d3a36" }}>No sermons yet</p>
-            <p className="text-sm mt-1" style={{ color: "#9a9080" }}>Check back soon for messages from our pastor.</p>
+            <p className="font-semibold" style={{ color: "#3d3a36" }}>{t("cm_noSermonsYet")}</p>
+            <p className="text-sm mt-1" style={{ color: "#9a9080" }}>{t("cm_checkBackForSermons")}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map(s => (
               <div key={s.id} className="rounded-2xl border overflow-hidden" style={{ borderColor: "#ece8e0" }}
                 data-testid={`card-sermon-${s.id}`}>
-                {/* Thumbnail */}
                 <div className="relative aspect-video overflow-hidden cursor-pointer group"
                   style={{ backgroundColor: `${primary}12` }}
                   onClick={() => (s.videoUrl || s.audioUrl) && setPlaying(s)}>
@@ -133,7 +128,7 @@ export default function ChurchPublicWatch() {
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-white"
                         style={{ backgroundColor: primary }}
                         data-testid={`button-watch-sermon-${s.id}`}>
-                        <Play className="w-3.5 h-3.5" /> Watch
+                        <Play className="w-3.5 h-3.5" /> {t("cm_watchButton")}
                       </button>
                     )}
                     {s.audioUrl && !s.videoUrl && (
@@ -141,7 +136,7 @@ export default function ChurchPublicWatch() {
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-white"
                         style={{ backgroundColor: primary }}
                         data-testid={`button-listen-sermon-${s.id}`}>
-                        🎧 Listen
+                        🎧 {t("cm_listenButton")}
                       </button>
                     )}
                     {s.pdfNotesUrl && (
@@ -149,7 +144,7 @@ export default function ChurchPublicWatch() {
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border"
                         style={{ borderColor: "#ece8e0", color: "#6b6460" }}
                         data-testid={`button-notes-sermon-${s.id}`}>
-                        <Download className="w-3.5 h-3.5" /> Notes
+                        <Download className="w-3.5 h-3.5" /> {t("cm_notesButton")}
                       </a>
                     )}
                   </div>

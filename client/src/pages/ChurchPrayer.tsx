@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRoute } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
+import { useI18n } from "@/hooks/useI18n";
 import { ChurchModeShell } from "@/components/ChurchModeShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ export default function ChurchPrayer() {
   const [, params] = useRoute("/church/:slug/prayer");
   const slug = params?.slug ?? "";
   const { getIdToken, user, emailVerified } = useUser();
+  const { t } = useI18n();
   const { toast } = useToast();
   const qc = useQueryClient();
   const isSignedIn = !!user && !!emailVerified;
@@ -73,9 +75,9 @@ export default function ChurchPrayer() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "prayer"] });
       setTitle(""); setBody(""); setIsConfidential(false); setShowForm(false);
-      toast({ title: "Prayer request submitted" });
+      toast({ title: t("cm_prayerSubmitted") });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
   const prayFor = async (prayerId: number) => {
@@ -86,7 +88,7 @@ export default function ChurchPrayer() {
     });
     setPrayedFor(s => new Set(s).add(prayerId));
     qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "prayer"] });
-    toast({ title: "Amen 🙏", description: "Your prayer has been counted." });
+    toast({ title: t("cm_amen"), description: t("cm_yourPrayerCounted") });
   };
 
   const isMember = !!myRole?.role && myRole.status === "active";
@@ -104,7 +106,7 @@ export default function ChurchPrayer() {
               <Heart className="w-5 h-5" style={{ color: "#7a1520" }} />
             </div>
             <div>
-              <h2 className="font-serif text-2xl font-bold" style={{ color: "#1a2744" }}>Prayer Wall</h2>
+              <h2 className="font-serif text-2xl font-bold" style={{ color: "#1a2744" }}>{t("cm_prayerWallHeading")}</h2>
               <p className="text-sm mt-0.5" style={{ color: "#7a7570" }}>Share requests and stand in prayer together</p>
             </div>
           </div>
@@ -112,7 +114,7 @@ export default function ChurchPrayer() {
             <Button size="sm" onClick={() => setShowForm(true)} style={{ backgroundColor: "#1a2744" }}
               data-testid="button-add-prayer">
               <Plus className="w-4 h-4 mr-1.5" />
-              Request Prayer
+              {t("cm_requestPrayer")}
             </Button>
           )}
         </div>
@@ -121,29 +123,28 @@ export default function ChurchPrayer() {
           <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff", borderLeft: "4px solid #7a1520" }}>
             <CardContent className="pt-4 pb-4 flex items-center gap-3">
               <AlertCircle className="w-5 h-5 flex-shrink-0" style={{ color: "#7a1520" }} />
-              <p className="text-sm" style={{ color: "#1a2744" }}>You must be a member to view and submit prayer requests.</p>
+              <p className="text-sm" style={{ color: "#1a2744" }}>{t("cm_mustBeMemberForPrayer")}</p>
             </CardContent>
           </Card>
         ) : (
           <>
-            {/* Submit form */}
             {showForm && (
               <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
                 <CardContent className="pt-5 pb-5 px-5 space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold" style={{ color: "#1a2744" }}>New Prayer Request</h3>
+                    <h3 className="font-semibold" style={{ color: "#1a2744" }}>{t("cm_newPrayerRequest")}</h3>
                     <button onClick={() => setShowForm(false)} className="text-muted-foreground hover:text-foreground">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Title</Label>
-                    <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Brief title for your request" data-testid="input-prayer-title" />
+                    <Label>{t("cm_titleLabel")}</Label>
+                    <Input value={title} onChange={e => setTitle(e.target.value)} placeholder={t("cm_prayerRequestTitle")} data-testid="input-prayer-title" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Prayer Request</Label>
+                    <Label>{t("cm_requestPrayer")}</Label>
                     <Textarea value={body} onChange={e => setBody(e.target.value)} rows={4}
-                      placeholder="Share your prayer need…" data-testid="input-prayer-body" />
+                      placeholder={t("cm_prayerRequestBody")} data-testid="input-prayer-body" />
                   </div>
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input
@@ -154,10 +155,8 @@ export default function ChurchPrayer() {
                       data-testid="checkbox-confidential"
                     />
                     <div>
-                      <p className="text-sm font-medium" style={{ color: "#1a2744" }}>Keep confidential</p>
-                      <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>
-                        Only pastoral and prayer team members will see this request.
-                      </p>
+                      <p className="text-sm font-medium" style={{ color: "#1a2744" }}>{t("cm_keepConfidential")}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>{t("cm_confidentialNote")}</p>
                     </div>
                   </label>
                   <Button
@@ -166,7 +165,7 @@ export default function ChurchPrayer() {
                     style={{ backgroundColor: "#1a2744" }}
                     data-testid="button-submit-prayer"
                   >
-                    {submitPrayer.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Submitting…</> : "Submit Prayer Request"}
+                    {submitPrayer.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("cm_submitting")}</> : t("cm_submitPrayerRequest")}
                   </Button>
                 </CardContent>
               </Card>
@@ -179,15 +178,15 @@ export default function ChurchPrayer() {
             ) : !prayers?.length ? (
               <div className="text-center py-16">
                 <Heart className="w-12 h-12 mx-auto mb-3" style={{ color: "#c9b99060" }} />
-                <p className="font-semibold" style={{ color: "#1a2744" }}>No prayer requests yet</p>
-                <p className="text-sm mt-1" style={{ color: "#7a7570" }}>Be the first to share a prayer need with your community.</p>
+                <p className="font-semibold" style={{ color: "#1a2744" }}>{t("cm_noPrayerRequests")}</p>
+                <p className="text-sm mt-1" style={{ color: "#7a7570" }}>{t("cm_firstPrayer")}</p>
               </div>
             ) : (
               <div className="space-y-6">
                 {activeRequests.length > 0 && (
                   <div className="space-y-3">
                     <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#7a7570" }}>
-                      Active Requests ({activeRequests.length})
+                      {t("cm_activeRequests")} ({activeRequests.length})
                     </span>
                     {activeRequests.map(pr => {
                       const hasPrayed = prayedFor.has(pr.id);
@@ -211,7 +210,7 @@ export default function ChurchPrayer() {
                             <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
                               <div className="flex items-center gap-2">
                                 <p className="text-xs font-medium" style={{ color: "#7a7570" }}>
-                                  — {pr.isConfidential && !canSeeConfidential ? "Anonymous" : (pr.displayName ?? "Anonymous")}
+                                  — {pr.isConfidential && !canSeeConfidential ? t("cm_anonymous") : (pr.displayName ?? t("cm_anonymous"))}
                                 </p>
                               </div>
                               <div className="flex items-center gap-2">
@@ -227,7 +226,7 @@ export default function ChurchPrayer() {
                                   data-testid={`button-pray-${pr.id}`}
                                 >
                                   <Heart className={`w-3.5 h-3.5 ${hasPrayed ? "fill-current" : ""}`} />
-                                  {hasPrayed ? "Praying" : "I'm Praying"} · {pr.prayerCount}
+                                  {hasPrayed ? t("cm_praying") : t("cm_imPraying")} · {pr.prayerCount}
                                 </button>
                                 {isAdmin && (
                                   <Button size="sm" variant="outline" className="h-7 text-xs px-2 gap-1"
@@ -239,12 +238,12 @@ export default function ChurchPrayer() {
                                         body: JSON.stringify({ status: "answered" }),
                                       });
                                       qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "prayer"] });
-                                      toast({ title: "Marked as answered" });
+                                      toast({ title: t("cm_markedAsAnswered") });
                                     }}
                                     data-testid={`button-mark-answered-${pr.id}`}
                                   >
                                     <CheckCircle className="w-3.5 h-3.5" />
-                                    Answered
+                                    {t("cm_answered")}
                                   </Button>
                                 )}
                               </div>
@@ -260,7 +259,7 @@ export default function ChurchPrayer() {
                   <div className="space-y-3">
                     <span className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: "#1a5744" }}>
                       <CheckCircle className="w-3.5 h-3.5" />
-                      Answered Prayers ({answeredRequests.length})
+                      {t("cm_answeredPrayers")} ({answeredRequests.length})
                     </span>
                     {answeredRequests.map(pr => (
                       <Card key={pr.id} className="border-0 shadow-sm opacity-80" style={{ backgroundColor: "#1a574408" }}>
@@ -270,7 +269,7 @@ export default function ChurchPrayer() {
                             <h4 className="font-semibold text-sm" style={{ color: "#1a5744" }}>{pr.title}</h4>
                           </div>
                           <p className="text-xs" style={{ color: "#5a7566" }}>
-                            {pr.isConfidential && !canSeeConfidential ? "Anonymous" : (pr.displayName ?? "Anonymous")} · Answered
+                            {pr.isConfidential && !canSeeConfidential ? t("cm_anonymous") : (pr.displayName ?? t("cm_anonymous"))} · {t("cm_answered")}
                           </p>
                         </CardContent>
                       </Card>

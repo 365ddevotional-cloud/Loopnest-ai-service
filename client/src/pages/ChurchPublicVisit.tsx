@@ -1,34 +1,34 @@
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useI18n } from "@/hooks/useI18n";
 import { ChurchPublicShell } from "@/components/ChurchPublicShell";
 import { Loader2, MapPin, Clock, CheckCircle } from "lucide-react";
 
-const VISITOR_TIPS = [
-  "Arrive a few minutes early to find parking and get settled",
-  "Dress comfortably — there's no dress code, come as you are",
-  "Our welcome team will greet you at the entrance",
-  "Children's programs are available during the service",
-  "Stay after the service to meet other members",
-  "Your first visit is completely pressure-free — just come and worship",
-];
-
 export default function ChurchPublicVisit() {
   const { slug } = useParams<{ slug: string }>();
+  const { t } = useI18n();
   const { data, isLoading } = useQuery<any>({ queryKey: [`/api/public/churches/${slug}`] });
 
   const church = data?.church ?? null;
   const primary = church?.themeColor ?? "#1d3461";
   const base = `/church/${slug}`;
 
+  const VISITOR_TIPS = [
+    t("cm_tipEarlyArrival"),
+    t("cm_tipDressCode"),
+    t("cm_tipWelcomeTeam"),
+    t("cm_tipChildrenPrograms"),
+    t("cm_tipStayAfter"),
+    t("cm_tipPressureFree"),
+  ];
+
   return (
     <ChurchPublicShell church={church}>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
         <div className="mb-10">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>First Visit</p>
-          <h1 className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>Plan Your Visit</h1>
-          <p className="mt-2 text-sm" style={{ color: "#9a9080" }}>
-            We're so excited to meet you. Here's everything you need to know.
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: primary }}>{t("cm_firstVisit")}</p>
+          <h1 className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>{t("cm_planYourVisit")}</h1>
+          <p className="mt-2 text-sm" style={{ color: "#9a9080" }}>{t("cm_visitExcited")}</p>
         </div>
 
         {isLoading ? (
@@ -38,10 +38,9 @@ export default function ChurchPublicVisit() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
             <div className="space-y-6">
-              {/* Service times */}
               {church?.serviceTimes && church.serviceTimes.length > 0 && (
                 <div>
-                  <h2 className="text-lg font-bold mb-4" style={{ color: "#1a1a1a" }}>When to Come</h2>
+                  <h2 className="text-lg font-bold mb-4" style={{ color: "#1a1a1a" }}>{t("cm_whenToCome")}</h2>
                   <div className="space-y-2">
                     {church.serviceTimes.map((s: any, i: number) => (
                       <div key={i} className="flex items-center gap-3 p-4 rounded-xl border bg-white" style={{ borderColor: "#ece8e0" }}>
@@ -56,10 +55,9 @@ export default function ChurchPublicVisit() {
                 </div>
               )}
 
-              {/* Location */}
               {church?.address && (
                 <div>
-                  <h2 className="text-lg font-bold mb-4" style={{ color: "#1a1a1a" }}>Where We Meet</h2>
+                  <h2 className="text-lg font-bold mb-4" style={{ color: "#1a1a1a" }}>{t("cm_whereWeMeet")}</h2>
                   <div className="p-4 rounded-xl border bg-white flex items-start gap-3" style={{ borderColor: "#ece8e0" }}>
                     <MapPin className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: primary }} />
                     <div>
@@ -67,11 +65,10 @@ export default function ChurchPublicVisit() {
                       <a href={`https://maps.google.com/?q=${encodeURIComponent(church.address)}`}
                         target="_blank" rel="noopener noreferrer"
                         className="text-xs font-medium mt-1 inline-block" style={{ color: primary }}>
-                        Get Directions →
+                        {t("cm_getDirections")}
                       </a>
                     </div>
                   </div>
-                  {/* Map */}
                   <div className="rounded-2xl overflow-hidden border h-52 mt-3" style={{ borderColor: "#ece8e0" }}>
                     <iframe
                       src={church.mapEmbedUrl ?? `https://maps.google.com/maps?q=${encodeURIComponent(church.address)}&output=embed`}
@@ -80,10 +77,9 @@ export default function ChurchPublicVisit() {
                 </div>
               )}
 
-              {/* Custom visitor info */}
               {church?.visitorInfo && (
                 <div>
-                  <h2 className="text-lg font-bold mb-3" style={{ color: "#1a1a1a" }}>What to Expect</h2>
+                  <h2 className="text-lg font-bold mb-3" style={{ color: "#1a1a1a" }}>{t("cm_whatToExpect")}</h2>
                   <p className="text-sm leading-relaxed p-5 rounded-xl bg-white border" style={{ color: "#6b6460", borderColor: "#ece8e0" }}>
                     {church.visitorInfo}
                   </p>
@@ -92,9 +88,8 @@ export default function ChurchPublicVisit() {
             </div>
 
             <div className="space-y-6">
-              {/* Visitor tips */}
               <div>
-                <h2 className="text-lg font-bold mb-4" style={{ color: "#1a1a1a" }}>Tips for First-Timers</h2>
+                <h2 className="text-lg font-bold mb-4" style={{ color: "#1a1a1a" }}>{t("cm_tipsForFirstTimers")}</h2>
                 <div className="space-y-3">
                   {VISITOR_TIPS.map((tip, i) => (
                     <div key={i} className="flex items-start gap-2.5">
@@ -105,12 +100,9 @@ export default function ChurchPublicVisit() {
                 </div>
               </div>
 
-              {/* Contact info */}
               <div className="p-6 rounded-2xl border" style={{ borderColor: "#ece8e0", backgroundColor: `${primary}06` }}>
-                <p className="font-semibold text-sm mb-3" style={{ color: "#1a1a1a" }}>Have Questions?</p>
-                <p className="text-xs mb-4" style={{ color: "#9a9080" }}>
-                  We're happy to answer any questions you might have before your visit.
-                </p>
+                <p className="font-semibold text-sm mb-3" style={{ color: "#1a1a1a" }}>{t("cm_haveQuestions")}</p>
+                <p className="text-xs mb-4" style={{ color: "#9a9080" }}>{t("cm_happyToAnswer")}</p>
                 <div className="space-y-2">
                   {church?.phone && (
                     <a href={`tel:${church.phone}`} className="block text-sm font-medium" style={{ color: primary }}>
@@ -127,19 +119,18 @@ export default function ChurchPublicVisit() {
                   className="inline-block mt-4 px-5 py-2.5 text-sm font-semibold rounded-xl text-white"
                   style={{ backgroundColor: primary }}
                   data-testid="button-contact-us">
-                  Contact Us
+                  {t("cm_contactUsHeading")}
                 </Link>
               </div>
 
-              {/* Join CTA */}
               <div className="p-6 rounded-2xl border bg-white text-center" style={{ borderColor: "#ece8e0" }}>
-                <p className="font-bold text-base mb-2" style={{ color: "#1a1a1a" }}>Ready to Become a Member?</p>
-                <p className="text-xs mb-4" style={{ color: "#9a9080" }}>Join our church community and grow in faith together.</p>
+                <p className="font-bold text-base mb-2" style={{ color: "#1a1a1a" }}>{t("cm_readyToBeMember")}</p>
+                <p className="text-xs mb-4" style={{ color: "#9a9080" }}>{t("cm_joinFaithTogether")}</p>
                 <Link href={`${base}/join-us`}
                   className="inline-block px-6 py-3 text-sm font-semibold rounded-xl text-white"
                   style={{ backgroundColor: primary }}
                   data-testid="button-join-now">
-                  Join Our Church
+                  {t("cm_joinOurChurch")}
                 </Link>
               </div>
             </div>

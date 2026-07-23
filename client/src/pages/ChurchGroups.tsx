@@ -1,6 +1,7 @@
 import { useRoute } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
+import { useI18n } from "@/hooks/useI18n";
 import { ChurchModeShell } from "@/components/ChurchModeShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ export default function ChurchGroups() {
   const [, params] = useRoute("/church/:slug/groups");
   const slug = params?.slug ?? "";
   const { getIdToken, user, emailVerified } = useUser();
+  const { t } = useI18n();
   const { toast } = useToast();
   const qc = useQueryClient();
   const isSignedIn = !!user && !!emailVerified;
@@ -69,9 +71,9 @@ export default function ChurchGroups() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "groups"] });
-      toast({ title: "Joined group" });
+      toast({ title: t("cm_joinedGroup") });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
   const leaveGroup = useMutation({
@@ -84,9 +86,9 @@ export default function ChurchGroups() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "groups"] });
-      toast({ title: "Left group" });
+      toast({ title: t("cm_leftGroup") });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
   const isMember = !!myRole?.role && myRole.status === "active";
@@ -99,8 +101,8 @@ export default function ChurchGroups() {
             <Users className="w-5 h-5" style={{ color: "#1a2744" }} />
           </div>
           <div>
-            <h2 className="font-serif text-2xl font-bold" style={{ color: "#1a2744" }}>Groups</h2>
-            <p className="text-sm mt-0.5" style={{ color: "#7a7570" }}>Small groups and ministries</p>
+            <h2 className="font-serif text-2xl font-bold" style={{ color: "#1a2744" }}>{t("cm_groupsHeading")}</h2>
+            <p className="text-sm mt-0.5" style={{ color: "#7a7570" }}>{t("cm_smallGroupsDesc")}</p>
           </div>
         </div>
 
@@ -108,7 +110,7 @@ export default function ChurchGroups() {
           <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff", borderLeft: "4px solid #b8962e" }}>
             <CardContent className="pt-4 pb-4 flex items-center gap-3">
               <AlertCircle className="w-5 h-5 flex-shrink-0" style={{ color: "#b8962e" }} />
-              <p className="text-sm" style={{ color: "#1a2744" }}>You must be a member to view and join groups.</p>
+              <p className="text-sm" style={{ color: "#1a2744" }}>{t("cm_mustBeMemberForGroups")}</p>
             </CardContent>
           </Card>
         ) : isLoading ? (
@@ -118,8 +120,8 @@ export default function ChurchGroups() {
         ) : !groups?.length ? (
           <div className="text-center py-16">
             <Users className="w-12 h-12 mx-auto mb-3" style={{ color: "#c9b99060" }} />
-            <p className="font-semibold" style={{ color: "#1a2744" }}>No groups yet</p>
-            <p className="text-sm mt-1" style={{ color: "#7a7570" }}>Small groups and ministry teams will appear here.</p>
+            <p className="font-semibold" style={{ color: "#1a2744" }}>{t("cm_noGroupsYet")}</p>
+            <p className="text-sm mt-1" style={{ color: "#7a7570" }}>{t("cm_groupsWillAppear")}</p>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 gap-4">
@@ -133,7 +135,7 @@ export default function ChurchGroups() {
                       <h3 className="font-semibold text-base leading-snug" style={{ color: "#1a2744" }}>{group.name}</h3>
                       {group.isMember && (
                         <Badge className="flex-shrink-0 text-xs" style={{ backgroundColor: "#1a274412", color: "#1a2744", border: "1px solid #1a274420" }}>
-                          Joined
+                          {t("cm_joined")}
                         </Badge>
                       )}
                     </div>
@@ -148,7 +150,7 @@ export default function ChurchGroups() {
                       )}
                       <span className="flex items-center gap-1 text-xs" style={{ color: "#7a7570" }}>
                         <Users className="w-3.5 h-3.5" />
-                        {group.memberCount} {group.memberCount === 1 ? "member" : "members"}
+                        {group.memberCount} {t("cm_memberCount")}
                       </span>
                     </div>
 
@@ -161,7 +163,7 @@ export default function ChurchGroups() {
                     <div className="space-y-1.5 mb-4">
                       {group.leaderName && (
                         <p className="text-xs" style={{ color: "#7a7570" }}>
-                          Led by <span className="font-medium" style={{ color: "#1a2744" }}>{group.leaderName}</span>
+                          {t("cm_ledBy")} <span className="font-medium" style={{ color: "#1a2744" }}>{group.leaderName}</span>
                         </p>
                       )}
                       {group.meetingSchedule && (
@@ -177,12 +179,12 @@ export default function ChurchGroups() {
                         variant="outline"
                         size="sm"
                         className="w-full text-xs"
-                        onClick={() => { if (confirm(`Leave "${group.name}"?`)) leaveGroup.mutate(group.id); }}
+                        onClick={() => { if (confirm(t("cm_leaveGroup") + `"${group.name}"?`)) leaveGroup.mutate(group.id); }}
                         disabled={leaveGroup.isPending}
                         data-testid={`button-leave-group-${group.id}`}
                       >
                         <UserMinus className="w-3.5 h-3.5 mr-1.5" />
-                        Leave Group
+                        {t("cm_leaveGroup")}
                       </Button>
                     ) : (
                       <Button
@@ -194,7 +196,7 @@ export default function ChurchGroups() {
                         data-testid={`button-join-group-${group.id}`}
                       >
                         <UserPlus className="w-3.5 h-3.5 mr-1.5" />
-                        Join Group
+                        {t("cm_joinGroup")}
                       </Button>
                     )}
                   </CardContent>

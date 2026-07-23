@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
 import { useRoute } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
+import { useI18n } from "@/hooks/useI18n";
 import { ChurchModeShell } from "@/components/ChurchModeShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,6 @@ import {
   ChevronDown, ChevronUp, Download, ExternalLink, Clock
 } from "lucide-react";
 import type { Church, ChurchSermon } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
 
 interface MyRole { role: string | null; memberId: number | null; status: string | null; }
 
@@ -31,6 +31,7 @@ const EMPTY_FORM = {
 function AudioPlayer({ url }: { url: string }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
+  const { t } = useI18n();
   const toggle = () => {
     if (!audioRef.current) return;
     if (playing) { audioRef.current.pause(); setPlaying(false); }
@@ -46,14 +47,14 @@ function AudioPlayer({ url }: { url: string }) {
         data-testid="button-sermon-audio-play"
       >
         <Headphones className="w-3.5 h-3.5" />
-        {playing ? "Pause" : "Listen"}
+        {playing ? t("cm_pause") : t("cm_listen")}
       </button>
       <a href={url} target="_blank" rel="noopener noreferrer"
         className="text-xs px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1"
         style={{ backgroundColor: "#f0ece4", color: "#7a7570" }}
         data-testid="button-sermon-audio-external">
         <ExternalLink className="w-3 h-3" />
-        Open
+        {t("cm_open")}
       </a>
     </div>
   );
@@ -77,6 +78,7 @@ function SermonCard({
   const [noteSaved, setNoteSaved] = useState(false);
   const [noteSaving, setSaving] = useState(false);
   const { toast } = useToast();
+  const { t } = useI18n();
 
   const { data: noteData } = useQuery<{ body: string }>({
     queryKey: ["/api/churches", churchId, "sermons", sermon.id, "note"],
@@ -101,7 +103,7 @@ function SermonCard({
         body: JSON.stringify({ body: noteBody }),
       });
       setNoteSaved(true);
-      toast({ title: "Notes saved" });
+      toast({ title: t("cm_notesSaved") });
     } finally { setSaving(false); }
   };
 
@@ -133,13 +135,13 @@ function SermonCard({
               <h3 className="font-semibold text-base leading-snug" style={{ color: "#1a2744" }}>{sermon.title}</h3>
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 {!sermon.isPublished && (
-                  <Badge variant="outline" className="text-xs" style={{ borderColor: "#f59e0b50", color: "#d97706" }}>Draft</Badge>
+                  <Badge variant="outline" className="text-xs" style={{ borderColor: "#f59e0b50", color: "#d97706" }}>{t("cm_draft")}</Badge>
                 )}
                 <button
                   onClick={() => onToggleBookmark(sermon.id)}
                   className="p-1.5 rounded-lg transition-colors"
                   style={{ backgroundColor: isBookmarked ? "#b8962e15" : "transparent" }}
-                  title={isBookmarked ? "Remove bookmark" : "Bookmark"}
+                  title={isBookmarked ? t("cm_removeBookmark") : t("cm_bookmark")}
                   data-testid={`button-bookmark-sermon-${sermon.id}`}
                 >
                   {isBookmarked
@@ -181,7 +183,7 @@ function SermonCard({
               {sermon.scheduledDate && !sermon.sermonDate && (
                 <span className="flex items-center gap-1 text-xs" style={{ color: "#6366f1" }}>
                   <Clock className="w-3.5 h-3.5" />
-                  Scheduled {new Date(sermon.scheduledDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  {t("cm_scheduled")} {new Date(sermon.scheduledDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                 </span>
               )}
             </div>
@@ -193,7 +195,7 @@ function SermonCard({
             )}
             {sermon.description && sermon.description.length > 120 && (
               <button onClick={() => setExpanded(e => !e)} className="text-xs mt-1 flex items-center gap-0.5" style={{ color: "#b8962e" }}>
-                {expanded ? <><ChevronUp className="w-3.5 h-3.5" />Show less</> : <><ChevronDown className="w-3.5 h-3.5" />Read more</>}
+                {expanded ? <><ChevronUp className="w-3.5 h-3.5" />{t("cm_showLess")}</> : <><ChevronDown className="w-3.5 h-3.5" />{t("cm_readMore")}</>}
               </button>
             )}
 
@@ -204,7 +206,7 @@ function SermonCard({
                   style={{ backgroundColor: "#1a274412", color: "#1a2744" }}
                   data-testid={`link-sermon-video-${sermon.id}`}>
                   <Play className="w-3.5 h-3.5" />
-                  Watch Video
+                  {t("cm_watchVideo")}
                 </a>
               )}
               {sermon.audioUrl && <AudioPlayer url={sermon.audioUrl} />}
@@ -214,7 +216,7 @@ function SermonCard({
                   style={{ backgroundColor: "#ef444415", color: "#dc2626" }}
                   data-testid={`link-sermon-notes-${sermon.id}`}>
                   <FileText className="w-3.5 h-3.5" />
-                  Sermon Notes
+                  {t("cm_sermonNotes")}
                 </a>
               )}
               {sermon.outlineUrl && (
@@ -223,7 +225,7 @@ function SermonCard({
                   style={{ backgroundColor: "#22c55e12", color: "#16a34a" }}
                   data-testid={`link-sermon-outline-${sermon.id}`}>
                   <Download className="w-3.5 h-3.5" />
-                  Download Outline
+                  {t("cm_downloadOutline")}
                 </a>
               )}
               <button
@@ -232,7 +234,7 @@ function SermonCard({
                 style={{ backgroundColor: showNotes ? "#6366f115" : "#f0ece4", color: showNotes ? "#6366f1" : "#7a7570" }}
                 data-testid={`button-sermon-notes-${sermon.id}`}>
                 <Pencil className="w-3.5 h-3.5" />
-                My Notes
+                {t("cm_myNotes")}
               </button>
             </div>
 
@@ -241,7 +243,7 @@ function SermonCard({
                 <Textarea
                   value={noteBody}
                   onChange={e => { setNoteBody(e.target.value); setNoteSaved(false); }}
-                  placeholder="Write your personal notes here — only you can see these..."
+                  placeholder={t("cm_notesPlaceholder")}
                   rows={4}
                   className="text-sm resize-none"
                   style={{ borderColor: "#c9b99044" }}
@@ -255,10 +257,10 @@ function SermonCard({
                     style={{ backgroundColor: "#6366f1", color: "#fff" }}
                     data-testid={`button-save-note-${sermon.id}`}
                   >
-                    {noteSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Save Notes"}
+                    {noteSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : t("cm_saveNotes")}
                   </Button>
-                  {noteSaved && <span className="text-xs" style={{ color: "#22c55e" }}>Saved</span>}
-                  <span className="text-xs" style={{ color: "#9a9080" }}>Private to you</span>
+                  {noteSaved && <span className="text-xs" style={{ color: "#22c55e" }}>{t("cm_saved")}</span>}
+                  <span className="text-xs" style={{ color: "#9a9080" }}>{t("cm_privateToYou")}</span>
                 </div>
               </div>
             )}
@@ -273,6 +275,7 @@ export default function ChurchSermons() {
   const [, params] = useRoute("/church/:slug/sermons");
   const slug = params?.slug ?? "";
   const { getIdToken, user, emailVerified } = useUser();
+  const { t } = useI18n();
   const isSignedIn = !!user && !!emailVerified;
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -368,22 +371,22 @@ export default function ChurchSermons() {
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!r.ok) { const d = await r.json(); toast({ title: "Error", description: d.message, variant: "destructive" }); return; }
+      if (!r.ok) { const d = await r.json(); toast({ title: t("cm_error"), description: d.message, variant: "destructive" }); return; }
       qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "sermons"] });
       setShowForm(false);
-      toast({ title: editingSermon ? "Sermon updated" : "Sermon created" });
+      toast({ title: editingSermon ? t("cm_sermonUpdated") : t("cm_sermonCreated") });
     } finally { setSaving(false); }
   };
 
   const handleDelete = async (sermonId: number) => {
-    if (!church || !confirm("Delete this sermon?")) return;
+    if (!church || !confirm(t("cm_confirmDeleteSermon"))) return;
     const token = await getIdToken();
     if (!token) return;
     await fetch(`/api/churches/${church.id}/sermons/${sermonId}`, {
       method: "DELETE", headers: { Authorization: `Bearer ${token}` },
     });
     qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "sermons"] });
-    toast({ title: "Sermon deleted" });
+    toast({ title: t("cm_sermonDeleted") });
   };
 
   const displayedSermons = filterBookmarked
@@ -399,9 +402,9 @@ export default function ChurchSermons() {
               <Mic2 className="w-5 h-5" style={{ color: "#1a2744" }} />
             </div>
             <div>
-              <h2 className="font-serif text-2xl font-bold" style={{ color: "#1a2744" }}>Sermons</h2>
+              <h2 className="font-serif text-2xl font-bold" style={{ color: "#1a2744" }}>{t("cm_sermons")}</h2>
               <p className="text-sm mt-0.5" style={{ color: "#7a7570" }}>
-                {sermons?.length ?? 0} sermon{(sermons?.length ?? 0) !== 1 ? "s" : ""}
+                {sermons?.length ?? 0} {t("cm_sermonsCount")}
               </p>
             </div>
           </div>
@@ -413,85 +416,84 @@ export default function ChurchSermons() {
               data-testid="button-filter-bookmarked"
             >
               <Bookmark className="w-3.5 h-3.5" />
-              {filterBookmarked ? "All Sermons" : "Bookmarked"}
+              {filterBookmarked ? t("cm_allSermons") : t("cm_bookmarked")}
             </button>
             {isAdmin && (
               <Button size="sm" onClick={openCreate} style={{ backgroundColor: "#1a2744", color: "#fff" }} data-testid="button-add-sermon">
                 <Plus className="w-4 h-4 mr-1" />
-                Add Sermon
+                {t("cm_addSermon")}
               </Button>
             )}
           </div>
         </div>
 
-        {/* Add/Edit Form */}
         {showForm && isAdmin && (
           <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center justify-between">
-                <span style={{ color: "#1a2744" }}>{editingSermon ? "Edit Sermon" : "New Sermon"}</span>
+                <span style={{ color: "#1a2744" }}>{editingSermon ? t("cm_editSermon") : t("cm_newSermon")}</span>
                 <button onClick={() => setShowForm(false)}><X className="w-4 h-4" style={{ color: "#9a9080" }} /></button>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Title *</Label>
-                  <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Sermon title" data-testid="input-sermon-title" />
+                  <Label className="text-sm">{t("cm_titleLabel")} *</Label>
+                  <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder={t("cm_sermonTitlePlaceholder")} data-testid="input-sermon-title" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Speaker</Label>
-                  <Input value={form.speakerName} onChange={e => setForm(f => ({ ...f, speakerName: e.target.value }))} placeholder="Pastor / Speaker name" data-testid="input-sermon-speaker" />
+                  <Label className="text-sm">{t("cm_speaker")}</Label>
+                  <Input value={form.speakerName} onChange={e => setForm(f => ({ ...f, speakerName: e.target.value }))} placeholder={t("cm_speakerPlaceholder")} data-testid="input-sermon-speaker" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Bible Reference</Label>
+                  <Label className="text-sm">{t("cm_bibleReference")}</Label>
                   <Input value={form.bibleReference} onChange={e => setForm(f => ({ ...f, bibleReference: e.target.value }))} placeholder="e.g. John 3:16" data-testid="input-sermon-reference" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Sermon Date</Label>
+                  <Label className="text-sm">{t("cm_sermonDate")}</Label>
                   <Input type="date" value={form.sermonDate} onChange={e => setForm(f => ({ ...f, sermonDate: e.target.value }))} data-testid="input-sermon-date" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Video URL</Label>
-                  <Input value={form.videoUrl} onChange={e => setForm(f => ({ ...f, videoUrl: e.target.value }))} placeholder="YouTube / Vimeo link" data-testid="input-sermon-video" />
+                  <Label className="text-sm">{t("cm_videoUrl")}</Label>
+                  <Input value={form.videoUrl} onChange={e => setForm(f => ({ ...f, videoUrl: e.target.value }))} placeholder={t("cm_videoUrlPlaceholder")} data-testid="input-sermon-video" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Audio URL</Label>
-                  <Input value={form.audioUrl} onChange={e => setForm(f => ({ ...f, audioUrl: e.target.value }))} placeholder="MP3 or podcast link" data-testid="input-sermon-audio" />
+                  <Label className="text-sm">{t("cm_audioUrl")}</Label>
+                  <Input value={form.audioUrl} onChange={e => setForm(f => ({ ...f, audioUrl: e.target.value }))} placeholder={t("cm_audioUrlPlaceholder")} data-testid="input-sermon-audio" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">PDF Notes URL</Label>
-                  <Input value={form.pdfNotesUrl} onChange={e => setForm(f => ({ ...f, pdfNotesUrl: e.target.value }))} placeholder="Link to sermon notes PDF" data-testid="input-sermon-pdf" />
+                  <Label className="text-sm">{t("cm_pdfNotesUrl")}</Label>
+                  <Input value={form.pdfNotesUrl} onChange={e => setForm(f => ({ ...f, pdfNotesUrl: e.target.value }))} placeholder={t("cm_pdfNotesPlaceholder")} data-testid="input-sermon-pdf" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Outline URL</Label>
-                  <Input value={form.outlineUrl} onChange={e => setForm(f => ({ ...f, outlineUrl: e.target.value }))} placeholder="Link to outline document" data-testid="input-sermon-outline" />
+                  <Label className="text-sm">{t("cm_outlineUrl")}</Label>
+                  <Input value={form.outlineUrl} onChange={e => setForm(f => ({ ...f, outlineUrl: e.target.value }))} placeholder={t("cm_outlineUrlPlaceholder")} data-testid="input-sermon-outline" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Cover Image URL</Label>
-                  <Input value={form.imageUrl} onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))} placeholder="Image URL for this sermon" data-testid="input-sermon-image" />
+                  <Label className="text-sm">{t("cm_coverImageUrl")}</Label>
+                  <Input value={form.imageUrl} onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))} placeholder={t("cm_imageUrlPlaceholder")} data-testid="input-sermon-image" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Scheduled Date</Label>
+                  <Label className="text-sm">{t("cm_scheduledDate")}</Label>
                   <Input type="date" value={form.scheduledDate} onChange={e => setForm(f => ({ ...f, scheduledDate: e.target.value }))} data-testid="input-sermon-scheduled" />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm">Description</Label>
-                <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="Brief summary or description" data-testid="textarea-sermon-description" />
+                <Label className="text-sm">{t("cm_description")}</Label>
+                <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder={t("cm_sermonDescPlaceholder")} data-testid="textarea-sermon-description" />
               </div>
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={form.isPublished} onChange={e => setForm(f => ({ ...f, isPublished: e.target.checked }))} className="rounded" data-testid="checkbox-sermon-published" />
-                  <span className="text-sm" style={{ color: "#4a4540" }}>Published (visible to members)</span>
+                  <span className="text-sm" style={{ color: "#4a4540" }}>{t("cm_publishedVisible")}</span>
                 </label>
               </div>
               <div className="flex gap-2 pt-2">
                 <Button onClick={handleSave} disabled={saving || !form.title.trim()} style={{ backgroundColor: "#1a2744", color: "#fff" }} data-testid="button-save-sermon">
                   {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                  {saving ? "Saving…" : editingSermon ? "Save Changes" : "Add Sermon"}
+                  {saving ? t("cm_saving") : editingSermon ? t("cm_saveChanges") : t("cm_addSermon")}
                 </Button>
-                <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setShowForm(false)}>{t("cm_cancel")}</Button>
               </div>
             </CardContent>
           </Card>
@@ -501,7 +503,7 @@ export default function ChurchSermons() {
           <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff", borderLeft: "4px solid #b8962e" }}>
             <CardContent className="pt-4 pb-4 flex items-center gap-3">
               <AlertCircle className="w-5 h-5 flex-shrink-0" style={{ color: "#b8962e" }} />
-              <p className="text-sm" style={{ color: "#1a2744" }}>You must be a member to view sermons.</p>
+              <p className="text-sm" style={{ color: "#1a2744" }}>{t("cm_mustBeMemberForSermons")}</p>
             </CardContent>
           </Card>
         ) : isLoading ? (
@@ -512,10 +514,10 @@ export default function ChurchSermons() {
           <div className="text-center py-16">
             <Mic2 className="w-12 h-12 mx-auto mb-3" style={{ color: "#c9b99060" }} />
             <p className="font-semibold" style={{ color: "#1a2744" }}>
-              {filterBookmarked ? "No bookmarked sermons" : "No sermons yet"}
+              {filterBookmarked ? t("cm_noBookmarkedSermons") : t("cm_noSermons")}
             </p>
             <p className="text-sm mt-1" style={{ color: "#7a7570" }}>
-              {filterBookmarked ? "Bookmark sermons to find them quickly here." : "Sermon recordings and notes will appear here."}
+              {filterBookmarked ? t("cm_bookmarkSermonsHint") : t("cm_sermonsWillAppear")}
             </p>
           </div>
         ) : (

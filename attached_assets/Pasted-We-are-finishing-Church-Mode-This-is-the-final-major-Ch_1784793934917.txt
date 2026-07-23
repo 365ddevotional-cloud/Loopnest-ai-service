@@ -1,0 +1,199 @@
+We are finishing Church Mode. This is the final major Church Mode implementation before we return to the Google Play API 36 work.
+
+IMPORTANT
+
+• Make only the changes below.
+• Do NOT refactor unrelated code.
+• Do NOT modify existing devotional, music, donation, authentication, or admin features unless required for these additions.
+• Preserve all current functionality.
+• Reuse existing authentication, database, storage, routing and UI components wherever possible.
+• Do not install unnecessary packages.
+
+====================================================
+1. CHURCH DASHBOARD (FIRST PAGE AFTER ENTERING A CHURCH)
+====================================================
+
+Instead of opening into menus, open a professional dashboard showing:
+
+• Church logo
+• Church banner
+• Church name
+• Pastor name
+• Country
+• Member count
+• Department count
+• Upcoming events
+• New prayer requests
+• Recent announcements
+• Recent sermons
+• Quick action buttons
+
+Quick Actions:
+
+• Members
+• Departments
+• Prayer Requests
+• Sermons
+• Events
+• Attendance
+• Announcements
+• Messages
+• Settings
+
+====================================================
+2. PUBLIC CHURCH PROFILE
+====================================================
+
+Every church should have a beautiful profile containing:
+
+• Church logo
+• Cover image
+• Pastor photo
+• Church description
+• Address
+• Country
+• Website (optional)
+• Service times
+• Contact email (optional)
+• Join Church button
+
+Do NOT expose private information.
+
+====================================================
+3. PRAYER REQUESTS
+====================================================
+
+Allow members to:
+
+• Submit prayer request
+• Mark Public or Private
+• Mark Anonymous
+• Mark Prayer Answered
+• Testimony after answered prayer
+
+Pastor/Admin can:
+
+• Reply
+• Mark completed
+• Archive
+
+====================================================
+4. EVENTS
+====================================================
+
+Allow church admins to create:
+
+• Sunday Service
+• Bible Study
+• Prayer Meeting
+• Youth Meeting
+• Women's Meeting
+• Men's Meeting
+• Choir Practice
+• Special Events
+
+Each event should include:
+
+• Title
+• Description
+• Date
+• Time
+• Location
+• Reminder
+• RSVP
+
+====================================================
+5. SERMON CENTER
+====================================================
+
+Improve sermons to support:
+
+• Audio
+• PDF notes
+• Search
+• Categories
+• Favorite sermons
+• Download where permitted
+
+Prepare structure for future video support without implementing video now.
+
+====================================================
+6. MEMBER PROFILE
+====================================================
+
+Each member should have:
+
+• Editable profile picture
+• Name
+• Country
+• Church role
+• Departments
+• Reading streak
+• Saved devotionals
+• Saved sermon notes
+
+====================================================
+7. NOTIFICATIONS
+====================================================
+
+Pastors receive notifications when:
+
+• Member joins
+• Prayer request submitted
+• Event RSVP
+• Department created
+• Announcement acknowledged
+
+Members receive notifications for:
+
+• New sermon
+• Announcement
+• Prayer reply
+• Event reminder
+
+====================================================
+8. CHURCH SETTINGS
+====================================================
+
+Church owner can edit:
+
+• Logo
+• Banner
+• Pastor picture
+• Church information
+• Service schedule
+• Country
+• Contact information
+
+====================================================
+9. POLISH
+====================================================
+
+Use the existing premium Church Mode design.
+
+Improve spacing.
+
+Increase readability.
+
+Keep fonts bold.
+
+Professional appearance.
+
+Responsive on mobile.
+
+====================================================
+10. TESTING
+====================================================
+
+Verify:
+
+• Existing churches still work.
+• Existing members still work.
+• Existing invitations still work.
+• Existing authentication still works.
+• Existing admin dashboard still works.
+• Existing analytics still works.
+
+Do NOT modify unrelated functionality.
+
+Return a concise implementation report listing only the files changed.
