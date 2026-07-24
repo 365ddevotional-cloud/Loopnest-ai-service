@@ -12,6 +12,12 @@ import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
+// Derive the correct continueUrl from the running origin so it stays valid
+// on both the Replit preview domain and the production domain.
+const CONTINUE_URL = typeof window !== "undefined"
+  ? `${window.location.origin}/signin`
+  : "https://365dailydevotional.com/signin";
+
 const LOCAL_SONG_FAV_KEY = "spirittone-song-favorites";
 export const LOCAL_DEV_SAVE_KEY = "devotional-saves"; // array of devotional IDs
 
@@ -21,10 +27,11 @@ interface UserContextType {
   emailVerified: boolean;
   getIdToken: () => Promise<string | null>;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signUp: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signUp: (email: string, password: string) => Promise<{ success: boolean; error?: string; emailSent?: boolean; emailErrorCode?: string }>;
   signUserOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
-  resendVerification: () => Promise<void>;
+  resendVerification: () => Promise<{ sent: boolean; errorCode?: string }>;
+  checkEmailVerified: () => Promise<boolean>;
 }
 
 const UserContext = createContext<UserContextType>({
@@ -36,7 +43,8 @@ const UserContext = createContext<UserContextType>({
   signUp: async () => ({ success: false }),
   signUserOut: async () => {},
   resetPassword: async () => ({ success: false }),
-  resendVerification: async () => {},
+  resendVerification: async () => ({ sent: false }),
+  checkEmailVerified: async () => false,
 });
 
 export function UserProvider({ children }: { children: ReactNode }) {
@@ -194,18 +202,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
 
     // Step 2: Send verification email — failure here does NOT mean account creation failed
+    let emailSent = false;
+    let emailErrorCode: string | undefined;
     try {
       await sendEmailVerification(cred.user, {
-        url: "https://365dailydevotional.com",
+        url: CONTINUE_URL,
         handleCodeInApp: false,
       });
+      emailSent = true;
     } catch (err: any) {
-      console.error("[signUp] sendEmailVerification error:", err?.code, err?.message);
-      // Account was created; verification email failed (domain auth, quota, etc.)
-      // Return success so the user can reach the verification screen and resend
+      emailErrorCode = err?.code ?? "unknown";
+      console.error("[signUp] sendEmailVerification error:", emailErrorCode, err?.message);
+      // Account was created; verification email failed — caller can surface this
     }
 
-    return { success: true };
+    return { success: true, emailSent, emailErrorCode };
   }, []);
 
   const signUserOut = useCallback(async () => {
@@ -230,34 +241,36 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const resendVerification = useCallback(async () => {
-    if (!user) {
-      toast({ title: "Session expired", description: "Please sign in again to resend the verification email.", variant: "destructive" });
-      return;
+  const resendVerification = useCallback(async (): Promise<{ sent: boolean; errorCode?: string }> => {
+    // Always use auth.currentUser for reliability — the context user state may lag
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      return { sent: false, errorCode: "no-session" };
     }
-    if (user.emailVerified) return;
+    if (currentUser.emailVerified) return { sent: true };
     try {
-      await sendEmailVerification(user, {
-        url: "https://365dailydevotional.com",
+      await sendEmailVerification(currentUser, {
+        url: CONTINUE_URL,
         handleCodeInApp: false,
       });
-      toast({ title: "Verification email sent", description: "Check your inbox and spam folder." });
+      return { sent: true };
     } catch (err: any) {
-      const code = err?.code ?? "";
+      const code = err?.code ?? "unknown";
       console.error("[resendVerification] Firebase error:", code, err?.message);
-      const description =
-        code === "auth/too-many-requests"
-          ? "Too many attempts. Please wait a few minutes and try again."
-          : code === "auth/user-not-found"
-          ? "Account not found. Please sign in again."
-          : code === "auth/unauthorized-continue-uri" || code === "auth/unauthorized-domain"
-          ? "Email delivery is temporarily unavailable for this address. Please contact support."
-          : code === "auth/network-request-failed"
-          ? "Network error. Check your connection and try again."
-          : `Could not send email${code ? ` (${code})` : ""}. Please try again.`;
-      toast({ title: "Could not resend email", description, variant: "destructive" });
+      return { sent: false, errorCode: code };
     }
-  }, [user, toast]);
+  }, []);
+
+  const checkEmailVerified = useCallback(async (): Promise<boolean> => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return false;
+    try {
+      await currentUser.reload();
+      return auth.currentUser?.emailVerified ?? false;
+    } catch {
+      return false;
+    }
+  }, []);
 
   return (
     <UserContext.Provider
@@ -271,6 +284,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         signUserOut,
         resetPassword,
         resendVerification,
+        checkEmailVerified,
       }}
     >
       {children}

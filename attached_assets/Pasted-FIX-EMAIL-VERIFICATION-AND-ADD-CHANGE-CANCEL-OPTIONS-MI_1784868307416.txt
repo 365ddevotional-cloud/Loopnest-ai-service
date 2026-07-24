@@ -1,0 +1,182 @@
+FIX EMAIL VERIFICATION AND ADD CHANGE/CANCEL OPTIONS — MINIMAL SAFE CHANGE ONLY
+
+There is a regression in the account email-verification flow.
+
+CURRENT PROBLEM:
+
+- A new Church Mode account is created.
+- The app says a verification email was sent.
+- No verification email arrives.
+- Tapping “Resend Verification Email” shows:
+  “Could not resend email.”
+- The user is trapped on the verification page with no clear way to:
+  - change the email address
+  - cancel the account flow
+  - return to sign in
+
+This feature worked before and must be restored.
+
+IMPORTANT:
+
+- Do not redesign the app.
+- Do not modify Church Mode data, departments, invitations, donations, songs, analytics, or unrelated pages.
+- Do not change the authentication provider.
+- Do not delete any existing user accounts.
+- Do not refactor unrelated files.
+- Make the smallest safe correction.
+
+====================================================
+1. FIX INITIAL VERIFICATION EMAIL
+====================================================
+
+After successful Firebase account creation:
+
+1. Confirm the authenticated Firebase user exists.
+2. Call the existing Firebase email-verification method correctly.
+3. Await the send operation before showing success.
+4. Do not display “A verification link was sent” unless Firebase confirms the request succeeded.
+5. Use a valid continue/action URL for:
+   https://365dailydevotional.com
+6. Confirm the production domain and any required deployment domain are authorized in Firebase Authentication.
+7. Preserve the newly created account if email delivery fails.
+
+====================================================
+2. FIX RESEND VERIFICATION
+====================================================
+
+The “Resend Verification Email” button must:
+
+- use the currently authenticated unverified Firebase user
+- work without creating another account
+- remain available if the first email did not arrive
+- be disabled while the resend request is processing
+- prevent repeated double taps
+- show a success message only after Firebase confirms the email was sent
+
+Capture and report the actual Firebase error code.
+
+Handle common errors clearly:
+
+- auth/too-many-requests
+- auth/network-request-failed
+- auth/user-token-expired
+- auth/user-disabled
+- auth/invalid-continue-uri
+- auth/unauthorized-continue-uri
+- missing current user/session
+- any Firebase configuration error
+
+Do not show only the generic “Could not resend email” message when a more useful reason is available.
+
+Add a reasonable resend cooldown if needed to avoid Firebase rate limits, while still allowing the user to retry later.
+
+====================================================
+3. ADD EXIT / CHANGE EMAIL OPTIONS
+====================================================
+
+Add clear actions on the “Verify Your Email” page:
+
+1. “Use a Different Email”
+   - safely sign out the current unverified session
+   - clear user-specific frontend cache
+   - return to the account creation/sign-in page
+   - allow the user to enter another email address
+
+2. “Cancel”
+   - safely sign out
+   - clear the current verification flow state
+   - return to Church Mode or the sign-in page
+
+3. “Back to Sign In”
+   - sign out the current temporary session if necessary
+   - navigate to /signin
+
+Do not automatically delete the Firebase account when the user cancels or changes email.
+
+If the user later signs in with the original unverified account, allow them to return to the verification page and resend the email.
+
+====================================================
+4. VERIFICATION CONTINUE FLOW
+====================================================
+
+The “I’ve Verified — Continue” button must:
+
+- reload the current Firebase user
+- check emailVerified from Firebase
+- proceed only if verified
+- show a clear message if verification is still pending
+- not rely only on stale frontend state
+
+After successful verification:
+
+- continue to the correct signed-in account
+- preserve any pending Church Mode invitation where applicable
+- do not create duplicate user records
+
+====================================================
+5. FIREBASE CONFIGURATION CHECK
+====================================================
+
+Inspect only the relevant Firebase Authentication configuration and current app code.
+
+Confirm:
+
+- Email/Password sign-in is enabled
+- 365dailydevotional.com is an authorized domain
+- the active production/deployment domain is authorized where required
+- the continue URL is valid
+- the Firebase project/config used in production matches the app
+- the currentUser remains signed in on the verification page
+- no recent sign-out or redirect change broke resend behavior
+
+Do not expose Firebase secrets in frontend code or logs.
+
+====================================================
+6. TRANSLATION
+====================================================
+
+Add or reuse English, Spanish, and French translations for:
+
+- Verification email sent
+- Could not send verification email
+- Resend Verification Email
+- Email resent successfully
+- Too many attempts — try again later
+- Session expired — sign in again
+- Use a Different Email
+- Cancel
+- Back to Sign In
+- Verification still pending
+- I’ve Verified — Continue
+
+====================================================
+7. TEST
+====================================================
+
+Test this exact flow:
+
+1. Create a new account with a fresh email.
+2. Confirm the first verification email request succeeds.
+3. Confirm the user sees success only after Firebase confirms sending.
+4. Tap Resend Verification Email.
+5. Confirm resend works.
+6. Confirm repeated taps are prevented while processing.
+7. Open the verification email and verify the account.
+8. Return to the app and tap “I’ve Verified — Continue.”
+9. Confirm the user proceeds successfully.
+10. Test “Use a Different Email.”
+11. Confirm the user can return and register/sign in with another email.
+12. Test “Cancel.”
+13. Confirm the user is not trapped on the verification page.
+14. Confirm existing verified accounts still sign in normally.
+15. Confirm no unrelated app feature was changed.
+
+After completion, report only:
+
+- root cause
+- actual Firebase error code found
+- files changed
+- initial-send fix
+- resend fix
+- change-email/cancel options added
+- confirmation that verified and unverified account flows both work

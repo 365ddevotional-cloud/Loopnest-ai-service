@@ -1,0 +1,121 @@
+====================================================
+8. REPLIT MUST TEST THE COMPLETE FLOW ITSELF
+====================================================
+
+Do not stop after making code changes.
+
+Replit must perform and document a complete end-to-end test of the Church Mode account and membership flow using separate test accounts.
+
+Use safe temporary test accounts and test data. Do not alter or delete real production churches, users, departments, invitations, or memberships.
+
+TEST SCENARIO A — CREATE A CHURCH OWNER ACCOUNT
+
+1. Create a fresh Church Mode account with a new test email.
+2. Confirm the initial verification email request is triggered successfully.
+3. Confirm the app does not falsely report success if Firebase returns an error.
+4. Test “Resend Verification Email.”
+5. Confirm resend succeeds or clearly reports the exact Firebase error.
+6. Verify the account through the email link where the testing environment permits.
+7. Tap “I’ve Verified — Continue.”
+8. Confirm the account becomes usable.
+9. Create a new church.
+10. Confirm the church is saved and still exists after refresh and sign-in.
+
+TEST SCENARIO B — CREATE A DEPARTMENT
+
+1. Sign in as the church owner.
+2. Create a department called “Bible Study.”
+3. Enter:
+   - department name
+   - department type
+   - required description
+4. Leave Logo URL and Banner URL blank.
+5. Confirm the department creates successfully.
+6. Confirm it appears immediately in the department list.
+7. Refresh the page.
+8. Confirm it still exists.
+9. Generate a department invitation code.
+10. Confirm the invitation is active and stored correctly.
+
+TEST SCENARIO C — JOIN AS A DIFFERENT USER
+
+1. Open a separate clean browser session or incognito session.
+2. Enter the Bible Study invitation code.
+3. Confirm the code is recognized.
+4. Confirm the church name and department name shown are correct.
+5. Create a different test user account.
+6. Confirm the verification email flow works.
+7. Test resend.
+8. Verify the account where possible.
+9. Confirm the pending invitation is restored after verification/sign-in.
+10. Complete the join flow.
+11. Confirm the user joins:
+   - the correct church
+   - the Bible Study department
+12. Confirm the membership persists after refresh and later sign-in.
+13. Confirm the user does not see unrelated churches or departments.
+
+TEST SCENARIO D — EXIT AND CHANGE EMAIL
+
+1. Start creating another new account.
+2. Reach the Verify Your Email page.
+3. Test “Use a Different Email.”
+4. Confirm the current unverified session is safely ended.
+5. Confirm the user can enter another email.
+6. Test “Cancel.”
+7. Confirm the user leaves the verification page and is not trapped.
+8. Test “Back to Sign In.”
+9. Confirm it opens the sign-in page correctly.
+
+TEST SCENARIO E — FAILURE HANDLING
+
+Simulate or inspect handling for:
+
+- email send failure
+- resend failure
+- expired session
+- too many resend attempts
+- invalid invitation code
+- expired invitation
+- inactive invitation
+- duplicate join attempt
+- network failure during department creation
+
+Confirm:
+
+- no silent failures
+- no false success messages
+- no duplicate accounts
+- no duplicate memberships
+- no duplicate departments
+- useful translated errors appear
+- the form remains recoverable after an error
+
+TESTING REQUIREMENTS
+
+- Test on the actual running application, not by code inspection alone.
+- Use the production-equivalent Firebase configuration available to this deployment.
+- Inspect browser console and server logs during the tests.
+- Do not say “working” unless the actual test completed successfully.
+- If email delivery cannot be fully confirmed because Replit cannot open an external inbox, clearly separate:
+  - Firebase accepted the send request
+  - actual inbox delivery not independently verifiable
+- Do not fabricate receipt of an email.
+- Do not use my personal email addresses for automated testing.
+- Remove or clearly label temporary test data after testing where safe.
+- Do not break or modify unrelated features.
+
+FINAL REPORT MUST INCLUDE
+
+1. Every test account flow attempted
+2. Every test that passed
+3. Every test that failed
+4. Actual Firebase error codes found
+5. Actual API responses for invitation verification and joining
+6. Confirmation that church creation works
+7. Confirmation that department creation works with optional URLs blank
+8. Confirmation that invitation codes work
+9. Confirmation that resend works
+10. Confirmation that Change Email, Cancel, and Back to Sign In work
+11. Any item Replit could not truly verify and why
+12. No claim of full success unless all critical flows genuinely pass
