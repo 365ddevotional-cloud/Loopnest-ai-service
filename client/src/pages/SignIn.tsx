@@ -46,6 +46,9 @@ export default function SignIn() {
   // Recovery hint when "email already in use" is returned from Create Account
   const [emailInUse, setEmailInUse] = useState<string | null>(null);
 
+  // Whether the last sign-in failure was a bad credential (enables inline Forgot Password hint)
+  const [signInErrIsCredential, setSignInErrIsCredential] = useState(false);
+
   useEffect(() => {
     if (loading) return;
     if (user && emailVerified) {
@@ -81,11 +84,17 @@ export default function SignIn() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSignInErrIsCredential(false);
     setSubmitting(true);
     const result = await signIn(email, password);
     setSubmitting(false);
     if (!result.success) {
       setError(result.error ?? "Sign-in failed.");
+      // Flag credential errors so we can show an inline Forgot Password hint
+      const msg = result.error ?? "";
+      if (msg.includes("Incorrect email or password") || msg.includes("Too many attempts")) {
+        setSignInErrIsCredential(true);
+      }
     }
   };
 
@@ -367,7 +376,7 @@ export default function SignIn() {
         )}
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => { setTab(v as any); setError(""); setEmailInUse(null); setResetSent(false); }}>
+      <Tabs value={tab} onValueChange={(v) => { setTab(v as any); setError(""); setEmailInUse(null); setSignInErrIsCredential(false); setResetSent(false); }}>
         <TabsList className="w-full">
           <TabsTrigger value="signin" className="flex-1" data-testid="tab-signin">Sign In</TabsTrigger>
           <TabsTrigger value="signup" className="flex-1" data-testid="tab-signup">Create Account</TabsTrigger>
@@ -380,10 +389,29 @@ export default function SignIn() {
             <CardContent className="pt-6">
               <form onSubmit={handleSignIn} className="space-y-4">
                 {error && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="w-4 h-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
+                  <div className="space-y-2">
+                    <Alert variant="destructive">
+                      <AlertCircle className="w-4 h-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                    {signInErrIsCredential && (
+                      <div className="flex flex-col gap-1.5 pl-1">
+                        <button type="button" className="text-xs text-primary underline text-left"
+                          onClick={() => { setTab("reset"); setError(""); setSignInErrIsCredential(false); }}
+                          data-testid="button-signin-forgot-password">
+                          Forgot your password? Reset it here.
+                        </button>
+                        <p className="text-xs text-muted-foreground">
+                          Created an account but never received the verification email?{" "}
+                          <button type="button" className="underline text-primary"
+                            onClick={() => { setError(""); setSignInErrIsCredential(false); }}
+                            data-testid="button-signin-retry-hint">
+                            Try signing in with your correct password — the verification screen will appear automatically.
+                          </button>
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 )}
                 <div className="space-y-1.5">
                   <Label htmlFor="si-email">Email</Label>
@@ -457,6 +485,11 @@ export default function SignIn() {
                       Sign In with this Email
                     </Button>
                     <Button size="sm" variant="outline"
+                      onClick={() => { setTab("signin"); setEmail(emailInUse); setEmailInUse(null); }}
+                      data-testid="button-recover-resend">
+                      Resend Verification Email
+                    </Button>
+                    <Button size="sm" variant="outline"
                       onClick={() => { setTab("reset"); setEmail(emailInUse); setEmailInUse(null); }}
                       data-testid="button-recover-reset">
                       Forgot Password — Reset it
@@ -467,6 +500,9 @@ export default function SignIn() {
                       Use a Different Email
                     </Button>
                   </div>
+                  <p className="text-xs text-muted-foreground pt-1">
+                    To resend a verification email, sign in with your password — the verification screen appears automatically with a Resend button.
+                  </p>
                 </div>
               )}
               {!emailInUse && <form onSubmit={handleSignUp} className="space-y-4">

@@ -1,0 +1,85 @@
+FINAL FIX — REMOVE THE UNAUTHORIZED CONTINUE URL FROM EMAIL VERIFICATION
+
+The production app is still returning:
+
+auth/unauthorized-continue-uri
+
+This happens with completely different new email addresses, so this is not an account-specific problem. The verification request is still passing an unauthorized ActionCodeSettings continue URL.
+
+Fix only this issue.
+
+IMPORTANT:
+
+- Do not modify Church Mode, departments, invitations, user data, navigation, songs, donations, analytics, or unrelated authentication behavior.
+- Do not create another Firebase project.
+- Do not delete any users.
+- Make the smallest safe correction.
+
+REQUIRED FIX:
+
+1. For normal email verification, call Firebase using:
+
+   sendEmailVerification(auth.currentUser)
+
+   Do not pass ActionCodeSettings or any custom continueUrl for now.
+
+2. Apply this same correction to:
+
+   - the first verification email after account creation
+   - the Resend Verification Email action
+   - recovery of existing unverified accounts
+
+3. Remove or bypass the current dynamic/fixed continue URL logic only for verification emails.
+
+4. Do not use:
+
+   - window.location.origin
+   - 365dailydevotional.com
+   - www.365dailydevotional.com
+   - Replit preview URLs
+   - returnUrl
+   - ActionCodeSettings
+
+   in sendEmailVerification during this repair.
+
+5. Await Firebase’s response.
+
+6. Show success only after Firebase accepts the request.
+
+7. Preserve the existing:
+
+   - resend cooldown
+   - real error reporting
+   - Use a Different Email
+   - Cancel
+   - Back to Sign In
+   - I’ve Verified — Continue
+   - user.reload() verification check
+
+8. Keep the Firebase account signed in while waiting for verification.
+
+9. Existing unverified users who sign in with the correct password must still be taken to the verification page and allowed to resend.
+
+TEST THE ACTUAL PUBLISHED APP:
+
+1. Publish this limited correction.
+2. Open https://365dailydevotional.com.
+3. Create a fresh temporary account with a new email.
+4. Confirm sendEmailVerification returns success without unauthorized-continue-uri.
+5. Tap Resend Verification Email.
+6. Confirm resend is accepted.
+7. Confirm no custom continue URL is present in the verification send call.
+8. Test an existing unverified account.
+9. Confirm it can sign in and resend.
+10. Confirm verified accounts continue to sign in normally.
+
+Do not report the email as delivered unless an external inbox confirms it.
+
+FINAL REPORT:
+
+- files changed
+- confirmation that ActionCodeSettings was removed from verification sends
+- Firebase result from initial send
+- Firebase result from resend
+- confirmation that auth/unauthorized-continue-uri no longer occurs
+- anything still requiring manual inbox testing
