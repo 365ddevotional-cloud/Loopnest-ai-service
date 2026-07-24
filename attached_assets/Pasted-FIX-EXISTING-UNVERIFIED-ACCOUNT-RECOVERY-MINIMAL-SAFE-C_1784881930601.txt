@@ -1,0 +1,182 @@
+FIX EXISTING UNVERIFIED ACCOUNT RECOVERY — MINIMAL SAFE CHANGE ONLY
+
+There is still a critical authentication problem.
+
+CURRENT BEHAVIOR:
+
+1. A user creates an account.
+2. Firebase creates the account.
+3. The verification email does not arrive.
+4. When the user tries to create the account again, the app correctly says:
+   “An account already exists with this email.”
+5. When the user tries to sign in, the app shows:
+   “Incorrect email or password.”
+6. The user cannot resend verification and cannot recover the unverified account.
+
+This creates a trapped unverified account.
+
+IMPORTANT:
+
+- Do not redesign authentication.
+- Do not delete existing users.
+- Do not change Firebase projects or providers.
+- Do not modify Church Mode, departments, donations, songs, analytics, or unrelated pages.
+- Make only the smallest safe fix.
+- Preserve all verified accounts and existing data.
+
+====================================================
+1. HANDLE EXISTING UNVERIFIED ACCOUNTS
+====================================================
+
+When a user tries to sign in:
+
+1. Call Firebase signInWithEmailAndPassword normally.
+2. If sign-in succeeds:
+   - reload auth.currentUser
+   - inspect emailVerified
+3. If emailVerified is false:
+   - do not show “Incorrect email or password”
+   - take the user to the Verify Your Email screen
+   - keep the authenticated session active
+   - allow Resend Verification Email
+   - show the email address clearly
+4. If emailVerified is true:
+   - continue normal sign-in
+
+Only show “Incorrect email or password” when Firebase genuinely returns invalid credentials.
+
+====================================================
+2. ACCOUNT-EXISTS SIGN-UP RECOVERY
+====================================================
+
+When Create Account returns auth/email-already-in-use:
+
+Do not stop with only:
+“An account already exists with this email.”
+
+Show clear actions:
+
+- Sign In
+- Resend Verification
+- Forgot Password
+- Use a Different Email
+
+If the app cannot resend without authenticating the existing account, explain that clearly and guide the user to sign in first.
+
+Do not create duplicate Firebase users.
+
+====================================================
+3. RESEND VERIFICATION AFTER SIGN-IN
+====================================================
+
+After an unverified user signs in successfully:
+
+- use auth.currentUser
+- call sendEmailVerification
+- await the result
+- show success only after Firebase confirms acceptance
+- show the real Firebase error code on failure
+- apply the existing resend cooldown
+- do not sign the user out before resend
+
+====================================================
+4. PASSWORD UNCERTAINTY / FORGOT PASSWORD
+====================================================
+
+If the user does not remember the password:
+
+- provide a visible “Forgot Password” option
+- send Firebase password-reset email
+- after password reset, allow the user to sign in
+- if still unverified, send them to the verification screen
+- do not confuse password reset with email verification
+
+Use specific messages for:
+- auth/invalid-credential
+- auth/user-not-found
+- auth/wrong-password
+- auth/too-many-requests
+- auth/network-request-failed
+
+====================================================
+5. EMAIL DELIVERY CONFIGURATION
+====================================================
+
+The current production error shown is:
+
+auth/unauthorized-continue-uri
+
+Investigate the actual continue URL being passed in production.
+
+Confirm:
+
+- production origin is exactly correct
+- 365dailydevotional.com is authorized in Firebase Authentication
+- www.365dailydevotional.com is also authorized if the app can use it
+- no browser-specific subdomain or preview domain is being used in production
+- the action URL is valid for the current Firebase project
+
+Do not assume that using window.location.origin alone is sufficient if Firebase still rejects the domain.
+
+If needed, use:
+- a production-safe fixed continue URL for production
+- the current origin only for authorized preview/testing environments
+
+Do not silently swallow unauthorized-continue-uri.
+
+====================================================
+6. DO NOT LEAVE THE USER TRAPPED
+====================================================
+
+On the verification screen keep:
+
+- Resend Verification Email
+- I’ve Verified — Continue
+- Use a Different Email
+- Cancel
+- Back to Sign In
+
+Also add:
+
+- Forgot Password
+
+====================================================
+7. TEST THIS EXACT EXISTING ACCOUNT SCENARIO
+====================================================
+
+Use a safe test account that already exists but is unverified.
+
+Test:
+
+1. Try Create Account with the same email.
+2. Confirm the app says the account exists.
+3. Tap Sign In.
+4. Enter the correct password.
+5. Confirm the app recognizes the account as unverified.
+6. Confirm it opens the Verify Your Email screen.
+7. Tap Resend Verification Email.
+8. Confirm Firebase accepts the send request.
+9. Confirm no false success is shown.
+10. Test Forgot Password.
+11. Reset the password.
+12. Sign in again.
+13. Confirm the unverified account still reaches the verification screen.
+14. Verify the email externally where possible.
+15. Tap I’ve Verified — Continue.
+16. Confirm the user proceeds normally.
+
+Also test:
+
+- wrong password gives the correct error
+- verified user signs in normally
+- account-exists sign-up does not create duplicates
+- no unrelated features are changed
+
+FINAL REPORT MUST INCLUDE:
+
+- exact Firebase error codes found
+- root cause of sign-in showing the wrong message
+- root cause of verification resend failure
+- files changed
+- confirmation that an existing unverified account can now be recovered
+- any Firebase Console setting still requiring manual correction

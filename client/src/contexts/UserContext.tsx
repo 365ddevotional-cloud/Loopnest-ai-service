@@ -12,11 +12,6 @@ import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
-// Derive the correct continueUrl from the running origin so it stays valid
-// on both the Replit preview domain and the production domain.
-const CONTINUE_URL = typeof window !== "undefined"
-  ? `${window.location.origin}/signin`
-  : "https://365dailydevotional.com/signin";
 
 const LOCAL_SONG_FAV_KEY = "spirittone-song-favorites";
 export const LOCAL_DEV_SAVE_KEY = "devotional-saves"; // array of devotional IDs
@@ -155,7 +150,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      // Reload to get the most current emailVerified state before the caller checks it
+      try { await cred.user.reload(); } catch { /* non-fatal */ }
       return { success: true };
     } catch (err: any) {
       const code = err?.code ?? "";
@@ -202,13 +199,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
 
     // Step 2: Send verification email — failure here does NOT mean account creation failed
+    // No ActionCodeSettings / continueUrl to avoid auth/unauthorized-continue-uri
     let emailSent = false;
     let emailErrorCode: string | undefined;
     try {
-      await sendEmailVerification(cred.user, {
-        url: CONTINUE_URL,
-        handleCodeInApp: false,
-      });
+      await sendEmailVerification(cred.user);
       emailSent = true;
     } catch (err: any) {
       emailErrorCode = err?.code ?? "unknown";
@@ -249,10 +244,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
     if (currentUser.emailVerified) return { sent: true };
     try {
-      await sendEmailVerification(currentUser, {
-        url: CONTINUE_URL,
-        handleCodeInApp: false,
-      });
+      // No ActionCodeSettings / continueUrl to avoid auth/unauthorized-continue-uri
+      await sendEmailVerification(currentUser);
       return { sent: true };
     } catch (err: any) {
       const code = err?.code ?? "unknown";

@@ -43,6 +43,9 @@ export default function SignIn() {
   const [initialSendFailed, setInitialSendFailed] = useState(false);
   const [initialSendErrorCode, setInitialSendErrorCode] = useState<string | undefined>();
 
+  // Recovery hint when "email already in use" is returned from Create Account
+  const [emailInUse, setEmailInUse] = useState<string | null>(null);
+
   useEffect(() => {
     if (loading) return;
     if (user && emailVerified) {
@@ -89,6 +92,7 @@ export default function SignIn() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setEmailInUse(null);
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -102,7 +106,12 @@ export default function SignIn() {
       setInitialSendErrorCode(result.emailErrorCode);
       setSignedUpAwaitingVerification(true);
     } else {
-      setError(result.error ?? "Could not create account.");
+      // Detect "already exists" so we can show targeted recovery options
+      if (result.error?.includes("already exists")) {
+        setEmailInUse(email);
+      } else {
+        setError(result.error ?? "Could not create account.");
+      }
     }
   };
 
@@ -280,6 +289,22 @@ export default function SignIn() {
                 variant="link"
                 size="sm"
                 className="text-xs text-muted-foreground"
+                onClick={() => {
+                  const addr = user?.email ?? "";
+                  handleCancelVerification().then(() => {
+                    setTab("reset");
+                    if (addr) setEmail(addr);
+                  });
+                }}
+                data-testid="button-verify-forgot-password"
+              >
+                Forgot Password?
+              </Button>
+
+              <Button
+                variant="link"
+                size="sm"
+                className="text-xs text-muted-foreground"
                 onClick={handleCancelVerification}
                 data-testid="button-back-to-signin"
               >
@@ -342,7 +367,7 @@ export default function SignIn() {
         )}
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => { setTab(v as any); setError(""); setResetSent(false); }}>
+      <Tabs value={tab} onValueChange={(v) => { setTab(v as any); setError(""); setEmailInUse(null); setResetSent(false); }}>
         <TabsList className="w-full">
           <TabsTrigger value="signin" className="flex-1" data-testid="tab-signin">Sign In</TabsTrigger>
           <TabsTrigger value="signup" className="flex-1" data-testid="tab-signup">Create Account</TabsTrigger>
@@ -414,7 +439,37 @@ export default function SignIn() {
         <TabsContent value="signup">
           <Card>
             <CardContent className="pt-6">
-              <form onSubmit={handleSignUp} className="space-y-4">
+              {/* Recovery UI: account already exists for this email */}
+              {emailInUse && (
+                <div className="space-y-3 py-2">
+                  <Alert variant="destructive">
+                    <AlertCircle className="w-4 h-4" />
+                    <AlertDescription>
+                      An account already exists for <strong>{emailInUse}</strong>.
+                    </AlertDescription>
+                  </Alert>
+                  <p className="text-sm text-muted-foreground">
+                    Choose an option below to recover access:
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    <Button size="sm" onClick={() => { setTab("signin"); setEmail(emailInUse); setEmailInUse(null); }}
+                      data-testid="button-recover-signin">
+                      Sign In with this Email
+                    </Button>
+                    <Button size="sm" variant="outline"
+                      onClick={() => { setTab("reset"); setEmail(emailInUse); setEmailInUse(null); }}
+                      data-testid="button-recover-reset">
+                      Forgot Password — Reset it
+                    </Button>
+                    <Button size="sm" variant="ghost"
+                      onClick={() => { setEmailInUse(null); setEmail(""); }}
+                      data-testid="button-recover-different">
+                      Use a Different Email
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {!emailInUse && <form onSubmit={handleSignUp} className="space-y-4">
                 {error && (
                   <Alert variant="destructive">
                     <AlertCircle className="w-4 h-4" />
@@ -482,7 +537,7 @@ export default function SignIn() {
                   {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                   Create Free Account
                 </Button>
-              </form>
+              </form>}
             </CardContent>
           </Card>
         </TabsContent>
