@@ -1277,6 +1277,7 @@ export const userProfiles = pgTable("user_profiles", {
   displayName: text("display_name"),
   email: text("email").notNull(),
   country: text("country"), // ISO 3166-1 alpha-2
+  preferredLanguage: text("preferred_language"), // BCP-47 e.g. "en", "es", "fr", "yo"
   profilePictureUrl: text("profile_picture_url"), // object storage path
   createdAt: timestamp("created_at").defaultNow(),
   lastActiveAt: timestamp("last_active_at").defaultNow(),

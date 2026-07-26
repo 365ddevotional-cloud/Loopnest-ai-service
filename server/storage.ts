@@ -511,6 +511,7 @@ export interface IStorage {
   // Platform admin threads
   createPlatformAdminThread(data: InsertPlatformAdminThread): Promise<PlatformAdminThread>;
   getPlatformAdminThreads(churchId?: number): Promise<PlatformAdminThread[]>;
+  getOwnerPlatformAdminThread(churchId: number, ownerUid: string): Promise<PlatformAdminThread | undefined>;
   getPlatformAdminThread(id: number): Promise<PlatformAdminThread | undefined>;
   updatePlatformAdminThread(id: number, data: Partial<PlatformAdminThread>): Promise<PlatformAdminThread>;
   createPlatformAdminMessage(data: InsertPlatformAdminMessage): Promise<PlatformAdminMessage>;
@@ -2673,6 +2674,14 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(platformAdminThreads).orderBy(desc(platformAdminThreads.updatedAt));
   }
 
+  /** Scoped lookup: returns the thread belonging to this specific owner in this church. */
+  async getOwnerPlatformAdminThread(churchId: number, ownerUid: string): Promise<PlatformAdminThread | undefined> {
+    const [row] = await db.select().from(platformAdminThreads)
+      .where(and(eq(platformAdminThreads.churchId, churchId), eq(platformAdminThreads.ownerUid, ownerUid)))
+      .orderBy(desc(platformAdminThreads.updatedAt));
+    return row;
+  }
+
   async getPlatformAdminThread(id: number): Promise<PlatformAdminThread | undefined> {
     const [row] = await db.select().from(platformAdminThreads).where(eq(platformAdminThreads.id, id));
     return row;
@@ -2712,10 +2721,11 @@ export class DatabaseStorage implements IStorage {
     const userChurchIds = new Set(memberships.map(m => m.churchId));
     const userRoles = new Set(memberships.map(m => m.role));
 
-    // 1b. Fetch user profile for country targeting (user_profiles has country but not language)
-    const profileRes = await db.execute(sql`SELECT country FROM user_profiles WHERE firebase_uid = ${firebaseUid} LIMIT 1`);
-    const userProfile = profileRes.rows[0] as { country?: string } | undefined;
+    // 1b. Fetch user profile for country/language targeting
+    const profileRes = await db.execute(sql`SELECT country, preferred_language FROM user_profiles WHERE firebase_uid = ${firebaseUid} LIMIT 1`);
+    const userProfile = profileRes.rows[0] as { country?: string; preferred_language?: string } | undefined;
     const userCountry = (userProfile?.country ?? "").toUpperCase().trim();
+    const userLanguage = (userProfile?.preferred_language ?? "").toLowerCase().trim();
 
     // 2. Get all sent announcements
     const sent = await db.select().from(platformAnnouncements)
@@ -2759,10 +2769,11 @@ export class DatabaseStorage implements IStorage {
           return codes.includes(userCountry);
         }
         case "language": {
-          // Language is not yet a stored user_profile field; fall back to showing
-          // to all active members when a language announcement was sent (platform
-          // operator is responsible for ensuring reach is appropriate).
-          return memberships.length > 0;
+          // targetFilter is comma-separated BCP-47 codes, e.g. "en,es,fr"
+          if (!ann.targetFilter) return memberships.length > 0;
+          const langs = ann.targetFilter.toLowerCase().split(",").map(s => s.trim()).filter(Boolean);
+          if (langs.length === 0 || !userLanguage) return false;
+          return langs.includes(userLanguage);
         }
         default:
           return false;
@@ -2799,7 +2810,8 @@ export class DatabaseStorage implements IStorage {
       // dept_leaders: all approved orgs (qualifying role check below will filter to dept leaders)
       recipientChurches = approvedChurches;
     } else if (ann.targetType === "language" && ann.targetFilter) {
-      // language targeting: filter users by profile language preference (best-effort via country proxy)
+      // Language targeting filters at member level via user_profiles.preferred_language
+      // (consistent with getSentAnnouncementsForUser). Use all approved churches as base.
       recipientChurches = approvedChurches;
     } else if (ann.targetType === "members_specific" && ann.targetFilter) {
       // targetFilter is a comma-separated list of church IDs
@@ -2846,9 +2858,13 @@ export class DatabaseStorage implements IStorage {
     // "inbox" channel writes to the platformAdminThreads conversation thread.
     // "email" channel sends via SendGrid (handled below).
 
-    // Pre-fetch country codes for country-targeted announcements (unified member-level filter)
+    // Pre-parse country/language filters for member-level delivery filtering.
+    // Both use user_profiles fields, consistent with getSentAnnouncementsForUser feed.
     const countryFilter = ann.targetType === "country" && ann.targetFilter
       ? ann.targetFilter.toUpperCase().split(",").map(s => s.trim()).filter(Boolean)
+      : null;
+    const languageFilter = ann.targetType === "language" && ann.targetFilter
+      ? ann.targetFilter.toLowerCase().split(",").map(s => s.trim()).filter(Boolean)
       : null;
 
     for (const church of recipientChurches) {
@@ -2859,15 +2875,24 @@ export class DatabaseStorage implements IStorage {
         );
         if (qualifiedMembers.length === 0) continue;
 
-        // Country targeting: filter at member level via user_profiles for consistency with feed
-        if (countryFilter && countryFilter.length > 0) {
+        // Country/language targeting: filter at member level via user_profiles for
+        // consistency with getSentAnnouncementsForUser feed (unified logic).
+        if ((countryFilter && countryFilter.length > 0) || (languageFilter && languageFilter.length > 0)) {
           const uids = qualifiedMembers.map(m => m.firebaseUid);
-          const profileRows = await db.execute(sql`SELECT firebase_uid, country FROM user_profiles WHERE firebase_uid = ANY(${sql.raw(`ARRAY[${uids.map(u => `'${u.replace(/'/g, "''")}'`).join(",")}]`)})`);
-          const profileMap = new Map((profileRows.rows as any[]).map(r => [r.firebase_uid, (r.country ?? "").toUpperCase().trim()]));
-          qualifiedMembers = qualifiedMembers.filter(m => {
-            const c = profileMap.get(m.firebaseUid) ?? "";
-            return c && countryFilter.includes(c);
-          });
+          if (uids.length > 0) {
+            const profileRows = await db.execute(sql`SELECT firebase_uid, country, preferred_language FROM user_profiles WHERE firebase_uid = ANY(${sql.raw(`ARRAY[${uids.map(u => `'${u.replace(/'/g, "''")}'`).join(",")}]`)})`);
+            const profileMap = new Map((profileRows.rows as any[]).map(r => [r.firebase_uid, { country: (r.country ?? "").toUpperCase().trim(), lang: (r.preferred_language ?? "").toLowerCase().trim() }]));
+            qualifiedMembers = qualifiedMembers.filter(m => {
+              const p = profileMap.get(m.firebaseUid);
+              if (countryFilter && countryFilter.length > 0) {
+                return p && p.country && countryFilter.includes(p.country);
+              }
+              if (languageFilter && languageFilter.length > 0) {
+                return p && p.lang && languageFilter.includes(p.lang);
+              }
+              return true;
+            });
+          }
           if (qualifiedMembers.length === 0) continue;
         }
 

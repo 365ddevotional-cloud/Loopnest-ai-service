@@ -186,3 +186,6 @@ DO $$ BEGIN
     FOREIGN KEY ("thread_id") REFERENCES "platform_admin_threads"("id") ON DELETE CASCADE;
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
+
+-- Add preferred_language to user_profiles (idempotent)
+ALTER TABLE "user_profiles" ADD COLUMN IF NOT EXISTS "preferred_language" text;

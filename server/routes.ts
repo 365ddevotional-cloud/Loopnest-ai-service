@@ -4315,8 +4315,8 @@ export async function registerRoutes(
       const churchId = Number(req.params.churchId);
       const member = await storage.getChurchMember(churchId, uid);
       if (!member || member.role !== "owner") return res.status(403).json({ message: "Forbidden" });
-      const threads = await storage.getPlatformAdminThreads(churchId);
-      res.json(threads[0] ?? null);
+      // Scoped to this owner's UID — cannot see other members' threads
+      res.json(await storage.getOwnerPlatformAdminThread(churchId, uid) ?? null);
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 
@@ -4328,8 +4328,8 @@ export async function registerRoutes(
       if (!member || member.role !== "owner") return res.status(403).json({ message: "Forbidden" });
       const { subject, message } = req.body;
       if (!subject?.trim() || !message?.trim()) return res.status(400).json({ message: "Subject and message required" });
-      const existing = await storage.getPlatformAdminThreads(churchId);
-      let thread = existing[0];
+      // Get or create THIS owner's thread — never touches another user's thread
+      let thread = await storage.getOwnerPlatformAdminThread(churchId, uid);
       if (!thread) {
         thread = await storage.createPlatformAdminThread({ churchId, ownerUid: uid, subject: subject.trim(), status: "open", hasUnreadAdmin: true, hasUnreadOwner: false });
       }
@@ -4345,10 +4345,10 @@ export async function registerRoutes(
       const churchId = Number(req.params.churchId);
       const member = await storage.getChurchMember(churchId, uid);
       if (!member || member.role !== "owner") return res.status(403).json({ message: "Forbidden" });
-      const threads = await storage.getPlatformAdminThreads(churchId);
-      if (!threads[0]) return res.json([]);
-      await storage.updatePlatformAdminThread(threads[0].id, { hasUnreadOwner: false });
-      res.json(await storage.getPlatformAdminMessages(threads[0].id));
+      const thread = await storage.getOwnerPlatformAdminThread(churchId, uid);
+      if (!thread) return res.json([]);
+      await storage.updatePlatformAdminThread(thread.id, { hasUnreadOwner: false });
+      res.json(await storage.getPlatformAdminMessages(thread.id));
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 
@@ -4359,8 +4359,8 @@ export async function registerRoutes(
       const churchId = Number(req.params.churchId);
       const member = await storage.getChurchMember(churchId, uid);
       if (!member || member.role !== "owner") return res.status(403).json({ message: "Forbidden" });
-      const threads = await storage.getPlatformAdminThreads(churchId);
-      if (threads[0]) await storage.updatePlatformAdminThread(threads[0].id, { hasUnreadOwner: false });
+      const thread = await storage.getOwnerPlatformAdminThread(churchId, uid);
+      if (thread) await storage.updatePlatformAdminThread(thread.id, { hasUnreadOwner: false });
       res.json({ ok: true });
     } catch { res.status(500).json({ message: "Server error" }); }
   });
@@ -4371,12 +4371,12 @@ export async function registerRoutes(
       const churchId = Number(req.params.churchId);
       const member = await storage.getChurchMember(churchId, uid);
       if (!member || member.role !== "owner") return res.status(403).json({ message: "Forbidden" });
-      const threads = await storage.getPlatformAdminThreads(churchId);
-      if (!threads[0]) return res.status(404).json({ message: "No thread found" });
+      const thread = await storage.getOwnerPlatformAdminThread(churchId, uid);
+      if (!thread) return res.status(404).json({ message: "No thread found" });
       const { message } = req.body;
       if (!message?.trim()) return res.status(400).json({ message: "Message required" });
-      const msg = await storage.createPlatformAdminMessage({ threadId: threads[0].id, senderType: "owner", senderUid: uid, message: message.trim() });
-      await storage.updatePlatformAdminThread(threads[0].id, { hasUnreadAdmin: true, hasUnreadOwner: false });
+      const msg = await storage.createPlatformAdminMessage({ threadId: thread.id, senderType: "owner", senderUid: uid, message: message.trim() });
+      await storage.updatePlatformAdminThread(thread.id, { hasUnreadAdmin: true, hasUnreadOwner: false });
       res.status(201).json(msg);
     } catch { res.status(500).json({ message: "Server error" }); }
   });
