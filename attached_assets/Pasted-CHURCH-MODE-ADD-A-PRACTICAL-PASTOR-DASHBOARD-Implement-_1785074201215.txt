@@ -1,0 +1,235 @@
+CHURCH MODE — ADD A PRACTICAL PASTOR DASHBOARD
+
+Implement a focused Pastor Dashboard inside the existing Church Mode.
+
+This is a targeted Church Mode enhancement only.
+
+DO NOT:
+- rebuild Church Mode;
+- modify Family/Group Mode;
+- modify Offline Mode;
+- modify payments, donations, authentication, compliance governance, email configuration, invitations, member-profile security, or unrelated files;
+- refactor working Church Mode pages;
+- replace existing Church Administration features.
+
+Reuse the existing:
+- Church Mode shell and branding;
+- church membership and role permissions;
+- church departments;
+- announcements;
+- Sunday School;
+- assignments/tasks;
+- messaging;
+- member records;
+- existing translation system;
+- current mobile-responsive design.
+
+GOAL
+
+Create a clean, useful dashboard where the church owner, pastor, or an authorized church administrator can quickly see and manage the church’s weekly ministry activities.
+
+Access must be limited to:
+- Church Owner;
+- Pastor;
+- Assistant Pastor;
+- authorized Church Administrator.
+
+Ordinary members must not gain dashboard administration privileges.
+
+1. PASTOR DASHBOARD ENTRY
+
+Add a clearly labeled “Pastor Dashboard” item to the Church Mode hamburger menu.
+
+Use the existing Church Mode design, church logo, church name, brand color, and header.
+
+Do not add another global app header.
+
+2. DASHBOARD OVERVIEW
+
+At the top, show a welcome section such as:
+
+“Welcome, Pastor [Display Name]”
+“Here is what is happening in [Church Name].”
+
+Show summary cards for:
+
+- Total active members
+- Pending member approvals
+- Upcoming events
+- Unread private messages
+- Active prayer requests
+- Published announcements
+- Current Sunday School lesson
+- Open assignments or ministry tasks
+
+Each summary card must be clickable and open the relevant existing section.
+
+Pending approvals must show the live number and reduce immediately whenever a request is approved or declined.
+
+3. THIS WEEK SECTION
+
+Create a “This Week” section showing:
+
+- next church event;
+- current Sunday School lesson;
+- latest announcement;
+- active assignment;
+- prayer requests needing attention;
+- recent member-join requests.
+
+Show clear empty states when no content exists.
+
+Example:
+
+“No upcoming event has been scheduled.”
+“No pending membership request.”
+“No new prayer request requiring attention.”
+
+4. QUICK ACTIONS
+
+Add a compact Quick Actions section with:
+
+- Create Announcement
+- Add Event
+- Add Sunday School Lesson
+- Create Assignment
+- Message Members
+- Review Membership Requests
+- View Prayer Requests
+- Open Departments
+
+Each action must link to an existing working form or section whenever one already exists.
+
+Do not create duplicate systems.
+
+5. WEEKLY SERMON NOTES
+
+Add a simple “Weekly Sermon Notes” area for authorized leaders.
+
+Allow the pastor to:
+
+- create a sermon note;
+- enter sermon title;
+- select sermon date;
+- enter main scripture;
+- add sermon summary;
+- add key points;
+- add closing prayer;
+- save as Draft;
+- publish to church members;
+- edit a draft or published sermon note;
+- archive an old sermon note.
+
+Published sermon notes should become visible to members inside Church Mode.
+
+Do not add audio or video uploading in this task.
+
+Do not add a complex sermon-management platform.
+
+6. MEMBER VIEW
+
+Ordinary church members should have a simple “Sermon Notes” page where they can:
+
+- view published sermon notes;
+- open a sermon note;
+- see title, date, scripture, summary, key points, and prayer;
+- search previous published sermon notes where the existing search component can be reused.
+
+Members must not see drafts.
+
+Members must not edit or publish sermon notes.
+
+7. ROLE AND PERMISSION SAFETY
+
+Enforce permissions on the server and client.
+
+Do not rely only on hidden buttons.
+
+Verify that:
+
+- ordinary members cannot open Pastor Dashboard administrative endpoints;
+- unauthorized users receive a clear 403 response;
+- Church A leaders cannot access Church B’s dashboard or sermon notes;
+- archived sermon drafts remain private;
+- published notes contain no private member information;
+- existing Church Owner permissions remain unchanged.
+
+8. MOBILE DESIGN
+
+The dashboard must work well on iPhone and Android screens.
+
+Use:
+
+- one-column cards on small screens;
+- large readable fonts;
+- clear spacing;
+- large touch targets;
+- no horizontal scrolling;
+- no crowded tab bar.
+
+Use the existing mature Church Mode style.
+
+9. NOTIFICATIONS
+
+When a sermon note is published, create an in-app church notification for current members:
+
+“New sermon notes have been published: [Sermon Title]”
+
+Do not send email in this task.
+
+Do not notify former, declined, suspended, or removed members.
+
+10. LANGUAGES
+
+Add all new labels and messages to:
+
+- English
+- Spanish
+- French
+
+Keep complete translation-key parity.
+
+Do not leave raw translation keys visible in the interface.
+
+11. TESTING
+
+Test the following:
+
+- Church Owner opens Pastor Dashboard.
+- Authorized Pastor opens Pastor Dashboard.
+- Ordinary member is blocked from administrative dashboard access.
+- Summary counts reflect actual church data.
+- Pending-member count changes after approval or decline.
+- Every Quick Action opens the correct existing page.
+- Pastor creates and saves a draft sermon note.
+- Draft is invisible to ordinary members.
+- Pastor publishes the sermon note.
+- Published note becomes visible to members.
+- Member opens the published sermon note.
+- Pastor edits and archives the sermon note.
+- Church A cannot view Church B’s dashboard or sermon notes.
+- Mobile layout has no horizontal overflow.
+- No new browser-console or server errors.
+- Existing Church Mode, Family/Group Mode, Offline Mode, authentication, invitations, messaging, and payments remain unchanged.
+
+FINAL REPORT
+
+Provide:
+
+- files changed;
+- database tables or columns added;
+- exact roles permitted to use Pastor Dashboard;
+- exact server-side permission checks used;
+- summary-card data sources;
+- sermon-note Draft, Published, and Archived behavior;
+- member-view behavior;
+- notification behavior;
+- English, Spanish, and French translation status;
+- mobile-test results;
+- security-test results;
+- any genuine limitations;
+- confirmation that no unrelated files were changed.
+
+Do not merely provide a plan.
+
+Implement the feature, test it, and create one checkpoint only after successful verification.

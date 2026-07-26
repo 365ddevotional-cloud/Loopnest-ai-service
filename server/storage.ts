@@ -156,8 +156,11 @@ import {
   churchMessageReads,
   churchSermonBookmarks,
   churchSermonNotes,
+  churchPastorNotes,
   type ChurchSermonBookmark,
   type ChurchSermonNote,
+  type ChurchPastorNote,
+  type InsertChurchPastorNote,
   userProfiles,
   userActivityDays,
   type UserProfile,
@@ -201,6 +204,21 @@ import {
   type InsertGroupAnnouncement,
 } from "@shared/schema";
 import { eq, desc, and, isNull, or, ilike, lte, notInArray, inArray, sql, gte, count, countDistinct } from "drizzle-orm";
+
+export interface ChurchDashboardStats {
+  activeMembers: number;
+  pendingMembers: number;
+  upcomingEvents: number;
+  unreadMessages: number;
+  activePrayers: number;
+  announcements: number;
+  openTasks: number;
+  publishedNotes: number;
+  nextEvent: { title: string; start_date: string; location?: string; dept_name?: string } | null;
+  latestAnnouncement: { title: string; created_at: string } | null;
+  pendingMembersList: Array<{ id: number; display_name: string; email: string }>;
+  activePrayersList: Array<{ id: number; title: string; display_name: string }>;
+}
 
 export interface IStorage {
   getDevotionals(): Promise<Devotional[]>;
@@ -423,6 +441,12 @@ export interface IStorage {
   // Sermon Notes
   upsertSermonNote(sermonId: number, churchId: number, firebaseUid: string, body: string): Promise<ChurchSermonNote>;
   getSermonNote(sermonId: number, firebaseUid: string): Promise<ChurchSermonNote | undefined>;
+  // Pastor Dashboard Stats
+  getChurchDashboardStats(churchId: number): Promise<ChurchDashboardStats>;
+  // Church Pastor Notes
+  listChurchPastorNotes(churchId: number, adminAccess: boolean): Promise<ChurchPastorNote[]>;
+  createChurchPastorNote(data: InsertChurchPastorNote): Promise<ChurchPastorNote>;
+  updateChurchPastorNote(noteId: number, churchId: number, data: Partial<InsertChurchPastorNote> & { status?: string; publishedAt?: Date | null }): Promise<ChurchPastorNote>;
   // Church Announcements
   createChurchAnnouncement(data: InsertChurchAnnouncement): Promise<ChurchAnnouncement>;
   getChurchAnnouncements(churchId: number): Promise<ChurchAnnouncement[]>;
@@ -2090,6 +2114,77 @@ export class DatabaseStorage implements IStorage {
   async getSermonNote(sermonId: number, firebaseUid: string): Promise<ChurchSermonNote | undefined> {
     const [row] = await db.select().from(churchSermonNotes)
       .where(and(eq(churchSermonNotes.sermonId, sermonId), eq(churchSermonNotes.firebaseUid, firebaseUid)));
+    return row;
+  }
+
+  // ── Pastor Dashboard Stats ───────────────────────────────────────────────────
+  async getChurchDashboardStats(churchId: number): Promise<ChurchDashboardStats> {
+    const [memberStats, prayerCount, announcementCount, eventCount, taskCount, noteCount, msgCount,
+           nextEventRows, latestAnnRows, pendingMembersRows, activePrayersRows] = await Promise.all([
+      db.execute(sql`SELECT
+        COUNT(*) FILTER (WHERE status = 'active') as active,
+        COUNT(*) FILTER (WHERE status = 'pending') as pending
+        FROM church_members WHERE church_id = ${churchId}`),
+      db.execute(sql`SELECT COUNT(*) FROM church_prayer_requests WHERE church_id = ${churchId} AND status = 'active'`),
+      db.execute(sql`SELECT COUNT(*) FROM church_announcements WHERE church_id = ${churchId}`),
+      db.execute(sql`SELECT COUNT(*) FROM church_department_events cde
+        JOIN church_departments cd ON cde.department_id = cd.id
+        WHERE cd.church_id = ${churchId} AND cde.start_date > NOW() AND cd.is_active = true`),
+      db.execute(sql`SELECT COUNT(*) FROM church_department_tasks cdt
+        JOIN church_departments cd ON cdt.department_id = cd.id
+        WHERE cd.church_id = ${churchId} AND cdt.status IN ('pending', 'in_progress')`),
+      db.execute(sql`SELECT COUNT(*) FROM church_pastor_notes WHERE church_id = ${churchId} AND status = 'published'`),
+      db.execute(sql`SELECT COUNT(*) FROM church_conversations WHERE church_id = ${churchId} AND has_unread_owner = true`),
+      db.execute(sql`SELECT cde.title, cde.start_date, cde.location, cd.name as dept_name
+        FROM church_department_events cde
+        JOIN church_departments cd ON cde.department_id = cd.id
+        WHERE cd.church_id = ${churchId} AND cde.start_date > NOW() AND cd.is_active = true
+        ORDER BY cde.start_date ASC LIMIT 1`),
+      db.execute(sql`SELECT title, created_at FROM church_announcements WHERE church_id = ${churchId} ORDER BY created_at DESC LIMIT 1`),
+      db.execute(sql`SELECT id, display_name, email FROM church_members WHERE church_id = ${churchId} AND status = 'pending' ORDER BY joined_at DESC LIMIT 5`),
+      db.execute(sql`SELECT id, title, display_name FROM church_prayer_requests WHERE church_id = ${churchId} AND status = 'active' ORDER BY created_at DESC LIMIT 3`),
+    ]);
+    return {
+      activeMembers: Number((memberStats.rows[0] as any)?.active ?? 0),
+      pendingMembers: Number((memberStats.rows[0] as any)?.pending ?? 0),
+      activePrayers: Number((prayerCount.rows[0] as any)?.count ?? 0),
+      announcements: Number((announcementCount.rows[0] as any)?.count ?? 0),
+      upcomingEvents: Number((eventCount.rows[0] as any)?.count ?? 0),
+      openTasks: Number((taskCount.rows[0] as any)?.count ?? 0),
+      publishedNotes: Number((noteCount.rows[0] as any)?.count ?? 0),
+      unreadMessages: Number((msgCount.rows[0] as any)?.count ?? 0),
+      nextEvent: (nextEventRows.rows[0] as any) ?? null,
+      latestAnnouncement: (latestAnnRows.rows[0] as any) ?? null,
+      pendingMembersList: pendingMembersRows.rows as any[],
+      activePrayersList: activePrayersRows.rows as any[],
+    };
+  }
+
+  // ── Church Pastor Notes ──────────────────────────────────────────────────────
+  async listChurchPastorNotes(churchId: number, adminAccess: boolean): Promise<ChurchPastorNote[]> {
+    if (adminAccess) {
+      return db.select().from(churchPastorNotes)
+        .where(eq(churchPastorNotes.churchId, churchId))
+        .orderBy(desc(churchPastorNotes.createdAt));
+    }
+    return db.select().from(churchPastorNotes)
+      .where(and(eq(churchPastorNotes.churchId, churchId), eq(churchPastorNotes.status, "published")))
+      .orderBy(desc(churchPastorNotes.publishedAt));
+  }
+
+  async createChurchPastorNote(data: InsertChurchPastorNote): Promise<ChurchPastorNote> {
+    const [row] = await db.insert(churchPastorNotes).values(data).returning();
+    return row;
+  }
+
+  async updateChurchPastorNote(
+    noteId: number, churchId: number,
+    data: Partial<InsertChurchPastorNote> & { status?: string; publishedAt?: Date | null }
+  ): Promise<ChurchPastorNote> {
+    const [row] = await db.update(churchPastorNotes)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(churchPastorNotes.id, noteId), eq(churchPastorNotes.churchId, churchId)))
+      .returning();
     return row;
   }
 

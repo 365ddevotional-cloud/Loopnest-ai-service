@@ -965,6 +965,27 @@ export const churchSermonNotes = pgTable("church_sermon_notes", {
 }));
 export type ChurchSermonNote = typeof churchSermonNotes.$inferSelect;
 
+// ── Church Pastor Notes (weekly sermon notes — draft/published/archived) ────────
+export const churchPastorNotes = pgTable("church_pastor_notes", {
+  id: serial("id").primaryKey(),
+  churchId: integer("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  sermonDate: timestamp("sermon_date"),
+  scripture: text("scripture"),
+  summary: text("summary"),
+  keyPoints: text("key_points").array(),
+  closingPrayer: text("closing_prayer"),
+  status: text("status").notNull().default("draft"),
+  authorUid: text("author_uid").notNull(),
+  authorName: text("author_name"),
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+export const insertChurchPastorNoteSchema = createInsertSchema(churchPastorNotes).omit({ id: true, createdAt: true, updatedAt: true, publishedAt: true });
+export type ChurchPastorNote = typeof churchPastorNotes.$inferSelect;
+export type InsertChurchPastorNote = z.infer<typeof insertChurchPastorNoteSchema>;
+
 // ── Church Announcements ──────────────────────────────────────────────────────
 export const churchAnnouncements = pgTable("church_announcements", {
   id: serial("id").primaryKey(),

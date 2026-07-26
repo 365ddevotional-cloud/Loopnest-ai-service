@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import type { Church } from "@shared/schema";
 import { CHURCH_ROLE_LABELS, type ChurchRole } from "@shared/schema";
-import { Home, Mic2, Megaphone, Users, Heart, Shield, Settings, ChevronRight, HandCoins, MessageSquare, UserCircle, Building2, Globe, Check, Menu, X, CalendarDays, ClipboardList } from "lucide-react";
+import { Home, Mic2, Megaphone, Users, Heart, Shield, Settings, ChevronRight, HandCoins, MessageSquare, UserCircle, Building2, Globe, Check, Menu, X, CalendarDays, ClipboardList, LayoutDashboard, BookText } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
 import { getCurrentLang } from "@/utils/i18n";
 import { useQuery } from "@tanstack/react-query";
@@ -148,8 +148,12 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
     { label: t("cm_giving"), path: `/church/${slug}/giving`, icon: HandCoins },
     { label: t("cm_messages"), path: `/church/${slug}/messages`, icon: MessageSquare, badge: unreadMessages > 0 ? unreadMessages : 0 },
     ...(isLeader || church?.memberDirectoryEnabled ? [{ label: t("cm_members"), path: `/church/${slug}/members`, icon: Users, badge: livePendingCount > 0 ? livePendingCount : 0 }] : []),
+    { label: t("cm_sermonNotes"), path: `/church/${slug}/pastor-notes`, icon: BookText },
     { label: t("cm_myProfile"), path: `/church/${slug}/profile`, icon: UserCircle },
-    ...(isAdmin ? [{ label: t("cm_admin"), path: `/church/${slug}/admin`, icon: Settings }] : []),
+    ...(isAdmin ? [
+      { label: t("cm_pastorDashboard"), path: `/church/${slug}/pastor-dashboard`, icon: LayoutDashboard },
+      { label: t("cm_admin"), path: `/church/${slug}/admin`, icon: Settings },
+    ] : []),
   ] : [];
 
   const roleLabel = currentRole ? (CHURCH_ROLE_LABELS[currentRole as ChurchRole] ?? currentRole) : null;

@@ -3724,6 +3724,95 @@ export async function registerRoutes(
     } catch { res.status(500).json({ message: "Failed to delete sermon" }); }
   });
 
+  // ── Pastor Dashboard ────────────────────────────────────────────────────────
+  const PASTOR_DASH_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor"];
+
+  app.get("/api/churches/:id/dashboard", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || !PASTOR_DASH_ROLES.includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      res.json(await storage.getChurchDashboardStats(id));
+    } catch (e) { console.error("Dashboard error:", e); res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Church Pastor Notes ──────────────────────────────────────────────────────
+  app.get("/api/churches/:id/pastor-notes", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || m.status !== "active") return res.status(403).json({ message: "Not a member" });
+      const isAdmin = PASTOR_DASH_ROLES.includes(m.role);
+      res.json(await storage.listChurchPastorNotes(id, isAdmin));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/churches/:id/pastor-notes", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || !PASTOR_DASH_ROLES.includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      const { title, sermonDate, scripture, summary, keyPoints, closingPrayer } = req.body;
+      if (!title?.trim()) return res.status(400).json({ message: "Title required" });
+      const note = await storage.createChurchPastorNote({
+        churchId: id,
+        title: title.trim(),
+        sermonDate: sermonDate ? new Date(sermonDate) : null,
+        scripture: scripture?.trim() || null,
+        summary: summary?.trim() || null,
+        keyPoints: Array.isArray(keyPoints) ? keyPoints.filter((k: string) => k?.trim()) : null,
+        closingPrayer: closingPrayer?.trim() || null,
+        status: "draft",
+        authorUid: uid,
+        authorName: m.displayName ?? null,
+      });
+      res.status(201).json(note);
+    } catch (e) { console.error("Create pastor note error:", e); res.status(500).json({ message: "Failed to create note" }); }
+  });
+
+  app.patch("/api/churches/:id/pastor-notes/:noteId", async (req, res) => {
+    const uid = await getUid(req, res);
+    if (!uid) return;
+    try {
+      const id = Number(req.params.id);
+      const noteId = Number(req.params.noteId);
+      const m = await storage.getChurchMember(id, uid);
+      if (!m || !PASTOR_DASH_ROLES.includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      const { title, sermonDate, scripture, summary, keyPoints, closingPrayer, status } = req.body;
+      const updateData: Record<string, any> = {};
+      if (title !== undefined) updateData.title = title?.trim() || null;
+      if (sermonDate !== undefined) updateData.sermonDate = sermonDate ? new Date(sermonDate) : null;
+      if (scripture !== undefined) updateData.scripture = scripture?.trim() || null;
+      if (summary !== undefined) updateData.summary = summary?.trim() || null;
+      if (keyPoints !== undefined) updateData.keyPoints = Array.isArray(keyPoints) ? keyPoints.filter((k: string) => k?.trim()) : null;
+      if (closingPrayer !== undefined) updateData.closingPrayer = closingPrayer?.trim() || null;
+      if (status !== undefined) {
+        updateData.status = status;
+        if (status === "published") updateData.publishedAt = new Date();
+      }
+      const note = await storage.updateChurchPastorNote(noteId, id, updateData);
+      // When published: create a church announcement as in-app notification
+      if (status === "published" && note) {
+        try {
+          await storage.createChurchAnnouncement({
+            churchId: id,
+            title: `📖 New sermon notes: ${note.title}`,
+            body: note.scripture ? `Scripture: ${note.scripture}` : "New sermon notes are now available.",
+            isPinned: false,
+            createdBy: uid,
+          });
+        } catch { /* non-fatal: note was saved, just skip announcement */ }
+      }
+      res.json(note);
+    } catch (e) { console.error("Update pastor note error:", e); res.status(500).json({ message: "Failed to update note" }); }
+  });
+
   // ── Church Announcements ────────────────────────────────────────────────────
   app.get("/api/churches/:id/announcements", async (req, res) => {
     const uid = await getUid(req, res);
