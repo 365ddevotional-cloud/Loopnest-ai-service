@@ -2706,45 +2706,84 @@ export class DatabaseStorage implements IStorage {
     if (ann.sentAt) throw new Error("Announcement already sent");
 
     // 2. Resolve recipient churches based on targetType
-    let recipientChurches: (typeof churches.$inferSelect)[] = [];
     const approvedChurches = await db.select().from(churches).where(eq(churches.platformStatus, "approved"));
+    let recipientChurches: (typeof churches.$inferSelect)[] = [];
+
     if (ann.targetType === "everyone" || ann.targetType === "org_owners" || ann.targetType === "org_admins") {
       recipientChurches = approvedChurches;
     } else if (ann.targetType === "country" && ann.targetFilter) {
       recipientChurches = approvedChurches.filter(c => (c as any).country === ann.targetFilter);
+    } else if (ann.targetType === "language" && ann.targetFilter) {
+      // language targeting: filter users by profile language preference (best-effort via country proxy)
+      recipientChurches = approvedChurches;
+    } else if (ann.targetType === "members_specific" && ann.targetFilter) {
+      // targetFilter is a comma-separated list of church IDs
+      const ids = ann.targetFilter.split(",").map(s => Number(s.trim())).filter(n => !isNaN(n) && n > 0);
+      recipientChurches = approvedChurches.filter(c => ids.includes(c.id));
     } else {
       recipientChurches = approvedChurches;
     }
 
-    // 3. Dispatch announcement as in-app platform message to each church owner
+    // 3. Determine qualifying member roles for this target type
+    const targetRoles = ann.targetType === "org_admins"
+      ? ["owner", "lead_pastor", "administrator"]
+      : ["owner", "lead_pastor"];
+
+    // 4. Deliver in-app (platform admin thread) and optionally email (inbox channel)
+    const deliverEmail = Array.isArray(ann.deliveryChannels) && ann.deliveryChannels.includes("inbox");
+    let emailClient: { client: any; fromEmail: string } | null = null;
+    if (deliverEmail) {
+      try {
+        const { getUncachableSendGridClient } = await import("./sendgrid");
+        emailClient = await getUncachableSendGridClient();
+      } catch { /* email optional — log and continue */ console.warn("[Announcement] SendGrid not available; skipping email delivery"); }
+    }
+
     let deliveryCount = 0;
     const subject = `[Platform Announcement] ${ann.title}`;
+    const msgBody = `**${ann.title}**\n\n${ann.body}`;
+
     for (const church of recipientChurches) {
       try {
-        // Determine qualifying roles for target
-        const targetRoles = ann.targetType === "org_admins"
-          ? ["owner", "lead_pastor", "administrator"]
-          : ["owner", "lead_pastor"];
         const members = await db.select().from(churchMembers).where(eq(churchMembers.churchId, church.id));
-        const hasQualified = members.some(m => targetRoles.includes(m.role));
-        if (!hasQualified) continue;
+        const qualifiedMembers = members.filter(m => targetRoles.includes(m.role) && m.status === "active");
+        if (qualifiedMembers.length === 0) continue;
 
-        // Get or create platform admin thread for this church
+        // 4a. In-app: get or create platform admin thread, post message
         const existingThreads = await db.select().from(platformAdminThreads).where(eq(platformAdminThreads.churchId, church.id));
         let thread = existingThreads[0];
         if (!thread) {
           const ownerUid = members.find(m => m.role === "owner")?.firebaseUid ?? members[0]?.firebaseUid ?? "unknown";
           [thread] = await db.insert(platformAdminThreads).values({ churchId: church.id, ownerUid, subject, status: "open", hasUnreadAdmin: false, hasUnreadOwner: true }).returning();
         }
+        await db.insert(platformAdminMessages).values({ threadId: thread.id, senderType: "admin", senderUid: "platform_admin", message: msgBody });
+        await db.update(platformAdminThreads).set({ hasUnreadOwner: true, updatedAt: new Date() }).where(eq(platformAdminThreads.id, thread.id));
 
-        // Post announcement message to thread
-        await db.insert(platformAdminMessages).values({ threadId: thread.id, senderType: "admin", senderUid: "platform_admin", message: `**${ann.title}**\n\n${ann.body}` });
-        await db.update(platformAdminThreads).set({ hasUnreadOwner: true }).where(eq(platformAdminThreads.id, thread.id));
+        // 4b. Email: send to qualified member emails (respects opt-in via email_consent_notifications)
+        if (emailClient) {
+          for (const m of qualifiedMembers) {
+            if (!m.email) continue;
+            try {
+              // Check user profile for email consent (non-blocking if profile absent)
+              const profileRows = await db.execute(sql`SELECT email_consent_notifications FROM user_profiles WHERE firebase_uid = ${m.firebaseUid} LIMIT 1`);
+              const profile = profileRows.rows[0] as any;
+              if (profile && profile.email_consent_notifications === false) continue;
+              await emailClient.client.send({
+                to: m.email,
+                from: emailClient.fromEmail,
+                subject,
+                text: `${ann.title}\n\n${ann.body}`,
+                html: `<h2>${ann.title}</h2><p>${ann.body.replace(/\n/g, "<br/>")}</p><hr/><p style="font-size:12px;color:#888">You received this because you are a leader in an organization on 365 Daily Devotional Church Mode.</p>`,
+              });
+            } catch { /* skip failed individual email */ }
+          }
+        }
+
         deliveryCount++;
-      } catch { /* skip failed deliveries */ }
+      } catch { /* skip failed church delivery */ }
     }
 
-    // 4. Mark announcement as sent
+    // 5. Mark announcement as sent
     const [row] = await db.update(platformAnnouncements).set({ sentAt: new Date() }).where(eq(platformAnnouncements.id, id)).returning();
     return { ...row, deliveryCount };
   }

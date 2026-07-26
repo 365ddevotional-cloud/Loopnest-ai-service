@@ -3016,7 +3016,7 @@ export async function registerRoutes(
   app.get("/api/public/churches/:slug/sermons", async (req, res) => {
     try {
       const church = await storage.getChurchBySlug(req.params.slug);
-      if (!church || church.status !== "active") return res.status(404).json({ message: "Church not found" });
+      if (!church || church.status !== "active" || church.platformStatus !== "approved") return res.status(404).json({ message: "Church not found" });
       const sermons = await storage.getChurchSermons(church.id);
       res.json({ sermons: sermons.filter((s: any) => s.isPublished) });
     } catch { res.status(500).json({ message: "Server error" }); }
@@ -3026,7 +3026,7 @@ export async function registerRoutes(
   app.get("/api/public/churches/:slug/events", async (req, res) => {
     try {
       const church = await storage.getChurchBySlug(req.params.slug);
-      if (!church || church.status !== "active") return res.status(404).json({ message: "Church not found" });
+      if (!church || church.status !== "active" || church.platformStatus !== "approved") return res.status(404).json({ message: "Church not found" });
       const departments = await storage.getDepartments(church.id);
       const eventArrays = await Promise.all(departments.map(d => storage.getDepartmentEvents(d.id)));
       const events = eventArrays.flat().sort((a: any, b: any) =>
@@ -3040,7 +3040,7 @@ export async function registerRoutes(
   app.post("/api/public/churches/:slug/prayer", async (req, res) => {
     try {
       const church = await storage.getChurchBySlug(req.params.slug);
-      if (!church || church.status !== "active") return res.status(404).json({ message: "Church not found" });
+      if (!church || church.status !== "active" || church.platformStatus !== "approved") return res.status(404).json({ message: "Church not found" });
       const { name, email, request } = req.body;
       if (!name?.trim() || !request?.trim()) return res.status(400).json({ message: "Name and request are required" });
       const prayer = await storage.createChurchPrayerRequest({
@@ -3060,7 +3060,7 @@ export async function registerRoutes(
   app.post("/api/public/churches/:slug/contact", async (req, res) => {
     try {
       const church = await storage.getChurchBySlug(req.params.slug);
-      if (!church || church.status !== "active") return res.status(404).json({ message: "Church not found" });
+      if (!church || church.status !== "active" || church.platformStatus !== "approved") return res.status(404).json({ message: "Church not found" });
       const { name, email, subject, message } = req.body;
       if (!name?.trim() || !email?.trim() || !message?.trim()) {
         return res.status(400).json({ message: "Name, email and message are required" });
@@ -4102,9 +4102,10 @@ export async function registerRoutes(
       });
       const parsed = schema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ message: "Invalid request" });
-      // Require reason for serious enforcement actions
-      if (["suspension", "removal"].includes(parsed.data.enforcementAction ?? "") && !parsed.data.enforcementReason?.trim()) {
-        return res.status(400).json({ message: "A reason is required for suspension or removal enforcement actions" });
+      // Require reason for any enforcement action other than no_action
+      const action = parsed.data.enforcementAction;
+      if (action && action !== "no_action" && !parsed.data.enforcementReason?.trim()) {
+        return res.status(400).json({ message: "A reason is required for enforcement actions" });
       }
       const updated = await storage.updateComplianceCase(id, { ...parsed.data, enforcementAt: parsed.data.enforcementAction ? new Date() : undefined });
 
