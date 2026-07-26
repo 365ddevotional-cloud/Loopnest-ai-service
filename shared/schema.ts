@@ -1415,3 +1415,102 @@ export const userActivityDays = pgTable("user_activity_days", {
   uniqueUserDay: unique().on(t.firebaseUid, t.activityDate),
 }));
 export type UserActivityDay = typeof userActivityDays.$inferSelect;
+
+// ─── Family / Group Mode ──────────────────────────────────────────────────────
+
+export const groups = pgTable("groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  logoUrl: text("logo_url"),
+  country: text("country"),
+  privacy: text("privacy").notNull().default("join_code"), // "invite_only" | "join_code"
+  inviteCode: text("invite_code").notNull().unique(),
+  ownerId: text("owner_id").notNull(), // firebase_uid
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertGroupSchema = createInsertSchema(groups).omit({ id: true, createdAt: true });
+export type Group = typeof groups.$inferSelect;
+export type InsertGroup = z.infer<typeof insertGroupSchema>;
+
+export const groupMembers = pgTable("group_members", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
+  firebaseUid: text("firebase_uid").notNull(),
+  email: text("email").notNull(),
+  displayName: text("display_name"),
+  role: text("role").notNull().default("member"), // "owner" | "moderator" | "member"
+  joinedAt: timestamp("joined_at").defaultNow(),
+}, (t) => ({
+  uniqueGroupMember: unique().on(t.groupId, t.firebaseUid),
+}));
+export const insertGroupMemberSchema = createInsertSchema(groupMembers).omit({ id: true, joinedAt: true });
+export type GroupMember = typeof groupMembers.$inferSelect;
+export type InsertGroupMember = z.infer<typeof insertGroupMemberSchema>;
+
+export const groupPrayerRequests = pgTable("group_prayer_requests", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
+  firebaseUid: text("firebase_uid").notNull(),
+  displayName: text("display_name"),
+  content: text("content").notNull(),
+  status: text("status").notNull().default("active"), // "active" | "answered" | "praying"
+  prayingCount: integer("praying_count").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertGroupPrayerRequestSchema = createInsertSchema(groupPrayerRequests).omit({ id: true, createdAt: true, prayingCount: true });
+export type GroupPrayerRequest = typeof groupPrayerRequests.$inferSelect;
+export type InsertGroupPrayerRequest = z.infer<typeof insertGroupPrayerRequestSchema>;
+
+export const groupMessages = pgTable("group_messages", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
+  firebaseUid: text("firebase_uid").notNull(),
+  displayName: text("display_name"),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertGroupMessageSchema = createInsertSchema(groupMessages).omit({ id: true, createdAt: true });
+export type GroupMessage = typeof groupMessages.$inferSelect;
+export type InsertGroupMessage = z.infer<typeof insertGroupMessageSchema>;
+
+export const groupDevotionalShares = pgTable("group_devotional_shares", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
+  devotionalId: integer("devotional_id"),
+  devotionalDate: text("devotional_date"),
+  firebaseUid: text("firebase_uid").notNull(),
+  displayName: text("display_name"),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertGroupDevotionalShareSchema = createInsertSchema(groupDevotionalShares).omit({ id: true, createdAt: true });
+export type GroupDevotionalShare = typeof groupDevotionalShares.$inferSelect;
+export type InsertGroupDevotionalShare = z.infer<typeof insertGroupDevotionalShareSchema>;
+
+export const groupDevotionalReactions = pgTable("group_devotional_reactions", {
+  id: serial("id").primaryKey(),
+  shareId: integer("share_id").notNull().references(() => groupDevotionalShares.id, { onDelete: "cascade" }),
+  firebaseUid: text("firebase_uid").notNull(),
+  displayName: text("display_name"),
+  reaction: text("reaction").notNull(), // "amen" | "praying" | "thank_you"
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => ({
+  uniqueReaction: unique().on(t.shareId, t.firebaseUid, t.reaction),
+}));
+export const insertGroupDevotionalReactionSchema = createInsertSchema(groupDevotionalReactions).omit({ id: true, createdAt: true });
+export type GroupDevotionalReaction = typeof groupDevotionalReactions.$inferSelect;
+export type InsertGroupDevotionalReaction = z.infer<typeof insertGroupDevotionalReactionSchema>;
+
+export const groupAnnouncements = pgTable("group_announcements", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
+  firebaseUid: text("firebase_uid").notNull(),
+  displayName: text("display_name"),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertGroupAnnouncementSchema = createInsertSchema(groupAnnouncements).omit({ id: true, createdAt: true });
+export type GroupAnnouncement = typeof groupAnnouncements.$inferSelect;
+export type InsertGroupAnnouncement = z.infer<typeof insertGroupAnnouncementSchema>;

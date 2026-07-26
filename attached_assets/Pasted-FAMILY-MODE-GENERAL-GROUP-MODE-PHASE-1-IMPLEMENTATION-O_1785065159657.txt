@@ -1,0 +1,250 @@
+FAMILY MODE (GENERAL GROUP MODE) — PHASE 1 IMPLEMENTATION ONLY
+
+This feature is intentionally much lighter than Church Mode.
+
+Do NOT copy Church Mode or create another large governance system.
+
+Instead, build a simple private group system that can be used for:
+
+• Families
+• Friends
+• Workplace prayer groups
+• Football teams
+• Scouts
+• Market associations
+• Military prayer groups
+• Business organizations
+• Any private community
+
+Reuse as much existing infrastructure as possible from Church Mode.
+
+DO NOT modify:
+- Church Mode
+- Offline Mode
+- Sunday School
+- Prayer & Counseling
+- Payments
+- Donations
+- Authentication
+- Android
+- Email
+- Admin Dashboard
+- Main navigation
+
+Only add the minimum code required.
+
+------------------------------------------------
+
+CREATE A NEW ACCOUNT TYPE
+
+Family / Group
+
+This should appear beside:
+
+Individual
+Church
+
+------------------------------------------------
+
+GROUP CREATION
+
+Allow the creator to enter:
+
+• Group Name
+• Optional Logo
+• Optional Description
+• Country
+• Privacy:
+   - Invite Only
+   - Join by Code
+
+Generate a reusable invitation code.
+
+Allow copying the code.
+
+------------------------------------------------
+
+MEMBERS
+
+Simple roles only:
+
+Owner
+Moderator
+Member
+
+No complicated governance.
+
+------------------------------------------------
+
+GROUP HOME
+
+Show:
+
+Group Logo
+Group Name
+Member Count
+
+Buttons:
+
+Prayer Requests
+Messages
+Devotional Sharing
+Announcements
+
+------------------------------------------------
+
+PRAYER
+
+Members can:
+
+Request Prayer
+
+Mark:
+
+Answered
+
+Praying
+
+No Counseling system.
+
+Reuse the existing prayer request components wherever possible.
+
+------------------------------------------------
+
+MESSAGES
+
+Simple private group chat.
+
+No encrypted counseling.
+
+No complicated inbox.
+
+------------------------------------------------
+
+DEVOTIONAL SHARING
+
+Allow members to share today's devotional into the group.
+
+Members can react with:
+
+Amen
+
+Praying
+
+Thank You
+
+No Facebook-style reactions.
+
+------------------------------------------------
+
+ANNOUNCEMENTS
+
+Only Owner and Moderator can post announcements.
+
+Members can read them.
+
+------------------------------------------------
+
+INVITATIONS
+
+Invite by:
+
+Invitation Code
+
+Copy Invite Link
+
+Email Invite
+
+Reuse existing invitation components where possible.
+
+------------------------------------------------
+
+NOTIFICATIONS
+
+Reuse existing notification system.
+
+Notify:
+
+New prayer request
+
+New announcement
+
+Someone joined
+
+------------------------------------------------
+
+SEARCH
+
+Simple search for:
+
+Members
+
+Prayer requests
+
+Announcements
+
+------------------------------------------------
+
+OFFLINE
+
+Do NOT add offline messaging.
+
+Only devotional content already supported by Offline Mode remains available offline.
+
+Everything else stays online.
+
+------------------------------------------------
+
+UI
+
+Use the same mature design language as Church Mode.
+
+Keep screens simple.
+
+Avoid unnecessary settings.
+
+------------------------------------------------
+
+TESTING
+
+Verify:
+
+Create group
+
+Join by code
+
+Invite member
+
+Share devotional
+
+Submit prayer request
+
+Send message
+
+Post announcement
+
+Leave group
+
+Delete group (Owner only)
+
+Ensure Church Mode remains unaffected.
+
+------------------------------------------------
+
+FINAL REPORT
+
+Provide:
+
+Files changed
+
+Components reused from Church Mode
+
+Database tables added
+
+Routes added
+
+Test results
+
+Checkpoint created
+
+Do not expand beyond Phase 1.

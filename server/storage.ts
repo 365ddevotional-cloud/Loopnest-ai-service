@@ -28,6 +28,13 @@ import {
   churchDepartments,
   churchDepartmentMembers,
   churchDepartmentPosts,
+  groups,
+  groupMembers,
+  groupPrayerRequests,
+  groupMessages as groupMessagesTable,
+  groupDevotionalShares,
+  groupDevotionalReactions,
+  groupAnnouncements,
   churchDepartmentEvents,
   churchDepartmentTasks,
   churchDepartmentAttendance,
@@ -178,6 +185,20 @@ import {
   type InsertPlatformAdminMessage,
   type PlatformAnnouncement,
   type InsertPlatformAnnouncement,
+  type Group,
+  type InsertGroup,
+  type GroupMember,
+  type InsertGroupMember,
+  type GroupPrayerRequest,
+  type InsertGroupPrayerRequest,
+  type GroupMessage,
+  type InsertGroupMessage,
+  type GroupDevotionalShare,
+  type InsertGroupDevotionalShare,
+  type GroupDevotionalReaction,
+  type InsertGroupDevotionalReaction,
+  type GroupAnnouncement,
+  type InsertGroupAnnouncement,
 } from "@shared/schema";
 import { eq, desc, and, isNull, or, ilike, lte, notInArray, inArray, sql, gte, count, countDistinct } from "drizzle-orm";
 
@@ -526,6 +547,36 @@ export interface IStorage {
 
   // Governance summary for admin dashboard
   getGovernanceSummary(): Promise<{ pendingReview: number; openCases: number; pendingAppeals: number; pendingDeletions: number; recentApprovals: number; recentSuspensions: number }>;
+
+  // ── Family / Group Mode ────────────────────────────────────────────────────
+  createGroup(data: InsertGroup): Promise<Group>;
+  getGroup(id: number): Promise<Group | undefined>;
+  getGroupByInviteCode(code: string): Promise<Group | undefined>;
+  getUserGroups(firebaseUid: string): Promise<(GroupMember & { group: Group })[]>;
+  updateGroup(id: number, data: Partial<InsertGroup>): Promise<Group>;
+  deleteGroup(id: number): Promise<void>;
+  // Members
+  addGroupMember(data: InsertGroupMember): Promise<GroupMember>;
+  getGroupMembers(groupId: number): Promise<GroupMember[]>;
+  getGroupMember(groupId: number, firebaseUid: string): Promise<GroupMember | undefined>;
+  updateGroupMemberRole(id: number, role: string): Promise<GroupMember>;
+  removeGroupMember(groupId: number, firebaseUid: string): Promise<void>;
+  // Prayer
+  createGroupPrayerRequest(data: InsertGroupPrayerRequest): Promise<GroupPrayerRequest>;
+  getGroupPrayerRequests(groupId: number): Promise<GroupPrayerRequest[]>;
+  updateGroupPrayerStatus(id: number, status: string): Promise<GroupPrayerRequest>;
+  incrementGroupPrayingCount(id: number): Promise<GroupPrayerRequest>;
+  // Messages
+  createGroupMessage(data: InsertGroupMessage): Promise<GroupMessage>;
+  getGroupMessages(groupId: number, limit?: number): Promise<GroupMessage[]>;
+  // Devotional shares
+  createGroupDevotionalShare(data: InsertGroupDevotionalShare): Promise<GroupDevotionalShare>;
+  getGroupDevotionalShares(groupId: number): Promise<(GroupDevotionalShare & { reactions: GroupDevotionalReaction[] })[]>;
+  toggleGroupDevotionalReaction(data: InsertGroupDevotionalReaction): Promise<{ added: boolean }>;
+  // Announcements
+  createGroupAnnouncement(data: InsertGroupAnnouncement): Promise<GroupAnnouncement>;
+  getGroupAnnouncements(groupId: number): Promise<GroupAnnouncement[]>;
+  deleteGroupAnnouncement(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2948,6 +2999,133 @@ export class DatabaseStorage implements IStorage {
       actorUid: "platform_admin",
     }).catch(() => {});
     return { ...row, deliveryCount };
+  }
+
+  // ── Family / Group Mode ───────────────────────────────────────────────────
+
+  async createGroup(data: InsertGroup): Promise<Group> {
+    const [row] = await db.insert(groups).values(data).returning();
+    return row;
+  }
+
+  async getGroup(id: number): Promise<Group | undefined> {
+    const [row] = await db.select().from(groups).where(eq(groups.id, id));
+    return row;
+  }
+
+  async getGroupByInviteCode(code: string): Promise<Group | undefined> {
+    const [row] = await db.select().from(groups).where(eq(groups.inviteCode, code));
+    return row;
+  }
+
+  async getUserGroups(firebaseUid: string): Promise<(GroupMember & { group: Group })[]> {
+    const rows = await db
+      .select()
+      .from(groupMembers)
+      .innerJoin(groups, eq(groupMembers.groupId, groups.id))
+      .where(eq(groupMembers.firebaseUid, firebaseUid))
+      .orderBy(desc(groupMembers.joinedAt));
+    return rows.map(r => ({ ...r.group_members, group: r.groups }));
+  }
+
+  async updateGroup(id: number, data: Partial<InsertGroup>): Promise<Group> {
+    const [row] = await db.update(groups).set(data).where(eq(groups.id, id)).returning();
+    return row;
+  }
+
+  async deleteGroup(id: number): Promise<void> {
+    await db.delete(groups).where(eq(groups.id, id));
+  }
+
+  async addGroupMember(data: InsertGroupMember): Promise<GroupMember> {
+    const [row] = await db.insert(groupMembers).values(data).returning();
+    return row;
+  }
+
+  async getGroupMembers(groupId: number): Promise<GroupMember[]> {
+    return await db.select().from(groupMembers).where(eq(groupMembers.groupId, groupId)).orderBy(groupMembers.joinedAt);
+  }
+
+  async getGroupMember(groupId: number, firebaseUid: string): Promise<GroupMember | undefined> {
+    const [row] = await db.select().from(groupMembers).where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.firebaseUid, firebaseUid)));
+    return row;
+  }
+
+  async updateGroupMemberRole(id: number, role: string): Promise<GroupMember> {
+    const [row] = await db.update(groupMembers).set({ role }).where(eq(groupMembers.id, id)).returning();
+    return row;
+  }
+
+  async removeGroupMember(groupId: number, firebaseUid: string): Promise<void> {
+    await db.delete(groupMembers).where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.firebaseUid, firebaseUid)));
+  }
+
+  async createGroupPrayerRequest(data: InsertGroupPrayerRequest): Promise<GroupPrayerRequest> {
+    const [row] = await db.insert(groupPrayerRequests).values(data).returning();
+    return row;
+  }
+
+  async getGroupPrayerRequests(groupId: number): Promise<GroupPrayerRequest[]> {
+    return await db.select().from(groupPrayerRequests).where(eq(groupPrayerRequests.groupId, groupId)).orderBy(desc(groupPrayerRequests.createdAt));
+  }
+
+  async updateGroupPrayerStatus(id: number, status: string): Promise<GroupPrayerRequest> {
+    const [row] = await db.update(groupPrayerRequests).set({ status }).where(eq(groupPrayerRequests.id, id)).returning();
+    return row;
+  }
+
+  async incrementGroupPrayingCount(id: number): Promise<GroupPrayerRequest> {
+    const [row] = await db.update(groupPrayerRequests).set({ prayingCount: sql`${groupPrayerRequests.prayingCount} + 1` }).where(eq(groupPrayerRequests.id, id)).returning();
+    return row;
+  }
+
+  async createGroupMessage(data: InsertGroupMessage): Promise<GroupMessage> {
+    const [row] = await db.insert(groupMessagesTable).values(data).returning();
+    return row;
+  }
+
+  async getGroupMessages(groupId: number, limit = 100): Promise<GroupMessage[]> {
+    const rows = await db.select().from(groupMessagesTable).where(eq(groupMessagesTable.groupId, groupId)).orderBy(desc(groupMessagesTable.createdAt)).limit(limit);
+    return rows.reverse();
+  }
+
+  async createGroupDevotionalShare(data: InsertGroupDevotionalShare): Promise<GroupDevotionalShare> {
+    const [row] = await db.insert(groupDevotionalShares).values(data).returning();
+    return row;
+  }
+
+  async getGroupDevotionalShares(groupId: number): Promise<(GroupDevotionalShare & { reactions: GroupDevotionalReaction[] })[]> {
+    const shares = await db.select().from(groupDevotionalShares).where(eq(groupDevotionalShares.groupId, groupId)).orderBy(desc(groupDevotionalShares.createdAt));
+    const shareIds = shares.map(s => s.id);
+    const reactions = shareIds.length > 0
+      ? await db.select().from(groupDevotionalReactions).where(inArray(groupDevotionalReactions.shareId, shareIds))
+      : [];
+    return shares.map(s => ({ ...s, reactions: reactions.filter(r => r.shareId === s.id) }));
+  }
+
+  async toggleGroupDevotionalReaction(data: InsertGroupDevotionalReaction): Promise<{ added: boolean }> {
+    const existing = await db.select().from(groupDevotionalReactions).where(
+      and(eq(groupDevotionalReactions.shareId, data.shareId), eq(groupDevotionalReactions.firebaseUid, data.firebaseUid), eq(groupDevotionalReactions.reaction, data.reaction))
+    );
+    if (existing.length > 0) {
+      await db.delete(groupDevotionalReactions).where(eq(groupDevotionalReactions.id, existing[0].id));
+      return { added: false };
+    }
+    await db.insert(groupDevotionalReactions).values(data);
+    return { added: true };
+  }
+
+  async createGroupAnnouncement(data: InsertGroupAnnouncement): Promise<GroupAnnouncement> {
+    const [row] = await db.insert(groupAnnouncements).values(data).returning();
+    return row;
+  }
+
+  async getGroupAnnouncements(groupId: number): Promise<GroupAnnouncement[]> {
+    return await db.select().from(groupAnnouncements).where(eq(groupAnnouncements.groupId, groupId)).orderBy(desc(groupAnnouncements.createdAt));
+  }
+
+  async deleteGroupAnnouncement(id: number): Promise<void> {
+    await db.delete(groupAnnouncements).where(eq(groupAnnouncements.id, id));
   }
 
   // ── Governance Summary ──────────────────────────────────────────────────────

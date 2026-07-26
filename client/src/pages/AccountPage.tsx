@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { CountrySelect } from "@/components/CountrySelect";
 import { getCountryName } from "@/lib/countries";
+import { Link } from "wouter";
 import {
   UserCircle,
   Mail,
@@ -31,6 +32,8 @@ import {
   Bell,
   Globe,
   CheckCircle2,
+  HandHeart,
+  ChevronRight,
 } from "lucide-react";
 import type { Church, ChurchMember, ChurchRole, UserProfile } from "@shared/schema";
 import { CHURCH_ROLE_LABELS } from "@shared/schema";
@@ -348,6 +351,22 @@ export default function AccountPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Family / Group Mode entry point */}
+      <Link href="/groups">
+        <Card className="border-primary/10 cursor-pointer hover:shadow-md transition-shadow" data-testid="card-account-groups">
+          <CardContent className="py-3 px-4 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-primary/8">
+              <HandHeart className="w-4 h-4 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-foreground">My Groups</p>
+              <p className="text-xs text-muted-foreground">Family, friends &amp; prayer circles</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </CardContent>
+        </Card>
+      </Link>
 
       {/* Church memberships */}
       {memberships && memberships.length > 0 && (

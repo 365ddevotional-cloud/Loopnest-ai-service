@@ -107,6 +107,37 @@ function requireUser(req: Request, res: Response, next: NextFunction) {
 }
 // ──────────────────────────────────────────────────────────────────────────────
 
+// ── Group Mode Helpers ─────────────────────────────────────────────────────────
+function generateGroupCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 8; i++) {
+    if (i === 4) code += "-";
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
+async function extractGroupAuth(req: Request, res: Response): Promise<{ uid: string; displayName: string | null; email: string | null } | null> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) { res.status(401).json({ message: "Unauthorized" }); return null; }
+  try {
+    const token = authHeader.slice(7);
+    const uid = await verifyFirebaseToken(token);
+    const parts = token.split(".");
+    let displayName: string | null = null;
+    let email: string | null = null;
+    if (parts.length === 3) {
+      try {
+        const decoded = JSON.parse(Buffer.from(parts[1], "base64").toString());
+        displayName = decoded.name ?? null;
+        email = decoded.email ?? null;
+      } catch {}
+    }
+    return { uid, displayName, email };
+  } catch { res.status(401).json({ message: "Invalid token" }); return null; }
+}
+
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (req.session?.isAdmin) {
     next();
@@ -5529,6 +5560,242 @@ export async function registerRoutes(
     }
   });
 
+  // ── Family / Group Mode Routes ─────────────────────────────────────────────
+
+  app.post("/api/groups", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const { name, description, country, privacy } = req.body;
+    if (!name?.trim()) return res.status(400).json({ message: "Group name is required" });
+    let inviteCode = generateGroupCode();
+    for (let i = 0; i < 5; i++) {
+      const existing = await storage.getGroupByInviteCode(inviteCode);
+      if (!existing) break;
+      inviteCode = generateGroupCode();
+    }
+    const group = await storage.createGroup({ name: name.trim(), description: description?.trim() || null, country: country?.trim() || null, privacy: privacy || "join_code", inviteCode, ownerId: auth.uid });
+    await storage.addGroupMember({ groupId: group.id, firebaseUid: auth.uid, email: auth.email || "", displayName: auth.displayName, role: "owner" });
+    res.status(201).json(group);
+  });
+
+  app.get("/api/groups/my", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    res.json(await storage.getUserGroups(auth.uid));
+  });
+
+  app.get("/api/groups/preview/:code", async (req, res) => {
+    const group = await storage.getGroupByInviteCode(req.params.code.toUpperCase());
+    if (!group) return res.status(404).json({ message: "Invalid invite code" });
+    const members = await storage.getGroupMembers(group.id);
+    res.json({ group, memberCount: members.length });
+  });
+
+  app.post("/api/groups/join", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const { inviteCode } = req.body;
+    if (!inviteCode) return res.status(400).json({ message: "Invite code is required" });
+    const group = await storage.getGroupByInviteCode(inviteCode.toUpperCase());
+    if (!group) return res.status(404).json({ message: "Invalid invite code" });
+    const existing = await storage.getGroupMember(group.id, auth.uid);
+    if (existing) return res.status(409).json({ message: "You are already a member of this group", group });
+    await storage.addGroupMember({ groupId: group.id, firebaseUid: auth.uid, email: auth.email || "", displayName: auth.displayName, role: "member" });
+    res.json({ group });
+  });
+
+  app.get("/api/groups/:id", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    const group = await storage.getGroup(groupId);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+    const myMember = await storage.getGroupMember(groupId, auth.uid);
+    if (!myMember) return res.status(403).json({ message: "You are not a member of this group" });
+    const allMembers = await storage.getGroupMembers(groupId);
+    res.json({ group, myMember, memberCount: allMembers.length });
+  });
+
+  app.patch("/api/groups/:id", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    const myMember = await storage.getGroupMember(groupId, auth.uid);
+    if (!myMember || myMember.role !== "owner") return res.status(403).json({ message: "Only the owner can update group settings" });
+    const { name, description, country, privacy } = req.body;
+    res.json(await storage.updateGroup(groupId, { name, description, country, privacy }));
+  });
+
+  app.delete("/api/groups/:id", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    const myMember = await storage.getGroupMember(groupId, auth.uid);
+    if (!myMember || myMember.role !== "owner") return res.status(403).json({ message: "Only the owner can delete this group" });
+    await storage.deleteGroup(groupId);
+    res.json({ success: true });
+  });
+
+  app.post("/api/groups/:id/leave", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    const myMember = await storage.getGroupMember(groupId, auth.uid);
+    if (!myMember) return res.status(403).json({ message: "You are not a member" });
+    if (myMember.role === "owner") return res.status(400).json({ message: "Owner cannot leave. Delete the group instead." });
+    await storage.removeGroupMember(groupId, auth.uid);
+    res.json({ success: true });
+  });
+
+  app.get("/api/groups/:id/members", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    if (!await storage.getGroupMember(groupId, auth.uid)) return res.status(403).json({ message: "Not a member" });
+    res.json(await storage.getGroupMembers(groupId));
+  });
+
+  app.patch("/api/groups/:id/members/:memberId/role", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    const memberId = Number(req.params.memberId);
+    const myMember = await storage.getGroupMember(groupId, auth.uid);
+    if (!myMember || myMember.role !== "owner") return res.status(403).json({ message: "Only the owner can change roles" });
+    const { role } = req.body;
+    if (!["moderator", "member"].includes(role)) return res.status(400).json({ message: "Invalid role" });
+    res.json(await storage.updateGroupMemberRole(memberId, role));
+  });
+
+  app.delete("/api/groups/:id/members/:memberId", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    const memberId = Number(req.params.memberId);
+    const myMember = await storage.getGroupMember(groupId, auth.uid);
+    if (!myMember || !["owner", "moderator"].includes(myMember.role)) return res.status(403).json({ message: "Not authorized" });
+    const allMembers = await storage.getGroupMembers(groupId);
+    const target = allMembers.find(m => m.id === memberId);
+    if (!target) return res.status(404).json({ message: "Member not found" });
+    if (target.role === "owner") return res.status(400).json({ message: "Cannot remove the owner" });
+    await storage.removeGroupMember(groupId, target.firebaseUid);
+    res.json({ success: true });
+  });
+
+  app.get("/api/groups/:id/prayers", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    if (!await storage.getGroupMember(groupId, auth.uid)) return res.status(403).json({ message: "Not a member" });
+    res.json(await storage.getGroupPrayerRequests(groupId));
+  });
+
+  app.post("/api/groups/:id/prayers", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    const myMember = await storage.getGroupMember(groupId, auth.uid);
+    if (!myMember) return res.status(403).json({ message: "Not a member" });
+    const { content } = req.body;
+    if (!content?.trim()) return res.status(400).json({ message: "Prayer request content is required" });
+    res.status(201).json(await storage.createGroupPrayerRequest({ groupId, firebaseUid: auth.uid, displayName: myMember.displayName, content: content.trim(), status: "active" }));
+  });
+
+  app.patch("/api/groups/:id/prayers/:prayerId", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    if (!await storage.getGroupMember(groupId, auth.uid)) return res.status(403).json({ message: "Not a member" });
+    const { status } = req.body;
+    if (!["active", "answered", "praying"].includes(status)) return res.status(400).json({ message: "Invalid status" });
+    res.json(await storage.updateGroupPrayerStatus(Number(req.params.prayerId), status));
+  });
+
+  app.post("/api/groups/:id/prayers/:prayerId/pray", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    if (!await storage.getGroupMember(groupId, auth.uid)) return res.status(403).json({ message: "Not a member" });
+    res.json(await storage.incrementGroupPrayingCount(Number(req.params.prayerId)));
+  });
+
+  app.get("/api/groups/:id/messages", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    if (!await storage.getGroupMember(groupId, auth.uid)) return res.status(403).json({ message: "Not a member" });
+    res.json(await storage.getGroupMessages(groupId));
+  });
+
+  app.post("/api/groups/:id/messages", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    const myMember = await storage.getGroupMember(groupId, auth.uid);
+    if (!myMember) return res.status(403).json({ message: "Not a member" });
+    const { content } = req.body;
+    if (!content?.trim()) return res.status(400).json({ message: "Message cannot be empty" });
+    res.status(201).json(await storage.createGroupMessage({ groupId, firebaseUid: auth.uid, displayName: myMember.displayName, content: content.trim() }));
+  });
+
+  app.get("/api/groups/:id/devotionals", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    if (!await storage.getGroupMember(groupId, auth.uid)) return res.status(403).json({ message: "Not a member" });
+    res.json(await storage.getGroupDevotionalShares(groupId));
+  });
+
+  app.post("/api/groups/:id/devotionals", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    const myMember = await storage.getGroupMember(groupId, auth.uid);
+    if (!myMember) return res.status(403).json({ message: "Not a member" });
+    const { devotionalId, devotionalDate, note } = req.body;
+    res.status(201).json(await storage.createGroupDevotionalShare({ groupId, devotionalId: devotionalId ?? null, devotionalDate: devotionalDate ?? null, firebaseUid: auth.uid, displayName: myMember.displayName, note: note?.trim() || null }));
+  });
+
+  app.post("/api/groups/:id/devotionals/:shareId/react", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    const myMember = await storage.getGroupMember(groupId, auth.uid);
+    if (!myMember) return res.status(403).json({ message: "Not a member" });
+    const { reaction } = req.body;
+    if (!["amen", "praying", "thank_you"].includes(reaction)) return res.status(400).json({ message: "Invalid reaction" });
+    res.json(await storage.toggleGroupDevotionalReaction({ shareId: Number(req.params.shareId), firebaseUid: auth.uid, displayName: myMember.displayName, reaction }));
+  });
+
+  app.get("/api/groups/:id/announcements", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    if (!await storage.getGroupMember(groupId, auth.uid)) return res.status(403).json({ message: "Not a member" });
+    res.json(await storage.getGroupAnnouncements(groupId));
+  });
+
+  app.post("/api/groups/:id/announcements", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    const myMember = await storage.getGroupMember(groupId, auth.uid);
+    if (!myMember || !["owner", "moderator"].includes(myMember.role)) return res.status(403).json({ message: "Only owners and moderators can post announcements" });
+    const { title, content } = req.body;
+    if (!title?.trim() || !content?.trim()) return res.status(400).json({ message: "Title and content are required" });
+    res.status(201).json(await storage.createGroupAnnouncement({ groupId, firebaseUid: auth.uid, displayName: myMember.displayName, title: title.trim(), content: content.trim() }));
+  });
+
+  app.delete("/api/groups/:id/announcements/:annId", async (req, res) => {
+    const auth = await extractGroupAuth(req, res);
+    if (!auth) return;
+    const groupId = Number(req.params.id);
+    const myMember = await storage.getGroupMember(groupId, auth.uid);
+    if (!myMember || !["owner", "moderator"].includes(myMember.role)) return res.status(403).json({ message: "Not authorized" });
+    await storage.deleteGroupAnnouncement(Number(req.params.annId));
+    res.json({ success: true });
+  });
+
   return httpServer;
 }
 
@@ -5626,6 +5893,7 @@ I shall not want`,
     console.error("[Songs] Seed error:", err);
   }
 }
+
 
 async function seedAutoReplyTemplates() {
   const templates = await storage.getAutoReplyTemplates();

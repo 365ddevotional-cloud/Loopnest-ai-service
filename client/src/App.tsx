@@ -98,6 +98,26 @@ const ChurchPublicContact = lazy(() => import("@/pages/ChurchPublicContact"));
 const ChurchPublicJoin = lazy(() => import("@/pages/ChurchPublicJoin"));
 const ChurchPublicVisit = lazy(() => import("@/pages/ChurchPublicVisit"));
 
+// Group Mode pages
+const GroupsHome = lazy(() => import("@/pages/GroupsHome"));
+const GroupCreate = lazy(() => import("@/pages/GroupCreate"));
+const GroupJoin = lazy(() => import("@/pages/GroupJoin"));
+const GroupHome = lazy(() => import("@/pages/GroupHome"));
+const GroupPrayers = lazy(() => import("@/pages/GroupPrayers"));
+const GroupMessages = lazy(() => import("@/pages/GroupMessages"));
+const GroupDevotionals = lazy(() => import("@/pages/GroupDevotionals"));
+const GroupAnnouncements = lazy(() => import("@/pages/GroupAnnouncements"));
+const GroupMembers = lazy(() => import("@/pages/GroupMembers"));
+const GroupLeave = lazy(() => import("@/pages/GroupLeave"));
+
+function GroupPageFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#b8962e" }} />
+    </div>
+  );
+}
+
 function ChurchPageFallback() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
@@ -131,6 +151,19 @@ function ChurchGateway() {
 function Router() {
   return (
     <Switch>
+      {/* Group Mode routes */}
+      <Route path="/groups/create" component={() => <Suspense fallback={<GroupPageFallback />}><GroupCreate /></Suspense>} />
+      <Route path="/groups/join/:code" component={() => <Suspense fallback={<GroupPageFallback />}><GroupJoin /></Suspense>} />
+      <Route path="/groups/join" component={() => <Suspense fallback={<GroupPageFallback />}><GroupJoin /></Suspense>} />
+      <Route path="/groups" component={() => <Suspense fallback={<GroupPageFallback />}><GroupsHome /></Suspense>} />
+      <Route path="/group/:id/prayers" component={() => <Suspense fallback={<GroupPageFallback />}><GroupPrayers /></Suspense>} />
+      <Route path="/group/:id/messages" component={() => <Suspense fallback={<GroupPageFallback />}><GroupMessages /></Suspense>} />
+      <Route path="/group/:id/devotionals" component={() => <Suspense fallback={<GroupPageFallback />}><GroupDevotionals /></Suspense>} />
+      <Route path="/group/:id/announcements" component={() => <Suspense fallback={<GroupPageFallback />}><GroupAnnouncements /></Suspense>} />
+      <Route path="/group/:id/members" component={() => <Suspense fallback={<GroupPageFallback />}><GroupMembers /></Suspense>} />
+      <Route path="/group/:id/leave" component={() => <Suspense fallback={<GroupPageFallback />}><GroupLeave /></Suspense>} />
+      <Route path="/group/:id" component={() => <Suspense fallback={<GroupPageFallback />}><GroupHome /></Suspense>} />
+      {/* Church Mode routes */}
       <Route path="/church/create" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchCreate /></Suspense>} />
       <Route path="/church/join/:code" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchJoin /></Suspense>} />
       <Route path="/church/join" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchJoin /></Suspense>} />
@@ -227,6 +260,12 @@ function AppContent() {
         <Router />
       </LoopNestAuthProvider>
     );
+  }
+
+  // Group mode shell routes (have their own header/layout via GroupModeShell)
+  const groupIdPath = location.startsWith("/group/") && !isNaN(Number(location.split("/")[2]));
+  if (groupIdPath) {
+    return <Router />;
   }
 
   // Church mode shell routes (have their own header/layout)
