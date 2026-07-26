@@ -1,15 +1,13 @@
 /**
  * Idempotent governance schema migration runner.
- * Reads migrations/0001_governance_schema.sql and executes it against the
- * connected PostgreSQL database on every server start.
- * All SQL statements in that file use IF NOT EXISTS / DO $$ guards, so this
- * is safe to run repeatedly on any existing database.
+ * Runs migrations/0001_governance_schema.sql against the connected PostgreSQL
+ * database on every server start.  All statements use IF NOT EXISTS / DO $$
+ * guards so it is safe to run repeatedly on any existing database.
  */
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { db } from "./db";
-import { sql } from "drizzle-orm";
+import { pool } from "./db";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -18,28 +16,20 @@ export async function runGovernanceMigration(): Promise<void> {
     const migrationPath = join(__dirname, "../migrations/0001_governance_schema.sql");
     const migrationSql = readFileSync(migrationPath, "utf-8");
 
-    // Split on the drizzle breakpoint marker and execute each statement individually
-    const statements = migrationSql
-      .split("--> statement-breakpoint")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0 && !s.startsWith("--"));
-
-    for (const statement of statements) {
-      try {
-        await db.execute(sql.raw(statement));
-      } catch (err: any) {
-        // Ignore "already exists" errors — the IF NOT EXISTS guards catch most,
-        // but raw FK/DO $$ blocks may emit benign duplicate-object errors.
-        if (!err?.message?.includes("already exists") && !err?.message?.includes("duplicate")) {
-          console.warn("[governance-migration] Statement warning:", err?.message?.slice(0, 120));
-        }
-      }
+    // Execute the entire file in one shot via the pg Pool client.
+    // Using the raw pool (not drizzle) so multi-statement SQL, DO $$ blocks,
+    // and IF NOT EXISTS guards all work correctly without custom splitting.
+    const client = await pool.connect();
+    try {
+      await client.query(migrationSql);
+    } finally {
+      client.release();
     }
 
     console.log("[governance-migration] Governance schema migration complete");
-  } catch (err) {
-    // Non-fatal — log and continue. The migration is idempotent so a transient
-    // failure is recoverable on the next restart.
-    console.error("[governance-migration] Failed to run governance migration:", err);
+  } catch (err: any) {
+    // Log and continue — the migration is idempotent, so a transient failure
+    // is recoverable on the next restart.  Do not crash the server.
+    console.error("[governance-migration] Failed:", err?.message ?? err);
   }
 }

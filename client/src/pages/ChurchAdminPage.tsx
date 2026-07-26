@@ -490,6 +490,25 @@ export default function ChurchAdminPage() {
     enabled: !!church?.id && activeTab === "reports",
   });
 
+  // Platform announcements feed for this church owner
+  const { data: platformAnnouncements = [] } = useQuery<any[]>({
+    queryKey: ["/api/my/platform-announcements"],
+    queryFn: async () => {
+      const token = await getIdToken(); if (!token) return [];
+      const r = await fetch("/api/my/platform-announcements", { headers: { Authorization: `Bearer ${token}` } });
+      return r.ok ? r.json() : [];
+    },
+    enabled: !!church?.id,
+    refetchInterval: 60_000,
+  });
+  const unreadAnnouncements = platformAnnouncements.filter((a: any) => !a.isRead);
+
+  const markAnnouncementRead = async (id: number) => {
+    const token = await getIdToken(); if (!token) return;
+    await fetch(`/api/my/platform-announcements/${id}/mark-read`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+    queryClient.invalidateQueries({ queryKey: ["/api/my/platform-announcements"] });
+  };
+
   const isAuthorized = ADMIN_ROLES.includes(myRole?.role ?? "");
   const formVal = (field: keyof Church) => (field in form ? form[field] : church?.[field]) as string ?? "";
 
@@ -986,6 +1005,27 @@ export default function ChurchAdminPage() {
             <p className="text-sm mt-0.5" style={{ color: "#7a7570" }}>{t("cm_manageChurchSpace")}</p>
           </div>
         </div>
+
+        {/* Platform announcements from admin */}
+        {unreadAnnouncements.length > 0 && (
+          <div className="space-y-2">
+            {unreadAnnouncements.map((ann: any) => (
+              <div key={ann.id} className="rounded-lg border-l-4 p-4 flex gap-3" style={{ borderLeftColor: "#b8962e", backgroundColor: "#fffdf5" }}>
+                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "#b8962e" }} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm" style={{ color: "#1a2744" }}>{ann.title}</p>
+                  <p className="text-xs mt-1 whitespace-pre-wrap" style={{ color: "#4a3728" }}>{ann.body}</p>
+                  <button
+                    onClick={() => markAnnouncementRead(ann.id)}
+                    className="text-xs font-semibold underline mt-1.5"
+                    style={{ color: "#b8962e" }}
+                    data-testid={`button-mark-ann-read-${ann.id}`}
+                  >{t("cm_markAsRead")}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Platform status banners */}
         {church?.platformStatus === "draft" && (

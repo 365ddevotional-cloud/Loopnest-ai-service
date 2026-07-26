@@ -4362,6 +4362,26 @@ export async function registerRoutes(
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 
+  // ── User-facing Platform Announcement Feed ─────────────────────────────────
+  // Returns sent platform announcements with per-user read status.
+  // Used by the announcement banner in the church admin dashboard.
+
+  app.get("/api/my/platform-announcements", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const announcements = await storage.getSentAnnouncementsForUser(uid);
+      res.json(announcements);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/my/platform-announcements/:id/mark-read", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      await storage.markAnnouncementRead(Number(req.params.id), uid);
+      res.json({ ok: true });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
   // ── Church Logo Upload ────────────────────────────────────────────────────────
   app.post("/api/churches/:id/logo", async (req, res) => {
     const uid = await getUid(req, res); if (!uid) return;

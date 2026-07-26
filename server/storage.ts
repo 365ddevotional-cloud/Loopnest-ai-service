@@ -164,6 +164,8 @@ import {
   platformAdminThreads,
   platformAdminMessages,
   platformAnnouncements,
+  platformAnnouncementReads,
+  type PlatformAnnouncementRead,
   type ComplianceCase,
   type InsertComplianceCase,
   type ComplianceCaseResponse,
@@ -177,7 +179,7 @@ import {
   type PlatformAnnouncement,
   type InsertPlatformAnnouncement,
 } from "@shared/schema";
-import { eq, desc, and, isNull, or, ilike, lte, notInArray, sql, gte, count, countDistinct } from "drizzle-orm";
+import { eq, desc, and, isNull, or, ilike, lte, notInArray, inArray, sql, gte, count, countDistinct } from "drizzle-orm";
 
 export interface IStorage {
   getDevotionals(): Promise<Devotional[]>;
@@ -517,6 +519,8 @@ export interface IStorage {
   // Platform announcements
   createPlatformAnnouncement(data: InsertPlatformAnnouncement): Promise<PlatformAnnouncement>;
   getPlatformAnnouncements(): Promise<PlatformAnnouncement[]>;
+  getSentAnnouncementsForUser(firebaseUid: string): Promise<(PlatformAnnouncement & { isRead: boolean })[]>;
+  markAnnouncementRead(announcementId: number, firebaseUid: string): Promise<void>;
   sendPlatformAnnouncement(id: number): Promise<PlatformAnnouncement>;
 
   // Governance summary for admin dashboard
@@ -2699,6 +2703,26 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(platformAnnouncements).orderBy(desc(platformAnnouncements.createdAt));
   }
 
+  async getSentAnnouncementsForUser(firebaseUid: string): Promise<(PlatformAnnouncement & { isRead: boolean })[]> {
+    const sent = await db.select().from(platformAnnouncements)
+      .where(sql`sent_at IS NOT NULL`)
+      .orderBy(desc(platformAnnouncements.sentAt));
+    if (sent.length === 0) return [];
+    const reads = await db.select().from(platformAnnouncementReads)
+      .where(and(
+        eq(platformAnnouncementReads.firebaseUid, firebaseUid),
+        inArray(platformAnnouncementReads.announcementId, sent.map(a => a.id))
+      ));
+    const readSet = new Set(reads.map(r => r.announcementId));
+    return sent.map(a => ({ ...a, isRead: readSet.has(a.id) }));
+  }
+
+  async markAnnouncementRead(announcementId: number, firebaseUid: string): Promise<void> {
+    await db.insert(platformAnnouncementReads)
+      .values({ announcementId, firebaseUid })
+      .onConflictDoNothing();
+  }
+
   async sendPlatformAnnouncement(id: number): Promise<PlatformAnnouncement & { deliveryCount: number }> {
     // 1. Fetch announcement
     const [ann] = await db.select().from(platformAnnouncements).where(eq(platformAnnouncements.id, id));
@@ -2728,12 +2752,16 @@ export class DatabaseStorage implements IStorage {
     }
 
     // 3. Determine qualifying member roles for this target type
-    const targetRoles =
+    // "everyone" and "members_specific" target all active members, not just leaders
+    const everyoneTarget = ann.targetType === "everyone" || ann.targetType === "members_specific";
+    const targetRoles: string[] | null =
       ann.targetType === "org_admins"
         ? ["owner", "lead_pastor", "administrator"]
         : ann.targetType === "dept_leaders"
           ? ["owner", "lead_pastor", "administrator", "department_leader"]
-          : ["owner", "lead_pastor"];
+          : everyoneTarget
+            ? null  // null = no role filter, reach all active members
+            : ["owner", "lead_pastor"];
 
     // 4. Deliver in-app (platform admin thread) and optionally email (inbox channel)
     const deliverEmail = Array.isArray(ann.deliveryChannels) && ann.deliveryChannels.includes("inbox");
@@ -2752,7 +2780,9 @@ export class DatabaseStorage implements IStorage {
     for (const church of recipientChurches) {
       try {
         const members = await db.select().from(churchMembers).where(eq(churchMembers.churchId, church.id));
-        const qualifiedMembers = members.filter(m => targetRoles.includes(m.role) && m.status === "active");
+        const qualifiedMembers = members.filter(m =>
+          m.status === "active" && (targetRoles === null || targetRoles.includes(m.role))
+        );
         if (qualifiedMembers.length === 0) continue;
 
         // 4a. In-app: get or create platform admin thread, post message

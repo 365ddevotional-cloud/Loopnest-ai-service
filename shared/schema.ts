@@ -1392,6 +1392,17 @@ export const insertPlatformAnnouncementSchema = createInsertSchema(platformAnnou
 export type PlatformAnnouncement = typeof platformAnnouncements.$inferSelect;
 export type InsertPlatformAnnouncement = z.infer<typeof insertPlatformAnnouncementSchema>;
 
+// Tracks which Firebase users have acknowledged each platform announcement
+export const platformAnnouncementReads = pgTable("platform_announcement_reads", {
+  id: serial("id").primaryKey(),
+  announcementId: integer("announcement_id").notNull().references(() => platformAnnouncements.id, { onDelete: "cascade" }),
+  firebaseUid: text("firebase_uid").notNull(),
+  readAt: timestamp("read_at").defaultNow(),
+}, (t) => ({
+  uniqueUserAnn: unique().on(t.announcementId, t.firebaseUid),
+}));
+export type PlatformAnnouncementRead = typeof platformAnnouncementReads.$inferSelect;
+
 // ─── User Activity Days ──────────────────────────────────────────────────────
 // One row per (firebase_uid, date) pair — for DAU/WAU/MAU analytics.
 export const userActivityDays = pgTable("user_activity_days", {

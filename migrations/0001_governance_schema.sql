@@ -120,7 +120,24 @@ CREATE TABLE IF NOT EXISTS "platform_audit_logs" (
   "created_at" timestamp DEFAULT now()
 );
 
--- 3. Foreign key constraints (skip if already exist) --------------------------
+-- 3. Announcement read tracking -----------------------------------------------
+
+CREATE TABLE IF NOT EXISTS "platform_announcement_reads" (
+  "id"              serial PRIMARY KEY NOT NULL,
+  "announcement_id" integer NOT NULL,
+  "firebase_uid"    text NOT NULL,
+  "read_at"         timestamp DEFAULT now(),
+  CONSTRAINT "platform_announcement_reads_ann_uid_unique" UNIQUE("announcement_id", "firebase_uid")
+);
+
+DO $$ BEGIN
+  ALTER TABLE "platform_announcement_reads"
+    ADD CONSTRAINT "platform_announcement_reads_announcement_id_fk"
+    FOREIGN KEY ("announcement_id") REFERENCES "platform_announcements"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 4. Foreign key constraints (skip if already exist) --------------------------
 DO $$ BEGIN
   ALTER TABLE "compliance_cases"
     ADD CONSTRAINT "compliance_cases_church_id_churches_id_fk"

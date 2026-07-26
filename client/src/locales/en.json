@@ -1051,5 +1051,7 @@
   "cm_submitSuccess": "Submitted for review",
   "cm_submitted": "Submitted",
   "cm_submittedBannerTitle": "Submitted — awaiting admin pickup",
-  "cm_submittedBannerDesc": "Your organization has been submitted and is waiting for a platform administrator to begin review. You will be notified of any updates in your platform messages."
+  "cm_submittedBannerDesc": "Your organization has been submitted and is waiting for a platform administrator to begin review. You will be notified of any updates in your platform messages.",
+  "cm_markAsRead": "Mark as read",
+  "cm_platformAnnouncementFeed": "Platform Notices"
 }
