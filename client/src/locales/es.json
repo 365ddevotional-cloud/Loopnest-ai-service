@@ -1037,5 +1037,9 @@
   "cm_policyAppeals": "Derecho de Apelación",
   "cm_policySuspension": "Suspensión y Eliminación",
   "cm_policyDataRetention": "Retención de Datos",
-  "cm_governanceTab": "Gobernanza"
+  "cm_governanceTab": "Gobernanza",
+  "cm_approvedDisclaimerTitle": "Sobre la Aprobación de la Plataforma",
+  "cm_approvedDisclaimerBody": "La aprobación para el Modo Iglesia significa que esta organización ha superado el proceso de revisión básico de nuestra plataforma. No es un respaldo, acreditación, certificación teológica ni garantía de ningún tipo.",
+  "cm_approvedDisclaimerNote": "365 Daily Devotional es solo una plataforma tecnológica. No hacemos endorsamientos teológicos, doctrinales ni de gobernanza de ninguna organización aquí listada.",
+  "cm_viewPlatformPolicy": "Ver Política de Plataforma"
 }

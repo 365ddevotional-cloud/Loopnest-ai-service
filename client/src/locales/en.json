@@ -1037,5 +1037,9 @@
   "cm_policyAppeals": "Right of Appeal",
   "cm_policySuspension": "Suspension & Removal",
   "cm_policyDataRetention": "Data Retention",
-  "cm_governanceTab": "Governance"
+  "cm_governanceTab": "Governance",
+  "cm_approvedDisclaimerTitle": "About Platform Approval",
+  "cm_approvedDisclaimerBody": "Approval for Church Mode means this organization has passed our platform's basic review process. It is not an endorsement, accreditation, theological certification, or guarantee of any kind.",
+  "cm_approvedDisclaimerNote": "365 Daily Devotional is a technology platform only. We do not make theological, doctrinal, or governance endorsements of any organization listed here.",
+  "cm_viewPlatformPolicy": "View Platform Policy"
 }

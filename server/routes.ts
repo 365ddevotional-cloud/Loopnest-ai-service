@@ -4098,12 +4098,17 @@ export async function registerRoutes(
     try {
       const caseId = Number(req.params.caseId);
       const churchId = Number(req.params.churchId);
+      // Verify membership first
       const member = await storage.getChurchMember(churchId, uid);
       if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Forbidden" });
+      // IDOR guard: verify case actually belongs to this church
+      const complianceCase = await storage.getComplianceCase(caseId);
+      if (!complianceCase || complianceCase.churchId !== churchId) return res.status(404).json({ message: "Case not found" });
       const { message } = req.body;
       if (!message?.trim()) return res.status(400).json({ message: "Message is required" });
       const resp = await storage.createComplianceCaseResponse({ caseId, senderType: "owner", senderUid: uid, message: message.trim(), attachmentUrl: req.body.attachmentUrl ?? null });
       await storage.updateComplianceCase(caseId, { status: "investigating" });
+      storage.createAuditLog({ churchId, action: "case_response_submitted", newValue: `caseId:${caseId}`, actorUid: uid }).catch(() => {});
       res.status(201).json(resp);
     } catch { res.status(500).json({ message: "Server error" }); }
   });

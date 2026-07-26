@@ -60,6 +60,7 @@ export default function ChurchPublicHome() {
   const { t } = useI18n();
   const [prayerForm, setPrayerForm] = useState({ name: "", email: "", request: "" });
   const [prayerSent, setPrayerSent] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
 
   const { data, isLoading, error } = useQuery<any>({
     queryKey: [`/api/public/churches/${slug}`],
@@ -149,11 +150,16 @@ export default function ChurchPublicHome() {
                   <MapPin className="w-4 h-4" />{church.address}
                 </p>
               )}
-              {/* Platform approval badge */}
-              <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-white/60" data-testid="badge-approved-church-mode">
+              {/* Platform approval badge — clickable disclaimer */}
+              <button
+                onClick={() => setShowApprovalModal(true)}
+                className="mt-4 flex items-center justify-center gap-1.5 text-xs text-white/60 hover:text-white/90 transition-colors underline underline-offset-2 decoration-white/30 mx-auto"
+                data-testid="badge-approved-church-mode"
+                aria-label={t("cm_approvedForChurchMode")}
+              >
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span>{t("cm_approvedForChurchMode")}</span>
-              </div>
+              </button>
             </div>
           </section>
         )}
@@ -525,6 +531,44 @@ export default function ChurchPublicHome() {
           </div>
         </section>
       </ChurchPublicShell>
+
+      {/* Approval Disclaimer Modal */}
+      {showApprovalModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="approval-modal-title">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowApprovalModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" data-testid="modal-approval-disclaimer">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "#f5f0e8" }}>
+                <ShieldCheck className="w-5 h-5" style={{ color: "#8b6914" }} />
+              </div>
+              <div>
+                <h2 id="approval-modal-title" className="text-base font-semibold" style={{ color: "#2d1b0e" }}>
+                  {t("cm_approvedDisclaimerTitle")}
+                </h2>
+              </div>
+            </div>
+            <p className="text-sm leading-relaxed mb-3" style={{ color: "#4a3728" }}>
+              {t("cm_approvedDisclaimerBody")}
+            </p>
+            <p className="text-xs leading-relaxed mb-5" style={{ color: "#7a6a5a" }}>
+              {t("cm_approvedDisclaimerNote")}
+            </p>
+            <div className="flex items-center justify-between gap-3">
+              <Link href="/church-mode-policy" className="text-xs underline" style={{ color: "#8b6914" }}>
+                {t("cm_viewPlatformPolicy")}
+              </Link>
+              <button
+                onClick={() => setShowApprovalModal(false)}
+                className="px-4 py-2 text-sm font-medium rounded-xl text-white"
+                style={{ backgroundColor: "#8b6914" }}
+                data-testid="button-close-approval-modal"
+              >
+                {t("cm_close")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

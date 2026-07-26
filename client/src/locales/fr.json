@@ -1037,5 +1037,9 @@
   "cm_policyAppeals": "Droit d'Appel",
   "cm_policySuspension": "Suspension et Suppression",
   "cm_policyDataRetention": "Conservation des Données",
-  "cm_governanceTab": "Gouvernance"
+  "cm_governanceTab": "Gouvernance",
+  "cm_approvedDisclaimerTitle": "À propos de l'approbation de la plateforme",
+  "cm_approvedDisclaimerBody": "L'approbation pour le Mode Église signifie que cette organisation a passé le processus d'examen de base de notre plateforme. Ce n'est pas un endossement, une accréditation, une certification théologique ou une garantie quelconque.",
+  "cm_approvedDisclaimerNote": "365 Daily Devotional est uniquement une plateforme technologique. Nous ne faisons aucun endossement théologique, doctrinal ou de gouvernance des organisations répertoriées ici.",
+  "cm_viewPlatformPolicy": "Voir la Politique de Plateforme"
 }

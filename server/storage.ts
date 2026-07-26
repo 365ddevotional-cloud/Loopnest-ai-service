@@ -2699,9 +2699,54 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(platformAnnouncements).orderBy(desc(platformAnnouncements.createdAt));
   }
 
-  async sendPlatformAnnouncement(id: number): Promise<PlatformAnnouncement> {
+  async sendPlatformAnnouncement(id: number): Promise<PlatformAnnouncement & { deliveryCount: number }> {
+    // 1. Fetch announcement
+    const [ann] = await db.select().from(platformAnnouncements).where(eq(platformAnnouncements.id, id));
+    if (!ann) throw new Error("Announcement not found");
+    if (ann.sentAt) throw new Error("Announcement already sent");
+
+    // 2. Resolve recipient churches based on targetType
+    let recipientChurches: (typeof churches.$inferSelect)[] = [];
+    const approvedChurches = await db.select().from(churches).where(eq(churches.platformStatus, "approved"));
+    if (ann.targetType === "everyone" || ann.targetType === "org_owners" || ann.targetType === "org_admins") {
+      recipientChurches = approvedChurches;
+    } else if (ann.targetType === "country" && ann.targetFilter) {
+      recipientChurches = approvedChurches.filter(c => (c as any).country === ann.targetFilter);
+    } else {
+      recipientChurches = approvedChurches;
+    }
+
+    // 3. Dispatch announcement as in-app platform message to each church owner
+    let deliveryCount = 0;
+    const subject = `[Platform Announcement] ${ann.title}`;
+    for (const church of recipientChurches) {
+      try {
+        // Determine qualifying roles for target
+        const targetRoles = ann.targetType === "org_admins"
+          ? ["owner", "lead_pastor", "administrator"]
+          : ["owner", "lead_pastor"];
+        const members = await db.select().from(churchMembers).where(eq(churchMembers.churchId, church.id));
+        const hasQualified = members.some(m => targetRoles.includes(m.role));
+        if (!hasQualified) continue;
+
+        // Get or create platform admin thread for this church
+        const existingThreads = await db.select().from(platformAdminThreads).where(eq(platformAdminThreads.churchId, church.id));
+        let thread = existingThreads[0];
+        if (!thread) {
+          const ownerUid = members.find(m => m.role === "owner")?.firebaseUid ?? members[0]?.firebaseUid ?? "unknown";
+          [thread] = await db.insert(platformAdminThreads).values({ churchId: church.id, ownerUid, subject, status: "open", hasUnreadAdmin: false, hasUnreadOwner: true }).returning();
+        }
+
+        // Post announcement message to thread
+        await db.insert(platformAdminMessages).values({ threadId: thread.id, senderType: "admin", senderUid: "platform_admin", message: `**${ann.title}**\n\n${ann.body}` });
+        await db.update(platformAdminThreads).set({ hasUnreadOwner: true }).where(eq(platformAdminThreads.id, thread.id));
+        deliveryCount++;
+      } catch { /* skip failed deliveries */ }
+    }
+
+    // 4. Mark announcement as sent
     const [row] = await db.update(platformAnnouncements).set({ sentAt: new Date() }).where(eq(platformAnnouncements.id, id)).returning();
-    return row;
+    return { ...row, deliveryCount };
   }
 
   // ── Governance Summary ──────────────────────────────────────────────────────
