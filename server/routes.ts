@@ -3996,7 +3996,7 @@ export async function registerRoutes(
     if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
     try {
       const { platformStatus } = req.query;
-      const status = typeof platformStatus === "string" ? platformStatus : "pending_review";
+      const status = typeof platformStatus === "string" ? platformStatus : "submitted";
       const list = await storage.getChurchesByPlatformStatus(status);
       const enriched = await Promise.all(list.map(async (c) => {
         const members = await storage.getChurchMembers(c.id);
@@ -4020,6 +4020,7 @@ export async function registerRoutes(
       const { action, note } = parsed.data;
       // Require a reason when rejecting
       if (action === "reject" && !note?.trim()) return res.status(400).json({ message: "A reason is required when rejecting an application" });
+      // "request_info" moves to pending_review (actively under review); approve/reject are terminal
       const platformStatus = action === "approve" ? "approved" : action === "reject" ? "rejected" : "pending_review";
       const updated = await storage.updateChurchPlatformStatus(id, platformStatus, note, "platform_admin");
       storage.createAuditLog({ churchId: id, action: `platform_${action}`, newValue: note, actorUid: "platform_admin" }).catch(() => {});
@@ -4037,10 +4038,11 @@ export async function registerRoutes(
       const church = await storage.getChurch(churchId);
       if (!church) return res.status(404).json({ message: "Church not found" });
       if (church.platformStatus !== "draft") return res.status(400).json({ message: `Cannot submit for review from status: ${church.platformStatus}` });
-      const updated = await storage.updateChurchPlatformStatus(churchId, "pending_review", null, uid);
-      // Record submission timestamp via audit log
+      const updated = await storage.updateChurchPlatformStatus(churchId, "submitted", null, uid);
+      // Persist submission timestamp
+      await storage.updateChurch(churchId, { submittedForReviewAt: new Date() } as any);
       storage.createAuditLog({ churchId, action: "submitted_for_review", actorUid: uid }).catch(() => {});
-      res.json(updated);
+      res.json({ ...updated, submittedForReviewAt: new Date() });
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 
@@ -4295,6 +4297,19 @@ export async function registerRoutes(
       if (!threads[0]) return res.json([]);
       await storage.updatePlatformAdminThread(threads[0].id, { hasUnreadOwner: false });
       res.json(await storage.getPlatformAdminMessages(threads[0].id));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // Mark platform thread as read (owner side)
+  app.post("/api/churches/:churchId/platform-thread/mark-read", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.churchId);
+      const member = await storage.getChurchMember(churchId, uid);
+      if (!member || member.role !== "owner") return res.status(403).json({ message: "Forbidden" });
+      const threads = await storage.getPlatformAdminThreads(churchId);
+      if (threads[0]) await storage.updatePlatformAdminThread(threads[0].id, { hasUnreadOwner: false });
+      res.json({ ok: true });
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 

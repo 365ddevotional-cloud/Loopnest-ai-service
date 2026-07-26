@@ -1048,5 +1048,8 @@
   "cm_draftBannerTitle": "Pas encore soumis pour examen par la plateforme",
   "cm_draftBannerDesc": "Le profil de votre organisation est en brouillon. Complétez-le et soumettez-le pour examen par la plateforme afin qu'il soit accessible aux nouveaux membres.",
   "cm_submitForReviewConfirm": "Une fois soumis, les administrateurs de la plateforme examineront votre organisation. Vous ne pouvez pas modifier les détails principaux pendant l'examen.",
-  "cm_submitSuccess": "Soumis pour examen"
+  "cm_submitSuccess": "Soumis pour examen",
+  "cm_submitted": "Soumis",
+  "cm_submittedBannerTitle": "Soumis — en attente de prise en charge par l'administrateur",
+  "cm_submittedBannerDesc": "Votre organisation a été soumise et attend qu'un administrateur de plateforme commence l'examen. Vous serez notifié de toute mise à jour dans vos messages de plateforme."
 }

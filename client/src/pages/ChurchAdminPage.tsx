@@ -998,6 +998,15 @@ export default function ChurchAdminPage() {
             </div>
           </div>
         )}
+        {church?.platformStatus === "submitted" && (
+          <div className="rounded-lg border-l-4 p-4 flex gap-3" style={{ borderLeftColor: "#f59e0b", backgroundColor: "#fffbeb" }}>
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "#d97706" }} />
+            <div>
+              <p className="font-semibold text-sm" style={{ color: "#92400e" }}>{t("cm_submittedBannerTitle")}</p>
+              <p className="text-xs mt-1" style={{ color: "#78350f" }}>{t("cm_submittedBannerDesc")}</p>
+            </div>
+          </div>
+        )}
         {church?.platformStatus === "pending_review" && (
           <div className="rounded-lg border-l-4 p-4 flex gap-3" style={{ borderLeftColor: "#f59e0b", backgroundColor: "#fffbeb" }}>
             <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "#d97706" }} />
@@ -2686,7 +2695,8 @@ function ChurchGovernancePanel({ church, getIdToken }: { church: Church; getIdTo
 
   const statusBadge = {
     draft: { label: t("cm_draft"), bg: "#eef2ff", border: "#6366f1", text: "#312e81" },
-    pending_review: { label: t("cm_pendingReview"), bg: "#fffbeb", border: "#f59e0b", text: "#92400e" },
+    submitted: { label: t("cm_submitted"), bg: "#fffbeb", border: "#f59e0b", text: "#92400e" },
+    pending_review: { label: t("cm_pendingReview"), bg: "#fef3c7", border: "#d97706", text: "#78350f" },
     approved: { label: t("cm_approvedForChurchMode"), bg: "#f0fdf4", border: "#22c55e", text: "#166534" },
     rejected: { label: t("cm_rejected"), bg: "#f9fafb", border: "#6b7280", text: "#374151" },
     suspended: { label: t("cm_suspended"), bg: "#fef2f2", border: "#ef4444", text: "#7f1d1d" },
@@ -2717,6 +2727,15 @@ function ChurchGovernancePanel({ church, getIdToken }: { church: Church; getIdTo
               {church.platformReviewNote && <p className="text-xs mt-0.5" style={{ color: statusBadge.text }}>{church.platformReviewNote}</p>}
             </div>
           </div>
+
+          {/* Submitted — waiting */}
+          {church.platformStatus === "submitted" && (
+            <Card className="border-0 shadow-sm">
+              <CardContent className="pt-4 pb-4">
+                <p className="text-sm" style={{ color: "#78350f" }}>{t("cm_submittedBannerDesc")}</p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Draft — Submit for Review */}
           {church.platformStatus === "draft" && (

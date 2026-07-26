@@ -1048,5 +1048,8 @@
   "cm_draftBannerTitle": "Aún no enviado para revisión de plataforma",
   "cm_draftBannerDesc": "El perfil de su organización está en borrador. Complételo y envíelo para revisión de plataforma para que sea accesible a nuevos miembros.",
   "cm_submitForReviewConfirm": "Una vez enviado, los administradores de la plataforma revisarán su organización. No podrá editar detalles principales durante la revisión.",
-  "cm_submitSuccess": "Enviado para revisión"
+  "cm_submitSuccess": "Enviado para revisión",
+  "cm_submitted": "Enviado",
+  "cm_submittedBannerTitle": "Enviado — esperando que el administrador lo recoja",
+  "cm_submittedBannerDesc": "Su organización ha sido enviada y está esperando que un administrador de plataforma inicie la revisión. Recibirá notificaciones en sus mensajes de plataforma."
 }

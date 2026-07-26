@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import path from "path";
+import { runGovernanceMigration } from "./migrate-governance";
 
 const app = express();
 const httpServer = createServer(app);
@@ -140,6 +141,9 @@ httpServer.listen(
     log(`NODE_ENV: ${process.env.NODE_ENV || "development"}`);
     log(`Database host hash: ${dbHash}`);
     log(`Build time: ${new Date().toISOString()}`);
+
+    // Run incremental governance migration (idempotent, safe for existing DBs)
+    runGovernanceMigration().catch((err) => console.error("[governance-migration] Error:", err));
 
     import("./seed-devotionals").then(({ seedAllDevotionals }) => {
       import("./storage").then(({ storage }) => {

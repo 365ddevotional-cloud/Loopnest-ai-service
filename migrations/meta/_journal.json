@@ -8,6 +8,13 @@
       "when": 1785034099508,
       "tag": "0000_eager_reavers",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785114000000,
+      "tag": "0001_governance_schema",
+      "breakpoints": true
     }
   ]
 }

@@ -4952,7 +4952,8 @@ function ChurchDeletionRequestsAdmin() {
 
 const PLATFORM_STATUS_COLORS: Record<string, string> = {
   draft: "bg-indigo-100 text-indigo-800 border-indigo-300",
-  pending_review: "bg-amber-100 text-amber-800 border-amber-300",
+  submitted: "bg-amber-100 text-amber-800 border-amber-300",
+  pending_review: "bg-yellow-100 text-yellow-800 border-yellow-400",
   approved: "bg-green-100 text-green-800 border-green-300",
   rejected: "bg-red-100 text-red-800 border-red-300",
   suspended: "bg-orange-100 text-orange-800 border-orange-300",
@@ -4961,7 +4962,7 @@ const PLATFORM_STATUS_COLORS: Record<string, string> = {
 
 function GovernanceApplicationsAdmin() {
   const { t } = useI18n();
-  const [filterStatus, setFilterStatus] = useState("pending_review");
+  const [filterStatus, setFilterStatus] = useState("submitted");
   const [reviewNote, setReviewNote] = useState<Record<number, string>>({});
   const { data: apps, isLoading, refetch } = useQuery<any[]>({
     queryKey: ["/api/admin/governance/applications", filterStatus],
@@ -5002,7 +5003,7 @@ function GovernanceApplicationsAdmin() {
         </div>
       )}
       <div className="flex gap-2 flex-wrap mb-2">
-        {["draft", "pending_review", "approved", "rejected", "suspended", "archived"].map(s => (
+        {["submitted", "draft", "pending_review", "approved", "rejected", "suspended", "archived"].map(s => (
           <Button key={s} size="sm" variant={filterStatus === s ? "default" : "outline"} onClick={() => setFilterStatus(s)} className="capitalize text-xs">
             {s.replace(/_/g, " ")}
           </Button>
@@ -5041,7 +5042,7 @@ function GovernanceApplicationsAdmin() {
               {church.platformReviewNote && (
                 <p className="text-xs bg-amber-50 border border-amber-200 rounded px-2 py-1.5 text-amber-800">Note: {church.platformReviewNote}</p>
               )}
-              {["pending_review", "draft"].includes(church.platformStatus) && (
+              {["pending_review", "submitted", "draft"].includes(church.platformStatus) && (
                 <>
                   <Input
                     placeholder={church.platformStatus === "pending_review" ? "Review note (required to reject)…" : "Note…"}

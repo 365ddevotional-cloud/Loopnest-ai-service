@@ -2713,6 +2713,9 @@ export class DatabaseStorage implements IStorage {
       recipientChurches = approvedChurches;
     } else if (ann.targetType === "country" && ann.targetFilter) {
       recipientChurches = approvedChurches.filter(c => (c as any).country === ann.targetFilter);
+    } else if (ann.targetType === "dept_leaders") {
+      // dept_leaders: all approved orgs (qualifying role check below will filter to dept leaders)
+      recipientChurches = approvedChurches;
     } else if (ann.targetType === "language" && ann.targetFilter) {
       // language targeting: filter users by profile language preference (best-effort via country proxy)
       recipientChurches = approvedChurches;
@@ -2725,9 +2728,12 @@ export class DatabaseStorage implements IStorage {
     }
 
     // 3. Determine qualifying member roles for this target type
-    const targetRoles = ann.targetType === "org_admins"
-      ? ["owner", "lead_pastor", "administrator"]
-      : ["owner", "lead_pastor"];
+    const targetRoles =
+      ann.targetType === "org_admins"
+        ? ["owner", "lead_pastor", "administrator"]
+        : ann.targetType === "dept_leaders"
+          ? ["owner", "lead_pastor", "administrator", "department_leader"]
+          : ["owner", "lead_pastor"];
 
     // 4. Deliver in-app (platform admin thread) and optionally email (inbox channel)
     const deliverEmail = Array.isArray(ann.deliveryChannels) && ann.deliveryChannels.includes("inbox");
@@ -2794,7 +2800,7 @@ export class DatabaseStorage implements IStorage {
     const d7 = new Date(); d7.setDate(d7.getDate() - 7);
 
     const [pendingReviewRes, openCasesRes, pendingAppealsRes, pendingDeletionsRes, recentApprovalsRes, recentSuspensionsRes] = await Promise.all([
-      db.execute(sql`SELECT COUNT(*) AS c FROM churches WHERE platform_status IN ('draft','pending_review')`),
+      db.execute(sql`SELECT COUNT(*) AS c FROM churches WHERE platform_status IN ('draft','submitted','pending_review')`),
       db.execute(sql`SELECT COUNT(*) AS c FROM compliance_cases WHERE status NOT IN ('resolved','closed')`),
       db.execute(sql`SELECT COUNT(*) AS c FROM compliance_appeals WHERE status = 'pending'`),
       db.execute(sql`SELECT COUNT(*) AS c FROM church_deletion_requests WHERE status = 'pending'`),

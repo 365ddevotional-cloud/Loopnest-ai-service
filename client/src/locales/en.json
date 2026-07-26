@@ -1048,5 +1048,8 @@
   "cm_draftBannerTitle": "Not yet submitted for platform review",
   "cm_draftBannerDesc": "Your organization profile is in draft. Complete your profile and submit it for platform review to make it accessible to new members.",
   "cm_submitForReviewConfirm": "Once submitted, platform administrators will review your organization. You cannot edit core details during review.",
-  "cm_submitSuccess": "Submitted for review"
+  "cm_submitSuccess": "Submitted for review",
+  "cm_submitted": "Submitted",
+  "cm_submittedBannerTitle": "Submitted — awaiting admin pickup",
+  "cm_submittedBannerDesc": "Your organization has been submitted and is waiting for a platform administrator to begin review. You will be notified of any updates in your platform messages."
 }
