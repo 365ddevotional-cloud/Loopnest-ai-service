@@ -720,7 +720,11 @@ export default function ChurchAdminPage() {
       const r = await fetch(`/api/churches/${church!.id}/members/${memberId}/approve`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
       if (!r.ok) throw new Error((await r.json()).message);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: t("cm_memberApproved") }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] });
+      qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "pending-count"] });
+      toast({ title: t("cm_memberApproved") });
+    },
     onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
@@ -730,7 +734,11 @@ export default function ChurchAdminPage() {
       const r = await fetch(`/api/churches/${church!.id}/members/${memberId}/decline`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
       if (!r.ok) throw new Error((await r.json()).message);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] }); toast({ title: t("cm_requestDeclined") }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "members"] });
+      qc.invalidateQueries({ queryKey: ["/api/churches", church?.id, "pending-count"] });
+      toast({ title: t("cm_requestDeclined") });
+    },
     onError: (e: any) => toast({ title: t("cm_error"), description: e.message, variant: "destructive" }),
   });
 
@@ -1002,8 +1010,18 @@ export default function ChurchAdminPage() {
             <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
               <CardHeader className="pb-3"><CardTitle className="text-base" style={{ color: "#1a2744" }}>{t("cm_churchIdentity")}</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-1.5"><Label>{t("cm_churchName")}</Label>
-                  <Input value={formVal("name")} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} data-testid="input-admin-church-name" /></div>
+                {myRole?.role === "owner" && (
+                  <div className="space-y-1.5">
+                    <Label>{t("cm_churchName")}</Label>
+                    <Input value={formVal("name")} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} data-testid="input-admin-church-name" />
+                    {form.name !== undefined && form.name !== church?.name && (
+                      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5 flex items-start gap-1.5">
+                        <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                        {t("cm_nameChangeAlert")}
+                      </p>
+                    )}
+                  </div>
+                )}
                 <div className="space-y-1.5"><Label>{t("cm_denomination")}</Label>
                   <Input value={formVal("denomination") as string} onChange={e => setForm(f => ({ ...f, denomination: e.target.value || null }))} placeholder="e.g. Baptist, Pentecostal, Non-denominational" /></div>
                 <div className="space-y-1.5"><Label>{t("cm_deptDescription")}</Label>
@@ -1012,7 +1030,13 @@ export default function ChurchAdminPage() {
                   <Input value={formVal("address") as string} onChange={e => setForm(f => ({ ...f, address: e.target.value || null }))} /></div>
                 <div className="space-y-1.5"><Label>{t("cm_websiteUrl")}</Label>
                   <Input type="url" value={formVal("websiteUrl") as string} onChange={e => setForm(f => ({ ...f, websiteUrl: e.target.value || null }))} /></div>
-                <Button onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending || Object.keys(form).length === 0}
+                <Button
+                  onClick={() => {
+                    const nameChanging = form.name !== undefined && form.name !== church?.name;
+                    if (nameChanging && !confirm(t("cm_nameChangeAlert"))) return;
+                    saveSettings.mutate();
+                  }}
+                  disabled={saveSettings.isPending || Object.keys(form).length === 0}
                   style={{ backgroundColor: "#1a2744" }} data-testid="button-save-church-settings">
                   {saveSettings.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("cm_saving")}</> : t("cm_saveChanges")}
                 </Button>

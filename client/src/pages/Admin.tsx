@@ -2575,6 +2575,10 @@ export default function Admin() {
               <TrendingUp className="w-4 h-4 mr-1.5 flex-shrink-0" />
               Oversight
             </TabsTrigger>
+            <TabsTrigger value="church-deletions" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-church-deletions">
+              <Trash2 className="w-4 h-4 mr-1.5 flex-shrink-0" />
+              Deletion Requests
+            </TabsTrigger>
             <TabsTrigger value="analytics" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-analytics">
               <BarChart3 className="w-4 h-4 mr-1.5 flex-shrink-0" />
               Analytics
@@ -2747,6 +2751,23 @@ export default function Admin() {
             </CardHeader>
             <CardContent className="p-6">
               <ChurchOversightAdmin />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="church-deletions">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+                <Trash2 className="w-6 h-6" />
+                Church Deletion Requests
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Review and action deletion requests submitted by church owners.
+              </p>
+            </CardHeader>
+            <CardContent className="p-6">
+              <ChurchDeletionRequestsAdmin />
             </CardContent>
           </Card>
         </TabsContent>
@@ -4722,5 +4743,100 @@ function ChurchModerationAdmin() {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+interface ChurchDeletionRequest {
+  id: number;
+  churchId: number;
+  ownerUid: string;
+  reason: string;
+  status: string;
+  adminNote: string | null;
+  createdAt: string;
+  churchName?: string;
+}
+
+function ChurchDeletionRequestsAdmin() {
+  const { toast } = useToast();
+  const [adminNote, setAdminNote] = useState<Record<number, string>>({});
+  const { data: requests = [], isLoading, refetch } = useQuery<ChurchDeletionRequest[]>({
+    queryKey: ["/api/admin/church-deletion-requests"],
+    queryFn: () => fetch("/api/admin/church-deletion-requests", { credentials: "include" }).then(r => r.ok ? r.json() : Promise.reject()),
+  });
+
+  const action = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      const r = await fetch(`/api/admin/church-deletion-requests/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status, adminNote: adminNote[id] ?? null }),
+      });
+      if (!r.ok) throw new Error((await r.json()).message);
+      return r.json();
+    },
+    onSuccess: () => { refetch(); toast({ title: "Deletion request updated" }); },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const statusColor: Record<string, string> = {
+    pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    approved: "bg-green-100 text-green-800 border-green-200",
+    rejected: "bg-red-100 text-red-800 border-red-200",
+    info_requested: "bg-blue-100 text-blue-800 border-blue-200",
+  };
+
+  if (isLoading) return <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>;
+  if (!requests.length) return <p className="text-muted-foreground text-sm">No deletion requests found.</p>;
+
+  return (
+    <div className="space-y-4">
+      {requests.map(req => (
+        <Card key={req.id} className="border border-border">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="font-semibold text-sm">Church ID: {req.churchId}</p>
+                <p className="text-xs text-muted-foreground">{format(parseISO(req.createdAt), "PPP")}</p>
+              </div>
+              <span className={`text-xs border rounded-full px-2 py-0.5 font-medium ${statusColor[req.status] ?? "bg-muted text-muted-foreground"}`}>{req.status}</span>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-0.5">Owner reason:</p>
+              <p className="text-sm">{req.reason}</p>
+            </div>
+            {req.adminNote && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-0.5">Admin note:</p>
+                <p className="text-sm italic">{req.adminNote}</p>
+              </div>
+            )}
+            {req.status === "pending" && (
+              <div className="space-y-2 pt-1">
+                <Textarea
+                  placeholder="Optional admin note…"
+                  value={adminNote[req.id] ?? ""}
+                  onChange={e => setAdminNote(prev => ({ ...prev, [req.id]: e.target.value }))}
+                  className="text-sm min-h-[64px]"
+                  data-testid={`textarea-admin-note-${req.id}`}
+                />
+                <div className="flex gap-2 flex-wrap">
+                  <Button size="sm" variant="destructive" onClick={() => action.mutate({ id: req.id, status: "approved" })} disabled={action.isPending} data-testid={`button-approve-deletion-${req.id}`}>
+                    <CheckCircle className="w-3.5 h-3.5 mr-1" /> Approve Deletion
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => action.mutate({ id: req.id, status: "info_requested" })} disabled={action.isPending} data-testid={`button-info-deletion-${req.id}`}>
+                    <AlertTriangle className="w-3.5 h-3.5 mr-1" /> Request More Info
+                  </Button>
+                  <Button size="sm" variant="outline" className="border-green-300 text-green-700 hover:bg-green-50" onClick={() => action.mutate({ id: req.id, status: "rejected" })} disabled={action.isPending} data-testid={`button-reject-deletion-${req.id}`}>
+                    <XCircle className="w-3.5 h-3.5 mr-1" /> Reject
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 }

@@ -2958,6 +2958,7 @@ export async function registerRoutes(
           await storage.addChurchGroupMember({ groupId: target.invitedGroupId, firebaseUid: target.firebaseUid, displayName: target.displayName, email: target.email });
         } catch { /* already in group */ }
       }
+      storage.createAuditLog({ churchId, action: "member_approved", newValue: target.email ?? target.displayName ?? String(memberId), actorUid: uid, actorRole: requester.role }).catch(() => {});
       res.json(updated);
     } catch { res.status(500).json({ message: "Failed to approve member" }); }
   });
@@ -2970,7 +2971,10 @@ export async function registerRoutes(
       const memberId = Number(req.params.memberId);
       const requester = await storage.getChurchMember(churchId, uid);
       if (!requester || !["owner", "lead_pastor", "administrator"].includes(requester.role)) return res.status(403).json({ message: "Not authorized" });
+      const all = await storage.getChurchMembers(churchId);
+      const target = all.find(m => m.id === memberId);
       const updated = await storage.updateChurchMemberStatus(memberId, "declined");
+      storage.createAuditLog({ churchId, action: "member_declined", newValue: target?.email ?? target?.displayName ?? String(memberId), actorUid: uid, actorRole: requester.role }).catch(() => {});
       res.json(updated);
     } catch { res.status(500).json({ message: "Failed to decline member" }); }
   });
@@ -3102,7 +3106,12 @@ export async function registerRoutes(
       const update: Record<string, any> = {};
       const oldName = church.name;
       const nameChanged = name !== undefined && name !== oldName;
-      if (name !== undefined) update.name = name;
+      // Church name changes are owner-only for security
+      if (nameChanged && m.role !== "owner") return res.status(403).json({ message: "Only the church owner can change the church name" });
+      if (name !== undefined) {
+        if (typeof name !== "string" || !name.trim()) return res.status(400).json({ message: "Church name cannot be empty" });
+        update.name = name.trim();
+      }
       if (description !== undefined) update.description = description;
       if (denomination !== undefined) update.denomination = denomination;
       if (address !== undefined) update.address = address;
@@ -3286,7 +3295,7 @@ export async function registerRoutes(
       }
       let code = inviteCode();
       for (let i = 0; i < 10 && await storage.getChurchInvitation(code); i++) code = inviteCode();
-      res.status(201).json(await storage.createChurchInvitation({
+      const inv = await storage.createChurchInvitation({
         churchId: id, inviteCode: code, createdBy: uid,
         label: label || null,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
@@ -3295,7 +3304,9 @@ export async function registerRoutes(
         invitationType: invitationType || "membership",
         targetGroupId: targetGroupId ? Number(targetGroupId) : null,
         targetGroupName: groupName,
-      }));
+      });
+      storage.createAuditLog({ churchId: id, action: "invitation_created", newValue: code, actorUid: uid, actorRole: m.role }).catch(() => {});
+      res.status(201).json(inv);
     } catch { res.status(500).json({ message: "Failed to create invitation" }); }
   });
 
@@ -3926,10 +3937,10 @@ export async function registerRoutes(
     if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
     try {
       const id = Number(req.params.id);
-      const schema = z.object({ status: z.enum(["approved", "rejected"]), adminNote: z.string().optional() });
+      const schema = z.object({ status: z.enum(["approved", "rejected", "info_requested"]), adminNote: z.string().optional().nullable() });
       const parsed = schema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ message: "Invalid request" });
-      const updated = await storage.updateDeletionRequestStatus(id, parsed.data.status, "admin", parsed.data.adminNote);
+      const updated = await storage.updateDeletionRequestStatus(id, parsed.data.status, "admin", parsed.data.adminNote ?? undefined);
       res.json(updated);
     } catch { res.status(500).json({ message: "Server error" }); }
   });
@@ -4416,11 +4427,14 @@ export async function registerRoutes(
     const deptId = parseInt(req.params.deptId);
     if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });
     try {
-      const { deptMember, isChurchAdmin } = await deptAuth(req, deptId);
+      const { deptMember, isChurchAdmin, churchMember, dept } = await deptAuth(req, deptId);
       const isDeptLeader = deptMember?.role === "leader" || deptMember?.role === "assistant_leader";
       if (!isDeptLeader && !isChurchAdmin) return res.status(403).json({ message: "Not authorized" });
       const { name, type, description, logoUrl, bannerUrl } = req.body;
       const updated = await storage.updateDepartment(deptId, { name, type, description, logoUrl, bannerUrl });
+      if (dept && name && name !== dept.name) {
+        storage.createAuditLog({ churchId: dept.churchId, departmentId: deptId, action: "department_edited", previousValue: dept.name, newValue: name, actorUid: churchMember.firebaseUid, actorRole: churchMember.role }).catch(() => {});
+      }
       res.json(updated);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
