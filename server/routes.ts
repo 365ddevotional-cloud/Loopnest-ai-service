@@ -2877,7 +2877,7 @@ export async function registerRoutes(
       if (!name?.trim()) return res.status(400).json({ message: "Church name is required" });
       let slug = churchSlug(name.trim());
       for (let i = 0; i < 5 && await storage.getChurchBySlug(slug); i++) slug = churchSlug(name.trim());
-      const church = await storage.createChurch({ name: name.trim(), slug, description: description?.trim() || null, denomination: denomination?.trim() || null, address: address?.trim() || null, websiteUrl: websiteUrl?.trim() || null, logoUrl: null, ownerId: uid, status: "active" });
+      const church = await storage.createChurch({ name: name.trim(), slug, description: description?.trim() || null, denomination: denomination?.trim() || null, address: address?.trim() || null, websiteUrl: websiteUrl?.trim() || null, logoUrl: null, ownerId: uid, status: "active", platformStatus: "pending_review", submittedForReviewAt: new Date() });
       await storage.addChurchMember({ churchId: church.id, firebaseUid: uid, email: email || "", displayName: displayName || null, role: "owner", status: "active" });
       res.status(201).json(church);
     } catch (err) { console.error("Create church:", err); res.status(500).json({ message: "Failed to create church" }); }
@@ -2994,7 +2994,7 @@ export async function registerRoutes(
   app.get("/api/public/churches/:slug", async (req, res) => {
     try {
       const church = await storage.getChurchBySlug(req.params.slug);
-      if (!church || church.status !== "active" || church.publicWebsiteEnabled === false) {
+      if (!church || church.status !== "active" || church.publicWebsiteEnabled === false || church.platformStatus !== "approved") {
         return res.status(404).json({ message: "Church not found" });
       }
       const [sermons, announcements, departments] = await Promise.all([
@@ -3980,6 +3980,335 @@ export async function registerRoutes(
       if (!["active", "inactive", "suspended"].includes(status)) return res.status(400).json({ message: "Invalid status" });
       res.json(await storage.updateChurchStatus(id, status));
     } catch { res.status(500).json({ message: "Failed to update church status" }); }
+  });
+
+  // ── Platform Governance: Applications ────────────────────────────────────────
+
+  // GET pending review churches
+  app.get("/api/admin/governance/applications", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const { platformStatus } = req.query;
+      const status = typeof platformStatus === "string" ? platformStatus : "pending_review";
+      const list = await storage.getChurchesByPlatformStatus(status);
+      const enriched = await Promise.all(list.map(async (c) => {
+        const members = await storage.getChurchMembers(c.id);
+        return { ...c, memberCount: members.length };
+      }));
+      res.json(enriched);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // POST approve/reject/request-info
+  app.post("/api/admin/governance/applications/:id/review", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const id = Number(req.params.id);
+      const schema = z.object({
+        action: z.enum(["approve", "reject", "request_info"]),
+        note: z.string().optional(),
+      });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid request" });
+      const { action, note } = parsed.data;
+      const platformStatus = action === "approve" ? "approved" : action === "reject" ? "rejected" : "pending_review";
+      const updated = await storage.updateChurchPlatformStatus(id, platformStatus, note, "platform_admin");
+      storage.createAuditLog({ churchId: id, action: `platform_${action}`, newValue: note, actorUid: "platform_admin" }).catch(() => {});
+      res.json(updated);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // GET governance summary
+  app.get("/api/admin/governance/summary", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try { res.json(await storage.getGovernanceSummary()); }
+    catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Platform Governance: Compliance Cases ─────────────────────────────────────
+
+  app.get("/api/admin/compliance-cases", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const churchId = req.query.churchId ? Number(req.query.churchId) : undefined;
+      res.json(await storage.getComplianceCases(churchId));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/admin/compliance-cases", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const schema = z.object({
+        churchId: z.number(),
+        category: z.enum(["content", "conduct", "financial", "technical", "other"]).default("other"),
+        severity: z.enum(["low", "medium", "high", "critical"]).default("medium"),
+        description: z.string().min(10),
+        internalNotes: z.string().optional(),
+      });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid request" });
+      const caseNumber = `CASE-${Date.now().toString(36).toUpperCase()}`;
+      const created = await storage.createComplianceCase({ ...parsed.data, caseNumber, createdBy: "platform_admin", status: "open" });
+      storage.createAuditLog({ churchId: parsed.data.churchId, action: "compliance_case_opened", newValue: caseNumber, actorUid: "platform_admin" }).catch(() => {});
+      res.status(201).json(created);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.get("/api/admin/compliance-cases/:id", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const c = await storage.getComplianceCase(Number(req.params.id));
+      if (!c) return res.status(404).json({ message: "Not found" });
+      const responses = await storage.getComplianceCaseResponses(c.id);
+      res.json({ ...c, responses });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.patch("/api/admin/compliance-cases/:id", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const id = Number(req.params.id);
+      const schema = z.object({
+        status: z.enum(["open", "investigating", "awaiting_response", "resolved", "closed"]).optional(),
+        enforcementAction: z.enum(["no_action", "warning", "request_changes", "restriction", "suspension", "removal"]).optional().nullable(),
+        enforcementReason: z.string().optional().nullable(),
+        internalNotes: z.string().optional().nullable(),
+      });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid request" });
+      const updated = await storage.updateComplianceCase(id, { ...parsed.data, enforcementAt: parsed.data.enforcementAction ? new Date() : undefined });
+
+      // If enforcement action is suspension or removal, update church platform status
+      if (parsed.data.enforcementAction === "suspension") {
+        const c = await storage.getComplianceCase(id);
+        if (c) await storage.updateChurchPlatformStatus(c.churchId, "suspended", parsed.data.enforcementReason ?? "Suspended due to compliance case", "platform_admin");
+      }
+      if (parsed.data.enforcementAction === "removal") {
+        const c = await storage.getComplianceCase(id);
+        if (c) await storage.updateChurchPlatformStatus(c.churchId, "archived", parsed.data.enforcementReason ?? "Removed due to compliance case", "platform_admin");
+      }
+
+      res.json(updated);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // Owner: add response to a compliance case
+  app.post("/api/churches/:churchId/compliance-cases/:caseId/respond", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const caseId = Number(req.params.caseId);
+      const churchId = Number(req.params.churchId);
+      const member = await storage.getChurchMember(churchId, uid);
+      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Forbidden" });
+      const { message } = req.body;
+      if (!message?.trim()) return res.status(400).json({ message: "Message is required" });
+      const resp = await storage.createComplianceCaseResponse({ caseId, senderType: "owner", senderUid: uid, message: message.trim(), attachmentUrl: req.body.attachmentUrl ?? null });
+      await storage.updateComplianceCase(caseId, { status: "investigating" });
+      res.status(201).json(resp);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // Admin: add response to a compliance case
+  app.post("/api/admin/compliance-cases/:id/respond", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const caseId = Number(req.params.id);
+      const { message } = req.body;
+      if (!message?.trim()) return res.status(400).json({ message: "Message is required" });
+      const resp = await storage.createComplianceCaseResponse({ caseId, senderType: "admin", senderUid: "platform_admin", message: message.trim() });
+      await storage.updateComplianceCase(caseId, { status: "awaiting_response" });
+      res.status(201).json(resp);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // Owner: get compliance cases for their church
+  app.get("/api/churches/:churchId/compliance-cases", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.churchId);
+      const member = await storage.getChurchMember(churchId, uid);
+      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Forbidden" });
+      const cases = await storage.getComplianceCases(churchId);
+      const enriched = await Promise.all(cases.map(async (c) => ({
+        ...c, responses: await storage.getComplianceCaseResponses(c.id),
+      })));
+      res.json(enriched);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Platform Governance: Appeals ──────────────────────────────────────────────
+
+  app.get("/api/admin/compliance-appeals", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try { res.json(await storage.getComplianceAppeals()); }
+    catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.patch("/api/admin/compliance-appeals/:id", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const id = Number(req.params.id);
+      const schema = z.object({ status: z.enum(["accepted", "rejected"]), adminNote: z.string().optional() });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid request" });
+      const updated = await storage.updateComplianceAppeal(id, { status: parsed.data.status, adminNote: parsed.data.adminNote ?? null, reviewedBy: "platform_admin", reviewedAt: new Date() });
+      // If accepted, restore church to approved
+      if (parsed.data.status === "accepted") {
+        await storage.updateChurchPlatformStatus(updated.churchId, "approved", "Appeal accepted", "platform_admin");
+      }
+      storage.createAuditLog({ churchId: updated.churchId, action: `appeal_${parsed.data.status}`, newValue: parsed.data.adminNote, actorUid: "platform_admin" }).catch(() => {});
+      res.json(updated);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // Owner: submit appeal
+  app.post("/api/churches/:churchId/appeal", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.churchId);
+      const member = await storage.getChurchMember(churchId, uid);
+      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Forbidden" });
+      const { message, caseId } = req.body;
+      if (!message?.trim()) return res.status(400).json({ message: "Message is required" });
+      const appeal = await storage.createComplianceAppeal({ churchId, ownerUid: uid, message: message.trim(), caseId: caseId ?? null, status: "pending" });
+      storage.createAuditLog({ churchId, action: "appeal_submitted", actorUid: uid }).catch(() => {});
+      res.status(201).json(appeal);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.get("/api/churches/:churchId/appeal", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.churchId);
+      const member = await storage.getChurchMember(churchId, uid);
+      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Forbidden" });
+      res.json(await storage.getComplianceAppeals(churchId));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Platform Admin↔Owner Messaging ───────────────────────────────────────────
+
+  // Admin: get all platform threads
+  app.get("/api/admin/platform-threads", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try { res.json(await storage.getPlatformAdminThreads()); }
+    catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.get("/api/admin/platform-threads/:id/messages", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const thread = await storage.getPlatformAdminThread(Number(req.params.id));
+      if (!thread) return res.status(404).json({ message: "Not found" });
+      await storage.updatePlatformAdminThread(thread.id, { hasUnreadAdmin: false });
+      res.json(await storage.getPlatformAdminMessages(thread.id));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/admin/platform-threads/:id/reply", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const thread = await storage.getPlatformAdminThread(Number(req.params.id));
+      if (!thread) return res.status(404).json({ message: "Not found" });
+      const { message } = req.body;
+      if (!message?.trim()) return res.status(400).json({ message: "Message required" });
+      const msg = await storage.createPlatformAdminMessage({ threadId: thread.id, senderType: "admin", senderUid: "platform_admin", message: message.trim() });
+      await storage.updatePlatformAdminThread(thread.id, { hasUnreadOwner: true, hasUnreadAdmin: false });
+      res.status(201).json(msg);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // Owner: get/create thread with platform admin
+  app.get("/api/churches/:churchId/platform-thread", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.churchId);
+      const member = await storage.getChurchMember(churchId, uid);
+      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Forbidden" });
+      const threads = await storage.getPlatformAdminThreads(churchId);
+      res.json(threads[0] ?? null);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/churches/:churchId/platform-thread/start", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.churchId);
+      const member = await storage.getChurchMember(churchId, uid);
+      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Forbidden" });
+      const { subject, message } = req.body;
+      if (!subject?.trim() || !message?.trim()) return res.status(400).json({ message: "Subject and message required" });
+      const existing = await storage.getPlatformAdminThreads(churchId);
+      let thread = existing[0];
+      if (!thread) {
+        thread = await storage.createPlatformAdminThread({ churchId, ownerUid: uid, subject: subject.trim(), status: "open", hasUnreadAdmin: true, hasUnreadOwner: false });
+      }
+      const msg = await storage.createPlatformAdminMessage({ threadId: thread.id, senderType: "owner", senderUid: uid, message: message.trim() });
+      await storage.updatePlatformAdminThread(thread.id, { hasUnreadAdmin: true, hasUnreadOwner: false });
+      res.status(201).json({ thread, msg });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.get("/api/churches/:churchId/platform-thread/messages", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.churchId);
+      const member = await storage.getChurchMember(churchId, uid);
+      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Forbidden" });
+      const threads = await storage.getPlatformAdminThreads(churchId);
+      if (!threads[0]) return res.json([]);
+      await storage.updatePlatformAdminThread(threads[0].id, { hasUnreadOwner: false });
+      res.json(await storage.getPlatformAdminMessages(threads[0].id));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/churches/:churchId/platform-thread/reply", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.churchId);
+      const member = await storage.getChurchMember(churchId, uid);
+      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Forbidden" });
+      const threads = await storage.getPlatformAdminThreads(churchId);
+      if (!threads[0]) return res.status(404).json({ message: "No thread found" });
+      const { message } = req.body;
+      if (!message?.trim()) return res.status(400).json({ message: "Message required" });
+      const msg = await storage.createPlatformAdminMessage({ threadId: threads[0].id, senderType: "owner", senderUid: uid, message: message.trim() });
+      await storage.updatePlatformAdminThread(threads[0].id, { hasUnreadAdmin: true, hasUnreadOwner: false });
+      res.status(201).json(msg);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Platform Announcements ─────────────────────────────────────────────────
+
+  app.get("/api/admin/platform-announcements", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try { res.json(await storage.getPlatformAnnouncements()); }
+    catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/admin/platform-announcements", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const schema = z.object({
+        title: z.string().min(1),
+        body: z.string().min(1),
+        targetType: z.enum(["everyone", "org_owners", "org_admins", "members_specific", "country", "language"]).default("everyone"),
+        targetFilter: z.string().optional().nullable(),
+        deliveryChannels: z.array(z.enum(["in_app", "inbox"])).default(["in_app"]),
+      });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid request" });
+      const announcement = await storage.createPlatformAnnouncement({ ...parsed.data, createdBy: "platform_admin" });
+      res.status(201).json(announcement);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.post("/api/admin/platform-announcements/:id/send", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const sent = await storage.sendPlatformAnnouncement(Number(req.params.id));
+      res.json(sent);
+    } catch { res.status(500).json({ message: "Server error" }); }
   });
 
   // ── Church Logo Upload ────────────────────────────────────────────────────────

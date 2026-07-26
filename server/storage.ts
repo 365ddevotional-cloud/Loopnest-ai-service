@@ -158,6 +158,24 @@ import {
   auditLogs,
   churchDeletionRequests,
   type ChurchDeletionRequest,
+  complianceCases,
+  complianceCaseResponses,
+  complianceAppeals,
+  platformAdminThreads,
+  platformAdminMessages,
+  platformAnnouncements,
+  type ComplianceCase,
+  type InsertComplianceCase,
+  type ComplianceCaseResponse,
+  type InsertComplianceCaseResponse,
+  type ComplianceAppeal,
+  type InsertComplianceAppeal,
+  type PlatformAdminThread,
+  type InsertPlatformAdminThread,
+  type PlatformAdminMessage,
+  type InsertPlatformAdminMessage,
+  type PlatformAnnouncement,
+  type InsertPlatformAnnouncement,
 } from "@shared/schema";
 import { eq, desc, and, isNull, or, ilike, lte, notInArray, sql, gte, count, countDistinct } from "drizzle-orm";
 
@@ -469,6 +487,40 @@ export interface IStorage {
   getDeletionRequests(status?: string): Promise<Array<ChurchDeletionRequest & { churchName: string; memberCount: number }>>;
   updateDeletionRequestStatus(id: number, status: string, reviewedBy: string, adminNote?: string): Promise<ChurchDeletionRequest>;
   getMyDeletionRequest(churchId: number, ownerUid: string): Promise<ChurchDeletionRequest | undefined>;
+
+  // Platform governance
+  updateChurchPlatformStatus(id: number, platformStatus: string, reviewNote?: string, reviewedBy?: string): Promise<Church>;
+  getPendingReviewChurches(): Promise<Church[]>;
+  getChurchesByPlatformStatus(status: string): Promise<Church[]>;
+
+  // Compliance cases
+  createComplianceCase(data: InsertComplianceCase): Promise<ComplianceCase>;
+  getComplianceCases(churchId?: number): Promise<ComplianceCase[]>;
+  getComplianceCase(id: number): Promise<ComplianceCase | undefined>;
+  updateComplianceCase(id: number, data: Partial<ComplianceCase>): Promise<ComplianceCase>;
+  createComplianceCaseResponse(data: InsertComplianceCaseResponse): Promise<ComplianceCaseResponse>;
+  getComplianceCaseResponses(caseId: number): Promise<ComplianceCaseResponse[]>;
+
+  // Appeals
+  createComplianceAppeal(data: InsertComplianceAppeal): Promise<ComplianceAppeal>;
+  getComplianceAppeals(churchId?: number): Promise<ComplianceAppeal[]>;
+  updateComplianceAppeal(id: number, data: Partial<ComplianceAppeal>): Promise<ComplianceAppeal>;
+
+  // Platform admin threads
+  createPlatformAdminThread(data: InsertPlatformAdminThread): Promise<PlatformAdminThread>;
+  getPlatformAdminThreads(churchId?: number): Promise<PlatformAdminThread[]>;
+  getPlatformAdminThread(id: number): Promise<PlatformAdminThread | undefined>;
+  updatePlatformAdminThread(id: number, data: Partial<PlatformAdminThread>): Promise<PlatformAdminThread>;
+  createPlatformAdminMessage(data: InsertPlatformAdminMessage): Promise<PlatformAdminMessage>;
+  getPlatformAdminMessages(threadId: number): Promise<PlatformAdminMessage[]>;
+
+  // Platform announcements
+  createPlatformAnnouncement(data: InsertPlatformAnnouncement): Promise<PlatformAnnouncement>;
+  getPlatformAnnouncements(): Promise<PlatformAnnouncement[]>;
+  sendPlatformAnnouncement(id: number): Promise<PlatformAnnouncement>;
+
+  // Governance summary for admin dashboard
+  getGovernanceSummary(): Promise<{ pendingReview: number; openCases: number; pendingAppeals: number; pendingDeletions: number; recentApprovals: number; recentSuspensions: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2528,6 +2580,151 @@ export class DatabaseStorage implements IStorage {
       newThisMonth:  Number((monthRes.rows[0] as any)?.count ?? 0),
       dailyTrend:    dailyTrend.rows,
       usersByCountry: byCountry.rows,
+    };
+  }
+
+  // ── Platform Governance ─────────────────────────────────────────────────────
+
+  async updateChurchPlatformStatus(id: number, platformStatus: string, reviewNote?: string, reviewedBy?: string): Promise<Church> {
+    const [row] = await db.update(churches).set({
+      platformStatus,
+      platformReviewNote: reviewNote ?? null,
+      platformReviewedAt: new Date(),
+      platformReviewedBy: reviewedBy ?? null,
+    }).where(eq(churches.id, id)).returning();
+    return row;
+  }
+
+  async getPendingReviewChurches(): Promise<Church[]> {
+    return await db.select().from(churches).where(eq(churches.platformStatus, "pending_review")).orderBy(desc(churches.createdAt));
+  }
+
+  async getChurchesByPlatformStatus(status: string): Promise<Church[]> {
+    return await db.select().from(churches).where(eq(churches.platformStatus, status)).orderBy(desc(churches.createdAt));
+  }
+
+  // ── Compliance Cases ────────────────────────────────────────────────────────
+
+  async createComplianceCase(data: InsertComplianceCase): Promise<ComplianceCase> {
+    const [row] = await db.insert(complianceCases).values(data).returning();
+    return row;
+  }
+
+  async getComplianceCases(churchId?: number): Promise<ComplianceCase[]> {
+    if (churchId !== undefined) {
+      return await db.select().from(complianceCases).where(eq(complianceCases.churchId, churchId)).orderBy(desc(complianceCases.createdAt));
+    }
+    return await db.select().from(complianceCases).orderBy(desc(complianceCases.createdAt));
+  }
+
+  async getComplianceCase(id: number): Promise<ComplianceCase | undefined> {
+    const [row] = await db.select().from(complianceCases).where(eq(complianceCases.id, id));
+    return row;
+  }
+
+  async updateComplianceCase(id: number, data: Partial<ComplianceCase>): Promise<ComplianceCase> {
+    const [row] = await db.update(complianceCases).set({ ...data, updatedAt: new Date() }).where(eq(complianceCases.id, id)).returning();
+    return row;
+  }
+
+  async createComplianceCaseResponse(data: InsertComplianceCaseResponse): Promise<ComplianceCaseResponse> {
+    const [row] = await db.insert(complianceCaseResponses).values(data).returning();
+    return row;
+  }
+
+  async getComplianceCaseResponses(caseId: number): Promise<ComplianceCaseResponse[]> {
+    return await db.select().from(complianceCaseResponses).where(eq(complianceCaseResponses.caseId, caseId)).orderBy(complianceCaseResponses.createdAt);
+  }
+
+  // ── Appeals ─────────────────────────────────────────────────────────────────
+
+  async createComplianceAppeal(data: InsertComplianceAppeal): Promise<ComplianceAppeal> {
+    const [row] = await db.insert(complianceAppeals).values(data).returning();
+    return row;
+  }
+
+  async getComplianceAppeals(churchId?: number): Promise<ComplianceAppeal[]> {
+    if (churchId !== undefined) {
+      return await db.select().from(complianceAppeals).where(eq(complianceAppeals.churchId, churchId)).orderBy(desc(complianceAppeals.createdAt));
+    }
+    return await db.select().from(complianceAppeals).orderBy(desc(complianceAppeals.createdAt));
+  }
+
+  async updateComplianceAppeal(id: number, data: Partial<ComplianceAppeal>): Promise<ComplianceAppeal> {
+    const [row] = await db.update(complianceAppeals).set(data as any).where(eq(complianceAppeals.id, id)).returning();
+    return row;
+  }
+
+  // ── Platform Admin Threads ──────────────────────────────────────────────────
+
+  async createPlatformAdminThread(data: InsertPlatformAdminThread): Promise<PlatformAdminThread> {
+    const [row] = await db.insert(platformAdminThreads).values(data).returning();
+    return row;
+  }
+
+  async getPlatformAdminThreads(churchId?: number): Promise<PlatformAdminThread[]> {
+    if (churchId !== undefined) {
+      return await db.select().from(platformAdminThreads).where(eq(platformAdminThreads.churchId, churchId)).orderBy(desc(platformAdminThreads.updatedAt));
+    }
+    return await db.select().from(platformAdminThreads).orderBy(desc(platformAdminThreads.updatedAt));
+  }
+
+  async getPlatformAdminThread(id: number): Promise<PlatformAdminThread | undefined> {
+    const [row] = await db.select().from(platformAdminThreads).where(eq(platformAdminThreads.id, id));
+    return row;
+  }
+
+  async updatePlatformAdminThread(id: number, data: Partial<PlatformAdminThread>): Promise<PlatformAdminThread> {
+    const [row] = await db.update(platformAdminThreads).set({ ...data, updatedAt: new Date() }).where(eq(platformAdminThreads.id, id)).returning();
+    return row;
+  }
+
+  async createPlatformAdminMessage(data: InsertPlatformAdminMessage): Promise<PlatformAdminMessage> {
+    const [row] = await db.insert(platformAdminMessages).values(data).returning();
+    return row;
+  }
+
+  async getPlatformAdminMessages(threadId: number): Promise<PlatformAdminMessage[]> {
+    return await db.select().from(platformAdminMessages).where(eq(platformAdminMessages.threadId, threadId)).orderBy(platformAdminMessages.createdAt);
+  }
+
+  // ── Platform Announcements ──────────────────────────────────────────────────
+
+  async createPlatformAnnouncement(data: InsertPlatformAnnouncement): Promise<PlatformAnnouncement> {
+    const [row] = await db.insert(platformAnnouncements).values(data).returning();
+    return row;
+  }
+
+  async getPlatformAnnouncements(): Promise<PlatformAnnouncement[]> {
+    return await db.select().from(platformAnnouncements).orderBy(desc(platformAnnouncements.createdAt));
+  }
+
+  async sendPlatformAnnouncement(id: number): Promise<PlatformAnnouncement> {
+    const [row] = await db.update(platformAnnouncements).set({ sentAt: new Date() }).where(eq(platformAnnouncements.id, id)).returning();
+    return row;
+  }
+
+  // ── Governance Summary ──────────────────────────────────────────────────────
+
+  async getGovernanceSummary(): Promise<{ pendingReview: number; openCases: number; pendingAppeals: number; pendingDeletions: number; recentApprovals: number; recentSuspensions: number }> {
+    const d7 = new Date(); d7.setDate(d7.getDate() - 7);
+
+    const [pendingReviewRes, openCasesRes, pendingAppealsRes, pendingDeletionsRes, recentApprovalsRes, recentSuspensionsRes] = await Promise.all([
+      db.execute(sql`SELECT COUNT(*) AS c FROM churches WHERE platform_status = 'pending_review'`),
+      db.execute(sql`SELECT COUNT(*) AS c FROM compliance_cases WHERE status NOT IN ('resolved','closed')`),
+      db.execute(sql`SELECT COUNT(*) AS c FROM compliance_appeals WHERE status = 'pending'`),
+      db.execute(sql`SELECT COUNT(*) AS c FROM church_deletion_requests WHERE status = 'pending'`),
+      db.execute(sql`SELECT COUNT(*) AS c FROM churches WHERE platform_status = 'approved' AND platform_reviewed_at >= ${d7.toISOString()}`),
+      db.execute(sql`SELECT COUNT(*) AS c FROM churches WHERE platform_status = 'suspended' AND platform_reviewed_at >= ${d7.toISOString()}`),
+    ]);
+
+    return {
+      pendingReview:    Number((pendingReviewRes.rows[0]   as any)?.c ?? 0),
+      openCases:        Number((openCasesRes.rows[0]       as any)?.c ?? 0),
+      pendingAppeals:   Number((pendingAppealsRes.rows[0]  as any)?.c ?? 0),
+      pendingDeletions: Number((pendingDeletionsRes.rows[0] as any)?.c ?? 0),
+      recentApprovals:  Number((recentApprovalsRes.rows[0] as any)?.c ?? 0),
+      recentSuspensions:Number((recentSuspensionsRes.rows[0] as any)?.c ?? 0),
     };
   }
 }

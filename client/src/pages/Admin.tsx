@@ -2584,6 +2584,26 @@ export default function Admin() {
               <BarChart3 className="w-4 h-4 mr-1.5 flex-shrink-0" />
               Analytics
             </TabsTrigger>
+            <TabsTrigger value="org-applications" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-org-applications">
+              <ShieldCheck className="w-4 h-4 mr-1.5 flex-shrink-0" />
+              Applications
+            </TabsTrigger>
+            <TabsTrigger value="compliance" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-compliance">
+              <Flag className="w-4 h-4 mr-1.5 flex-shrink-0" />
+              Compliance
+            </TabsTrigger>
+            <TabsTrigger value="appeals" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-appeals">
+              <ThumbsUp className="w-4 h-4 mr-1.5 flex-shrink-0" />
+              Appeals
+            </TabsTrigger>
+            <TabsTrigger value="platform-threads" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-platform-threads">
+              <MessageSquare className="w-4 h-4 mr-1.5 flex-shrink-0" />
+              Org Msgs
+            </TabsTrigger>
+            <TabsTrigger value="platform-announcements" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-platform-announcements">
+              <Send className="w-4 h-4 mr-1.5 flex-shrink-0" />
+              Announce
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -2786,6 +2806,91 @@ export default function Admin() {
             </CardHeader>
             <CardContent className="p-6">
               <AppAnalyticsAdmin />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="org-applications">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+                <ShieldCheck className="w-6 h-6" />
+                Organization Applications
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Review organizations pending platform approval. New churches start in <strong>pending_review</strong> state.
+              </p>
+            </CardHeader>
+            <CardContent className="p-6">
+              <GovernanceApplicationsAdmin />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="compliance">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+                <Flag className="w-6 h-6" />
+                Compliance Cases
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Open and manage compliance investigations for church organizations.
+              </p>
+            </CardHeader>
+            <CardContent className="p-6">
+              <ComplianceCasesAdmin />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="appeals">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+                <ThumbsUp className="w-6 h-6" />
+                Appeals
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Review and action appeals submitted by organization owners against enforcement decisions.
+              </p>
+            </CardHeader>
+            <CardContent className="p-6">
+              <ComplianceAppealsAdmin />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="platform-threads">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+                <MessageSquare className="w-6 h-6" />
+                Organization Messages
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Private messages between platform administrators and organization owners.
+              </p>
+            </CardHeader>
+            <CardContent className="p-6">
+              <PlatformThreadsAdmin />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="platform-announcements">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+                <Send className="w-6 h-6" />
+                Platform Announcements
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Broadcast announcements to church organizations and their members.
+              </p>
+            </CardHeader>
+            <CardContent className="p-6">
+              <PlatformAnnouncementsAdmin />
             </CardContent>
           </Card>
         </TabsContent>
@@ -4839,6 +4944,471 @@ function ChurchDeletionRequestsAdmin() {
           </CardContent>
         </Card>
       ))}
+    </div>
+  );
+}
+
+// ── Platform Governance: Applications ──────────────────────────────────────────
+
+const PLATFORM_STATUS_COLORS: Record<string, string> = {
+  pending_review: "bg-amber-100 text-amber-800 border-amber-300",
+  approved: "bg-green-100 text-green-800 border-green-300",
+  rejected: "bg-red-100 text-red-800 border-red-300",
+  suspended: "bg-orange-100 text-orange-800 border-orange-300",
+  archived: "bg-gray-100 text-gray-600 border-gray-300",
+};
+
+function GovernanceApplicationsAdmin() {
+  const { t } = useI18n();
+  const [filterStatus, setFilterStatus] = useState("pending_review");
+  const [reviewNote, setReviewNote] = useState<Record<number, string>>({});
+  const { data: apps, isLoading, refetch } = useQuery<any[]>({
+    queryKey: ["/api/admin/governance/applications", filterStatus],
+    queryFn: () => fetch(`/api/admin/governance/applications?platformStatus=${filterStatus}`).then(r => r.ok ? r.json() : []),
+  });
+  const { data: summary } = useQuery<any>({
+    queryKey: ["/api/admin/governance/summary"],
+    queryFn: () => fetch("/api/admin/governance/summary").then(r => r.ok ? r.json() : {}),
+  });
+  const review = useMutation({
+    mutationFn: async ({ id, action, note }: { id: number; action: string; note?: string }) => {
+      const r = await fetch(`/api/admin/governance/applications/${id}/review`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, note }),
+      });
+      if (!r.ok) throw new Error("Failed");
+      return r.json();
+    },
+    onSuccess: () => { refetch(); queryClient.invalidateQueries({ queryKey: ["/api/admin/governance/summary"] }); },
+  });
+
+  return (
+    <div className="space-y-4">
+      {summary && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          {[
+            { label: "Pending", val: summary.pendingReview, color: "text-amber-700" },
+            { label: "Approved (7d)", val: summary.recentApprovals, color: "text-green-700" },
+            { label: "Suspended (7d)", val: summary.recentSuspensions, color: "text-orange-700" },
+            { label: "Open Cases", val: summary.openCases, color: "text-red-700" },
+          ].map(({ label, val, color }) => (
+            <div key={label} className="rounded-lg border p-3 text-center">
+              <p className={`text-2xl font-bold ${color}`}>{val ?? 0}</p>
+              <p className="text-xs text-muted-foreground">{label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2 flex-wrap mb-2">
+        {["pending_review", "approved", "rejected", "suspended", "archived"].map(s => (
+          <Button key={s} size="sm" variant={filterStatus === s ? "default" : "outline"} onClick={() => setFilterStatus(s)} className="capitalize text-xs">
+            {s.replace("_", " ")}
+          </Button>
+        ))}
+      </div>
+      {isLoading && <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}
+      {!isLoading && (!apps || apps.length === 0) && (
+        <div className="text-center py-10 text-muted-foreground">{t("cm_noApplicationsYet")}</div>
+      )}
+      <div className="space-y-3">
+        {apps?.map((church: any) => (
+          <Card key={church.id} className="border border-border">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-semibold">{church.name}</p>
+                  <p className="text-xs text-muted-foreground">{church.slug} · {church.country ?? "—"} · {church.memberCount ?? 0} members</p>
+                  {church.submittedForReviewAt && <p className="text-xs text-muted-foreground">Submitted: {new Date(church.submittedForReviewAt).toLocaleDateString()}</p>}
+                </div>
+                <Badge className={`text-xs border ${PLATFORM_STATUS_COLORS[church.platformStatus] ?? ""}`}>{church.platformStatus?.replace("_", " ")}</Badge>
+              </div>
+              {church.platformReviewNote && (
+                <p className="text-xs bg-amber-50 border border-amber-200 rounded px-2 py-1.5 text-amber-800">Note: {church.platformReviewNote}</p>
+              )}
+              <Input
+                placeholder="Optional review note…"
+                className="text-xs h-8"
+                value={reviewNote[church.id] ?? ""}
+                onChange={e => setReviewNote(prev => ({ ...prev, [church.id]: e.target.value }))}
+                data-testid={`input-review-note-${church.id}`}
+              />
+              <div className="flex gap-2 flex-wrap">
+                <Button size="sm" className="bg-green-700 hover:bg-green-800 text-white text-xs" onClick={() => review.mutate({ id: church.id, action: "approve", note: reviewNote[church.id] })} disabled={review.isPending} data-testid={`button-approve-org-${church.id}`}>
+                  <CheckCircle className="w-3.5 h-3.5 mr-1" />{t("cm_approveOrg")}
+                </Button>
+                <Button size="sm" variant="destructive" className="text-xs" onClick={() => review.mutate({ id: church.id, action: "reject", note: reviewNote[church.id] })} disabled={review.isPending} data-testid={`button-reject-org-${church.id}`}>
+                  <XCircle className="w-3.5 h-3.5 mr-1" />{t("cm_rejectOrg")}
+                </Button>
+                <Button size="sm" variant="outline" className="text-xs" onClick={() => review.mutate({ id: church.id, action: "request_info", note: reviewNote[church.id] })} disabled={review.isPending} data-testid={`button-request-info-org-${church.id}`}>
+                  <AlertTriangle className="w-3.5 h-3.5 mr-1" />{t("cm_requestMoreInfoShort")}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Platform Governance: Compliance Cases ──────────────────────────────────────
+
+function ComplianceCasesAdmin() {
+  const { t } = useI18n();
+  const [selectedCase, setSelectedCase] = useState<any | null>(null);
+  const [newCaseForm, setNewCaseForm] = useState({ churchId: "", category: "other", severity: "medium", description: "", internalNotes: "" });
+  const [showNewCase, setShowNewCase] = useState(false);
+  const [replyMsg, setReplyMsg] = useState("");
+  const [enforcementForm, setEnforcementForm] = useState({ status: "", enforcementAction: "", enforcementReason: "" });
+
+  const { data: cases, isLoading, refetch } = useQuery<any[]>({
+    queryKey: ["/api/admin/compliance-cases"],
+    queryFn: () => fetch("/api/admin/compliance-cases").then(r => r.ok ? r.json() : []),
+  });
+
+  const openCase = useMutation({
+    mutationFn: async (data: any) => {
+      const r = await fetch("/api/admin/compliance-cases", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...data, churchId: Number(data.churchId) }) });
+      if (!r.ok) throw new Error((await r.json()).message ?? "Failed");
+      return r.json();
+    },
+    onSuccess: () => { refetch(); setShowNewCase(false); setNewCaseForm({ churchId: "", category: "other", severity: "medium", description: "", internalNotes: "" }); },
+  });
+
+  const updateCase = useMutation({
+    mutationFn: async ({ id, ...data }: any) => {
+      const r = await fetch(`/api/admin/compliance-cases/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+      if (!r.ok) throw new Error("Failed");
+      return r.json();
+    },
+    onSuccess: () => { refetch(); setSelectedCase(null); },
+  });
+
+  const adminReply = useMutation({
+    mutationFn: async ({ id, message }: { id: number; message: string }) => {
+      const r = await fetch(`/api/admin/compliance-cases/${id}/respond`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message }) });
+      if (!r.ok) throw new Error("Failed");
+      return r.json();
+    },
+    onSuccess: () => { refetch(); setReplyMsg(""); },
+  });
+
+  const statusColors: Record<string, string> = { open: "bg-red-100 text-red-700", investigating: "bg-amber-100 text-amber-700", awaiting_response: "bg-blue-100 text-blue-700", resolved: "bg-green-100 text-green-700", closed: "bg-gray-100 text-gray-600" };
+  const severityColors: Record<string, string> = { low: "text-gray-500", medium: "text-amber-600", high: "text-orange-600", critical: "text-red-700 font-bold" };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button size="sm" onClick={() => setShowNewCase(true)} data-testid="button-open-new-case">
+          <Plus className="w-4 h-4 mr-1" />{t("cm_openCase")}
+        </Button>
+      </div>
+
+      {showNewCase && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="p-4 space-y-3">
+            <p className="font-semibold text-sm">Open New Compliance Case</p>
+            <Input placeholder="Church ID (number)" value={newCaseForm.churchId} onChange={e => setNewCaseForm(p => ({ ...p, churchId: e.target.value }))} className="text-sm h-8" data-testid="input-case-church-id" />
+            <div className="flex gap-2">
+              <select className="flex-1 border rounded px-2 py-1 text-sm" value={newCaseForm.category} onChange={e => setNewCaseForm(p => ({ ...p, category: e.target.value }))}>
+                {["content", "conduct", "financial", "technical", "other"].map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <select className="flex-1 border rounded px-2 py-1 text-sm" value={newCaseForm.severity} onChange={e => setNewCaseForm(p => ({ ...p, severity: e.target.value }))}>
+                {["low", "medium", "high", "critical"].map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <Textarea placeholder="Description (min 10 chars) — will be shown to org owner" value={newCaseForm.description} onChange={e => setNewCaseForm(p => ({ ...p, description: e.target.value }))} className="text-sm" rows={3} data-testid="textarea-case-description" />
+            <Textarea placeholder="Internal notes (admin only)" value={newCaseForm.internalNotes} onChange={e => setNewCaseForm(p => ({ ...p, internalNotes: e.target.value }))} className="text-sm" rows={2} />
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => openCase.mutate(newCaseForm)} disabled={openCase.isPending || !newCaseForm.churchId || newCaseForm.description.length < 10} data-testid="button-submit-new-case">
+                {openCase.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Open Case"}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowNewCase(false)}>Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading && <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}
+      {!isLoading && (!cases || cases.length === 0) && (
+        <div className="text-center py-10 text-muted-foreground">{t("cm_noCasesYet")}</div>
+      )}
+      <div className="space-y-3">
+        {cases?.map((c: any) => (
+          <Card key={c.id} className="border cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setSelectedCase(c)} data-testid={`card-case-${c.id}`}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-mono text-xs text-muted-foreground">{c.caseNumber}</p>
+                  <p className="font-semibold text-sm">Church #{c.churchId} · <span className="capitalize">{c.category}</span></p>
+                  <p className={`text-xs capitalize ${severityColors[c.severity]}`}>Severity: {c.severity}</p>
+                </div>
+                <Badge className={`text-xs ${statusColors[c.status] ?? ""}`}>{c.status?.replace("_", " ")}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{c.description}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Case detail dialog */}
+      {selectedCase && (
+        <Dialog open onOpenChange={() => setSelectedCase(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="font-mono text-sm">{selectedCase.caseNumber}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 text-sm max-h-80 overflow-y-auto">
+              <p><strong>Church:</strong> #{selectedCase.churchId}</p>
+              <p><strong>Category:</strong> {selectedCase.category} · <strong>Severity:</strong> <span className={severityColors[selectedCase.severity]}>{selectedCase.severity}</span></p>
+              <p><strong>Status:</strong> {selectedCase.status?.replace("_", " ")}</p>
+              <p className="bg-gray-50 rounded p-2">{selectedCase.description}</p>
+              {selectedCase.internalNotes && <p className="text-xs bg-amber-50 rounded p-2 text-amber-800">Internal: {selectedCase.internalNotes}</p>}
+              {selectedCase.responses?.length > 0 && (
+                <div className="space-y-2">
+                  <p className="font-semibold text-xs uppercase tracking-wide text-muted-foreground">Conversation</p>
+                  {selectedCase.responses.map((r: any) => (
+                    <div key={r.id} className={`rounded p-2 text-xs ${r.senderType === "admin" ? "bg-primary/10 ml-4" : "bg-gray-50 mr-4"}`}>
+                      <p className="font-semibold capitalize mb-0.5">{r.senderType}</p>
+                      <p>{r.message}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="space-y-2 pt-2 border-t">
+              <Textarea placeholder="Reply to org owner…" value={replyMsg} onChange={e => setReplyMsg(e.target.value)} rows={2} className="text-sm" data-testid="textarea-case-reply" />
+              <Button size="sm" onClick={() => adminReply.mutate({ id: selectedCase.id, message: replyMsg })} disabled={!replyMsg.trim() || adminReply.isPending} data-testid="button-send-case-reply">
+                {adminReply.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5 mr-1" />Send Reply</>}
+              </Button>
+            </div>
+            <div className="space-y-2 pt-2 border-t">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Enforcement Action</p>
+              <div className="flex gap-2">
+                <select className="flex-1 border rounded px-2 py-1 text-xs" value={enforcementForm.enforcementAction} onChange={e => setEnforcementForm(p => ({ ...p, enforcementAction: e.target.value }))}>
+                  <option value="">Select action…</option>
+                  {["no_action", "warning", "request_changes", "restriction", "suspension", "removal"].map(a => <option key={a} value={a}>{a.replace("_", " ")}</option>)}
+                </select>
+                <select className="flex-1 border rounded px-2 py-1 text-xs" value={enforcementForm.status} onChange={e => setEnforcementForm(p => ({ ...p, status: e.target.value }))}>
+                  <option value="">Update status…</option>
+                  {["open", "investigating", "awaiting_response", "resolved", "closed"].map(s => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
+                </select>
+              </div>
+              <Input placeholder="Enforcement reason (shown to owner)" value={enforcementForm.enforcementReason} onChange={e => setEnforcementForm(p => ({ ...p, enforcementReason: e.target.value }))} className="text-xs h-7" data-testid="input-enforcement-reason" />
+              <Button size="sm" variant="destructive" onClick={() => { updateCase.mutate({ id: selectedCase.id, ...enforcementForm }); }} disabled={updateCase.isPending} data-testid="button-apply-enforcement">
+                {updateCase.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+}
+
+// ── Platform Governance: Appeals ───────────────────────────────────────────────
+
+function ComplianceAppealsAdmin() {
+  const { t } = useI18n();
+  const [adminNote, setAdminNote] = useState<Record<number, string>>({});
+
+  const { data: appeals, isLoading, refetch } = useQuery<any[]>({
+    queryKey: ["/api/admin/compliance-appeals"],
+    queryFn: () => fetch("/api/admin/compliance-appeals").then(r => r.ok ? r.json() : []),
+  });
+
+  const action = useMutation({
+    mutationFn: async ({ id, status, note }: { id: number; status: string; note?: string }) => {
+      const r = await fetch(`/api/admin/compliance-appeals/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status, adminNote: note }) });
+      if (!r.ok) throw new Error("Failed");
+      return r.json();
+    },
+    onSuccess: () => { refetch(); queryClient.invalidateQueries({ queryKey: ["/api/admin/governance/summary"] }); },
+  });
+
+  const statusColors: Record<string, string> = { pending: "bg-amber-100 text-amber-700", accepted: "bg-green-100 text-green-700", rejected: "bg-red-100 text-red-700" };
+
+  return (
+    <div className="space-y-3">
+      {isLoading && <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}
+      {!isLoading && (!appeals || appeals.length === 0) && (
+        <div className="text-center py-10 text-muted-foreground">{t("cm_noAppealsYet")}</div>
+      )}
+      {appeals?.map((appeal: any) => (
+        <Card key={appeal.id} className="border">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-sm">Church #{appeal.churchId}</p>
+              <Badge className={`text-xs ${statusColors[appeal.status] ?? ""}`}>{appeal.status}</Badge>
+            </div>
+            {appeal.caseId && <p className="text-xs text-muted-foreground">Re: Case #{appeal.caseId}</p>}
+            <p className="text-sm bg-gray-50 rounded p-2">{appeal.message}</p>
+            {appeal.adminNote && <p className="text-xs bg-amber-50 rounded p-2 text-amber-800">Admin note: {appeal.adminNote}</p>}
+            {appeal.status === "pending" && (
+              <div className="space-y-2 pt-1">
+                <Input placeholder="Admin note (optional)…" className="text-xs h-7" value={adminNote[appeal.id] ?? ""} onChange={e => setAdminNote(p => ({ ...p, [appeal.id]: e.target.value }))} data-testid={`input-appeal-note-${appeal.id}`} />
+                <div className="flex gap-2">
+                  <Button size="sm" className="bg-green-700 hover:bg-green-800 text-white text-xs" onClick={() => action.mutate({ id: appeal.id, status: "accepted", note: adminNote[appeal.id] })} disabled={action.isPending} data-testid={`button-accept-appeal-${appeal.id}`}>
+                    <CheckCircle className="w-3.5 h-3.5 mr-1" />{t("cm_appealAccepted")}
+                  </Button>
+                  <Button size="sm" variant="destructive" className="text-xs" onClick={() => action.mutate({ id: appeal.id, status: "rejected", note: adminNote[appeal.id] })} disabled={action.isPending} data-testid={`button-reject-appeal-${appeal.id}`}>
+                    <XCircle className="w-3.5 h-3.5 mr-1" />{t("cm_appealRejected")}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// ── Platform Admin Threads ─────────────────────────────────────────────────────
+
+function PlatformThreadsAdmin() {
+  const [selectedThread, setSelectedThread] = useState<any | null>(null);
+  const [reply, setReply] = useState("");
+
+  const { data: threads, isLoading, refetch } = useQuery<any[]>({
+    queryKey: ["/api/admin/platform-threads"],
+    queryFn: () => fetch("/api/admin/platform-threads").then(r => r.ok ? r.json() : []),
+  });
+
+  const { data: messages } = useQuery<any[]>({
+    queryKey: ["/api/admin/platform-threads", selectedThread?.id, "messages"],
+    queryFn: () => fetch(`/api/admin/platform-threads/${selectedThread!.id}/messages`).then(r => r.ok ? r.json() : []),
+    enabled: !!selectedThread,
+  });
+
+  const sendReply = useMutation({
+    mutationFn: async ({ id, message }: { id: number; message: string }) => {
+      const r = await fetch(`/api/admin/platform-threads/${id}/reply`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message }) });
+      if (!r.ok) throw new Error("Failed");
+      return r.json();
+    },
+    onSuccess: () => { setReply(""); queryClient.invalidateQueries({ queryKey: ["/api/admin/platform-threads", selectedThread?.id, "messages"] }); refetch(); },
+  });
+
+  return (
+    <div className="flex gap-4 min-h-[400px]">
+      <div className="w-56 flex-shrink-0 space-y-2 border-r pr-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Conversations</p>
+        {isLoading && <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />}
+        {threads?.map((thread: any) => (
+          <button key={thread.id} onClick={() => setSelectedThread(thread)} className={`w-full text-left rounded p-2 text-sm hover:bg-muted transition-colors ${selectedThread?.id === thread.id ? "bg-muted" : ""}`} data-testid={`button-thread-${thread.id}`}>
+            <p className="font-semibold truncate">Church #{thread.churchId}</p>
+            <p className="text-xs text-muted-foreground truncate">{thread.subject}</p>
+            {thread.hasUnreadAdmin && <span className="inline-block w-2 h-2 rounded-full bg-primary mt-1" />}
+          </button>
+        ))}
+        {!isLoading && (!threads || threads.length === 0) && <p className="text-xs text-muted-foreground">No messages yet.</p>}
+      </div>
+      <div className="flex-1 flex flex-col">
+        {!selectedThread && <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">Select a conversation</div>}
+        {selectedThread && (
+          <>
+            <p className="font-semibold mb-2">{selectedThread.subject}</p>
+            <div className="flex-1 overflow-y-auto space-y-2 mb-3 max-h-64">
+              {messages?.map((m: any) => (
+                <div key={m.id} className={`rounded p-2 text-sm max-w-xs ${m.senderType === "admin" ? "bg-primary/10 ml-auto text-right" : "bg-gray-100"}`}>
+                  <p className="text-xs font-semibold capitalize text-muted-foreground mb-0.5">{m.senderType}</p>
+                  <p>{m.message}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Textarea value={reply} onChange={e => setReply(e.target.value)} placeholder="Reply to org owner…" rows={2} className="text-sm flex-1" data-testid="textarea-platform-reply" />
+              <Button size="sm" onClick={() => sendReply.mutate({ id: selectedThread.id, message: reply })} disabled={!reply.trim() || sendReply.isPending} data-testid="button-send-platform-reply">
+                {sendReply.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Platform Announcements Admin ───────────────────────────────────────────────
+
+function PlatformAnnouncementsAdmin() {
+  const { t } = useI18n();
+  const [form, setForm] = useState({ title: "", body: "", targetType: "everyone" });
+  const [showForm, setShowForm] = useState(false);
+
+  const { data: announcements, isLoading, refetch } = useQuery<any[]>({
+    queryKey: ["/api/admin/platform-announcements"],
+    queryFn: () => fetch("/api/admin/platform-announcements").then(r => r.ok ? r.json() : []),
+  });
+
+  const create = useMutation({
+    mutationFn: async (data: any) => {
+      const r = await fetch("/api/admin/platform-announcements", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...data, deliveryChannels: ["in_app"] }) });
+      if (!r.ok) throw new Error("Failed");
+      return r.json();
+    },
+    onSuccess: () => { refetch(); setShowForm(false); setForm({ title: "", body: "", targetType: "everyone" }); },
+  });
+
+  const send = useMutation({
+    mutationFn: async (id: number) => {
+      const r = await fetch(`/api/admin/platform-announcements/${id}/send`, { method: "POST" });
+      if (!r.ok) throw new Error("Failed");
+      return r.json();
+    },
+    onSuccess: () => refetch(),
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button size="sm" onClick={() => setShowForm(true)} data-testid="button-new-announcement">
+          <Plus className="w-4 h-4 mr-1" />{t("cm_composeAnnouncement")}
+        </Button>
+      </div>
+      {showForm && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-4 space-y-3">
+            <Input placeholder={t("cm_announcementTitle")} value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="text-sm" data-testid="input-announcement-title" />
+            <Textarea placeholder={t("cm_announcementBody")} value={form.body} onChange={e => setForm(p => ({ ...p, body: e.target.value }))} rows={4} className="text-sm" data-testid="textarea-announcement-body" />
+            <select className="border rounded px-2 py-1 text-sm w-full" value={form.targetType} onChange={e => setForm(p => ({ ...p, targetType: e.target.value }))}>
+              {["everyone", "org_owners", "org_admins"].map(t => <option key={t} value={t}>{t.replace("_", " ")}</option>)}
+            </select>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => create.mutate(form)} disabled={create.isPending || !form.title || !form.body} data-testid="button-create-announcement">
+                {create.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Draft"}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {isLoading && <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}
+      {!isLoading && (!announcements || announcements.length === 0) && (
+        <div className="text-center py-10 text-muted-foreground">No announcements yet.</div>
+      )}
+      <div className="space-y-3">
+        {announcements?.map((ann: any) => (
+          <Card key={ann.id} className="border">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-semibold">{ann.title}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{ann.targetType?.replace("_", " ")} · {ann.sentAt ? `Sent ${new Date(ann.sentAt).toLocaleDateString()}` : "Draft"}</p>
+                </div>
+                {!ann.sentAt && (
+                  <Button size="sm" className="bg-primary text-primary-foreground text-xs" onClick={() => send.mutate(ann.id)} disabled={send.isPending} data-testid={`button-send-announcement-${ann.id}`}>
+                    <Send className="w-3.5 h-3.5 mr-1" />{t("cm_sendAnnouncement")}
+                  </Button>
+                )}
+              </div>
+              <p className="text-sm mt-2 text-muted-foreground line-clamp-2">{ann.body}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

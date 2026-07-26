@@ -39,6 +39,7 @@ import SingleDevotional from "@/pages/SingleDevotional";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfUse from "@/pages/TermsOfUse";
 import Disclaimer from "@/pages/Disclaimer";
+import ChurchModePolicyPage from "@/pages/ChurchModePolicyPage";
 import Contact from "@/pages/Contact";
 import ContactCompose from "@/pages/ContactCompose";
 import GeneralInquiries from "@/pages/GeneralInquiries";
@@ -177,6 +178,7 @@ function Router() {
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/terms-of-use" component={TermsOfUse} />
       <Route path="/disclaimer" component={Disclaimer} />
+      <Route path="/church-mode-policy" component={ChurchModePolicyPage} />
       <Route path="/contact" component={Contact} />
       <Route path="/contact/compose" component={ContactCompose} />
       <Route path="/contact/general" component={GeneralInquiries} />

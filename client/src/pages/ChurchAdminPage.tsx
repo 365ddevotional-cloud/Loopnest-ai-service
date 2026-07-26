@@ -19,7 +19,7 @@ import {
   Users, Calendar, Mic2, Megaphone, Heart, BarChart3, Link as LinkIcon,
   HandCoins, Upload, ImageIcon, X, DollarSign, ToggleLeft, ToggleRight,
   Building2, CreditCard, ArrowDownToLine, Share2, Tag, CheckCircle2, XCircle, Globe, ExternalLink,
-  ClockIcon
+  ClockIcon, ShieldCheck, Flag, MessageSquare, Send, ChevronRight, CheckCircle, Info
 } from "lucide-react";
 import type { Church, ChurchInvitation, ChurchSermon, ChurchAnnouncement, ChurchMember, ChurchPrayerRequest, ChurchActivity, ChurchGivingSettings, ChurchGivingCategory, ChurchPayoutConfig, ChurchTransaction } from "@shared/schema";
 import { CHURCH_ROLE_LABELS, CHURCH_ROLES, type ChurchRole } from "@shared/schema";
@@ -243,7 +243,7 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
 const ADMIN_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor"];
 const PROD_URL = "https://365dailydevotional.com";
 
-type AdminTab = "settings" | "branding" | "invitations" | "sermons" | "announcements" | "members" | "prayer" | "giving" | "reports" | "insights" | "departments" | "website";
+type AdminTab = "settings" | "branding" | "invitations" | "sermons" | "announcements" | "members" | "prayer" | "giving" | "reports" | "insights" | "departments" | "website" | "governance";
 
 const roleColors: Record<string, string> = {
   owner: "bg-amber-100 text-amber-800 border-amber-300",
@@ -945,6 +945,7 @@ export default function ChurchAdminPage() {
     { key: "website", label: t("cm_websiteSettings"), icon: Globe },
     { key: "reports", label: t("cm_reports"), icon: BarChart3 },
     { key: "insights", label: t("cm_insightsTab"), icon: BarChart3 },
+    { key: "governance", label: t("cm_governanceTab"), icon: ShieldCheck },
   ];
 
   const activityLabels: Record<string, string> = {
@@ -985,6 +986,36 @@ export default function ChurchAdminPage() {
             <p className="text-sm mt-0.5" style={{ color: "#7a7570" }}>{t("cm_manageChurchSpace")}</p>
           </div>
         </div>
+
+        {/* Platform status banners */}
+        {church?.platformStatus === "pending_review" && (
+          <div className="rounded-lg border-l-4 p-4 flex gap-3" style={{ borderLeftColor: "#f59e0b", backgroundColor: "#fffbeb" }}>
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "#d97706" }} />
+            <div>
+              <p className="font-semibold text-sm" style={{ color: "#92400e" }}>{t("cm_pendingReviewBannerTitle")}</p>
+              <p className="text-xs mt-1" style={{ color: "#78350f" }}>{t("cm_pendingReviewBannerDesc")}</p>
+            </div>
+          </div>
+        )}
+        {church?.platformStatus === "suspended" && (
+          <div className="rounded-lg border-l-4 p-4 flex gap-3" style={{ borderLeftColor: "#ef4444", backgroundColor: "#fef2f2" }}>
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "#dc2626" }} />
+            <div>
+              <p className="font-semibold text-sm" style={{ color: "#7f1d1d" }}>{t("cm_suspended")}</p>
+              {church.platformReviewNote && <p className="text-xs mt-1" style={{ color: "#7f1d1d" }}>{church.platformReviewNote}</p>}
+              <button onClick={() => setActiveTab("governance")} className="text-xs underline mt-1" style={{ color: "#dc2626" }}>{t("cm_submitAppeal")} →</button>
+            </div>
+          </div>
+        )}
+        {church?.platformStatus === "rejected" && (
+          <div className="rounded-lg border-l-4 p-4 flex gap-3" style={{ borderLeftColor: "#6b7280", backgroundColor: "#f9fafb" }}>
+            <Info className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "#6b7280" }} />
+            <div>
+              <p className="font-semibold text-sm" style={{ color: "#374151" }}>{t("cm_rejected")}</p>
+              {church.platformReviewNote && <p className="text-xs mt-1" style={{ color: "#6b7280" }}>{church.platformReviewNote}</p>}
+            </div>
+          </div>
+        )}
 
         {/* Tab bar */}
         <div className="flex overflow-x-auto gap-0 border-b scrollbar-hide" style={{ borderColor: "#e0dcd8" }}>
@@ -2538,6 +2569,303 @@ export default function ChurchAdminPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Governance Tab */}
+      {activeTab === "governance" && church && (
+        <ChurchGovernancePanel church={church} getIdToken={getIdToken} />
+      )}
+
     </ChurchModeShell>
+  );
+}
+
+// ── Church Governance Panel ───────────────────────────────────────────────────
+
+function ChurchGovernancePanel({ church, getIdToken }: { church: Church; getIdToken: () => Promise<string | null> }) {
+  const { t } = useI18n();
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [tab, setTab] = useState<"status" | "cases" | "appeals" | "messages">("status");
+  const [appealMsg, setAppealMsg] = useState("");
+  const [caseReplyMsg, setCaseReplyMsg] = useState<Record<number, string>>({});
+  const [threadMsg, setThreadMsg] = useState("");
+  const [threadSubject, setThreadSubject] = useState("General Inquiry");
+
+  const authHeaders = async (): Promise<Record<string, string>> => {
+    const token = await getIdToken();
+    return token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
+  };
+
+  const { data: cases } = useQuery<any[]>({
+    queryKey: ["/api/churches", church.id, "compliance-cases"],
+    queryFn: async () => {
+      const h = await authHeaders();
+      const r = await fetch(`/api/churches/${church.id}/compliance-cases`, { headers: h });
+      return r.ok ? r.json() : [];
+    },
+    enabled: tab === "cases",
+  });
+
+  const { data: appeals } = useQuery<any[]>({
+    queryKey: ["/api/churches", church.id, "appeals"],
+    queryFn: async () => {
+      const h = await authHeaders();
+      const r = await fetch(`/api/churches/${church.id}/appeal`, { headers: h });
+      return r.ok ? r.json() : [];
+    },
+    enabled: tab === "appeals",
+  });
+
+  const { data: thread } = useQuery<any>({
+    queryKey: ["/api/churches", church.id, "platform-thread"],
+    queryFn: async () => {
+      const h = await authHeaders();
+      const r = await fetch(`/api/churches/${church.id}/platform-thread`, { headers: h });
+      return r.ok ? r.json() : null;
+    },
+    enabled: tab === "messages",
+  });
+
+  const { data: threadMessages } = useQuery<any[]>({
+    queryKey: ["/api/churches", church.id, "platform-thread", "messages"],
+    queryFn: async () => {
+      const h = await authHeaders();
+      const r = await fetch(`/api/churches/${church.id}/platform-thread/messages`, { headers: h });
+      return r.ok ? r.json() : [];
+    },
+    enabled: tab === "messages" && !!thread,
+  });
+
+  const submitCaseReply = async (caseId: number) => {
+    const message = caseReplyMsg[caseId];
+    if (!message?.trim()) return;
+    const h = await authHeaders();
+    const r = await fetch(`/api/churches/${church.id}/compliance-cases/${caseId}/respond`, { method: "POST", headers: h, body: JSON.stringify({ message }) });
+    if (r.ok) { toast({ title: t("cm_submitResponse") }); setCaseReplyMsg(p => ({ ...p, [caseId]: "" })); qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "compliance-cases"] }); }
+    else toast({ title: t("cm_error"), variant: "destructive" });
+  };
+
+  const submitAppeal = async (caseId?: number) => {
+    if (!appealMsg.trim()) return;
+    const h = await authHeaders();
+    const r = await fetch(`/api/churches/${church.id}/appeal`, { method: "POST", headers: h, body: JSON.stringify({ message: appealMsg, caseId }) });
+    if (r.ok) { toast({ title: t("cm_appealSubmitted") }); setAppealMsg(""); qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "appeals"] }); }
+    else toast({ title: t("cm_error"), variant: "destructive" });
+  };
+
+  const sendThreadMessage = async () => {
+    if (!threadMsg.trim()) return;
+    const h = await authHeaders();
+    if (!thread) {
+      const r = await fetch(`/api/churches/${church.id}/platform-thread/start`, { method: "POST", headers: h, body: JSON.stringify({ subject: threadSubject, message: threadMsg }) });
+      if (r.ok) { toast({ title: "Message sent" }); setThreadMsg(""); qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "platform-thread"] }); qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "platform-thread", "messages"] }); }
+      else toast({ title: t("cm_error"), variant: "destructive" });
+    } else {
+      const r = await fetch(`/api/churches/${church.id}/platform-thread/reply`, { method: "POST", headers: h, body: JSON.stringify({ message: threadMsg }) });
+      if (r.ok) { toast({ title: "Message sent" }); setThreadMsg(""); qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "platform-thread", "messages"] }); }
+      else toast({ title: t("cm_error"), variant: "destructive" });
+    }
+  };
+
+  const govTabs = [
+    { key: "status" as const, label: t("cm_platformStatus"), icon: ShieldCheck },
+    { key: "cases" as const, label: t("cm_complianceCases"), icon: Flag },
+    { key: "appeals" as const, label: t("cm_appeals"), icon: CheckCircle },
+    { key: "messages" as const, label: t("cm_platformMessageTab"), icon: MessageSquare },
+  ];
+
+  const statusBadge = {
+    pending_review: { label: t("cm_pendingReview"), bg: "#fffbeb", border: "#f59e0b", text: "#92400e" },
+    approved: { label: t("cm_approvedForChurchMode"), bg: "#f0fdf4", border: "#22c55e", text: "#166534" },
+    rejected: { label: t("cm_rejected"), bg: "#f9fafb", border: "#6b7280", text: "#374151" },
+    suspended: { label: t("cm_suspended"), bg: "#fef2f2", border: "#ef4444", text: "#7f1d1d" },
+    archived: { label: "Archived", bg: "#f9fafb", border: "#9ca3af", text: "#6b7280" },
+  }[church.platformStatus ?? "pending_review"] ?? { label: church.platformStatus ?? "—", bg: "#f9fafb", border: "#9ca3af", text: "#6b7280" };
+
+  return (
+    <div className="space-y-5">
+      {/* Sub-tab bar */}
+      <div className="flex gap-0 border-b overflow-x-auto" style={{ borderColor: "#e0dcd8" }}>
+        {govTabs.map(({ key, label, icon: Icon }) => (
+          <button key={key} onClick={() => setTab(key)}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors"
+            style={{ borderColor: tab === key ? "#1a2744" : "transparent", color: tab === key ? "#1a2744" : "#7a7570" }}
+            data-testid={`tab-gov-${key}`}>
+            <Icon className="w-3.5 h-3.5" />{label}
+          </button>
+        ))}
+      </div>
+
+      {/* Status */}
+      {tab === "status" && (
+        <div className="space-y-4">
+          <div className="rounded-lg border p-4 flex items-center gap-3" style={{ borderColor: statusBadge.border, backgroundColor: statusBadge.bg }}>
+            <ShieldCheck className="w-5 h-5 flex-shrink-0" style={{ color: statusBadge.border }} />
+            <div>
+              <p className="font-semibold text-sm" style={{ color: statusBadge.text }}>{statusBadge.label}</p>
+              {church.platformReviewNote && <p className="text-xs mt-0.5" style={{ color: statusBadge.text }}>{church.platformReviewNote}</p>}
+            </div>
+          </div>
+
+          <Card className="border-0 shadow-sm">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-start gap-2">
+                <Info className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#7a7570" }} />
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold" style={{ color: "#1a2744" }}>{t("cm_approvalDisclaimerTitle")}</p>
+                  <p className="text-xs" style={{ color: "#7a7570" }}>{t("cm_approvalDisclaimerDesc")}</p>
+                  <a href="/church-mode-policy" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs underline mt-1" style={{ color: "#b8962e" }}>
+                    {t("cm_churchModePolicyLink")} <ChevronRight className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Compliance Cases */}
+      {tab === "cases" && (
+        <div className="space-y-3">
+          {!cases || cases.length === 0 ? (
+            <div className="text-center py-10 text-sm" style={{ color: "#7a7570" }}>{t("cm_noCasesYet")}</div>
+          ) : cases.map((c: any) => (
+            <Card key={c.id} className="border">
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-mono text-xs" style={{ color: "#7a7570" }}>{c.caseNumber}</p>
+                    <p className="font-semibold text-sm capitalize">{c.category} — {c.severity}</p>
+                  </div>
+                  <Badge className="text-xs capitalize">{c.status?.replace("_", " ")}</Badge>
+                </div>
+                <p className="text-xs bg-gray-50 rounded p-2">{c.description}</p>
+
+                {c.responses?.length > 0 && (
+                  <div className="space-y-1.5">
+                    {c.responses.map((r: any) => (
+                      <div key={r.id} className={`rounded p-2 text-xs ${r.senderType === "admin" ? "bg-primary/10 mr-4" : "bg-muted ml-4"}`}>
+                        <p className="font-semibold capitalize mb-0.5">{r.senderType === "admin" ? "Platform Admin" : "Your Response"}</p>
+                        <p>{r.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {c.enforcementAction && (
+                  <div className="rounded border border-red-200 bg-red-50 p-2 text-xs text-red-700">
+                    <p className="font-semibold capitalize">{t("cm_enforcementAction")}: {c.enforcementAction?.replace("_", " ")}</p>
+                    {c.enforcementReason && <p>{c.enforcementReason}</p>}
+                  </div>
+                )}
+
+                {!["resolved", "closed"].includes(c.status) && (
+                  <div className="flex gap-2 pt-1">
+                    <Textarea
+                      placeholder={t("cm_submitResponse") + "…"}
+                      value={caseReplyMsg[c.id] ?? ""}
+                      onChange={e => setCaseReplyMsg(p => ({ ...p, [c.id]: e.target.value }))}
+                      rows={2}
+                      className="text-xs flex-1"
+                      data-testid={`textarea-case-response-${c.id}`}
+                    />
+                    <Button size="sm" onClick={() => submitCaseReply(c.id)} disabled={!caseReplyMsg[c.id]?.trim()} data-testid={`button-submit-case-response-${c.id}`}>
+                      <Send className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Appeals */}
+      {tab === "appeals" && (
+        <div className="space-y-4">
+          {appeals && appeals.length > 0 && (
+            <div className="space-y-3">
+              {appeals.map((a: any) => (
+                <Card key={a.id} className="border">
+                  <CardContent className="p-4 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-sm">{t("cm_submitAppeal")}</p>
+                      <Badge className="text-xs capitalize">{a.status}</Badge>
+                    </div>
+                    <p className="text-xs bg-gray-50 rounded p-2">{a.message}</p>
+                    {a.adminNote && <p className="text-xs italic" style={{ color: "#7a7570" }}>Admin: {a.adminNote}</p>}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {(church.platformStatus === "suspended" || church.platformStatus === "rejected") && (
+            <Card className="border">
+              <CardContent className="p-4 space-y-3">
+                <p className="font-semibold text-sm" style={{ color: "#1a2744" }}>{t("cm_submitAppeal")}</p>
+                <Textarea
+                  placeholder={t("cm_appealMessage") + "…"}
+                  value={appealMsg}
+                  onChange={e => setAppealMsg(e.target.value)}
+                  rows={4}
+                  className="text-sm"
+                  data-testid="textarea-appeal-message"
+                />
+                <Button size="sm" onClick={() => submitAppeal()} disabled={!appealMsg.trim()} data-testid="button-submit-appeal">
+                  <Send className="w-3.5 h-3.5 mr-1" />{t("cm_submitAppeal")}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {!["suspended", "rejected"].includes(church.platformStatus ?? "") && (!appeals || appeals.length === 0) && (
+            <div className="text-center py-10 text-sm" style={{ color: "#7a7570" }}>{t("cm_noAppealsYet")}</div>
+          )}
+        </div>
+      )}
+
+      {/* Platform Messages */}
+      {tab === "messages" && (
+        <div className="space-y-4">
+          {thread && threadMessages && threadMessages.length > 0 && (
+            <div className="space-y-2 max-h-72 overflow-y-auto p-1">
+              {threadMessages.map((m: any) => (
+                <div key={m.id} className={`rounded p-2 text-sm max-w-xs ${m.senderType === "admin" ? "bg-primary/10" : "bg-muted ml-auto text-right"}`}>
+                  <p className="text-xs font-semibold capitalize text-muted-foreground mb-0.5">{m.senderType === "admin" ? "Platform Admin" : "You"}</p>
+                  <p>{m.message}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!thread && (
+            <div className="space-y-2">
+              <Label className="text-xs">{t("cm_startThread")}</Label>
+              <Input
+                placeholder="Subject…"
+                value={threadSubject}
+                onChange={e => setThreadSubject(e.target.value)}
+                className="text-sm h-8"
+                data-testid="input-thread-subject"
+              />
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <Textarea
+              placeholder={t("cm_messageToPlatform") + "…"}
+              value={threadMsg}
+              onChange={e => setThreadMsg(e.target.value)}
+              rows={3}
+              className="text-sm flex-1"
+              data-testid="textarea-platform-message"
+            />
+            <Button size="sm" onClick={sendThreadMessage} disabled={!threadMsg.trim()} data-testid="button-send-platform-message">
+              <Send className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

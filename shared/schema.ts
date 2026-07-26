@@ -751,6 +751,12 @@ export const churches = pgTable("churches", {
   websiteHeroImage: text("website_hero_image"),
   homepageSections: jsonb("homepage_sections").$type<Array<{ id: string; enabled: boolean; order: number }>>(),
   country: text("country"), // ISO 3166-1 alpha-2, e.g. "US"
+  // Platform governance
+  platformStatus: text("platform_status").notNull().default("approved"), // pending_review | approved | rejected | suspended | archived
+  platformReviewNote: text("platform_review_note"),
+  platformReviewedAt: timestamp("platform_reviewed_at"),
+  platformReviewedBy: text("platform_reviewed_by"),
+  submittedForReviewAt: timestamp("submitted_for_review_at"),
 });
 
 export const insertChurchSchema = createInsertSchema(churches).omit({
@@ -1280,6 +1286,111 @@ export const userProfiles = pgTable("user_profiles", {
 export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({ createdAt: true, lastActiveAt: true });
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
+
+// ─── Platform Governance ─────────────────────────────────────────────────────
+
+export const PLATFORM_STATUS_VALUES = ["pending_review", "approved", "rejected", "suspended", "archived"] as const;
+export type PlatformStatus = typeof PLATFORM_STATUS_VALUES[number];
+
+export const COMPLIANCE_CASE_CATEGORIES = ["content", "conduct", "financial", "technical", "other"] as const;
+export const COMPLIANCE_CASE_SEVERITIES = ["low", "medium", "high", "critical"] as const;
+export const COMPLIANCE_CASE_STATUSES = ["open", "investigating", "awaiting_response", "resolved", "closed"] as const;
+export const ENFORCEMENT_ACTIONS = ["no_action", "warning", "request_changes", "restriction", "suspension", "removal"] as const;
+export type EnforcementAction = typeof ENFORCEMENT_ACTIONS[number];
+
+export const complianceCases = pgTable("compliance_cases", {
+  id: serial("id").primaryKey(),
+  churchId: integer("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  caseNumber: text("case_number").notNull().unique(),
+  status: text("status").notNull().default("open"), // COMPLIANCE_CASE_STATUSES
+  category: text("category").notNull().default("other"), // COMPLIANCE_CASE_CATEGORIES
+  severity: text("severity").notNull().default("medium"), // COMPLIANCE_CASE_SEVERITIES
+  description: text("description").notNull(),
+  internalNotes: text("internal_notes"),
+  enforcementAction: text("enforcement_action"), // ENFORCEMENT_ACTIONS
+  enforcementReason: text("enforcement_reason"),
+  enforcementAt: timestamp("enforcement_at"),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+export const insertComplianceCaseSchema = createInsertSchema(complianceCases).omit({ id: true, createdAt: true, updatedAt: true });
+export type ComplianceCase = typeof complianceCases.$inferSelect;
+export type InsertComplianceCase = z.infer<typeof insertComplianceCaseSchema>;
+
+export const complianceCaseResponses = pgTable("compliance_case_responses", {
+  id: serial("id").primaryKey(),
+  caseId: integer("case_id").notNull().references(() => complianceCases.id, { onDelete: "cascade" }),
+  senderType: text("sender_type").notNull(), // "admin" | "owner"
+  senderUid: text("sender_uid").notNull(),
+  message: text("message").notNull(),
+  attachmentUrl: text("attachment_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertComplianceCaseResponseSchema = createInsertSchema(complianceCaseResponses).omit({ id: true, createdAt: true });
+export type ComplianceCaseResponse = typeof complianceCaseResponses.$inferSelect;
+export type InsertComplianceCaseResponse = z.infer<typeof insertComplianceCaseResponseSchema>;
+
+export const complianceAppeals = pgTable("compliance_appeals", {
+  id: serial("id").primaryKey(),
+  caseId: integer("case_id").references(() => complianceCases.id, { onDelete: "set null" }),
+  churchId: integer("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  ownerUid: text("owner_uid").notNull(),
+  message: text("message").notNull(),
+  status: text("status").notNull().default("pending"), // "pending" | "accepted" | "rejected"
+  adminNote: text("admin_note"),
+  reviewedBy: text("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertComplianceAppealSchema = createInsertSchema(complianceAppeals).omit({ id: true, createdAt: true });
+export type ComplianceAppeal = typeof complianceAppeals.$inferSelect;
+export type InsertComplianceAppeal = z.infer<typeof insertComplianceAppealSchema>;
+
+export const platformAdminThreads = pgTable("platform_admin_threads", {
+  id: serial("id").primaryKey(),
+  churchId: integer("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  ownerUid: text("owner_uid").notNull(),
+  subject: text("subject").notNull(),
+  status: text("status").notNull().default("open"), // "open" | "closed"
+  hasUnreadAdmin: boolean("has_unread_admin").notNull().default(false),
+  hasUnreadOwner: boolean("has_unread_owner").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+export const insertPlatformAdminThreadSchema = createInsertSchema(platformAdminThreads).omit({ id: true, createdAt: true, updatedAt: true });
+export type PlatformAdminThread = typeof platformAdminThreads.$inferSelect;
+export type InsertPlatformAdminThread = z.infer<typeof insertPlatformAdminThreadSchema>;
+
+export const platformAdminMessages = pgTable("platform_admin_messages", {
+  id: serial("id").primaryKey(),
+  threadId: integer("thread_id").notNull().references(() => platformAdminThreads.id, { onDelete: "cascade" }),
+  senderType: text("sender_type").notNull(), // "admin" | "owner"
+  senderUid: text("sender_uid").notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertPlatformAdminMessageSchema = createInsertSchema(platformAdminMessages).omit({ id: true, createdAt: true });
+export type PlatformAdminMessage = typeof platformAdminMessages.$inferSelect;
+export type InsertPlatformAdminMessage = z.infer<typeof insertPlatformAdminMessageSchema>;
+
+export const ANNOUNCEMENT_TARGET_TYPES = ["everyone", "org_owners", "org_admins", "members_specific", "country", "language"] as const;
+export const ANNOUNCEMENT_DELIVERY_CHANNELS = ["in_app", "inbox"] as const;
+
+export const platformAnnouncements = pgTable("platform_announcements", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  targetType: text("target_type").notNull().default("everyone"), // ANNOUNCEMENT_TARGET_TYPES
+  targetFilter: text("target_filter"), // optional JSON filter value
+  deliveryChannels: text("delivery_channels").array().notNull().default(["in_app"]),
+  createdBy: text("created_by").notNull(),
+  sentAt: timestamp("sent_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export const insertPlatformAnnouncementSchema = createInsertSchema(platformAnnouncements).omit({ id: true, createdAt: true, sentAt: true });
+export type PlatformAnnouncement = typeof platformAnnouncements.$inferSelect;
+export type InsertPlatformAnnouncement = z.infer<typeof insertPlatformAnnouncementSchema>;
 
 // ─── User Activity Days ──────────────────────────────────────────────────────
 // One row per (firebase_uid, date) pair — for DAU/WAU/MAU analytics.

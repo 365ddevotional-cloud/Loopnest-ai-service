@@ -2,7 +2,7 @@ import { useParams, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { ChurchPublicShell } from "@/components/ChurchPublicShell";
-import { Loader2, Play, Calendar, Users, MapPin, Phone, Mail, Heart, ArrowRight, Share2, Clock } from "lucide-react";
+import { Loader2, Play, Calendar, Users, MapPin, Phone, Mail, Heart, ArrowRight, Share2, Clock, ShieldCheck } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/hooks/useI18n";
@@ -149,6 +149,11 @@ export default function ChurchPublicHome() {
                   <MapPin className="w-4 h-4" />{church.address}
                 </p>
               )}
+              {/* Platform approval badge */}
+              <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-white/60" data-testid="badge-approved-church-mode">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>{t("cm_approvedForChurchMode")}</span>
+              </div>
             </div>
           </section>
         )}
