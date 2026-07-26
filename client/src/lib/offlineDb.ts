@@ -1,11 +1,12 @@
 const DB_NAME = "devotionalOfflineDB";
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 const STORE_DEVOTIONALS = "devotionals";
 const STORE_SUNDAY_LESSONS = "sundayLessons";
 const STORE_BIBLE_KJV = "bibleKJV";
 const STORE_METADATA = "metadata";
 const STORE_DOWNLOADS = "userDownloads";
+const STORE_SS_DOWNLOADS = "ssDownloads";
 
 let dbInstance: IDBDatabase | null = null;
 
@@ -52,6 +53,14 @@ function openDB(): Promise<IDBDatabase> {
           const dlStore = db.createObjectStore(STORE_DOWNLOADS, { keyPath: "id" });
           dlStore.createIndex("byUid", "firebaseUid", { unique: false });
           dlStore.createIndex("byDate", "date", { unique: false });
+        }
+      }
+
+      if (oldVersion < 4) {
+        if (!db.objectStoreNames.contains(STORE_SS_DOWNLOADS)) {
+          const ssStore = db.createObjectStore(STORE_SS_DOWNLOADS, { keyPath: "id" });
+          ssStore.createIndex("byUid", "firebaseUid", { unique: false });
+          ssStore.createIndex("byYear", "year", { unique: false });
         }
       }
     };
@@ -309,5 +318,59 @@ export async function clearUserDownloads(firebaseUid: string | null): Promise<vo
     }
   } else {
     await txDeleteByIndex(STORE_DOWNLOADS, "byUid", firebaseUid);
+  }
+}
+
+export interface SSDownload {
+  id: number;
+  date: string;
+  year: number;
+  title: string;
+  scriptureReferences: string;
+  downloadedAt: number;
+  serverUpdatedAt: string | null;
+  firebaseUid: string | null;
+}
+
+export async function saveSSDownload(record: SSDownload): Promise<void> {
+  await txPut(STORE_SS_DOWNLOADS, [record]);
+}
+
+export async function getSSDownload(id: number): Promise<SSDownload | undefined> {
+  return txGet<SSDownload>(STORE_SS_DOWNLOADS, id);
+}
+
+export async function getAllSSDownloads(firebaseUid?: string | null): Promise<SSDownload[]> {
+  const all = await txGetAll<SSDownload>(STORE_SS_DOWNLOADS);
+  if (firebaseUid !== undefined) {
+    return all.filter((d) => d.firebaseUid === firebaseUid);
+  }
+  return all;
+}
+
+export async function getSSDownloadsByYear(year: number): Promise<SSDownload[]> {
+  const all = await txGetAll<SSDownload>(STORE_SS_DOWNLOADS);
+  return all.filter((d) => d.year === year);
+}
+
+export async function removeSSDownload(id: number): Promise<void> {
+  await txDelete(STORE_SS_DOWNLOADS, id);
+}
+
+export async function removeSSDownloadsByYear(year: number): Promise<void> {
+  const records = await getSSDownloadsByYear(year);
+  for (const r of records) {
+    await txDelete(STORE_SS_DOWNLOADS, r.id);
+  }
+}
+
+export async function clearAllSSDownloads(firebaseUid: string | null): Promise<void> {
+  if (firebaseUid === null) {
+    const all = await txGetAll<SSDownload>(STORE_SS_DOWNLOADS);
+    for (const item of all.filter((d) => d.firebaseUid === null)) {
+      await txDelete(STORE_SS_DOWNLOADS, item.id);
+    }
+  } else {
+    await txDeleteByIndex(STORE_SS_DOWNLOADS, "byUid", firebaseUid);
   }
 }

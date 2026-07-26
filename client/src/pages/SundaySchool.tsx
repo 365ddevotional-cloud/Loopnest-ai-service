@@ -1,14 +1,25 @@
 import { useQuery } from "@tanstack/react-query";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, BookOpen, Calendar, ChevronRight, GraduationCap } from "lucide-react";
-import { format, parseISO, startOfDay, isBefore } from "date-fns";
+import { Loader2, BookOpen, Calendar, ChevronRight, GraduationCap, Download, ExternalLink, HardDrive } from "lucide-react";
+import { format, parseISO, startOfDay } from "date-fns";
 import { Link } from "wouter";
 import type { SundaySchoolLesson } from "@shared/schema";
 import { Helmet } from "react-helmet-async";
-import { getAllSundayLessons } from "@/lib/offlineDb";
-import { useMemo } from "react";
+import {
+  getAllSundayLessons,
+  getAllSSDownloads,
+  saveSundayLessons,
+  saveSSDownload,
+  type SSDownload,
+} from "@/lib/offlineDb";
+import { SundaySchoolDownloadButton } from "@/components/SundaySchoolDownloadButton";
+import { useI18n } from "@/hooks/useI18n";
+import { useConnectionStatus } from "@/hooks/use-connection-status";
+import { useUser } from "@/contexts/UserContext";
+import { useToast } from "@/hooks/use-toast";
 
 function formatLocalDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -43,6 +54,11 @@ async function fetchLessonsWithFallback(): Promise<any[]> {
 }
 
 export default function SundaySchool() {
+  const { t } = useI18n();
+  const { isOnline } = useConnectionStatus();
+  const { user } = useUser();
+  const { toast } = useToast();
+
   const { data: lessons, isLoading } = useQuery<SundaySchoolLesson[]>({
     queryKey: ["/api/sunday-school"],
     queryFn: fetchLessonsWithFallback,
@@ -53,7 +69,6 @@ export default function SundaySchool() {
   });
 
   const today = startOfDay(new Date());
-
   const todayStr = formatLocalDate(today);
 
   const { upcomingLessons, pastLessons } = useMemo(() => {
@@ -64,6 +79,92 @@ export default function SundaySchool() {
       .sort((a, b) => b.date.localeCompare(a.date));
     return { upcomingLessons: upcoming, pastLessons: past };
   }, [lessons, todayStr]);
+
+  const uniqueYears = useMemo(() => {
+    const years = new Set<number>();
+    pastLessons.forEach((l) => years.add(parseInt(l.date.slice(0, 4), 10)));
+    return Array.from(years).sort((a, b) => b - a);
+  }, [pastLessons]);
+
+  const [downloadedIds, setDownloadedIds] = useState<Set<number>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
+  const bulkCancelRef = useRef(false);
+
+  useEffect(() => {
+    getAllSSDownloads()
+      .then((records) => setDownloadedIds(new Set(records.map((r) => r.id))))
+      .catch(() => {});
+  }, []);
+
+  const handleBulkDownload = useCallback(
+    async (lessonsToDownload: any[]) => {
+      const currentDownloads = await getAllSSDownloads();
+      const alreadyIds = new Set(currentDownloads.map((d) => d.id));
+      const queue = lessonsToDownload.filter((l) => !alreadyIds.has(l.id));
+
+      if (!queue.length) {
+        toast({ title: t("ssOfflineBulkDone").replace("{count}", "0"), duration: 2000 });
+        return;
+      }
+
+      const msg = t("ssOfflineBulkConfirm").replace("{count}", String(queue.length));
+      if (!window.confirm(msg)) return;
+
+      setBulkBusy(true);
+      bulkCancelRef.current = false;
+      setBulkProgress({ done: 0, total: queue.length });
+
+      let done = 0;
+      let failed = 0;
+      const uid = user?.uid ?? null;
+
+      for (const lesson of queue) {
+        if (bulkCancelRef.current) break;
+        try {
+          await saveSundayLessons([lesson]);
+          const year = parseInt(lesson.date.slice(0, 4), 10);
+          const record: SSDownload = {
+            id: lesson.id,
+            date: lesson.date,
+            year,
+            title: lesson.title,
+            scriptureReferences: lesson.scriptureReferences,
+            downloadedAt: Date.now(),
+            serverUpdatedAt: lesson.updatedAt ?? null,
+            firebaseUid: uid,
+          };
+          await saveSSDownload(record);
+          done++;
+          setDownloadedIds((prev) => new Set(Array.from(prev).concat([lesson.id])));
+        } catch (e: unknown) {
+          const msg2 = e instanceof Error ? e.message : String(e);
+          if (msg2.includes("QuotaExceeded") || msg2.includes("quota")) {
+            toast({ title: t("ssOfflineStorageFull"), variant: "destructive", duration: 3000 });
+            break;
+          }
+          failed++;
+        }
+        setBulkProgress({ done: done + failed, total: queue.length });
+      }
+
+      setBulkBusy(false);
+      setBulkProgress(null);
+
+      if (failed === 0 && !bulkCancelRef.current) {
+        toast({ title: t("ssOfflineBulkDone").replace("{count}", String(done)), duration: 2500 });
+      } else if (done > 0) {
+        toast({
+          title: t("ssOfflineBulkPartial")
+            .replace("{done}", String(done))
+            .replace("{total}", String(queue.length))
+            .replace("{failed}", String(failed)),
+          duration: 3000,
+        });
+      }
+    },
+    [user, t, toast]
+  );
 
   if (isLoading) {
     return (
@@ -170,25 +271,148 @@ export default function SundaySchool() {
               <BookOpen className="w-5 h-5 text-primary" />
               Lesson Archive
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {pastLessons.map((lesson) => (
-                <Link key={lesson.id} href={`/sunday-school/${lesson.id}`}>
-                  <Card className="hover-elevate cursor-pointer" data-testid={`card-lesson-archive-${lesson.id}`}>
-                    <CardContent className="flex items-center justify-between gap-4 py-4">
-                      <div className="min-w-0">
-                        <p className="font-serif font-semibold text-foreground truncate">
-                          {lesson.title}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(parseISO(lesson.date), "MMMM d, yyyy")} &middot; {lesson.scriptureReferences}
-                        </p>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
-                    </CardContent>
-                  </Card>
-                </Link>
+                <Card
+                  key={lesson.id}
+                  className="border-border/40 bg-card hover:border-primary/20 transition-colors"
+                  data-testid={`card-lesson-archive-${lesson.id}`}
+                >
+                  <CardContent className="flex items-center gap-3 py-3 px-4">
+                    <Link href={`/sunday-school/${lesson.id}`} className="flex-1 min-w-0 block">
+                      <p className="font-serif font-semibold text-foreground truncate hover:text-primary transition-colors text-sm">
+                        {lesson.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {format(parseISO(lesson.date), "MMMM d, yyyy")} &middot; {lesson.scriptureReferences}
+                      </p>
+                      {downloadedIds.has(lesson.id) && (
+                        <span
+                          className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 mt-1 font-medium"
+                          data-testid={`badge-ss-downloaded-${lesson.id}`}
+                        >
+                          ✓ {t("ssOfflineAvailable")}
+                        </span>
+                      )}
+                    </Link>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {!downloadedIds.has(lesson.id) && (
+                        <SundaySchoolDownloadButton lesson={lesson} compact />
+                      )}
+                      <Link href={`/sunday-school/${lesson.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          data-testid={`button-open-lesson-archive-${lesson.id}`}
+                          aria-label={`Open lesson: ${lesson.title}`}
+                        >
+                          <ChevronRight className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
+          </section>
+        )}
+
+        {pastLessons.length > 0 && (
+          <section className="space-y-4 border border-border/40 rounded-xl p-5 bg-muted/20" data-testid="section-ss-offline-archive">
+            <div className="flex items-center gap-2">
+              <HardDrive className="w-5 h-5 text-primary flex-shrink-0" aria-hidden="true" />
+              <h2 className="font-serif text-lg font-semibold text-foreground">
+                {t("ssOfflineHeading")}
+              </h2>
+            </div>
+
+            <p className="text-sm text-muted-foreground">
+              {downloadedIds.size} / {pastLessons.length} {t("ssOfflineLessonsCount")}
+            </p>
+
+            <div className="flex flex-wrap gap-3 items-center">
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => handleBulkDownload(pastLessons)}
+                disabled={bulkBusy || !isOnline}
+                data-testid="button-ss-download-all"
+                aria-label={t("ssOfflineDownloadAll")}
+              >
+                {bulkBusy ? (
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Download className="w-4 h-4" aria-hidden="true" />
+                )}
+                {t("ssOfflineDownloadAll")} ({pastLessons.length - downloadedIds.size} remaining)
+              </Button>
+
+              {bulkProgress && (
+                <span className="text-sm text-muted-foreground" data-testid="text-ss-bulk-progress">
+                  {t("ssOfflineBulkProgress")
+                    .replace("{done}", String(bulkProgress.done))
+                    .replace("{total}", String(bulkProgress.total))}
+                </span>
+              )}
+
+              {bulkBusy && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive gap-1"
+                  onClick={() => { bulkCancelRef.current = true; }}
+                  data-testid="button-ss-bulk-cancel"
+                >
+                  {t("ssOfflineBulkCancel")}
+                </Button>
+              )}
+            </div>
+
+            {uniqueYears.length > 1 && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                  {t("ssOfflineDownloadYear")}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {uniqueYears.map((year) => {
+                    const yearLessons = pastLessons.filter(
+                      (l) => parseInt(l.date.slice(0, 4), 10) === year
+                    );
+                    const yearDownloaded = yearLessons.filter((l) => downloadedIds.has(l.id)).length;
+                    const remaining = yearLessons.length - yearDownloaded;
+                    return (
+                      <Button
+                        key={year}
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-sm"
+                        onClick={() => handleBulkDownload(yearLessons)}
+                        disabled={bulkBusy || !isOnline || remaining === 0}
+                        data-testid={`button-ss-download-year-${year}`}
+                        aria-label={`Download ${year} lessons`}
+                      >
+                        <Download className="w-3.5 h-3.5" aria-hidden="true" />
+                        {year}
+                        {remaining > 0 ? ` (${remaining})` : " ✓"}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <Link href="/offline-content">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 text-muted-foreground text-sm mt-1"
+                data-testid="link-ss-manage-downloads"
+              >
+                <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                {t("ssOfflineManageLink")}
+              </Button>
+            </Link>
           </section>
         )}
       </div>

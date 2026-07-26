@@ -3,13 +3,14 @@ import { useParams, Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowLeft, Copy, BookOpen, MessageCircle, Target, ClipboardList, Calendar, GraduationCap, Volume2 } from "lucide-react";
+import { Loader2, ArrowLeft, Copy, BookOpen, MessageCircle, Target, ClipboardList, Calendar, GraduationCap, Volume2, WifiOff } from "lucide-react";
 import { useAudioReader } from "@/hooks/useAudioReader";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { SundaySchoolLesson } from "@shared/schema";
 import { Helmet } from "react-helmet-async";
 import { getAllSundayLessons, getSundayLessonById } from "@/lib/offlineDb";
+import { SundaySchoolDownloadButton } from "@/components/SundaySchoolDownloadButton";
 
 const numberEmojis = ["1\uFE0F\u20E3", "2\uFE0F\u20E3", "3\uFE0F\u20E3", "4\uFE0F\u20E3", "5\uFE0F\u20E3", "6\uFE0F\u20E3", "7\uFE0F\u20E3", "8\uFE0F\u20E3", "9\uFE0F\u20E3"];
 
@@ -129,9 +130,26 @@ export default function SundaySchoolLessonPage() {
   }
 
   if (error || !lesson) {
+    const isOfflineNoData =
+      error instanceof Error && error.message === "offline_no_data";
     return (
       <div className="max-w-3xl mx-auto text-center py-12 space-y-4">
-        <p className="text-muted-foreground">Lesson not found.</p>
+        {isOfflineNoData ? (
+          <div className="flex flex-col items-center gap-3">
+            <div className="bg-muted/50 p-4 rounded-full">
+              <WifiOff className="w-8 h-8 text-muted-foreground" aria-hidden="true" />
+            </div>
+            <p
+              className="text-muted-foreground max-w-sm leading-relaxed"
+              data-testid="text-ss-offline-unavailable"
+            >
+              This Sunday School lesson is not available offline. Connect to the
+              internet and download it first.
+            </p>
+          </div>
+        ) : (
+          <p className="text-muted-foreground">Lesson not found.</p>
+        )}
         <Link href="/sunday-school">
           <Button variant="outline" className="gap-2">
             <ArrowLeft className="w-4 h-4" />
@@ -161,6 +179,7 @@ export default function SundaySchoolLessonPage() {
             </Button>
           </Link>
           <div className="flex items-center gap-2 flex-wrap">
+            <SundaySchoolDownloadButton lesson={lesson} />
             <Button
               onClick={() => {
                 if (!lesson) return;

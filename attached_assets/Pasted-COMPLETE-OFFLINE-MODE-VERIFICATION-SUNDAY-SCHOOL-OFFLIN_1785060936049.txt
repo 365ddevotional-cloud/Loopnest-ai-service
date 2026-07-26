@@ -1,0 +1,361 @@
+COMPLETE OFFLINE MODE VERIFICATION + SUNDAY SCHOOL OFFLINE ARCHIVE — TARGETED WORK ONLY
+
+The existing Offline Mode Version 1 is already implemented. This task has two clearly separated parts:
+
+PART A — Verify the existing devotional Offline Mode.
+PART B — Add and verify offline support for previous Sunday School lessons and the Sunday School archive.
+
+Do not rebuild Offline Mode, refactor unrelated code, or inspect unrelated files.
+
+GLOBAL SCOPE RULES
+
+- Reuse the existing IndexedDB, Cache Storage, service worker, download tracking, connection indicator, My Library, Offline Content page, and translation system.
+- Preserve all existing devotional offline functionality.
+- Do not modify Church Mode governance, Family Mode, payments, private messaging, email, authentication, Android publishing, the main menu, or unrelated features.
+- Make only the minimum changes needed for genuine Offline Mode defects and Sunday School offline support.
+- Do not create a checkpoint for verification alone.
+- Create one checkpoint only if an actual correction or Sunday School implementation change is made.
+- Do not merely describe a plan. Complete the work, run the tests, and provide evidence.
+
+==================================================
+PART A — FINAL DEVOTIONAL OFFLINE MODE VERIFICATION
+==================================================
+
+Do not repeat or expand the devotional Offline Mode implementation.
+
+Perform a focused end-to-end verification of the existing devotional Offline Mode.
+
+VERIFY THESE EXACT ITEMS
+
+1. Open an actual devotional while online and use “Download for Offline Reading.”
+
+2. Confirm the devotional is genuinely written into IndexedDB and appears on the Offline Content page.
+
+3. Simulate complete network loss using Playwright or browser developer tools.
+   - Do not simulate only one failed API request.
+   - The browser context must be genuinely offline.
+
+4. While fully offline:
+   - Refresh the downloaded devotional page.
+   - Open the downloaded devotional from Offline Content.
+   - Confirm the title, date, scripture, devotional text, prayer, declaration, language, and Bible translation remain visible.
+   - Confirm there is no blank page, endless loading indicator, or broken route.
+
+5. Confirm a devotional that was never downloaded shows the correct “not available offline” message.
+
+6. Confirm downloaded content persists after:
+   - application reload;
+   - page refresh;
+   - service-worker restart;
+   - closing and reopening the test browser context where technically possible.
+
+7. Confirm the “Available Offline” state is accurate and never appears for an undownloaded devotional.
+
+8. Confirm “Remove Download” deletes only the selected devotional.
+
+9. Confirm “Remove All Downloads”:
+   - asks for confirmation;
+   - removes all downloaded devotionals only after confirmation.
+
+10. Confirm the connection indicator:
+    - shows Offline after network loss;
+    - briefly shows Back Online when the connection returns;
+    - does not obstruct buttons, navigation, or devotional text.
+
+11. Confirm English, Spanish, and French offline labels are present and that the downloaded language version remains preserved offline.
+
+12. Confirm these sensitive features remain online-only:
+    - Church Mode administration
+    - private messages
+    - counseling
+    - payments and bank details
+    - compliance cases
+    - account creation
+    - login
+    - invitations
+    - attendance
+    - submissions
+    - other sensitive account operations
+
+13. Inspect IndexedDB, Cache Storage, and service-worker caches and confirm none of the following are stored:
+    - passwords
+    - Firebase authentication tokens
+    - bank or payment details
+    - counseling messages
+    - private church messages
+    - compliance-case content
+    - sensitive account information
+
+14. Confirm cache cleanup and cache versioning do not unnecessarily delete valid user-downloaded devotional records.
+
+15. Run TypeScript and build checks limited to the affected Offline Mode files and confirm no new errors were introduced.
+
+PART A DEFECT RULE
+
+- Do not modify anything unless a genuine devotional Offline Mode defect is found.
+- If a genuine defect is found, fix only that defect and rerun the relevant verification.
+- Do not add new devotional offline features.
+
+==================================================
+PART B — ADD SUNDAY SCHOOL OFFLINE ARCHIVE SUPPORT
+==================================================
+
+Extend the existing Offline Mode so that previous Sunday School lessons and the complete previous Sunday School archive can be downloaded and read offline.
+
+1. PREVIOUS SUNDAY SCHOOL LESSONS
+
+- Every past Sunday School lesson must have a clear “Download for Offline Use” button.
+- Once downloaded, the lesson must open without internet.
+- Store the downloaded content in the user’s device/app local storage through the existing IndexedDB and Cache Storage system.
+- Do not create duplicate copies on our server.
+
+Store, where available:
+- lesson title
+- lesson date
+- scripture reference and scripture text
+- lesson body
+- memory verse
+- lesson objectives
+- questions
+- teacher notes
+- permitted attached PDF
+- permitted attached image
+- language
+- Bible translation
+- content version or last-updated value
+
+Do not automatically download:
+- videos
+- audio
+- unusually large files
+- external resources that cannot safely be cached
+
+2. COMPLETE PREVIOUS ARCHIVE DOWNLOAD
+
+Add a Sunday School offline archive section with:
+
+- Download All Previous Lessons
+- Download by Year
+- Download Individual Lesson
+- Update Downloaded Lesson
+- Remove Individual Download
+- Remove Year
+- Clear Entire Sunday School Offline Archive
+
+Before a bulk download:
+- show the estimated storage size when technically possible;
+- clearly explain that the lessons will use storage on the user’s phone or device;
+- ask the user to confirm;
+- allow the user to cancel before the download starts;
+- show progress during the download;
+- handle partial failure without corrupting completed downloads.
+
+“Download All Previous Lessons” must include only lessons already published before the current lesson date. Do not silently include future lessons.
+
+3. STORAGE MANAGEMENT
+
+Inside My Library or Offline Content, add a section named:
+
+Sunday School Offline Archive
+
+Show:
+- number of downloaded lessons
+- years downloaded
+- storage used
+- last updated date
+- available device storage when supported by the browser
+- download progress where applicable
+- delete controls
+- a warning before clearing all downloaded Sunday School content
+
+Do not silently consume excessive storage.
+
+4. OFFLINE ACCESS
+
+When the user has no internet:
+
+- Downloaded Sunday School lessons must open normally.
+- A non-downloaded lesson must show:
+
+“This Sunday School lesson is not available offline. Connect to the internet and download it first.”
+
+- Show an Offline or Available Offline badge on locally stored lessons.
+- The archive list must clearly show which lessons are downloaded.
+- Do not show an endless loading state when the network is unavailable.
+- If an attached PDF or image was not cached, explain that the attachment is unavailable offline while still displaying the lesson text.
+
+5. CURRENT AND FUTURE LESSONS
+
+- Current and future Sunday School lessons remain online by default.
+- A user may manually download a current lesson once it is published and available.
+- Do not automatically download current or future lessons without the user’s permission.
+- Do not prefetch unpublished lessons.
+
+6. UPDATES AND SYNC
+
+When the device reconnects:
+
+- Check whether a downloaded lesson has a newer version.
+- Do not automatically delete or overwrite the local copy.
+- Show “Update Available.”
+- Allow the user to refresh the downloaded lesson.
+- Preserve any locally saved personal notes.
+- If the update fails, retain the previous working offline copy.
+
+Online-only activities such as:
+- attendance
+- comments
+- assignments
+- quiz submissions
+- teacher updates
+- grading
+- member-specific records
+
+must remain unavailable offline unless the app already has a safe and tested offline queue.
+
+Do not invent a new syncing system for sensitive or account-specific data.
+
+7. PHONE AND DEVICE STORAGE
+
+Use the existing browser/app local storage system, including IndexedDB and Cache Storage where appropriate.
+
+- Do not rely only on React state or memory.
+- Do not claim content is saved in the public Files folder unless that is genuinely supported.
+- Downloaded lessons must remain available after closing and reopening the installed app or browser, subject to platform storage rules.
+- Handle Safari and Android Chrome storage limitations gracefully.
+- If storage is full, unavailable, evicted, or permission is restricted, show a clear human-readable message.
+- Request persistent storage through the browser Storage API when supported, but do not block the feature if the request is denied.
+- Do not store sensitive user, authentication, payment, counseling, or private church data.
+
+8. ARCHIVE ORGANIZATION
+
+Organize downloaded Sunday School content by:
+
+- year
+- month
+- lesson date
+- lesson title
+
+Add search and filtering for downloaded Sunday School content only if the existing archive or Offline Content page already has reusable search/filter support. Do not build an unrelated search system from scratch.
+
+9. LANGUAGES
+
+Add every new Sunday School offline label and message to:
+
+- English
+- Spanish
+- French
+
+Keep all three locale files in full key parity.
+
+Downloaded lessons must preserve the exact language version selected by the user at download time.
+
+Do not falsely claim that the lesson content itself has been translated when only the interface labels are translated.
+
+10. SUNDAY SCHOOL TESTING
+
+Test these exact scenarios:
+
+- Download one past Sunday School lesson.
+- Confirm its record exists in IndexedDB.
+- Confirm any cached PDF or image exists in Cache Storage where applicable.
+- Simulate full network loss.
+- Refresh and open the downloaded lesson offline.
+- Confirm all stored lesson text remains visible.
+- Confirm a non-downloaded lesson shows the proper offline message.
+- Download a full year.
+- Cancel a bulk download before it begins.
+- Test partial bulk-download failure.
+- Delete one lesson.
+- Confirm the other lessons remain.
+- Delete one year.
+- Confirm lessons from other years remain.
+- Clear the complete Sunday School offline archive after confirmation.
+- Simulate insufficient storage or quota failure.
+- Reopen or reload the app and confirm downloaded lessons persist.
+- Confirm an updated lesson shows “Update Available.”
+- Confirm updating a lesson does not erase saved personal notes.
+- Confirm existing downloaded devotionals still work after the Sunday School changes.
+- Confirm no unrelated features were modified.
+
+==================================================
+SECURITY AND DATA-SEPARATION VERIFICATION
+==================================================
+
+After both parts are complete, inspect all Offline Mode stores and caches.
+
+Confirm that only approved public content is stored offline, such as:
+- devotionals selected by the user
+- Sunday School lessons selected by the user
+- permitted public PDFs and images
+- non-sensitive offline metadata
+
+Confirm that none of these are stored:
+- passwords
+- Firebase tokens
+- refresh tokens
+- session cookies copied into IndexedDB
+- payment or bank information
+- counseling messages
+- private church messages
+- compliance cases
+- member approval requests
+- private profile information
+- private attendance records
+- private assignments or submissions
+
+==================================================
+FINAL REPORT
+==================================================
+
+Provide one structured final report with two sections.
+
+PART A — DEVOTIONAL OFFLINE VERIFICATION
+
+For every numbered Part A test, provide:
+- PASS
+- FAIL
+- PARTIAL
+- NOT TESTABLE
+
+Also provide:
+- exact evidence for the full-offline refresh test;
+- exact IndexedDB database name;
+- exact IndexedDB store name;
+- exact record key or identifying fields verified;
+- exact service-worker version;
+- exact cache names and versions verified;
+- any test that still requires a physical iPhone or Android device;
+- exact files changed only if a genuine defect required correction.
+
+PART B — SUNDAY SCHOOL OFFLINE ARCHIVE
+
+Provide:
+- exact files changed;
+- storage technology used;
+- IndexedDB database and store names;
+- exactly what Sunday School fields are stored;
+- whether PDFs and images are cached;
+- what is excluded from caching;
+- bulk-download behavior;
+- storage estimation and quota handling;
+- update-check behavior;
+- Safari limitations;
+- Android Chrome limitations;
+- PASS or FAIL for every Sunday School test;
+- any genuine limitations or manual-device tests still required.
+
+FINAL CONFIRMATIONS
+
+Explicitly confirm:
+- existing devotional Offline Mode still works;
+- Sunday School archive content is stored on the user’s device/app storage;
+- no sensitive information is stored offline;
+- no unrelated files or features were changed;
+- Church Mode, Family Mode, authentication, payments, email, Android publishing, and the main menu were not modified.
+
+CHECKPOINT RULE
+
+- If no code change is required at all, do not create a checkpoint.
+- If a devotional defect is corrected or Sunday School offline support is implemented, create one checkpoint after all tests pass.
+- Report the checkpoint or commit identifier.

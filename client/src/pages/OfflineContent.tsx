@@ -4,7 +4,11 @@ import {
   getAllDownloads,
   removeDownload,
   clearUserDownloads,
+  getAllSSDownloads,
+  removeSSDownloadsByYear,
+  clearAllSSDownloads,
   type UserDownload,
+  type SSDownload,
 } from "@/lib/offlineDb";
 import { useUser } from "@/contexts/UserContext";
 import { useI18n } from "@/hooks/useI18n";
@@ -22,6 +26,7 @@ import {
   HardDrive,
   ArrowLeft,
   AlertTriangle,
+  GraduationCap,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "wouter";
@@ -54,6 +59,10 @@ export default function OfflineContent() {
   const [clearingAll, setClearingAll] = useState(false);
   const [storageEstimate, setStorageEstimate] = useState<{ usage: number; quota: number } | null>(null);
 
+  const [ssDownloads, setSSDownloads] = useState<SSDownload[]>([]);
+  const [removingYear, setRemovingYear] = useState<number | null>(null);
+  const [clearingAllSS, setClearingAllSS] = useState(false);
+
   const firebaseUid = user?.uid ?? null;
 
   const loadDownloads = useCallback(async () => {
@@ -68,9 +77,20 @@ export default function OfflineContent() {
     }
   }, [firebaseUid]);
 
+  const loadSSDownloads = useCallback(async () => {
+    try {
+      const all = await getAllSSDownloads();
+      const sorted = [...all].sort((a, b) => b.downloadedAt - a.downloadedAt);
+      setSSDownloads(sorted);
+    } catch {
+      setSSDownloads([]);
+    }
+  }, []);
+
   useEffect(() => {
     loadDownloads();
-  }, [loadDownloads]);
+    loadSSDownloads();
+  }, [loadDownloads, loadSSDownloads]);
 
   useEffect(() => {
     if ("storage" in navigator && "estimate" in navigator.storage) {
@@ -109,6 +129,38 @@ export default function OfflineContent() {
       setClearingAll(false);
     }
   }, [firebaseUid, t, toast]);
+
+  const ssYears = Array.from(new Set(ssDownloads.map((d) => d.year))).sort((a, b) => b - a);
+
+  const handleRemoveSSYear = useCallback(async (year: number) => {
+    const confirmed = window.confirm(t("ssOfflineRemoveYearConfirm"));
+    if (!confirmed) return;
+    setRemovingYear(year);
+    try {
+      await removeSSDownloadsByYear(year);
+      setSSDownloads((prev) => prev.filter((d) => d.year !== year));
+      toast({ title: t("ssOfflineRemoved"), duration: 2000 });
+    } catch {
+      toast({ title: "Could not remove year", variant: "destructive", duration: 2000 });
+    } finally {
+      setRemovingYear(null);
+    }
+  }, [t, toast]);
+
+  const handleClearAllSS = useCallback(async () => {
+    const confirmed = window.confirm(t("ssOfflineClearAllConfirm"));
+    if (!confirmed) return;
+    setClearingAllSS(true);
+    try {
+      await clearAllSSDownloads(null);
+      setSSDownloads([]);
+      toast({ title: t("ssOfflineRemoved"), duration: 2000 });
+    } catch {
+      toast({ title: "Could not clear Sunday School downloads", variant: "destructive", duration: 2000 });
+    } finally {
+      setClearingAllSS(false);
+    }
+  }, [t, toast]);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-8">
@@ -225,6 +277,101 @@ export default function OfflineContent() {
                 isRemoving={removingId === dl.id}
               />
             ))}
+          </div>
+        )}
+
+        {ssDownloads.length > 0 && (
+          <div className="space-y-3" data-testid="section-ss-offline">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/10 p-2 rounded-xl">
+                  <GraduationCap className="w-4 h-4 text-primary" aria-hidden="true" />
+                </div>
+                <div>
+                  <h2 className="font-serif text-lg font-bold text-foreground">
+                    {t("ssOfflineHeading")}
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-0.5" data-testid="text-ss-offline-count">
+                    {ssDownloads.length} {t("ssOfflineLessonsCount")}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/5 min-h-[44px]"
+                onClick={handleClearAllSS}
+                disabled={clearingAllSS}
+                data-testid="button-ss-clear-all"
+              >
+                {clearingAllSS ? (
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Trash2 className="w-4 h-4" aria-hidden="true" />
+                )}
+                {t("ssOfflineClearAll")}
+              </Button>
+            </div>
+
+            {ssYears.map((year) => {
+              const yearDownloads = ssDownloads.filter((d) => d.year === year);
+              const newest = yearDownloads.reduce((a, b) => a.downloadedAt > b.downloadedAt ? a : b);
+              let formattedNewest = "";
+              try {
+                formattedNewest = format(new Date(newest.downloadedAt), "MMM d, yyyy");
+              } catch {
+                formattedNewest = new Date(newest.downloadedAt).toLocaleDateString();
+              }
+              return (
+                <Card
+                  key={year}
+                  className="p-4 bg-card border-border/40 hover:border-primary/20 transition-colors"
+                  data-testid={`card-ss-offline-year-${year}`}
+                >
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <GraduationCap className="w-4 h-4 text-primary" aria-hidden="true" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm text-foreground">{year}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {yearDownloads.length} {t("ssOfflineLessonsCount")} &middot;{" "}
+                          {t("ssOfflineLastUpdated")} {formattedNewest}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 text-muted-foreground hover:text-destructive text-xs"
+                      onClick={() => handleRemoveSSYear(year)}
+                      disabled={removingYear === year}
+                      data-testid={`button-ss-remove-year-${year}`}
+                    >
+                      {removingYear === year ? (
+                        <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <Trash2 className="w-3 h-3" aria-hidden="true" />
+                      )}
+                      {t("ssOfflineRemoveYear")}
+                    </Button>
+                  </div>
+                </Card>
+              );
+            })}
+
+            <Link href="/sunday-school">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 text-muted-foreground text-sm"
+                data-testid="link-go-to-sunday-school"
+              >
+                <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                {t("ssOfflineManageLink")}
+              </Button>
+            </Link>
           </div>
         )}
 
