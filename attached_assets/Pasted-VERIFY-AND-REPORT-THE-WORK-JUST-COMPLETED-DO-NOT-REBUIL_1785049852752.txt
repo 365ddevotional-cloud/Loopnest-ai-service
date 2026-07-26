@@ -1,0 +1,106 @@
+VERIFY AND REPORT THE WORK JUST COMPLETED — DO NOT REBUILD OR EXPAND
+
+Do not start another broad implementation.
+
+Review the changes made in the immediately previous task and confirm exactly what was completed.
+
+The previous task covered:
+
+1. Expanded Church Mode branding colors
+2. Bright and dark color presets
+3. Custom color selection and readable text contrast
+4. Restrictions for suspended, rejected, inactive, archived, and deletion-pending organizations
+5. Invitation and membership blocking for restricted organizations
+6. Compliance-case email notifications
+7. Compliance response deadlines
+8. Owner-facing deadline display
+9. Admin-facing deadline display
+10. Compliance and governance authorization
+11. English, Spanish, and French translations
+
+FIRST:
+
+- Confirm whether the code changes were actually saved.
+- Confirm whether the database migration was successfully applied.
+- Confirm whether the running application is using the new code.
+- Confirm that the checkpoint contains the completed changes.
+
+THEN TEST THE ACTUAL RUNNING APP:
+
+TEST 1 — BRANDING COLORS
+
+- Open Church Administration → Branding.
+- Confirm the original dark colors remain.
+- Confirm bright red, bright blue, bright green, yellow, orange, pink, gold, silver, and additional light colors are visible.
+- Confirm custom HEX/color selection works.
+- Select a bright color.
+- Confirm the live preview changes.
+- Save it.
+- Refresh the page.
+- Confirm the saved color remains.
+- Confirm text automatically remains readable.
+
+TEST 2 — SUSPENDED ORGANIZATION
+
+Using safe test data:
+
+- Set a test organization to suspended.
+- Confirm new invitation creation is blocked.
+- Confirm an existing church invitation cannot be used.
+- Confirm a department invitation cannot be used.
+- Confirm new membership requests are blocked.
+- Confirm pending member approval is blocked.
+- Confirm the owner can still access compliance messages, respond, and appeal.
+- Restore the test organization afterward.
+
+TEST 3 — COMPLIANCE CASE
+
+- Open a safe test compliance case.
+- Assign a response deadline.
+- Confirm the deadline is saved in the database.
+- Confirm the Platform Admin can see it.
+- Confirm the organization owner can see it.
+- Confirm the owner can respond.
+- Confirm the response appears for the Platform Admin.
+- Confirm the case can be resolved.
+- Confirm the resolved status appears for the owner.
+
+TEST 4 — EMAIL NOTIFICATION
+
+- Trigger a compliance-case email notification using safe test data.
+- Confirm the email provider accepts or rejects the request.
+- Report the exact provider result or error code.
+- Do not claim inbox delivery unless independently verified.
+
+TEST 5 — TRANSLATIONS
+
+- Change Church Mode to English, Spanish, and French.
+- Confirm the new branding and compliance labels are translated in all three languages.
+- Report any untranslated visible text.
+
+IMPORTANT:
+
+- Do not modify unrelated files.
+- Do not add new features.
+- Do not repeat the previous implementation.
+- Fix only a genuine defect discovered during these tests.
+- Do not publish again unless a correction is actually required.
+- Do not say “everything works” based only on code inspection.
+
+FINAL REPORT MUST STATE:
+
+1. Whether the prior changes were genuinely implemented
+2. Whether the checkpoint contains them
+3. Files changed
+4. Database migration status
+5. Branding-color test results
+6. Suspended-organization test results
+7. Church invitation test result
+8. Department invitation test result
+9. Compliance deadline test result
+10. Owner response test result
+11. Email-provider result or exact error
+12. Translation test result
+13. Any failed item
+14. Any item Replit could not truly test
+15. Whether another correction is still required
