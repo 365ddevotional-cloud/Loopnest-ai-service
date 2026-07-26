@@ -1,0 +1,101 @@
+Do not modify unrelated files. Make only the targeted changes below.
+
+Before making any changes, inspect the existing email system and Firebase Authentication integration so we don't duplicate functionality.
+
+Tasks:
+
+1. Inspect the Replit Secrets / Environment Variables only (do not expose their values).
+
+Check whether these already exist:
+- SENDGRID_API_KEY
+- SENDGRID_FROM_EMAIL
+
+If they exist:
+- Confirm they are configured correctly.
+- Confirm the application is actually using them.
+
+If either is missing:
+- Tell me exactly which one is missing.
+- Do not invent or hard-code values.
+- Explain the remaining manual step required.
+
+2. Determine how email verification currently works.
+
+Answer these questions:
+
+- Is Firebase Authentication still sending the verification email?
+- Or has the application already switched to its own branded verification email?
+- If Firebase is still sending the default email, explain the minimal change needed so every verification email is branded as "365 Daily Devotional" instead of showing Firebase branding.
+
+3. Improve the verification email experience.
+
+Whether verification is handled by Firebase or by our own email system:
+
+- Brand the verification email with the 365 Daily Devotional identity.
+- Use a professional email design.
+- Clearly identify the sender as:
+  365 Daily Devotional
+- Send from:
+  365ddevotional@gmail.com
+  (or the configured verified sender if SendGrid requires it).
+
+At the end of every verification email, include a friendly note such as:
+
+"If you do not see this email within a few minutes, please check your Spam, Junk, Promotions, or Updates folder. You may also add us to your contacts to ensure future emails arrive in your inbox."
+
+4. Welcome email after Church or Ministry registration.
+
+Immediately after a Church or Ministry account is successfully created, automatically send a branded Welcome Email.
+
+Requirements:
+
+Subject:
+Welcome to 365 Daily Devotional Church Mode
+
+The email should:
+
+- Welcome the church or ministry by name.
+- Thank them for registering.
+- Briefly explain the main Church Mode features, including:
+  • Church management
+  • Departments
+  • Member invitations
+  • Messaging
+  • Prayer requests
+  • Attendance
+  • Events
+  • Giving
+  • Sunday School
+  • Assignments
+  • Church analytics
+  • Pastor tools
+  • Secure communication
+
+End with an encouraging message and support contact information.
+
+5. Compliance emails.
+
+Verify that branded emails are sent automatically for:
+
+- Church approval
+- Suspension
+- Restoration
+- Compliance cases
+- Compliance status updates
+- Resolution notifications
+
+6. Final verification.
+
+Do not perform unrelated refactoring.
+
+At the end, provide a report that answers:
+
+- Are SENDGRID_API_KEY and SENDGRID_FROM_EMAIL configured?
+- Is Firebase still sending verification emails, or are we sending branded verification emails?
+- Is the welcome email fully implemented?
+- Are all compliance emails working?
+- Does every verification email now instruct users to check Spam/Junk/Promotions/Updates if they do not immediately receive the email?
+- Is there any remaining manual action required before this email system is production-ready?
+
+If everything is complete, state clearly:
+"The Church Mode email system is production-ready."

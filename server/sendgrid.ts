@@ -523,9 +523,12 @@ export async function sendChurchWelcomeEmail(
   <p style="color:#666;font-size:14px;margin-top:30px;line-height:1.8;">${t.footer}</p>
   <hr style="border:none;border-top:1px solid #eee;margin:30px 0;" />
   <p style="color:#aaa;font-size:11px;text-align:center;">365 Daily Devotional · Supporting believers, churches, ministries, and Christian communities.</p>
+  <div style="background:#f0f4ff;border:1px solid #dde5ff;border-radius:6px;padding:12px 16px;margin-top:16px;">
+    <p style="margin:0;font-size:12px;color:#555;text-align:center;">📬 <strong>Did not receive this email?</strong> Please check your <strong>Spam</strong>, <strong>Junk</strong>, <strong>Promotions</strong>, or <strong>Updates</strong> folder. You may also add <em>365ddevotional@gmail.com</em> to your contacts to ensure future emails arrive in your inbox.</p>
+  </div>
 </div>`;
 
-    const text = `${t.greeting} ${ownerName},\n\n${t.intro(churchName)}\n\n${t.featureHeader}\n${featureListText}\n\n${t.statusLabel} ${statusText}\n${isPending ? t.pendingNote + "\n" : ""}\n🔒 ${t.securityNote}\n\n${t.closing}\n\n365 Daily Devotional Team\n365ddevotional@gmail.com\nhttps://365dailydevotional.com`;
+    const text = `${t.greeting} ${ownerName},\n\n${t.intro(churchName)}\n\n${t.featureHeader}\n${featureListText}\n\n${t.statusLabel} ${statusText}\n${isPending ? t.pendingNote + "\n" : ""}\n🔒 ${t.securityNote}\n\n${t.closing}\n\n365 Daily Devotional Team\n365ddevotional@gmail.com\nhttps://365dailydevotional.com\n\n---\n📬 Did not receive this email? Check your Spam, Junk, Promotions, or Updates folder.\nYou may also add 365ddevotional@gmail.com to your contacts to ensure future emails arrive in your inbox.`;
 
     await client.send({
       to: toEmail,
@@ -635,9 +638,12 @@ export async function sendChurchComplianceEmail(opts: {
   <p style="color:#666;font-size:13px;margin-top:28px;line-height:1.8;">With prayers,<br><strong>365 Daily Devotional Team</strong><br>365ddevotional@gmail.com<br><a href="https://365dailydevotional.com" style="color:#9c6b30;">365dailydevotional.com</a></p>
   <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
   <p style="color:#aaa;font-size:11px;text-align:center;">365 Daily Devotional · Supporting believers, churches, ministries, and Christian communities.<br>This is an automated governance notification. Please do not reply to this email.</p>
+  <div style="background:#f0f4ff;border:1px solid #dde5ff;border-radius:6px;padding:12px 16px;margin-top:12px;">
+    <p style="margin:0;font-size:12px;color:#555;text-align:center;">📬 <strong>Did not receive this email?</strong> Please check your <strong>Spam</strong>, <strong>Junk</strong>, <strong>Promotions</strong>, or <strong>Updates</strong> folder. You may also add <em>365ddevotional@gmail.com</em> to your contacts to ensure future emails arrive in your inbox.</p>
+  </div>
 </div>`;
 
-  const text = `Dear ${ownerName},\n\n${meta.heading}\n\nOrganization: ${churchName}\n${detailText}${bodyNoteText}\nFull case details and your response options are available after signing in at:\n${baseUrl}/church-mode\n\n🔒 365 Daily Devotional will never ask you to send your password by email.\n\nWith prayers,\n365 Daily Devotional Team\n365ddevotional@gmail.com\nhttps://365dailydevotional.com\n\nThis is an automated governance notification.`;
+  const text = `Dear ${ownerName},\n\n${meta.heading}\n\nOrganization: ${churchName}\n${detailText}${bodyNoteText}\nFull case details and your response options are available after signing in at:\n${baseUrl}/church-mode\n\n🔒 365 Daily Devotional will never ask you to send your password by email.\n\nWith prayers,\n365 Daily Devotional Team\n365ddevotional@gmail.com\nhttps://365dailydevotional.com\n\nThis is an automated governance notification.\n\n---\n📬 Did not receive this email? Check your Spam, Junk, Promotions, or Updates folder.\nYou may also add 365ddevotional@gmail.com to your contacts to ensure future emails arrive in your inbox.`;
 
   try {
     const { client, fromEmail } = await getUncachableSendGridClient();
