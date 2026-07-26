@@ -2834,6 +2834,8 @@ export async function registerRoutes(
         if (inv.maxUses && inv.approvedUses >= inv.maxUses) return res.status(410).json({ message: "Invitation has reached its limit" });
         const church = await storage.getChurch(inv.churchId);
         if (!church) return res.status(404).json({ message: "Church not found" });
+        // Platform governance gate: invitations are only usable for approved orgs
+        if (church.platformStatus !== "approved") return res.status(403).json({ message: "This organization is not currently active on the platform" });
         let groupName: string | null = inv.targetGroupName ?? null;
         if (!groupName && inv.targetGroupId) {
           const groups = await storage.getChurchGroups(inv.churchId);
@@ -2904,6 +2906,8 @@ export async function registerRoutes(
       if (inv.maxUses && inv.approvedUses >= inv.maxUses) return res.status(410).json({ message: "This invitation has reached its maximum uses" });
       const church = await storage.getChurch(inv.churchId);
       if (!church) return res.status(404).json({ message: "Church not found" });
+      // Platform governance gate: block joins to non-approved orgs
+      if (church.platformStatus !== "approved") return res.status(403).json({ message: "This organization is not currently accepting new members" });
       const already = await storage.getChurchMember(inv.churchId, uid);
       if (already?.status === "active") return res.json({ message: "Already a member", church });
       if (already?.status === "pending") return res.json({ message: "Your membership request is pending approval", pending: true, church });
@@ -3280,13 +3284,16 @@ export async function registerRoutes(
     } catch { res.status(500).json({ message: "Failed to remove photo" }); }
   });
 
-  // Auth: create invitation (owner/admin/lead_pastor)
+  // Auth: create invitation (owner/admin/lead_pastor) — only for approved orgs
   app.post("/api/churches/:id/invitations", async (req, res) => {
     const uid = await getUid(req, res); if (!uid) return;
     try {
       const id = Number(req.params.id);
       const m = await storage.getChurchMember(id, uid);
       if (!m || !["owner", "administrator", "lead_pastor", "associate_pastor"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      // Platform governance gate: only approved orgs can create new invitations
+      const church = await storage.getChurch(id);
+      if (!church || church.platformStatus !== "approved") return res.status(403).json({ message: "Invitations can only be created for approved organizations" });
       const { label, expiresAt, maxUses, invitationType, targetGroupId } = req.body;
       let groupName: string | null = null;
       if (targetGroupId) {
@@ -4098,9 +4105,9 @@ export async function registerRoutes(
     try {
       const caseId = Number(req.params.caseId);
       const churchId = Number(req.params.churchId);
-      // Verify membership first
+      // Verify membership — platform governance channels are owner-only
       const member = await storage.getChurchMember(churchId, uid);
-      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Forbidden" });
+      if (!member || member.role !== "owner") return res.status(403).json({ message: "Forbidden" });
       // IDOR guard: verify case actually belongs to this church
       const complianceCase = await storage.getComplianceCase(caseId);
       if (!complianceCase || complianceCase.churchId !== churchId) return res.status(404).json({ message: "Case not found" });
@@ -4126,13 +4133,13 @@ export async function registerRoutes(
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 
-  // Owner: get compliance cases for their church
+  // Owner: get compliance cases for their church (owner-only governance channel)
   app.get("/api/churches/:churchId/compliance-cases", async (req, res) => {
     const uid = await getUid(req, res); if (!uid) return;
     try {
       const churchId = Number(req.params.churchId);
       const member = await storage.getChurchMember(churchId, uid);
-      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Forbidden" });
+      if (!member || member.role !== "owner") return res.status(403).json({ message: "Forbidden" });
       const cases = await storage.getComplianceCases(churchId);
       const enriched = await Promise.all(cases.map(async (c) => ({
         ...c, responses: await storage.getComplianceCaseResponses(c.id),
@@ -4166,13 +4173,13 @@ export async function registerRoutes(
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 
-  // Owner: submit appeal
+  // Owner: submit appeal (owner-only governance channel)
   app.post("/api/churches/:churchId/appeal", async (req, res) => {
     const uid = await getUid(req, res); if (!uid) return;
     try {
       const churchId = Number(req.params.churchId);
       const member = await storage.getChurchMember(churchId, uid);
-      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Forbidden" });
+      if (!member || member.role !== "owner") return res.status(403).json({ message: "Forbidden" });
       const { message, caseId } = req.body;
       if (!message?.trim()) return res.status(400).json({ message: "Message is required" });
       const appeal = await storage.createComplianceAppeal({ churchId, ownerUid: uid, message: message.trim(), caseId: caseId ?? null, status: "pending" });
@@ -4186,7 +4193,7 @@ export async function registerRoutes(
     try {
       const churchId = Number(req.params.churchId);
       const member = await storage.getChurchMember(churchId, uid);
-      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Forbidden" });
+      if (!member || member.role !== "owner") return res.status(403).json({ message: "Forbidden" });
       res.json(await storage.getComplianceAppeals(churchId));
     } catch { res.status(500).json({ message: "Server error" }); }
   });
@@ -4223,13 +4230,13 @@ export async function registerRoutes(
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 
-  // Owner: get/create thread with platform admin
+  // Owner: get/create thread with platform admin (owner-only governance channel)
   app.get("/api/churches/:churchId/platform-thread", async (req, res) => {
     const uid = await getUid(req, res); if (!uid) return;
     try {
       const churchId = Number(req.params.churchId);
       const member = await storage.getChurchMember(churchId, uid);
-      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Forbidden" });
+      if (!member || member.role !== "owner") return res.status(403).json({ message: "Forbidden" });
       const threads = await storage.getPlatformAdminThreads(churchId);
       res.json(threads[0] ?? null);
     } catch { res.status(500).json({ message: "Server error" }); }
@@ -4240,7 +4247,7 @@ export async function registerRoutes(
     try {
       const churchId = Number(req.params.churchId);
       const member = await storage.getChurchMember(churchId, uid);
-      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Forbidden" });
+      if (!member || member.role !== "owner") return res.status(403).json({ message: "Forbidden" });
       const { subject, message } = req.body;
       if (!subject?.trim() || !message?.trim()) return res.status(400).json({ message: "Subject and message required" });
       const existing = await storage.getPlatformAdminThreads(churchId);
@@ -4259,7 +4266,7 @@ export async function registerRoutes(
     try {
       const churchId = Number(req.params.churchId);
       const member = await storage.getChurchMember(churchId, uid);
-      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Forbidden" });
+      if (!member || member.role !== "owner") return res.status(403).json({ message: "Forbidden" });
       const threads = await storage.getPlatformAdminThreads(churchId);
       if (!threads[0]) return res.json([]);
       await storage.updatePlatformAdminThread(threads[0].id, { hasUnreadOwner: false });
@@ -4272,7 +4279,7 @@ export async function registerRoutes(
     try {
       const churchId = Number(req.params.churchId);
       const member = await storage.getChurchMember(churchId, uid);
-      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) return res.status(403).json({ message: "Forbidden" });
+      if (!member || member.role !== "owner") return res.status(403).json({ message: "Forbidden" });
       const threads = await storage.getPlatformAdminThreads(churchId);
       if (!threads[0]) return res.status(404).json({ message: "No thread found" });
       const { message } = req.body;
