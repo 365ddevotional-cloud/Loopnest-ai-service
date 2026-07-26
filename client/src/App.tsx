@@ -100,6 +100,7 @@ const ChurchPublicJoin = lazy(() => import("@/pages/ChurchPublicJoin"));
 const ChurchPublicVisit = lazy(() => import("@/pages/ChurchPublicVisit"));
 const PastorDashboard = lazy(() => import("@/pages/PastorDashboard"));
 const ChurchPastorNotes = lazy(() => import("@/pages/ChurchPastorNotes"));
+const ChurchDashboard = lazy(() => import("@/pages/ChurchDashboard"));
 
 // Group Mode pages
 const GroupsHome = lazy(() => import("@/pages/GroupsHome"));
@@ -182,6 +183,7 @@ function Router() {
       <Route path="/church/:slug/profile" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchMemberProfilePage /></Suspense>} />
       <Route path="/church/:slug/departments/:deptSlug" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchDepartmentView /></Suspense>} />
       <Route path="/church/:slug/departments" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchDepartments /></Suspense>} />
+      <Route path="/church/:slug/dashboard" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchDashboard /></Suspense>} />
       <Route path="/church/:slug/pastor-dashboard" component={() => <Suspense fallback={<ChurchPageFallback />}><PastorDashboard /></Suspense>} />
       <Route path="/church/:slug/pastor-notes" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchPastorNotes /></Suspense>} />
       <Route path="/church/:slug/admin" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchAdminPage /></Suspense>} />

@@ -151,7 +151,7 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
     { label: t("cm_sermonNotes"), path: `/church/${slug}/pastor-notes`, icon: BookText },
     { label: t("cm_myProfile"), path: `/church/${slug}/profile`, icon: UserCircle },
     ...(isAdmin ? [
-      { label: t("cm_pastorDashboard"), path: `/church/${slug}/pastor-dashboard`, icon: LayoutDashboard },
+      { label: t("cm_dashboard"), path: `/church/${slug}/dashboard`, icon: LayoutDashboard },
       { label: t("cm_admin"), path: `/church/${slug}/admin`, icon: Settings },
     ] : []),
   ] : [];

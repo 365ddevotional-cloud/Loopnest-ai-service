@@ -214,10 +214,15 @@ export interface ChurchDashboardStats {
   announcements: number;
   openTasks: number;
   publishedNotes: number;
+  activeDepartments: number;
+  sundaySchoolLessons: number;
+  complianceNotices: number;
   nextEvent: { title: string; start_date: string; location?: string; dept_name?: string } | null;
   latestAnnouncement: { title: string; created_at: string } | null;
+  latestLesson: { title: string; date: string } | null;
   pendingMembersList: Array<{ id: number; display_name: string; email: string }>;
   activePrayersList: Array<{ id: number; title: string; display_name: string }>;
+  recentActivity: Array<{ type: string; description: string; created_at: string }>;
 }
 
 export interface IStorage {
@@ -2120,7 +2125,9 @@ export class DatabaseStorage implements IStorage {
   // ── Pastor Dashboard Stats ───────────────────────────────────────────────────
   async getChurchDashboardStats(churchId: number): Promise<ChurchDashboardStats> {
     const [memberStats, prayerCount, announcementCount, eventCount, taskCount, noteCount, msgCount,
-           nextEventRows, latestAnnRows, pendingMembersRows, activePrayersRows] = await Promise.all([
+           deptCount, ssCount, complianceCount,
+           nextEventRows, latestAnnRows, latestLessonRows, pendingMembersRows, activePrayersRows,
+           recentActivityRows] = await Promise.all([
       db.execute(sql`SELECT
         COUNT(*) FILTER (WHERE status = 'active') as active,
         COUNT(*) FILTER (WHERE status = 'pending') as pending
@@ -2135,14 +2142,29 @@ export class DatabaseStorage implements IStorage {
         WHERE cd.church_id = ${churchId} AND cdt.status IN ('pending', 'in_progress')`),
       db.execute(sql`SELECT COUNT(*) FROM church_pastor_notes WHERE church_id = ${churchId} AND status = 'published'`),
       db.execute(sql`SELECT COUNT(*) FROM church_conversations WHERE church_id = ${churchId} AND has_unread_owner = true`),
+      db.execute(sql`SELECT COUNT(*) FROM church_departments WHERE church_id = ${churchId} AND is_active = true`),
+      db.execute(sql`SELECT COUNT(*) FROM sunday_school_lessons`),
+      db.execute(sql`SELECT COUNT(*) FROM compliance_cases WHERE church_id = ${churchId} AND status IN ('open', 'pending_response')`),
       db.execute(sql`SELECT cde.title, cde.start_date, cde.location, cd.name as dept_name
         FROM church_department_events cde
         JOIN church_departments cd ON cde.department_id = cd.id
         WHERE cd.church_id = ${churchId} AND cde.start_date > NOW() AND cd.is_active = true
         ORDER BY cde.start_date ASC LIMIT 1`),
       db.execute(sql`SELECT title, created_at FROM church_announcements WHERE church_id = ${churchId} ORDER BY created_at DESC LIMIT 1`),
+      db.execute(sql`SELECT title, date FROM sunday_school_lessons ORDER BY date DESC LIMIT 1`),
       db.execute(sql`SELECT id, display_name, email FROM church_members WHERE church_id = ${churchId} AND status = 'pending' ORDER BY joined_at DESC LIMIT 5`),
       db.execute(sql`SELECT id, title, display_name FROM church_prayer_requests WHERE church_id = ${churchId} AND status = 'active' ORDER BY created_at DESC LIMIT 3`),
+      db.execute(sql`
+        (SELECT 'member_joined' as type, display_name as description, joined_at as created_at
+          FROM church_members WHERE church_id = ${churchId} AND status = 'active' AND joined_at IS NOT NULL)
+        UNION ALL
+        (SELECT 'announcement' as type, title as description, created_at
+          FROM church_announcements WHERE church_id = ${churchId})
+        UNION ALL
+        (SELECT 'note_published' as type, title as description, published_at as created_at
+          FROM church_pastor_notes WHERE church_id = ${churchId} AND status = 'published' AND published_at IS NOT NULL)
+        ORDER BY created_at DESC LIMIT 10
+      `),
     ]);
     return {
       activeMembers: Number((memberStats.rows[0] as any)?.active ?? 0),
@@ -2153,10 +2175,15 @@ export class DatabaseStorage implements IStorage {
       openTasks: Number((taskCount.rows[0] as any)?.count ?? 0),
       publishedNotes: Number((noteCount.rows[0] as any)?.count ?? 0),
       unreadMessages: Number((msgCount.rows[0] as any)?.count ?? 0),
+      activeDepartments: Number((deptCount.rows[0] as any)?.count ?? 0),
+      sundaySchoolLessons: Number((ssCount.rows[0] as any)?.count ?? 0),
+      complianceNotices: Number((complianceCount.rows[0] as any)?.count ?? 0),
       nextEvent: (nextEventRows.rows[0] as any) ?? null,
       latestAnnouncement: (latestAnnRows.rows[0] as any) ?? null,
+      latestLesson: (latestLessonRows.rows[0] as any) ?? null,
       pendingMembersList: pendingMembersRows.rows as any[],
       activePrayersList: activePrayersRows.rows as any[],
+      recentActivity: recentActivityRows.rows as any[],
     };
   }
 

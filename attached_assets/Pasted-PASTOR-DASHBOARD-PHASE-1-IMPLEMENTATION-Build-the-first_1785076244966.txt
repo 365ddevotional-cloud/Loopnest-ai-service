@@ -1,0 +1,292 @@
+PASTOR DASHBOARD — PHASE 1 IMPLEMENTATION
+
+Build the first version of the Pastor Dashboard inside the existing Church Mode.
+
+IMPORTANT SCOPE RULES
+
+- This is a targeted Church Mode feature only.
+- Do not rebuild or redesign Church Mode.
+- Do not modify Family/Group Mode, Offline Mode, authentication, payments, donations, email configuration, Android publishing, the main devotional pages, or unrelated files.
+- Reuse the existing Church Mode shell, branding, permissions, database patterns, API authentication, translations, and responsive components.
+- Avoid broad audits, refactors, dependency upgrades, or unrelated cleanup.
+- Inspect only the files directly required for this feature.
+- Preserve all existing working Church Mode features.
+- Make the minimum safe changes necessary.
+- Do not launch or deploy the app after this prompt. Create a checkpoint only after implementation and focused testing succeed.
+
+PURPOSE
+
+Create a central dashboard where the verified church, ministry, Christian organization, or association owner can quickly see important ministry activity and reach the existing management areas without searching through many pages.
+
+This dashboard is for the organization owner and authorized leadership only. Ordinary members must not receive administrative access.
+
+ROUTE AND ENTRY POINT
+
+1. Add or complete a protected dashboard route following the existing Church Mode URL pattern, such as:
+
+   /church/:slug/dashboard
+
+2. Add a clear “Dashboard” item to the existing Church Mode hamburger menu.
+
+3. After a church owner or authorized church administrator enters their organization, the dashboard should be the natural administrative home page.
+
+4. Do not automatically redirect ordinary members to an administrative dashboard. They should continue using the member-facing Church Mode home experience.
+
+5. The page must render inside the existing ChurchModeShell without:
+   - duplicate headers
+   - duplicate footers
+   - blank pages
+   - horizontal overflow
+   - broken back navigation
+
+ACCESS CONTROL
+
+Allow dashboard access only to roles that already have administrative permission, including the organization owner and authorized leadership roles supported by the current permission system.
+
+Do not grant access based only on a hidden frontend button.
+
+Enforce access through the existing authenticated server-side membership and role checks.
+
+When an ordinary member attempts to open the dashboard URL directly, show a respectful access-denied message and a button returning them to the organization home page.
+
+Do not expose:
+
+- Firebase UID
+- passwords
+- private tokens
+- private counseling conversations
+- payment credentials
+- bank details
+- confidential compliance-case content
+- private member information beyond what the administrator is already authorized to view
+
+DASHBOARD HEADER
+
+At the top, show:
+
+- organization logo or fallback avatar
+- organization name
+- organization type, such as Church, Ministry, Christian Organization, Association, or Fellowship
+- current date
+- welcoming text such as:
+  “Welcome back, Pastor Moses”
+  or the authenticated leader’s available display name
+- a discreet “View Member Experience” button that opens the normal organization home page
+
+Use the organization’s saved branding color while preserving readable automatic text contrast.
+
+Do not assume every organization is called a church. Use organization-aware wording throughout.
+
+SUMMARY CARDS
+
+Add compact, clickable summary cards for:
+
+1. Members
+   - total approved members
+   - pending membership requests, when supported
+   - clicking opens the existing Members page
+
+2. Prayer Requests
+   - number of new or unresolved organization prayer requests
+   - do not display private prayer text on the dashboard
+   - clicking opens the appropriate existing prayer-management page
+
+3. Announcements
+   - number of active announcements
+   - clicking opens the existing announcements area
+
+4. Upcoming Events
+   - number of future events
+   - clicking opens the existing events page
+
+5. Departments
+   - total active departments
+   - clicking opens the existing departments management page
+
+6. Tasks or Assignments
+   - number of open tasks or assignments
+   - clicking opens the existing task or assignment page
+
+7. Sunday School
+   - show the next or latest available lesson title and date when available
+   - clicking opens the existing Sunday School management area
+   - do not create a duplicate Sunday School system
+
+8. Compliance and Platform Notices
+   - show only the number and severity of unresolved notices sent by the platform administrator
+   - do not reveal full confidential notice content directly on the dashboard
+   - clicking opens the existing private compliance or platform-notice area
+   - ordinary members must never see this card
+
+Use live data from the existing database and routes where available. Do not insert fake production counts.
+
+If a feature has not yet been implemented or has no records, show a mature empty state such as “No upcoming events” rather than displaying an error.
+
+QUICK ACTIONS
+
+Add a “Quick Actions” section with permission-aware buttons:
+
+- Create Announcement
+- Add Event
+- Invite Members
+- Create Department
+- Add Task or Assignment
+- Open Sunday School
+- View Prayer Requests
+- Message Members
+
+Each button must open the existing appropriate page or existing creation form.
+
+Do not create duplicate pages merely for the dashboard.
+
+Only display actions the current user is authorized to perform.
+
+WEEKLY MINISTRY OVERVIEW
+
+Add a simple “This Week” section showing available information such as:
+
+- upcoming events
+- open assignments or tasks
+- latest announcement
+- latest Sunday School lesson
+- unresolved prayer requests
+- pending membership requests
+
+Keep this concise. Display no more than a few recent items per category, with a “View All” link to the relevant existing page.
+
+Do not build advanced analytics, charts, financial reporting, attendance graphs, or artificial intelligence recommendations in this phase.
+
+RECENT ACTIVITY
+
+Add a “Recent Activity” section using existing safe activity information where available, such as:
+
+- member joined
+- announcement published
+- event created
+- task completed
+- Sunday School lesson added
+- department created
+
+Do not expose confidential message content, counseling content, compliance details, bank information, or private prayer text.
+
+If the app does not already have a reliable activity source, do not invent a complicated new audit system. Show recent items derived safely from existing timestamped records.
+
+MOBILE DESIGN
+
+The dashboard must work well on iPhone and Android-sized screens.
+
+Requirements:
+
+- single-column layout on small screens
+- no horizontal scrolling
+- minimum comfortable tap targets
+- large, readable text
+- summary cards should wrap cleanly
+- hamburger menu remains usable
+- buttons must not overlap
+- long organization names must wrap safely
+- no extremely small fonts
+
+On wider screens, summary cards may use a responsive grid.
+
+VISUAL STYLE
+
+Follow the existing mature Church Mode design:
+
+- elegant
+- professional
+- pastor-friendly
+- generous spacing
+- clear hierarchy
+- readable typography
+- organization branding accents
+- no childish appearance
+- no unnecessary animation
+- no excessive dark backgrounds
+
+Use subtle hover, focus, and tap feedback.
+
+ACCESSIBILITY
+
+- Buttons and cards must be keyboard accessible.
+- Clickable cards must use proper buttons or links, not inaccessible div-only click handlers.
+- Add visible focus states.
+- Provide descriptive accessible labels.
+- Preserve readable contrast with every supported organization branding color.
+
+LANGUAGES
+
+Add all new user-facing labels and messages to:
+
+- English
+- Spanish
+- French
+
+Maintain full key parity across all three locale files.
+
+Do not leave hardcoded English strings in the new dashboard.
+
+TESTING
+
+Perform focused tests for these exact scenarios:
+
+1. Organization owner opens the dashboard successfully.
+
+2. Authorized administrator opens the dashboard successfully.
+
+3. Ordinary member is denied administrative dashboard access.
+
+4. Unauthenticated user is redirected to sign-in or receives the existing protected-route behavior.
+
+5. Summary cards display correct live counts or correct empty states.
+
+6. Clicking Members opens the existing Members page.
+
+7. Clicking Prayer Requests opens the appropriate existing prayer page.
+
+8. Clicking Events opens the existing Events page.
+
+9. Clicking Departments opens the existing Departments page.
+
+10. Clicking Sunday School opens the existing Sunday School area.
+
+11. Compliance card is visible only to authorized owners or administrators.
+
+12. Quick Actions respect permissions.
+
+13. Back navigation works.
+
+14. ChurchModeShell appears only once.
+
+15. The page works at an iPhone-sized viewport without horizontal overflow.
+
+16. English, Spanish, and French keys remain in parity.
+
+17. No new browser-console, server-runtime, TypeScript, or build errors are introduced in affected files.
+
+18. Existing Church Mode member pages, member profiles, invitations, departments, governance, and Family/Group Mode remain unchanged.
+
+Do not create fake churches or permanent fake members in the production database for testing.
+
+Temporary development test data must be clearly identified and removed before completion.
+
+FINAL REPORT
+
+Provide:
+
+- files changed
+- route created or reused
+- roles allowed to access the dashboard
+- exact server-side permission check used
+- summary cards implemented
+- quick actions implemented
+- data sources used for each count
+- empty-state behavior
+- English, Spanish, and French translation status
+- mobile viewport test result
+- browser-console and server-log result
+- TypeScript/build result limited to affected files
+- any genuine limitation that still requires a manual authenticated test
+- confirmation that Family/Group Mode, Offline Mode, payments, authentication, email, donations, and unrelated files were not modified
+
+Do not merely provide a plan. Implement the Pastor Dashboard Phase 1, test it carefully, and create one checkpoint only after the focused tests succeed.
