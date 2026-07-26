@@ -10,6 +10,15 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 
+const GROUP_TYPE_LABELS: Record<string, string> = {
+  family: "Family",
+  prayer: "Prayer Group",
+  workplace: "Workplace",
+  sports: "Sports Team",
+  community: "Community Organization",
+  other: "Other",
+};
+
 type GroupWithMember = GroupMember & { group: Group };
 
 function useGroupData(groupId: number) {
@@ -77,6 +86,7 @@ export default function GroupHome() {
           )}
           <div>
             <h2 className="font-serif text-2xl font-bold text-foreground">{group.name}</h2>
+            <p className="text-xs font-medium text-primary/70 uppercase tracking-wide mt-0.5">{GROUP_TYPE_LABELS[group.groupType] ?? group.groupType}</p>
             {group.description && <p className="text-sm text-muted-foreground mt-1 max-w-xs">{group.description}</p>}
             <p className="text-sm text-muted-foreground mt-1">{memberCount} member{memberCount !== 1 ? "s" : ""}{group.country ? ` · ${group.country}` : ""}</p>
           </div>

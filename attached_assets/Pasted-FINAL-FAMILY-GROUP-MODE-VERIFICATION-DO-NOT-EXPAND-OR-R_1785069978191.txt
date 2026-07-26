@@ -1,0 +1,77 @@
+FINAL FAMILY/GROUP MODE VERIFICATION — DO NOT EXPAND OR REBUILD THE FEATURE
+
+The Family/Group Mode foundation has already been implemented.
+
+Do not add new features, refactor unrelated code, or modify Church Mode, Offline Mode, payments, email systems, authentication architecture, Android publishing, or the main devotional experience.
+
+Perform a focused end-to-end verification of the existing Family/Group Mode implementation.
+
+PURPOSE
+
+Confirm that Family/Group Mode genuinely works for:
+
+- Families
+- Prayer groups
+- Workplace groups
+- Sports teams
+- Boy Scouts or youth organizations
+- Military support groups
+- Market associations
+- Community groups
+- School groups
+- Other non-church organizations
+
+TEST THESE EXACT FLOWS
+
+1. GROUP ENTRY POINT
+
+- Confirm the Groups card or entry point appears on the user Account page.
+- Confirm tapping it opens the Groups page.
+- Confirm unauthenticated users are redirected to sign in.
+- Confirm authenticated users can access the page.
+- Confirm the page works on mobile and desktop.
+
+2. CREATE A GROUP
+
+Create test groups for at least these types:
+
+- Family
+- Prayer Group
+- Workplace
+- Sports Team
+- Community Organization
+- Other
+
+For every test group, confirm:
+
+- Group name is required.
+- Group type is required.
+- Description behavior matches the current form label.
+- Optional fields do not prevent creation when left blank.
+- The owner is automatically added as Group Owner.
+- The new group appears immediately in the owner’s Groups list.
+- Refreshing the page does not remove the group.
+- No duplicate group is created from one submission.
+- The Create button cannot be submitted repeatedly while processing.
+- A clear success or error message is displayed.
+
+3. GROUP INVITATIONS
+
+- Create a group invitation.
+- Confirm a readable invitation code is generated.
+- Confirm there is a Copy Code button.
+- Confirm there is a Copy Invitation Link button if invitation links are supported.
+- Confirm the copied code exactly matches the stored code.
+- Confirm the invitation shows the group name and group type.
+- Confirm the invitation remains active according to its configured rules.
+- Confirm expired, revoked, invalid, or mistyped codes show a clear error.
+- Confirm invitation codes are normalized for capitalization and accidental spaces where appropriate.
+
+4. JOIN A GROUP
+
+Using a separate authenticated test account:
+
+- Enter a valid invitation code.
+- Confirm the group name and group type appear before joining.
+- Confirm the user knows exactly which group they are requesting to join.
+- Join the

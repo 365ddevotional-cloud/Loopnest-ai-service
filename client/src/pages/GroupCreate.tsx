@@ -11,10 +11,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, Loader2, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+const GROUP_TYPES = [
+  { value: "family", label: "Family" },
+  { value: "prayer", label: "Prayer Group" },
+  { value: "workplace", label: "Workplace" },
+  { value: "sports", label: "Sports Team" },
+  { value: "community", label: "Community Organization" },
+  { value: "other", label: "Other" },
+];
 
 const schema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(80),
+  groupType: z.enum(["family", "prayer", "workplace", "sports", "community", "other"]),
   description: z.string().max(300).optional(),
   country: z.string().optional(),
   privacy: z.enum(["join_code", "invite_only"]),
@@ -29,13 +39,14 @@ export default function GroupCreate() {
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", description: "", country: "", privacy: "join_code" },
+    defaultValues: { name: "", groupType: "family", description: "", country: "", privacy: "join_code" },
   });
 
-  if (!user || !emailVerified) {
-    navigate("/signin");
-    return null;
-  }
+  useEffect(() => {
+    if (!user || !emailVerified) navigate("/signin");
+  }, [user, emailVerified]);
+
+  if (!user || !emailVerified) return null;
 
   async function onSubmit(data: FormData) {
     setLoading(true);
@@ -77,6 +88,25 @@ export default function GroupCreate() {
                 <FormItem>
                   <FormLabel>Group Name *</FormLabel>
                   <FormControl><Input placeholder="e.g. Johnson Family, Friday Prayer Group" data-testid="input-group-name" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="groupType" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Group Type *</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-group-type">
+                        <SelectValue placeholder="Select a type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {GROUP_TYPES.map(t => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )} />

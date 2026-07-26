@@ -1424,6 +1424,7 @@ export const groups = pgTable("groups", {
   description: text("description"),
   logoUrl: text("logo_url"),
   country: text("country"),
+  groupType: text("group_type").notNull().default("other"), // "family" | "prayer" | "workplace" | "sports" | "community" | "other"
   privacy: text("privacy").notNull().default("join_code"), // "invite_only" | "join_code"
   inviteCode: text("invite_code").notNull().unique(),
   ownerId: text("owner_id").notNull(), // firebase_uid

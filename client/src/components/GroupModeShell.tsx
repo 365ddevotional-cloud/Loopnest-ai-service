@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
-import { Home, HandHeart, MessageSquare, BookOpen, Megaphone, Users, ChevronLeft, Menu, X, Copy, Check, LogOut, Settings } from "lucide-react";
+import { Home, HandHeart, MessageSquare, BookOpen, Megaphone, Users, ChevronLeft, Menu, X, Copy, Check, LogOut, Settings, Link2 } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import type { Group, GroupMember } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +37,7 @@ export default function GroupModeShell({ group, myMember, children }: GroupModeS
   const [location] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const { toast } = useToast();
 
   const id = group.id;
@@ -62,6 +63,15 @@ export default function GroupModeShell({ group, myMember, children }: GroupModeS
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       toast({ title: "Invite code copied!" });
+    });
+  }
+
+  function copyInviteLink() {
+    const link = `${window.location.origin}/groups/join/${group.inviteCode}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+      toast({ title: "Invitation link copied!", description: "Share this link to invite people." });
     });
   }
 
@@ -106,6 +116,14 @@ export default function GroupModeShell({ group, myMember, children }: GroupModeS
                 <span className="font-medium">Invite Code: </span>
                 <span className="font-mono text-primary">{group.inviteCode}</span>
               </div>
+            </button>
+            <button
+              onClick={copyInviteLink}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/60 text-sm text-left"
+              data-testid="button-copy-invite-link"
+            >
+              {copiedLink ? <Check className="w-4 h-4 text-green-500" /> : <Link2 className="w-4 h-4 text-muted-foreground" />}
+              <span className="font-medium">{copiedLink ? "Link copied!" : "Copy Invitation Link"}</span>
             </button>
             {role === "owner" && (
               <Link

@@ -5611,7 +5611,7 @@ export async function registerRoutes(
   app.post("/api/groups", async (req, res) => {
     const auth = await extractGroupAuth(req, res);
     if (!auth) return;
-    const { name, description, country, privacy } = req.body;
+    const { name, description, country, privacy, groupType } = req.body;
     if (!name?.trim()) return res.status(400).json({ message: "Group name is required" });
     let inviteCode = generateGroupCode();
     for (let i = 0; i < 5; i++) {
@@ -5619,7 +5619,7 @@ export async function registerRoutes(
       if (!existing) break;
       inviteCode = generateGroupCode();
     }
-    const group = await storage.createGroup({ name: name.trim(), description: description?.trim() || null, country: country?.trim() || null, privacy: privacy || "join_code", inviteCode, ownerId: auth.uid });
+    const group = await storage.createGroup({ name: name.trim(), description: description?.trim() || null, country: country?.trim() || null, groupType: groupType || "other", privacy: privacy || "join_code", inviteCode, ownerId: auth.uid });
     await storage.addGroupMember({ groupId: group.id, firebaseUid: auth.uid, email: auth.email || "", displayName: auth.displayName, role: "owner" });
     res.status(201).json(group);
   });
