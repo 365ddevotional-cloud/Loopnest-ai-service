@@ -1148,6 +1148,7 @@ export const churchDepartments = pgTable("church_departments", {
   isActive: boolean("is_active").notNull().default(true),
   createdBy: integer("created_by"),
   createdAt: timestamp("created_at").defaultNow(),
+  archivedAt: timestamp("archived_at"),
 });
 export const insertChurchDepartmentSchema = createInsertSchema(churchDepartments).omit({ id: true, createdAt: true });
 export type ChurchDepartment = typeof churchDepartments.$inferSelect;
@@ -1226,6 +1227,42 @@ export const churchDepartmentAttendance = pgTable("church_department_attendance"
 export const insertChurchDepartmentAttendanceSchema = createInsertSchema(churchDepartmentAttendance).omit({ id: true, createdAt: true });
 export type ChurchDepartmentAttendance = typeof churchDepartmentAttendance.$inferSelect;
 export type InsertChurchDepartmentAttendance = z.infer<typeof insertChurchDepartmentAttendanceSchema>;
+
+// ─── Audit Logs ──────────────────────────────────────────────────────────────
+export const auditLogs = pgTable("audit_logs", {
+  id: serial("id").primaryKey(),
+  churchId: integer("church_id").references(() => churches.id, { onDelete: "cascade" }),
+  departmentId: integer("department_id"),
+  action: text("action").notNull(), // e.g. "church_name_changed", "department_archived", "member_approved"
+  previousValue: text("previous_value"),
+  newValue: text("new_value"),
+  actorUid: text("actor_uid").notNull(),
+  actorRole: text("actor_role"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
+// ─── Church Deletion Requests ─────────────────────────────────────────────────
+export const DELETION_REQUEST_STATUSES = ["pending", "approved", "rejected", "archived"] as const;
+export type DeletionRequestStatus = typeof DELETION_REQUEST_STATUSES[number];
+
+export const churchDeletionRequests = pgTable("church_deletion_requests", {
+  id: serial("id").primaryKey(),
+  churchId: integer("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  ownerUid: text("owner_uid").notNull(),
+  ownerEmail: text("owner_email").notNull(),
+  ownerName: text("owner_name"),
+  reason: text("reason").notNull(),
+  explanation: text("explanation"),
+  status: text("status").notNull().default("pending"), // DeletionRequestStatus
+  reviewedBy: text("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at"),
+  adminNote: text("admin_note"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export type ChurchDeletionRequest = typeof churchDeletionRequests.$inferSelect;
+export type InsertChurchDeletionRequest = typeof churchDeletionRequests.$inferInsert;
 
 // ─── Global User Profiles ────────────────────────────────────────────────────
 // One row per Firebase UID. Complements Firebase auth with app-specific profile data.

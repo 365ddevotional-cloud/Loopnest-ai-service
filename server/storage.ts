@@ -155,6 +155,9 @@ import {
   userActivityDays,
   type UserProfile,
   type InsertUserProfile,
+  auditLogs,
+  churchDeletionRequests,
+  type ChurchDeletionRequest,
 } from "@shared/schema";
 import { eq, desc, and, isNull, or, ilike, lte, notInArray, sql, gte, count, countDistinct } from "drizzle-orm";
 
@@ -451,6 +454,21 @@ export interface IStorage {
 
   // Admin: app analytics
   getAppAnalytics(): Promise<any>;
+
+  // Pending members count
+  getPendingMembersCount(churchId: number): Promise<number>;
+
+  // Department archive (soft-delete with timestamp)
+  archiveDepartment(id: number): Promise<ChurchDepartment>;
+
+  // Audit log
+  createAuditLog(data: { churchId?: number; departmentId?: number; action: string; previousValue?: string; newValue?: string; actorUid: string; actorRole?: string }): Promise<void>;
+
+  // Church deletion requests
+  createDeletionRequest(data: { churchId: number; ownerUid: string; ownerEmail: string; ownerName?: string; reason: string; explanation?: string }): Promise<ChurchDeletionRequest>;
+  getDeletionRequests(status?: string): Promise<Array<ChurchDeletionRequest & { churchName: string; memberCount: number }>>;
+  updateDeletionRequestStatus(id: number, status: string, reviewedBy: string, adminNote?: string): Promise<ChurchDeletionRequest>;
+  getMyDeletionRequest(churchId: number, ownerUid: string): Promise<ChurchDeletionRequest | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2398,6 +2416,74 @@ export class DatabaseStorage implements IStorage {
       membersByCountry: membersByCountry.rows,
       largestChurches: largest.rows,
     };
+  }
+
+  // ── Pending Members Count ────────────────────────────────────────────────────
+  async getPendingMembersCount(churchId: number): Promise<number> {
+    const result = await db.execute(sql`SELECT COUNT(*) AS "count" FROM church_members WHERE church_id = ${churchId} AND status = 'pending'`);
+    return Number((result.rows[0] as any)?.count ?? 0);
+  }
+
+  // ── Department Archive ───────────────────────────────────────────────────────
+  async archiveDepartment(id: number): Promise<ChurchDepartment> {
+    const [row] = await db.update(churchDepartments)
+      .set({ isActive: false, archivedAt: new Date() })
+      .where(eq(churchDepartments.id, id))
+      .returning();
+    return row;
+  }
+
+  // ── Audit Log ────────────────────────────────────────────────────────────────
+  async createAuditLog(data: { churchId?: number; departmentId?: number; action: string; previousValue?: string; newValue?: string; actorUid: string; actorRole?: string }): Promise<void> {
+    await db.insert(auditLogs).values({
+      churchId: data.churchId ?? null,
+      departmentId: data.departmentId ?? null,
+      action: data.action,
+      previousValue: data.previousValue ?? null,
+      newValue: data.newValue ?? null,
+      actorUid: data.actorUid,
+      actorRole: data.actorRole ?? null,
+    });
+  }
+
+  // ── Church Deletion Requests ─────────────────────────────────────────────────
+  async createDeletionRequest(data: { churchId: number; ownerUid: string; ownerEmail: string; ownerName?: string; reason: string; explanation?: string }): Promise<ChurchDeletionRequest> {
+    const [row] = await db.insert(churchDeletionRequests).values({
+      churchId: data.churchId,
+      ownerUid: data.ownerUid,
+      ownerEmail: data.ownerEmail,
+      ownerName: data.ownerName ?? null,
+      reason: data.reason,
+      explanation: data.explanation ?? null,
+      status: "pending",
+    }).returning();
+    return row;
+  }
+
+  async getDeletionRequests(status?: string): Promise<Array<ChurchDeletionRequest & { churchName: string; memberCount: number }>> {
+    const reqs = status
+      ? await db.select().from(churchDeletionRequests).where(eq(churchDeletionRequests.status, status)).orderBy(desc(churchDeletionRequests.createdAt))
+      : await db.select().from(churchDeletionRequests).orderBy(desc(churchDeletionRequests.createdAt));
+    return await Promise.all(reqs.map(async r => {
+      const church = await this.getChurch(r.churchId);
+      const members = await this.getChurchMembers(r.churchId);
+      return { ...r, churchName: church?.name ?? "Unknown", memberCount: members.length };
+    }));
+  }
+
+  async updateDeletionRequestStatus(id: number, status: string, reviewedBy: string, adminNote?: string): Promise<ChurchDeletionRequest> {
+    const [row] = await db.update(churchDeletionRequests)
+      .set({ status, reviewedBy, reviewedAt: new Date(), adminNote: adminNote ?? null })
+      .where(eq(churchDeletionRequests.id, id))
+      .returning();
+    return row;
+  }
+
+  async getMyDeletionRequest(churchId: number, ownerUid: string): Promise<ChurchDeletionRequest | undefined> {
+    const [row] = await db.select().from(churchDeletionRequests)
+      .where(and(eq(churchDeletionRequests.churchId, churchId), eq(churchDeletionRequests.ownerUid, ownerUid)))
+      .orderBy(desc(churchDeletionRequests.createdAt));
+    return row;
   }
 
   // ── Admin: app analytics ────────────────────────────────────────────────────

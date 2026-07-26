@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { OAuth2Client } from "google-auth-library";
-import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification, sendDonationThankYouEmail } from "./sendgrid";
+import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification, sendDonationThankYouEmail, sendChurchNameChangeSecurityEmail } from "./sendgrid";
 import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { getTodayDateString, isFutureDate, isPastDate, getDayOfYear } from "./date-utils";
@@ -3100,6 +3100,8 @@ export async function registerRoutes(
         socialLinks, serviceTimes, publicPhotos,
       } = req.body;
       const update: Record<string, any> = {};
+      const oldName = church.name;
+      const nameChanged = name !== undefined && name !== oldName;
       if (name !== undefined) update.name = name;
       if (description !== undefined) update.description = description;
       if (denomination !== undefined) update.denomination = denomination;
@@ -3119,7 +3121,29 @@ export async function registerRoutes(
       if (socialLinks !== undefined) update.socialLinks = socialLinks;
       if (serviceTimes !== undefined) update.serviceTimes = serviceTimes;
       if (publicPhotos !== undefined) update.publicPhotos = publicPhotos;
-      res.json(await storage.updateChurch(id, update));
+      const updated = await storage.updateChurch(id, update);
+      // If name changed: audit log + announcement + security email
+      if (nameChanged && name) {
+        const newName = name as string;
+        storage.createAuditLog({ churchId: id, action: "church_name_changed", previousValue: oldName, newValue: newName, actorUid: uid, actorRole: m.role }).catch(() => {});
+        storage.createChurchAnnouncement({
+          churchId: id,
+          createdBy: uid,
+          title: `Church Name Updated`,
+          body: `This church has been renamed from "${oldName}" to "${newName}" on ${new Date().toLocaleDateString()}. If you have questions, please contact your church leader.`,
+          isPinned: false,
+          expiresAt: null,
+          imageUrl: null,
+          pdfUrl: null,
+          externalLink: null,
+        }).catch(() => {});
+        // Send security email to owner
+        const ownerMember = (await storage.getChurchMembers(id)).find(mb => mb.role === "owner");
+        if (ownerMember?.email) {
+          sendChurchNameChangeSecurityEmail(ownerMember.email, ownerMember.displayName ?? ownerMember.email, oldName, newName, church.slug).catch(() => {});
+        }
+      }
+      res.json(updated);
     } catch { res.status(500).json({ message: "Failed to update church" }); }
   });
 
@@ -3814,6 +3838,99 @@ export async function registerRoutes(
       const m = await storage.getChurchMember(id, uid);
       if (!m || !["owner", "lead_pastor", "administrator", "associate_pastor"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
       res.json(await storage.getChurchActivity(id, 100));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Pending Members Count ────────────────────────────────────────────────────
+  app.get("/api/churches/:id/members/pending-count", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m || !["owner", "lead_pastor", "administrator"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      const count = await storage.getPendingMembersCount(churchId);
+      res.json({ count });
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Department Archive ────────────────────────────────────────────────────────
+  app.post("/api/churches/departments/:deptId/archive", async (req, res) => {
+    const deptId = parseInt(req.params.deptId);
+    if (isNaN(deptId)) return res.status(400).json({ message: "Invalid ID" });
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const dept = await storage.getDepartment(deptId);
+      if (!dept) return res.status(404).json({ message: "Department not found" });
+      const m = await storage.getChurchMember(dept.churchId, uid);
+      if (!m || !["owner", "lead_pastor", "administrator"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      const updated = await storage.archiveDepartment(deptId);
+      storage.createAuditLog({ churchId: dept.churchId, departmentId: deptId, action: "department_archived", previousValue: dept.name, actorUid: uid, actorRole: m.role }).catch(() => {});
+      res.json(updated);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Church Deletion Requests ─────────────────────────────────────────────────
+  app.post("/api/churches/:id/deletion-request", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const church = await storage.getChurch(churchId);
+      if (!church) return res.status(404).json({ message: "Church not found" });
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m || m.role !== "owner") return res.status(403).json({ message: "Only the church owner can request deletion" });
+      const schema = z.object({
+        reason: z.string().min(1),
+        explanation: z.string().optional(),
+        ownerEmail: z.string().email(),
+        ownerName: z.string().optional(),
+      });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid request", errors: parsed.error.errors });
+      const existing = await storage.getMyDeletionRequest(churchId, uid);
+      if (existing && existing.status === "pending") return res.status(409).json({ message: "You already have a pending deletion request" });
+      const request = await storage.createDeletionRequest({
+        churchId,
+        ownerUid: uid,
+        ownerEmail: parsed.data.ownerEmail,
+        ownerName: parsed.data.ownerName,
+        reason: parsed.data.reason,
+        explanation: parsed.data.explanation,
+      });
+      storage.createAuditLog({ churchId, action: "deletion_requested", actorUid: uid, actorRole: m.role, newValue: parsed.data.reason }).catch(() => {});
+      res.json(request);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.get("/api/churches/:id/deletion-request", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m || m.role !== "owner") return res.status(403).json({ message: "Not authorized" });
+      const request = await storage.getMyDeletionRequest(churchId, uid);
+      res.json(request ?? null);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // ── Admin: Church Deletion Requests ──────────────────────────────────────────
+  app.get("/api/admin/church-deletion-requests", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const { status } = req.query;
+      const requests = await storage.getDeletionRequests(typeof status === "string" ? status : undefined);
+      res.json(requests);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  app.patch("/api/admin/church-deletion-requests/:id", async (req, res) => {
+    if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const id = Number(req.params.id);
+      const schema = z.object({ status: z.enum(["approved", "rejected"]), adminNote: z.string().optional() });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid request" });
+      const updated = await storage.updateDeletionRequestStatus(id, parsed.data.status, "admin", parsed.data.adminNote);
+      res.json(updated);
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 

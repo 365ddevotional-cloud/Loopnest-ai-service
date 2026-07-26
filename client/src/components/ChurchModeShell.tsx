@@ -12,6 +12,7 @@ interface ChurchModeShellProps {
   currentRole: string | null;
   children: React.ReactNode;
   unreadMessages?: number;
+  pendingMembers?: number;
 }
 
 function DefaultEmblem({ size = 52 }: { size?: number }) {
@@ -109,7 +110,7 @@ function LangPicker({ headerTextSecondary, headerBorder }: { headerTextSecondary
   );
 }
 
-export function ChurchModeShell({ church, currentRole, children, unreadMessages = 0 }: ChurchModeShellProps) {
+export function ChurchModeShell({ church, currentRole, children, unreadMessages = 0, pendingMembers = 0 }: ChurchModeShellProps) {
   const [location, setLocation] = useLocation();
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -128,7 +129,7 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
     { label: t("cm_prayer"), path: `/church/${slug}/prayer`, icon: Heart },
     { label: t("cm_giving"), path: `/church/${slug}/giving`, icon: HandCoins },
     { label: t("cm_messages"), path: `/church/${slug}/messages`, icon: MessageSquare, badge: unreadMessages > 0 ? unreadMessages : 0 },
-    ...(isLeader || church?.memberDirectoryEnabled ? [{ label: t("cm_members"), path: `/church/${slug}/members`, icon: Users }] : []),
+    ...(isLeader || church?.memberDirectoryEnabled ? [{ label: t("cm_members"), path: `/church/${slug}/members`, icon: Users, badge: pendingMembers > 0 ? pendingMembers : 0 }] : []),
     { label: t("cm_myProfile"), path: `/church/${slug}/profile`, icon: UserCircle },
     ...(isAdmin ? [{ label: t("cm_admin"), path: `/church/${slug}/admin`, icon: Settings }] : []),
   ] : [];

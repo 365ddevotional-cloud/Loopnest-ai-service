@@ -25,6 +25,8 @@ import { Switch } from "@/components/ui/switch";
 
 interface MyRole { role: string | null; memberId: number | null; status: string | null; }
 
+const DEPT_TYPES = ["Youth Ministry","Children's Ministry","Women's Fellowship","Men's Fellowship","Choir","Ushering","Media","Evangelism","Prayer Team","Sunday School","Hospitality","Finance","Protocol","Follow-Up","Missions","Custom"];
+
 function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdToken: () => Promise<string | null> }) {
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -33,6 +35,11 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
   const [deptName, setDeptName] = useState("");
   const [deptType, setDeptType] = useState("Custom");
   const [creating, setCreating] = useState(false);
+  // Edit state
+  const [editingDept, setEditingDept] = useState<any | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editType, setEditType] = useState("Custom");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const { data: departments, isLoading } = useQuery<any[]>({
     queryKey: ["/api/churches", church.id, "departments-admin"],
@@ -69,9 +76,42 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
     toast({ title: t("cm_deptRemoved") });
   };
 
+  const startEdit = (dept: any) => {
+    setEditingDept(dept);
+    setEditName(dept.name);
+    setEditType(dept.type ?? "Custom");
+    setShowCreate(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingDept || !editName.trim()) return;
+    setSavingEdit(true);
+    try {
+      const token = await getIdToken();
+      const r = await fetch(`/api/churches/departments/${editingDept.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token ?? ""}` },
+        body: JSON.stringify({ name: editName.trim(), type: editType }),
+      });
+      if (!r.ok) { toast({ title: t("cm_error"), description: (await r.json()).message, variant: "destructive" }); return; }
+      toast({ title: t("cm_deptUpdated") });
+      qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "departments-admin"] });
+      setEditingDept(null);
+    } finally { setSavingEdit(false); }
+  };
+
+  const handleArchive = async (dept: any) => {
+    if (!confirm(t("cm_archiveDeptConfirm"))) return;
+    const token = await getIdToken();
+    const r = await fetch(`/api/churches/departments/${dept.id}/archive`, { method: "POST", headers: { Authorization: `Bearer ${token ?? ""}` } });
+    if (!r.ok) { toast({ title: t("cm_error"), variant: "destructive" }); return; }
+    qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "departments-admin"] });
+    toast({ title: t("cm_deptArchived") });
+  };
+
   return (
     <div className="space-y-4">
-      <Button size="sm" onClick={() => setShowCreate(true)} className="gap-2" style={{ backgroundColor: "#1a2744" }}
+      <Button size="sm" onClick={() => { setShowCreate(true); setEditingDept(null); }} className="gap-2" style={{ backgroundColor: "#1a2744" }}
         data-testid="button-admin-create-dept">
         <Plus className="w-4 h-4" />{t("cm_createDepartment")}
       </Button>
@@ -86,21 +126,54 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
       ) : (
         <div className="space-y-2">
           {departments.map((dept: any) => (
-            <Card key={dept.id} className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
-              <CardContent className="pt-3 pb-3 px-4 flex items-center gap-3">
-                <Building2 className="w-4 h-4 flex-shrink-0" style={{ color: "#1a2744" }} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>{dept.name}</p>
-                  <p className="text-xs" style={{ color: "#7a7570" }}>{dept.type} · Invite: {dept.inviteCode}</p>
-                </div>
-                <a href={`/church/${church.slug}/departments/${dept.slug}`}
-                  className="text-xs px-2.5 py-1.5 rounded-lg font-medium"
-                  style={{ backgroundColor: "#1a274412", color: "#1a2744" }}>{t("cm_open")}</a>
-                <button onClick={() => handleDelete(dept.id)} className="p-1.5 rounded hover:bg-red-50">
-                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                </button>
-              </CardContent>
-            </Card>
+            <div key={dept.id}>
+              <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+                <CardContent className="pt-3 pb-3 px-4 flex items-center gap-3">
+                  <Building2 className="w-4 h-4 flex-shrink-0" style={{ color: "#1a2744" }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>{dept.name}</p>
+                    <p className="text-xs" style={{ color: "#7a7570" }}>{dept.type} · Invite: {dept.inviteCode}</p>
+                  </div>
+                  <a href={`/church/${church.slug}/departments/${dept.slug}`}
+                    className="text-xs px-2.5 py-1.5 rounded-lg font-medium"
+                    style={{ backgroundColor: "#1a274412", color: "#1a2744" }}>{t("cm_open")}</a>
+                  <button onClick={() => startEdit(dept)} className="p-1.5 rounded hover:bg-blue-50" data-testid={`button-edit-dept-${dept.id}`} title={t("cm_editDept")}>
+                    <Settings className="w-3.5 h-3.5 text-blue-500" />
+                  </button>
+                  <button onClick={() => handleArchive(dept)} className="p-1.5 rounded hover:bg-amber-50" data-testid={`button-archive-dept-${dept.id}`} title={t("cm_archiveDept")}>
+                    <ArrowDownToLine className="w-3.5 h-3.5 text-amber-500" />
+                  </button>
+                  <button onClick={() => handleDelete(dept.id)} className="p-1.5 rounded hover:bg-red-50" data-testid={`button-delete-dept-${dept.id}`}>
+                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                  </button>
+                </CardContent>
+              </Card>
+              {editingDept?.id === dept.id && (
+                <Card className="border border-blue-200 mt-1 mb-1" style={{ backgroundColor: "#f0f7ff" }}>
+                  <CardContent className="pt-3 pb-3 px-4 space-y-3">
+                    <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>{t("cm_deptEditTitle")}</p>
+                    <div className="space-y-1.5">
+                      <Label>{t("cm_deptNameLabel")}</Label>
+                      <Input value={editName} onChange={e => setEditName(e.target.value)} data-testid="input-edit-dept-name" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>{t("cm_deptTypeLabel")}</Label>
+                      <select className="w-full border rounded-md px-3 py-2 text-sm" style={{ borderColor: "#e8e3dc" }}
+                        value={editType} onChange={e => setEditType(e.target.value)}>
+                        {DEPT_TYPES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button variant="outline" size="sm" onClick={() => setEditingDept(null)} className="flex-1">{t("cm_cancel")}</Button>
+                      <Button size="sm" onClick={handleSaveEdit} disabled={savingEdit || !editName.trim()} className="flex-1"
+                        style={{ backgroundColor: "#1a2744" }} data-testid="button-save-edit-dept">
+                        {savingEdit ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}{t("cm_saveChanges2")}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           ))}
         </div>
       )}
@@ -112,7 +185,7 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
             <Input value={deptName} onChange={e => setDeptName(e.target.value)} placeholder={t("cm_deptNamePlaceholder")} data-testid="input-admin-dept-name" />
             <select className="w-full border rounded-md px-3 py-2 text-sm" style={{ borderColor: "#e8e3dc" }}
               value={deptType} onChange={e => setDeptType(e.target.value)}>
-              {["Youth Ministry","Children's Ministry","Women's Fellowship","Men's Fellowship","Choir","Ushering","Media","Evangelism","Prayer Team","Sunday School","Hospitality","Finance","Protocol","Follow-Up","Missions","Custom"].map(opt => (
+              {DEPT_TYPES.map(opt => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>
@@ -221,6 +294,33 @@ export default function ChurchAdminPage() {
       return r.ok ? r.json() : { role: null, memberId: null, status: null };
     },
     enabled: !!slug && isSignedIn,
+  });
+
+  // Pending member count (for admin tab badge and shell badge)
+  const { data: pendingCountData } = useQuery<{ count: number }>({
+    queryKey: ["/api/churches", church?.id, "pending-count"],
+    queryFn: async () => {
+      const token = await getIdToken(); if (!token || !church?.id) return { count: 0 };
+      const r = await fetch(`/api/churches/${church.id}/members/pending-count`, { headers: { Authorization: `Bearer ${token}` } });
+      return r.ok ? r.json() : { count: 0 };
+    },
+    enabled: !!church?.id && !!myRole?.role && ADMIN_ROLES.includes(myRole.role),
+    refetchInterval: 30000,
+  });
+  const pendingCount = pendingCountData?.count ?? 0;
+
+  // Deletion request state
+  const [deletionForm, setDeletionForm] = useState({ reason: "", explanation: "", ownerEmail: "", ownerName: "" });
+  const [submittingDeletion, setSubmittingDeletion] = useState(false);
+
+  const { data: myDeletionRequest } = useQuery<any>({
+    queryKey: ["/api/churches", church?.id, "deletion-request"],
+    queryFn: async () => {
+      const token = await getIdToken(); if (!token || !church?.id) return null;
+      const r = await fetch(`/api/churches/${church.id}/deletion-request`, { headers: { Authorization: `Bearer ${token}` } });
+      return r.ok ? r.json() : null;
+    },
+    enabled: !!church?.id && myRole?.role === "owner",
   });
 
   const { data: invitations } = useQuery<ChurchInvitation[]>({
@@ -807,8 +907,26 @@ export default function ChurchAdminPage() {
     group_joined: "Joined a group",
   };
 
+  const submitDeletionRequest = async () => {
+    if (!church || !deletionForm.reason.trim() || !deletionForm.ownerEmail.trim()) return;
+    setSubmittingDeletion(true);
+    try {
+      const token = await getIdToken();
+      const r = await fetch(`/api/churches/${church.id}/deletion-request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token ?? ""}` },
+        body: JSON.stringify(deletionForm),
+      });
+      const data = await r.json();
+      if (r.status === 409) { toast({ title: t("cm_deletionRequestPending") }); return; }
+      if (!r.ok) { toast({ title: t("cm_error"), description: data.message, variant: "destructive" }); return; }
+      qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "deletion-request"] });
+      toast({ title: t("cm_deletionRequestSubmitted") });
+    } finally { setSubmittingDeletion(false); }
+  };
+
   return (
-    <ChurchModeShell church={church ?? null} currentRole={myRole?.role ?? null}>
+    <ChurchModeShell church={church ?? null} currentRole={myRole?.role ?? null} pendingMembers={pendingCount}>
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: "#b8962e18" }}>
@@ -826,12 +944,17 @@ export default function ChurchAdminPage() {
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 flex-shrink-0 transition-colors"
+              className="relative flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 flex-shrink-0 transition-colors"
               style={{ borderColor: activeTab === key ? "#b8962e" : "transparent", color: activeTab === key ? "#b8962e" : "#7a7570" }}
               data-testid={`tab-admin-${key}`}
             >
               <Icon className="w-3.5 h-3.5" />
               {label}
+              {key === "members" && pendingCount > 0 && (
+                <span className="ml-1 text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none" style={{ backgroundColor: "#f59e0b", color: "#fff" }}>
+                  {pendingCount}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -895,6 +1018,57 @@ export default function ChurchAdminPage() {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Church Deletion Request (owner only) */}
+            {myRole?.role === "owner" && (
+              <Card className="border-0 shadow-sm" style={{ backgroundColor: "#fff", borderTop: "3px solid #dc2626" }}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2 text-red-700">
+                    <AlertCircle className="w-4 h-4" />{t("cm_deletionRequestTitle")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {myDeletionRequest ? (
+                    <div className="space-y-2">
+                      <p className="text-sm" style={{ color: "#4a4540" }}>{t("cm_deletionRequestStatus")}: <strong>{myDeletionRequest.status}</strong></p>
+                      {myDeletionRequest.adminNote && <p className="text-sm text-muted-foreground">{myDeletionRequest.adminNote}</p>}
+                      <p className="text-xs text-muted-foreground">{new Date(myDeletionRequest.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm" style={{ color: "#6b6560" }}>{t("cm_deletionRequestDesc")}</p>
+                      <div className="space-y-1.5">
+                        <Label className="text-red-700">{t("cm_deletionReason")} *</Label>
+                        <Textarea value={deletionForm.reason} onChange={e => setDeletionForm(f => ({ ...f, reason: e.target.value }))} placeholder={t("cm_deletionReasonPlaceholder")} rows={2} data-testid="textarea-deletion-reason" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>{t("cm_deletionExplanation")}</Label>
+                        <Textarea value={deletionForm.explanation} onChange={e => setDeletionForm(f => ({ ...f, explanation: e.target.value }))} placeholder={t("cm_deletionExplanationPlaceholder")} rows={2} data-testid="textarea-deletion-explanation" />
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label>{t("cm_deletionOwnerName")}</Label>
+                          <Input value={deletionForm.ownerName} onChange={e => setDeletionForm(f => ({ ...f, ownerName: e.target.value }))} data-testid="input-deletion-owner-name" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-red-700">{t("cm_deletionOwnerEmail")} *</Label>
+                          <Input type="email" value={deletionForm.ownerEmail} onChange={e => setDeletionForm(f => ({ ...f, ownerEmail: e.target.value }))} data-testid="input-deletion-owner-email" />
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        className="border-red-300 text-red-700 hover:bg-red-50"
+                        disabled={submittingDeletion || !deletionForm.reason.trim() || !deletionForm.ownerEmail.trim()}
+                        onClick={submitDeletionRequest}
+                        data-testid="button-submit-deletion-request"
+                      >
+                        {submittingDeletion ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("cm_saving")}</> : t("cm_submitDeletionRequest")}
+                      </Button>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 

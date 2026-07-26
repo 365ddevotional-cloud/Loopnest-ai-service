@@ -349,6 +349,49 @@ export async function sendDonationThankYouEmail(
   }
 }
 
+export async function sendChurchNameChangeSecurityEmail(
+  toEmail: string,
+  ownerName: string,
+  oldName: string,
+  newName: string,
+  churchSlug: string
+): Promise<boolean> {
+  try {
+    const { client, fromEmail } = await getUncachableSendGridClient();
+    const dateStr = new Date().toUTCString();
+    const msg = {
+      to: toEmail,
+      from: fromEmail,
+      subject: `Security Alert: Your church name was changed — 365 Daily Devotional`,
+      text: `Hi ${ownerName},\n\nYour church name on 365 Daily Devotional was just changed.\n\nPrevious name: ${oldName}\nNew name: ${newName}\nChanged: ${dateStr}\n\nIf you made this change, no action is needed.\n\nIf you did NOT make this change, please contact us immediately at 365ddevotional@gmail.com and log into your account to review your settings.\n\nWith prayers,\n365 Daily Devotional Team`,
+      html: `
+        <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #9c6b30; margin: 0;">365 Daily Devotional</h1>
+            <p style="color: #666; margin: 5px 0;">Church Mode — Security Alert</p>
+          </div>
+          <p style="color: #333; font-size: 16px;">Hi ${ownerName},</p>
+          <p style="color: #333; font-size: 16px;">Your church name on <strong>365 Daily Devotional</strong> was just changed.</p>
+          <div style="background-color: #fff8e1; border-left: 4px solid #f59e0b; padding: 20px; margin: 20px 0; border-radius: 4px;">
+            <p style="margin: 5px 0;"><strong>Previous name:</strong> ${oldName}</p>
+            <p style="margin: 5px 0;"><strong>New name:</strong> ${newName}</p>
+            <p style="margin: 5px 0; color: #666; font-size: 13px;">Changed: ${dateStr}</p>
+          </div>
+          <p style="color: #333; font-size: 15px;">If you made this change, no action is needed.</p>
+          <p style="color: #c0392b; font-size: 15px; font-weight: bold;">If you did NOT make this change, please contact us immediately at <a href="mailto:365ddevotional@gmail.com">365ddevotional@gmail.com</a> and log into your account to review your settings.</p>
+          <p style="color: #666; font-size: 14px; margin-top: 30px;">With prayers,<br><strong>365 Daily Devotional Team</strong></p>
+        </div>
+      `
+    };
+    await client.send(msg);
+    console.log(`Church name change security email sent to ${toEmail}`);
+    return true;
+  } catch (error) {
+    console.error('Failed to send church name change security email:', error);
+    return false;
+  }
+}
+
 export async function sendContactAutoReply(
   toEmail: string,
   recipientName: string
