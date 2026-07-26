@@ -988,6 +988,16 @@ export default function ChurchAdminPage() {
         </div>
 
         {/* Platform status banners */}
+        {church?.platformStatus === "draft" && (
+          <div className="rounded-lg border-l-4 p-4 flex gap-3" style={{ borderLeftColor: "#6366f1", backgroundColor: "#eef2ff" }}>
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "#4f46e5" }} />
+            <div className="flex-1">
+              <p className="font-semibold text-sm" style={{ color: "#312e81" }}>{t("cm_draftBannerTitle")}</p>
+              <p className="text-xs mt-1" style={{ color: "#3730a3" }}>{t("cm_draftBannerDesc")}</p>
+              <button onClick={() => setActiveTab("governance")} className="text-xs font-semibold underline mt-1.5" style={{ color: "#4f46e5" }}>{t("cm_submitForReview")} →</button>
+            </div>
+          </div>
+        )}
         {church?.platformStatus === "pending_review" && (
           <div className="rounded-lg border-l-4 p-4 flex gap-3" style={{ borderLeftColor: "#f59e0b", backgroundColor: "#fffbeb" }}>
             <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "#d97706" }} />
@@ -2589,6 +2599,7 @@ function ChurchGovernancePanel({ church, getIdToken }: { church: Church; getIdTo
   const [caseReplyMsg, setCaseReplyMsg] = useState<Record<number, string>>({});
   const [threadMsg, setThreadMsg] = useState("");
   const [threadSubject, setThreadSubject] = useState("General Inquiry");
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   const authHeaders = async (): Promise<Record<string, string>> => {
     const token = await getIdToken();
@@ -2674,12 +2685,13 @@ function ChurchGovernancePanel({ church, getIdToken }: { church: Church; getIdTo
   ];
 
   const statusBadge = {
+    draft: { label: t("cm_draft"), bg: "#eef2ff", border: "#6366f1", text: "#312e81" },
     pending_review: { label: t("cm_pendingReview"), bg: "#fffbeb", border: "#f59e0b", text: "#92400e" },
     approved: { label: t("cm_approvedForChurchMode"), bg: "#f0fdf4", border: "#22c55e", text: "#166534" },
     rejected: { label: t("cm_rejected"), bg: "#f9fafb", border: "#6b7280", text: "#374151" },
     suspended: { label: t("cm_suspended"), bg: "#fef2f2", border: "#ef4444", text: "#7f1d1d" },
     archived: { label: "Archived", bg: "#f9fafb", border: "#9ca3af", text: "#6b7280" },
-  }[church.platformStatus ?? "pending_review"] ?? { label: church.platformStatus ?? "—", bg: "#f9fafb", border: "#9ca3af", text: "#6b7280" };
+  }[church.platformStatus ?? "draft"] ?? { label: church.platformStatus ?? "—", bg: "#f9fafb", border: "#9ca3af", text: "#6b7280" };
 
   return (
     <div className="space-y-5">
@@ -2705,6 +2717,38 @@ function ChurchGovernancePanel({ church, getIdToken }: { church: Church; getIdTo
               {church.platformReviewNote && <p className="text-xs mt-0.5" style={{ color: statusBadge.text }}>{church.platformReviewNote}</p>}
             </div>
           </div>
+
+          {/* Draft — Submit for Review */}
+          {church.platformStatus === "draft" && (
+            <Card className="border-0 shadow-sm">
+              <CardContent className="pt-4 pb-4 space-y-3">
+                <p className="text-sm" style={{ color: "#4a3728" }}>{t("cm_submitForReviewConfirm")}</p>
+                <button
+                  disabled={submittingReview}
+                  onClick={async () => {
+                    setSubmittingReview(true);
+                    try {
+                      const h = await authHeaders();
+                      const r = await fetch(`/api/churches/${church.id}/submit-for-review`, { method: "POST", headers: h });
+                      if (r.ok) {
+                        toast({ title: t("cm_submitSuccess") });
+                        qc.invalidateQueries({ queryKey: ["/api/churches", church.slug] });
+                        qc.invalidateQueries({ queryKey: ["/api/churches/my"] });
+                      } else {
+                        const err = await r.json().catch(() => ({}));
+                        toast({ title: err.message ?? "Failed", variant: "destructive" });
+                      }
+                    } finally { setSubmittingReview(false); }
+                  }}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
+                  style={{ backgroundColor: "#4f46e5" }}
+                  data-testid="button-submit-for-review"
+                >
+                  {submittingReview ? t("cm_submittingForReview") : t("cm_submitForReview")}
+                </button>
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="border-0 shadow-sm">
             <CardContent className="pt-4 pb-4">

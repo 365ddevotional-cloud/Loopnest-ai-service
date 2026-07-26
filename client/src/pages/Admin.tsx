@@ -4951,6 +4951,7 @@ function ChurchDeletionRequestsAdmin() {
 // ── Platform Governance: Applications ──────────────────────────────────────────
 
 const PLATFORM_STATUS_COLORS: Record<string, string> = {
+  draft: "bg-indigo-100 text-indigo-800 border-indigo-300",
   pending_review: "bg-amber-100 text-amber-800 border-amber-300",
   approved: "bg-green-100 text-green-800 border-green-300",
   rejected: "bg-red-100 text-red-800 border-red-300",
@@ -4988,7 +4989,7 @@ function GovernanceApplicationsAdmin() {
       {summary && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           {[
-            { label: "Pending", val: summary.pendingReview, color: "text-amber-700" },
+            { label: "Awaiting Review", val: summary.pendingReview, color: "text-amber-700" },
             { label: "Approved (7d)", val: summary.recentApprovals, color: "text-green-700" },
             { label: "Suspended (7d)", val: summary.recentSuspensions, color: "text-orange-700" },
             { label: "Open Cases", val: summary.openCases, color: "text-red-700" },
@@ -5001,9 +5002,9 @@ function GovernanceApplicationsAdmin() {
         </div>
       )}
       <div className="flex gap-2 flex-wrap mb-2">
-        {["pending_review", "approved", "rejected", "suspended", "archived"].map(s => (
+        {["draft", "pending_review", "approved", "rejected", "suspended", "archived"].map(s => (
           <Button key={s} size="sm" variant={filterStatus === s ? "default" : "outline"} onClick={() => setFilterStatus(s)} className="capitalize text-xs">
-            {s.replace("_", " ")}
+            {s.replace(/_/g, " ")}
           </Button>
         ))}
       </div>
@@ -5016,34 +5017,52 @@ function GovernanceApplicationsAdmin() {
           <Card key={church.id} className="border border-border">
             <CardContent className="p-4 space-y-3">
               <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="font-semibold">{church.name}</p>
-                  <p className="text-xs text-muted-foreground">{church.slug} · {church.country ?? "—"} · {church.memberCount ?? 0} members</p>
-                  {church.submittedForReviewAt && <p className="text-xs text-muted-foreground">Submitted: {new Date(church.submittedForReviewAt).toLocaleDateString()}</p>}
+                <div className="flex items-center gap-3">
+                  {church.logoUrl && <img src={church.logoUrl} alt={church.name} className="w-10 h-10 rounded-lg object-cover border" />}
+                  <div>
+                    <p className="font-semibold">{church.name}</p>
+                    <p className="text-xs text-muted-foreground">{church.slug}</p>
+                  </div>
                 </div>
-                <Badge className={`text-xs border ${PLATFORM_STATUS_COLORS[church.platformStatus] ?? ""}`}>{church.platformStatus?.replace("_", " ")}</Badge>
+                <Badge className={`text-xs border ${PLATFORM_STATUS_COLORS[church.platformStatus] ?? ""}`}>{church.platformStatus?.replace(/_/g, " ")}</Badge>
               </div>
+              {/* Detail fields */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                {church.denomination && <span><strong>Denomination:</strong> {church.denomination}</span>}
+                {church.country && <span><strong>Country:</strong> {church.country}</span>}
+                {church.address && <span className="col-span-2"><strong>Address:</strong> {church.address}</span>}
+                {church.email && <span><strong>Email:</strong> {church.email}</span>}
+                {church.phone && <span><strong>Phone:</strong> {church.phone}</span>}
+                {church.websiteUrl && <span className="col-span-2"><strong>Website:</strong> <a href={church.websiteUrl} target="_blank" rel="noopener noreferrer" className="underline text-blue-600">{church.websiteUrl}</a></span>}
+                <span><strong>Members:</strong> {church.memberCount ?? 0}</span>
+                {church.submittedForReviewAt && <span><strong>Submitted:</strong> {new Date(church.submittedForReviewAt).toLocaleDateString()}</span>}
+              </div>
+              {church.description && <p className="text-xs text-muted-foreground italic border-l-2 pl-2 border-border">{church.description}</p>}
               {church.platformReviewNote && (
                 <p className="text-xs bg-amber-50 border border-amber-200 rounded px-2 py-1.5 text-amber-800">Note: {church.platformReviewNote}</p>
               )}
-              <Input
-                placeholder="Optional review note…"
-                className="text-xs h-8"
-                value={reviewNote[church.id] ?? ""}
-                onChange={e => setReviewNote(prev => ({ ...prev, [church.id]: e.target.value }))}
-                data-testid={`input-review-note-${church.id}`}
-              />
-              <div className="flex gap-2 flex-wrap">
-                <Button size="sm" className="bg-green-700 hover:bg-green-800 text-white text-xs" onClick={() => review.mutate({ id: church.id, action: "approve", note: reviewNote[church.id] })} disabled={review.isPending} data-testid={`button-approve-org-${church.id}`}>
-                  <CheckCircle className="w-3.5 h-3.5 mr-1" />{t("cm_approveOrg")}
-                </Button>
-                <Button size="sm" variant="destructive" className="text-xs" onClick={() => review.mutate({ id: church.id, action: "reject", note: reviewNote[church.id] })} disabled={review.isPending} data-testid={`button-reject-org-${church.id}`}>
-                  <XCircle className="w-3.5 h-3.5 mr-1" />{t("cm_rejectOrg")}
-                </Button>
-                <Button size="sm" variant="outline" className="text-xs" onClick={() => review.mutate({ id: church.id, action: "request_info", note: reviewNote[church.id] })} disabled={review.isPending} data-testid={`button-request-info-org-${church.id}`}>
-                  <AlertTriangle className="w-3.5 h-3.5 mr-1" />{t("cm_requestMoreInfoShort")}
-                </Button>
-              </div>
+              {["pending_review", "draft"].includes(church.platformStatus) && (
+                <>
+                  <Input
+                    placeholder={church.platformStatus === "pending_review" ? "Review note (required to reject)…" : "Note…"}
+                    className="text-xs h-8"
+                    value={reviewNote[church.id] ?? ""}
+                    onChange={e => setReviewNote(prev => ({ ...prev, [church.id]: e.target.value }))}
+                    data-testid={`input-review-note-${church.id}`}
+                  />
+                  <div className="flex gap-2 flex-wrap">
+                    <Button size="sm" className="bg-green-700 hover:bg-green-800 text-white text-xs" onClick={() => review.mutate({ id: church.id, action: "approve", note: reviewNote[church.id] })} disabled={review.isPending} data-testid={`button-approve-org-${church.id}`}>
+                      <CheckCircle className="w-3.5 h-3.5 mr-1" />{t("cm_approveOrg")}
+                    </Button>
+                    <Button size="sm" variant="destructive" className="text-xs" onClick={() => review.mutate({ id: church.id, action: "reject", note: reviewNote[church.id] })} disabled={review.isPending} data-testid={`button-reject-org-${church.id}`}>
+                      <XCircle className="w-3.5 h-3.5 mr-1" />{t("cm_rejectOrg")}
+                    </Button>
+                    <Button size="sm" variant="outline" className="text-xs" onClick={() => review.mutate({ id: church.id, action: "request_info", note: reviewNote[church.id] })} disabled={review.isPending} data-testid={`button-request-info-org-${church.id}`}>
+                      <AlertTriangle className="w-3.5 h-3.5 mr-1" />{t("cm_requestMoreInfoShort")}
+                    </Button>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         ))}

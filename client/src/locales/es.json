@@ -1041,5 +1041,12 @@
   "cm_approvedDisclaimerTitle": "Sobre la Aprobación de la Plataforma",
   "cm_approvedDisclaimerBody": "La aprobación para el Modo Iglesia significa que esta organización ha superado el proceso de revisión básico de nuestra plataforma. No es un respaldo, acreditación, certificación teológica ni garantía de ningún tipo.",
   "cm_approvedDisclaimerNote": "365 Daily Devotional es solo una plataforma tecnológica. No hacemos endorsamientos teológicos, doctrinales ni de gobernanza de ninguna organización aquí listada.",
-  "cm_viewPlatformPolicy": "Ver Política de Plataforma"
+  "cm_viewPlatformPolicy": "Ver Política de Plataforma",
+  "cm_draft": "Borrador",
+  "cm_submitForReview": "Enviar para Revisión",
+  "cm_submittingForReview": "Enviando…",
+  "cm_draftBannerTitle": "Aún no enviado para revisión de plataforma",
+  "cm_draftBannerDesc": "El perfil de su organización está en borrador. Complételo y envíelo para revisión de plataforma para que sea accesible a nuevos miembros.",
+  "cm_submitForReviewConfirm": "Una vez enviado, los administradores de la plataforma revisarán su organización. No podrá editar detalles principales durante la revisión.",
+  "cm_submitSuccess": "Enviado para revisión"
 }

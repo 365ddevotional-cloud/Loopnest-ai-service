@@ -1041,5 +1041,12 @@
   "cm_approvedDisclaimerTitle": "About Platform Approval",
   "cm_approvedDisclaimerBody": "Approval for Church Mode means this organization has passed our platform's basic review process. It is not an endorsement, accreditation, theological certification, or guarantee of any kind.",
   "cm_approvedDisclaimerNote": "365 Daily Devotional is a technology platform only. We do not make theological, doctrinal, or governance endorsements of any organization listed here.",
-  "cm_viewPlatformPolicy": "View Platform Policy"
+  "cm_viewPlatformPolicy": "View Platform Policy",
+  "cm_draft": "Draft",
+  "cm_submitForReview": "Submit for Review",
+  "cm_submittingForReview": "Submitting…",
+  "cm_draftBannerTitle": "Not yet submitted for platform review",
+  "cm_draftBannerDesc": "Your organization profile is in draft. Complete your profile and submit it for platform review to make it accessible to new members.",
+  "cm_submitForReviewConfirm": "Once submitted, platform administrators will review your organization. You cannot edit core details during review.",
+  "cm_submitSuccess": "Submitted for review"
 }

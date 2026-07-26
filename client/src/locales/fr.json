@@ -1041,5 +1041,12 @@
   "cm_approvedDisclaimerTitle": "À propos de l'approbation de la plateforme",
   "cm_approvedDisclaimerBody": "L'approbation pour le Mode Église signifie que cette organisation a passé le processus d'examen de base de notre plateforme. Ce n'est pas un endossement, une accréditation, une certification théologique ou une garantie quelconque.",
   "cm_approvedDisclaimerNote": "365 Daily Devotional est uniquement une plateforme technologique. Nous ne faisons aucun endossement théologique, doctrinal ou de gouvernance des organisations répertoriées ici.",
-  "cm_viewPlatformPolicy": "Voir la Politique de Plateforme"
+  "cm_viewPlatformPolicy": "Voir la Politique de Plateforme",
+  "cm_draft": "Brouillon",
+  "cm_submitForReview": "Soumettre pour Examen",
+  "cm_submittingForReview": "Envoi en cours…",
+  "cm_draftBannerTitle": "Pas encore soumis pour examen par la plateforme",
+  "cm_draftBannerDesc": "Le profil de votre organisation est en brouillon. Complétez-le et soumettez-le pour examen par la plateforme afin qu'il soit accessible aux nouveaux membres.",
+  "cm_submitForReviewConfirm": "Une fois soumis, les administrateurs de la plateforme examineront votre organisation. Vous ne pouvez pas modifier les détails principaux pendant l'examen.",
+  "cm_submitSuccess": "Soumis pour examen"
 }

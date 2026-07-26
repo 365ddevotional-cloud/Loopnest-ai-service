@@ -2879,7 +2879,7 @@ export async function registerRoutes(
       if (!name?.trim()) return res.status(400).json({ message: "Church name is required" });
       let slug = churchSlug(name.trim());
       for (let i = 0; i < 5 && await storage.getChurchBySlug(slug); i++) slug = churchSlug(name.trim());
-      const church = await storage.createChurch({ name: name.trim(), slug, description: description?.trim() || null, denomination: denomination?.trim() || null, address: address?.trim() || null, websiteUrl: websiteUrl?.trim() || null, logoUrl: null, ownerId: uid, status: "active", platformStatus: "pending_review", submittedForReviewAt: new Date() });
+      const church = await storage.createChurch({ name: name.trim(), slug, description: description?.trim() || null, denomination: denomination?.trim() || null, address: address?.trim() || null, websiteUrl: websiteUrl?.trim() || null, logoUrl: null, ownerId: uid, status: "active", platformStatus: "draft" });
       await storage.addChurchMember({ churchId: church.id, firebaseUid: uid, email: email || "", displayName: displayName || null, role: "owner", status: "active" });
       res.status(201).json(church);
     } catch (err) { console.error("Create church:", err); res.status(500).json({ message: "Failed to create church" }); }
@@ -4018,9 +4018,28 @@ export async function registerRoutes(
       const parsed = schema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ message: "Invalid request" });
       const { action, note } = parsed.data;
+      // Require a reason when rejecting
+      if (action === "reject" && !note?.trim()) return res.status(400).json({ message: "A reason is required when rejecting an application" });
       const platformStatus = action === "approve" ? "approved" : action === "reject" ? "rejected" : "pending_review";
       const updated = await storage.updateChurchPlatformStatus(id, platformStatus, note, "platform_admin");
       storage.createAuditLog({ churchId: id, action: `platform_${action}`, newValue: note, actorUid: "platform_admin" }).catch(() => {});
+      res.json(updated);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // Owner: submit draft org for platform review
+  app.post("/api/churches/:id/submit-for-review", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const member = await storage.getChurchMember(churchId, uid);
+      if (!member || member.role !== "owner") return res.status(403).json({ message: "Forbidden" });
+      const church = await storage.getChurch(churchId);
+      if (!church) return res.status(404).json({ message: "Church not found" });
+      if (church.platformStatus !== "draft") return res.status(400).json({ message: `Cannot submit for review from status: ${church.platformStatus}` });
+      const updated = await storage.updateChurchPlatformStatus(churchId, "pending_review", null, uid);
+      // Record submission timestamp via audit log
+      storage.createAuditLog({ churchId, action: "submitted_for_review", actorUid: uid }).catch(() => {});
       res.json(updated);
     } catch { res.status(500).json({ message: "Server error" }); }
   });
@@ -4083,6 +4102,10 @@ export async function registerRoutes(
       });
       const parsed = schema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ message: "Invalid request" });
+      // Require reason for serious enforcement actions
+      if (["suspension", "removal"].includes(parsed.data.enforcementAction ?? "") && !parsed.data.enforcementReason?.trim()) {
+        return res.status(400).json({ message: "A reason is required for suspension or removal enforcement actions" });
+      }
       const updated = await storage.updateComplianceCase(id, { ...parsed.data, enforcementAt: parsed.data.enforcementAction ? new Date() : undefined });
 
       // If enforcement action is suspension or removal, update church platform status

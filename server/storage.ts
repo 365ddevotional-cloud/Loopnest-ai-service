@@ -2755,7 +2755,7 @@ export class DatabaseStorage implements IStorage {
     const d7 = new Date(); d7.setDate(d7.getDate() - 7);
 
     const [pendingReviewRes, openCasesRes, pendingAppealsRes, pendingDeletionsRes, recentApprovalsRes, recentSuspensionsRes] = await Promise.all([
-      db.execute(sql`SELECT COUNT(*) AS c FROM churches WHERE platform_status = 'pending_review'`),
+      db.execute(sql`SELECT COUNT(*) AS c FROM churches WHERE platform_status IN ('draft','pending_review')`),
       db.execute(sql`SELECT COUNT(*) AS c FROM compliance_cases WHERE status NOT IN ('resolved','closed')`),
       db.execute(sql`SELECT COUNT(*) AS c FROM compliance_appeals WHERE status = 'pending'`),
       db.execute(sql`SELECT COUNT(*) AS c FROM church_deletion_requests WHERE status = 'pending'`),

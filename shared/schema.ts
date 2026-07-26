@@ -752,7 +752,7 @@ export const churches = pgTable("churches", {
   homepageSections: jsonb("homepage_sections").$type<Array<{ id: string; enabled: boolean; order: number }>>(),
   country: text("country"), // ISO 3166-1 alpha-2, e.g. "US"
   // Platform governance
-  platformStatus: text("platform_status").notNull().default("approved"), // pending_review | approved | rejected | suspended | archived
+  platformStatus: text("platform_status").notNull().default("approved"), // draft | pending_review | approved | rejected | suspended | archived
   platformReviewNote: text("platform_review_note"),
   platformReviewedAt: timestamp("platform_reviewed_at"),
   platformReviewedBy: text("platform_reviewed_by"),
@@ -1289,7 +1289,7 @@ export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 
 // ─── Platform Governance ─────────────────────────────────────────────────────
 
-export const PLATFORM_STATUS_VALUES = ["pending_review", "approved", "rejected", "suspended", "archived"] as const;
+export const PLATFORM_STATUS_VALUES = ["draft", "pending_review", "approved", "rejected", "suspended", "archived"] as const;
 export type PlatformStatus = typeof PLATFORM_STATUS_VALUES[number];
 
 export const COMPLIANCE_CASE_CATEGORIES = ["content", "conduct", "financial", "technical", "other"] as const;
