@@ -3874,10 +3874,21 @@ export async function registerRoutes(
       if (!dept) return res.status(404).json({ message: "Department not found" });
       const m = await storage.getChurchMember(dept.churchId, uid);
       if (!m || !["owner", "lead_pastor", "administrator"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
+      const deptMembers = await storage.getDepartmentMembers(deptId);
       const updated = await storage.archiveDepartment(deptId);
       storage.createAuditLog({ churchId: dept.churchId, departmentId: deptId, action: "department_archived", previousValue: dept.name, actorUid: uid, actorRole: m.role }).catch(() => {});
-      // Notify church members via pinned announcement
-      storage.createChurchAnnouncement({ churchId: dept.churchId, createdBy: uid, title: `Department Archived: ${dept.name}`, body: `The "${dept.name}" department has been archived by church leadership.`, isPinned: false, expiresAt: null }).catch(() => {});
+      // Targeted in-app notification: create an inbox thread for each active department member
+      const closureDate = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+      for (const dm of deptMembers) {
+        const memberEmail = dm.member?.email;
+        const memberName = dm.member?.displayName ?? dm.member?.email ?? "Member";
+        if (memberEmail) {
+          storage.createInboxThread(
+            { userEmail: memberEmail, userName: memberName, subject: `Department Archived: ${dept.name}`, category: "General" },
+            `Dear ${memberName},\n\nThe "${dept.name}" department of your church has been archived effective ${closureDate}. As a member of this department, your access to department activities will no longer be available.\n\nPlease reach out to church leadership if you have any questions.\n\nGod bless,\nChurch Leadership`
+          ).catch(() => {});
+        }
+      }
       res.json(updated);
     } catch { res.status(500).json({ message: "Server error" }); }
   });

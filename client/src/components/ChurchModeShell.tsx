@@ -6,6 +6,8 @@ import { CHURCH_ROLE_LABELS, type ChurchRole } from "@shared/schema";
 import { Home, Mic2, Megaphone, Users, Heart, Shield, Settings, ChevronRight, HandCoins, MessageSquare, UserCircle, Building2, Globe, Check, Menu, X, CalendarDays, ClipboardList } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
 import { getCurrentLang } from "@/utils/i18n";
+import { useQuery } from "@tanstack/react-query";
+import { useUser } from "@/contexts/UserContext";
 
 interface ChurchModeShellProps {
   church: Church | null;
@@ -110,14 +112,30 @@ function LangPicker({ headerTextSecondary, headerBorder }: { headerTextSecondary
   );
 }
 
-export function ChurchModeShell({ church, currentRole, children, unreadMessages = 0, pendingMembers = 0 }: ChurchModeShellProps) {
+export function ChurchModeShell({ church, currentRole, children, unreadMessages = 0, pendingMembers }: ChurchModeShellProps) {
   const [location, setLocation] = useLocation();
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { getIdToken, user, emailVerified } = useUser();
+  const isSignedIn = !!user && !!emailVerified;
 
   const slug = church?.slug;
   const isAdmin = ADMIN_ROLES.includes(currentRole ?? "");
   const isLeader = LEADER_ROLES.includes(currentRole ?? "");
+
+  // Live pending-count query — runs in the shell so every Church Mode page shows a live badge
+  const { data: pendingCountData } = useQuery<{ count: number }>({
+    queryKey: ["/api/churches", church?.id, "pending-count"],
+    queryFn: async () => {
+      const token = await getIdToken();
+      if (!token || !church?.id) return { count: 0 };
+      const r = await fetch(`/api/churches/${church.id}/members/pending-count`, { headers: { Authorization: `Bearer ${token}` } });
+      return r.ok ? r.json() : { count: 0 };
+    },
+    enabled: !!church?.id && isSignedIn && isAdmin,
+    refetchInterval: 30000,
+  });
+  const livePendingCount = pendingMembers ?? pendingCountData?.count ?? 0;
   const isMember = !!currentRole;
 
   const navItems = slug && isMember ? [
@@ -129,7 +147,7 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
     { label: t("cm_prayer"), path: `/church/${slug}/prayer`, icon: Heart },
     { label: t("cm_giving"), path: `/church/${slug}/giving`, icon: HandCoins },
     { label: t("cm_messages"), path: `/church/${slug}/messages`, icon: MessageSquare, badge: unreadMessages > 0 ? unreadMessages : 0 },
-    ...(isLeader || church?.memberDirectoryEnabled ? [{ label: t("cm_members"), path: `/church/${slug}/members`, icon: Users, badge: pendingMembers > 0 ? pendingMembers : 0 }] : []),
+    ...(isLeader || church?.memberDirectoryEnabled ? [{ label: t("cm_members"), path: `/church/${slug}/members`, icon: Users, badge: livePendingCount > 0 ? livePendingCount : 0 }] : []),
     { label: t("cm_myProfile"), path: `/church/${slug}/profile`, icon: UserCircle },
     ...(isAdmin ? [{ label: t("cm_admin"), path: `/church/${slug}/admin`, icon: Settings }] : []),
   ] : [];
