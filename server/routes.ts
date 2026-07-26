@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { OAuth2Client } from "google-auth-library";
-import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification, sendDonationThankYouEmail, sendChurchNameChangeSecurityEmail } from "./sendgrid";
+import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification, sendDonationThankYouEmail, sendChurchNameChangeSecurityEmail, sendChurchWelcomeEmail, sendChurchComplianceEmail } from "./sendgrid";
 import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { getTodayDateString, isFutureDate, isPastDate, getDayOfYear } from "./date-utils";
@@ -2884,6 +2884,13 @@ export async function registerRoutes(
       const church = await storage.createChurch({ name: name.trim(), slug, description: description?.trim() || null, denomination: denomination?.trim() || null, address: address?.trim() || null, websiteUrl: websiteUrl?.trim() || null, logoUrl: null, ownerId: uid, status: "active", platformStatus: "draft" });
       await storage.addChurchMember({ churchId: church.id, firebaseUid: uid, email: email || "", displayName: displayName || null, role: "owner", status: "active" });
       res.status(201).json(church);
+      // Non-blocking welcome email — fires after response so registration is never delayed
+      if (email) {
+        sendChurchWelcomeEmail(email, displayName || email, church.name, church.platformStatus ?? "draft", "en")
+          .then(r => {
+            if (!r.success) storage.createAuditLog({ churchId: church.id, action: "email_failed", newValue: `welcome:${r.status.slice(0,200)}`, actorUid: uid }).catch(() => {});
+          }).catch(() => {});
+      }
     } catch (err) { console.error("Create church:", err); res.status(500).json({ message: "Failed to create church" }); }
   });
 
@@ -4052,6 +4059,21 @@ export async function registerRoutes(
       const updated = await storage.updateChurchPlatformStatus(id, platformStatus, note, "platform_admin");
       storage.createAuditLog({ churchId: id, action: `platform_${action}`, newValue: note, actorUid: "platform_admin" }).catch(() => {});
       res.json(updated);
+      // Notify owner of approval/rejection/suspension
+      const emailEvent = action === "approve" ? "org_approved" : action === "reject" ? "org_rejected" : null;
+      if (emailEvent) {
+        (async () => {
+          try {
+            const members = await storage.getChurchMembers(id);
+            const owner = members.find(m => m.role === "owner");
+            const ch = await storage.getChurch(id);
+            if (owner?.email && ch) {
+              const r = await sendChurchComplianceEmail({ toEmail: owner.email, ownerName: owner.displayName ?? owner.email, churchName: ch.name, event: emailEvent, description: note || undefined });
+              if (!r.success) storage.createAuditLog({ churchId: id, action: "email_failed", newValue: `${emailEvent}:${r.status.slice(0,200)}`, actorUid: "platform_admin" }).catch(() => {});
+            }
+          } catch {}
+        })();
+      }
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 
@@ -4107,29 +4129,32 @@ export async function registerRoutes(
       const deadlineDate = parsed.data.responseDeadline ? new Date(parsed.data.responseDeadline) : null;
       const created = await storage.createComplianceCase({ ...parsed.data, caseNumber, createdBy: "platform_admin", status: "open", responseDeadline: deadlineDate });
       storage.createAuditLog({ churchId: parsed.data.churchId, action: "compliance_case_opened", newValue: caseNumber, actorUid: "platform_admin" }).catch(() => {});
-      // Notify church owner by email
+      // Notify church owner by email (uses Replit SendGrid connector — non-blocking)
       (async () => {
         try {
           const members = await storage.getChurchMembers(parsed.data.churchId);
           const owner = members.find(m => m.role === "owner");
           const ch = await storage.getChurch(parsed.data.churchId);
           if (owner?.email && ch) {
-            const sgMail = (await import("@sendgrid/mail")).default;
-            sgMail.setApiKey(process.env.SENDGRID_API_KEY || "");
-            await sgMail.send({
-              to: owner.email,
-              from: process.env.SENDGRID_FROM_EMAIL || "noreply@365devotional.app",
-              subject: `Compliance Notice — Case ${caseNumber} | ${ch.name}`,
-              html: `<p>Dear ${owner.displayName ?? owner.email},</p>
-<p>A compliance case (<strong>${caseNumber}</strong>) has been opened for <strong>${ch.name}</strong>.</p>
-<p><strong>Category:</strong> ${parsed.data.category}<br/>
-<strong>Severity:</strong> ${parsed.data.severity}<br/>
-<strong>Summary:</strong> ${parsed.data.description}</p>
-<p>Please log in to your church administration panel to review the case details and submit a response. You may also contact our support team if you have questions.</p>
-<p style="margin-top:24px;font-size:12px;color:#888;">This is an automated compliance notification. Case reference: ${caseNumber}.</p>`,
+            const r = await sendChurchComplianceEmail({
+              toEmail: owner.email,
+              ownerName: owner.displayName ?? owner.email,
+              churchName: ch.name,
+              event: "case_opened",
+              caseNumber,
+              category: parsed.data.category,
+              severity: parsed.data.severity,
+              description: `A compliance case has been opened. Please log in to your organization administration panel to review the full details and submit a response.`,
+              deadline: deadlineDate ?? null,
             });
+            if (!r.success) {
+              storage.createAuditLog({ churchId: parsed.data.churchId, action: "email_failed", newValue: `case_opened:${r.status.slice(0,200)}`, actorUid: "platform_admin" }).catch(() => {});
+              console.warn(`[email] Case-open notification failed for church ${parsed.data.churchId}; action was still completed.`);
+            }
           }
-        } catch { /* email failure is non-blocking */ }
+        } catch (e) {
+          console.warn("[email] Case-open notification error (non-fatal):", e);
+        }
       })();
       res.status(201).json(created);
     } catch { res.status(500).json({ message: "Server error" }); }
@@ -4165,16 +4190,63 @@ export async function registerRoutes(
       const updated = await storage.updateComplianceCase(id, { ...parsed.data, enforcementAt: parsed.data.enforcementAction ? new Date() : undefined });
 
       // If enforcement action is suspension or removal, update church platform status
-      if (parsed.data.enforcementAction === "suspension") {
-        const c = await storage.getComplianceCase(id);
-        if (c) await storage.updateChurchPlatformStatus(c.churchId, "suspended", parsed.data.enforcementReason ?? "Suspended due to compliance case", "platform_admin");
+      const fullCase = await storage.getComplianceCase(id);
+      if (parsed.data.enforcementAction === "suspension" && fullCase) {
+        await storage.updateChurchPlatformStatus(fullCase.churchId, "suspended", parsed.data.enforcementReason ?? "Suspended due to compliance case", "platform_admin");
       }
-      if (parsed.data.enforcementAction === "removal") {
-        const c = await storage.getComplianceCase(id);
-        if (c) await storage.updateChurchPlatformStatus(c.churchId, "archived", parsed.data.enforcementReason ?? "Removed due to compliance case", "platform_admin");
+      if (parsed.data.enforcementAction === "removal" && fullCase) {
+        await storage.updateChurchPlatformStatus(fullCase.churchId, "archived", parsed.data.enforcementReason ?? "Removed due to compliance case", "platform_admin");
       }
 
       res.json(updated);
+
+      // Non-blocking email to church owner on case status or enforcement change
+      if (fullCase) {
+        (async () => {
+          try {
+            const members = await storage.getChurchMembers(fullCase.churchId);
+            const owner = members.find(m => m.role === "owner");
+            const ch = await storage.getChurch(fullCase.churchId);
+            if (!owner?.email || !ch) return;
+
+            let emailEvent: import("./sendgrid").ComplianceEmailEvent | null = null;
+            let description: string | undefined;
+
+            if (parsed.data.status === "resolved" || parsed.data.status === "closed") {
+              emailEvent = "case_resolved";
+              description = "Your compliance case has been resolved by the platform team. No further action is required at this time.";
+            } else if (parsed.data.enforcementAction === "warning") {
+              emailEvent = "enforcement_warning";
+              description = parsed.data.enforcementReason ?? undefined;
+            } else if (parsed.data.enforcementAction === "suspension") {
+              emailEvent = "enforcement_suspension";
+              description = parsed.data.enforcementReason ?? undefined;
+            } else if (parsed.data.enforcementAction === "removal") {
+              emailEvent = "enforcement_removal";
+              description = parsed.data.enforcementReason ?? undefined;
+            } else if (parsed.data.status) {
+              emailEvent = "case_status_changed";
+              description = `Your compliance case status has been updated to: ${parsed.data.status.replace(/_/g, " ")}.`;
+            }
+
+            if (!emailEvent) return;
+            const r = await sendChurchComplianceEmail({
+              toEmail: owner.email,
+              ownerName: owner.displayName ?? owner.email,
+              churchName: ch.name,
+              event: emailEvent,
+              caseNumber: fullCase.caseNumber,
+              newStatus: parsed.data.status,
+              description,
+            });
+            if (!r.success) {
+              storage.createAuditLog({ churchId: fullCase.churchId, action: "email_failed", newValue: `${emailEvent}:${r.status.slice(0,200)}`, actorUid: "platform_admin" }).catch(() => {});
+            }
+          } catch (e) {
+            console.warn("[email] Case-update notification error (non-fatal):", e);
+          }
+        })();
+      }
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 

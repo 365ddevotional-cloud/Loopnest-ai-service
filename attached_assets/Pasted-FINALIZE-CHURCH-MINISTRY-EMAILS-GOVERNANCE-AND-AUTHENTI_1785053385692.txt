@@ -1,0 +1,395 @@
+FINALIZE CHURCH/MINISTRY EMAILS, GOVERNANCE, AND AUTHENTICATED TESTING
+
+MINIMAL CHANGES ONLY.
+
+Do not rebuild, refactor, or expand unrelated parts of the app.
+
+The previous Church Mode governance and branding implementation is already saved. Complete only the remaining email configuration, branded verification, welcome email, and authenticated testing.
+
+==================================================
+PART 1 — REUSE THE EXISTING EMAIL SYSTEM
+==================================================
+
+Inspect the app’s existing email configuration before changing anything.
+
+Determine whether the deployed app already uses:
+
+- SendGrid
+- Resend
+- Firebase Authentication email
+- another working production email provider
+
+Reuse the provider and sender configuration that is already active and reliable.
+
+Do not create a second disconnected email system when the app already has a working provider.
+
+Never expose secret values in the final report.
+
+==================================================
+PART 2 — BRANDED EMAIL VERIFICATION
+==================================================
+
+When a user creates an account to register or join a church, ministry, Christian organization, Christian association, fellowship, or similar organization, the verification email must clearly represent 365 Daily Devotional.
+
+It must not appear to the user as an unbranded Firebase message.
+
+Configure the verification-email experience so that it includes:
+
+Sender display name:
+365 Daily Devotional
+
+Email subject:
+Verify Your 365 Daily Devotional Account
+
+Email heading:
+Welcome to 365 Daily Devotional
+
+Email body should explain:
+
+- the user created an account with 365 Daily Devotional
+- they must verify their email before continuing
+- the verification link should be used only by the intended recipient
+- they may ignore the email if they did not create the account
+
+Verification button text:
+Verify My Email
+
+Footer:
+365 Daily Devotional
+Supporting believers, churches, ministries, and Christian communities.
+
+The verification link must return users safely to:
+
+https://365dailydevotional.com
+
+or the correct deployed authentication return route.
+
+Do not use a Replit preview URL in production verification emails.
+
+Ensure the production domain is correctly configured in Firebase Authentication authorized domains and action-code settings.
+
+IMPORTANT:
+
+If Firebase’s built-in verification-template customization is being used, update the Firebase email template and authorized return URL correctly.
+
+If the existing provider sends a custom verification email, generate and send a secure Firebase verification/action link server-side using the proper Firebase Admin method.
+
+Do not weaken email-verification security.
+
+Do not mark an account verified without a valid Firebase verification action.
+
+==================================================
+PART 3 — SENDER EMAIL CONFIGURATION
+==================================================
+
+The ministry has requested that outgoing welcome and organization-related emails appear to come from:
+
+365ddevotional@gmail.com
+
+Use:
+
+Display name:
+365 Daily Devotional
+
+Preferred sender:
+365ddevotional@gmail.com
+
+However, do not spoof an unverified sender address.
+
+Check whether 365ddevotional@gmail.com is approved and verified by the active email provider.
+
+If the provider allows and has verified it, use:
+
+From:
+365 Daily Devotional <365ddevotional@gmail.com>
+
+If the provider does not permit direct sending from that Gmail address:
+
+- use the provider’s verified sender address or verified 365 Daily Devotional domain address
+- set Reply-To as 365ddevotional@gmail.com
+- keep the visible sender name as “365 Daily Devotional”
+- report exactly what sender configuration is required
+
+Do not silently pretend that an unverified Gmail sender is active.
+
+==================================================
+PART 4 — AUTOMATIC WELCOME EMAIL AFTER ORGANIZATION REGISTRATION
+==================================================
+
+After a church, ministry, Christian organization, Christian association, fellowship, or similar organization successfully submits its registration, automatically send a welcome email to the organization owner.
+
+This email should be sent only after the registration record was created successfully.
+
+If platform-admin approval is required, clearly state that the registration is awaiting review and that full public or member access may remain limited until approval.
+
+Email subject:
+
+Welcome to Church Mode on 365 Daily Devotional
+
+Address the recipient by their display name when available.
+
+Use the organization name in the message.
+
+Suggested email content:
+
+Hello [Owner Name],
+
+Welcome to Church Mode on 365 Daily Devotional.
+
+Thank you for registering [Organization Name] with us. We are honored to support your church, ministry, Christian organization, association, fellowship, or faith community.
+
+With Church Mode, your organization can:
+
+- create a dedicated organization space
+- invite and manage members
+- create departments, ministries, and groups
+- upload sermons and announcements
+- receive prayer requests
+- manage events, tasks, attendance, and assignments
+- communicate with members
+- manage organization branding and logos
+- provide online giving options where available
+- view organization activity and insights
+- use Church Mode in English, Spanish, and French
+
+Your registration is currently:
+[Approval Status]
+
+If approval is pending, explain:
+
+“Our platform team will review your registration. You will receive an in-app notification and email when the review is completed.”
+
+Add this security statement:
+
+“365 Daily Devotional will never ask you to send your password by email.”
+
+Close with:
+
+We pray that this platform will help your organization connect, grow, serve, and strengthen believers.
+
+Blessings,
+
+365 Daily Devotional Team
+365ddevotional@gmail.com
+https://365dailydevotional.com
+
+The welcome email must:
+
+- be professionally formatted
+- be mobile-friendly
+- contain plain-text fallback content
+- avoid exposing internal IDs
+- avoid including passwords or private membership information
+- use the organization’s selected language where available
+- support English, Spanish, and French
+- fall back safely to English
+
+Do not translate the organization’s own name.
+
+==================================================
+PART 5 — COMPLIANCE EMAIL NOTIFICATIONS
+==================================================
+
+Send both an in-app private notification and an email to the verified organization owner when:
+
+- a compliance case is opened
+- a response deadline is assigned or changed
+- the case status changes
+- the organization receives a warning
+- the case is resolved
+- an appeal decision is made
+- the organization is suspended
+- the organization is restored
+
+The email must include:
+
+- organization name
+- case reference
+- short category or reason
+- required action
+- response deadline
+- safe link to the owner’s compliance page
+- statement that full details are available after signing in
+
+Do not include:
+
+- confidential allegations in unnecessary detail
+- counseling content
+- private member messages
+- passwords
+- Firebase UIDs
+- database IDs
+- secret keys
+- access tokens
+- technical stack traces
+
+Verify the recipient server-side from the authenticated organization-owner record.
+
+Never accept the recipient email from an untrusted browser request.
+
+==================================================
+PART 6 — EMAIL ERROR HANDLING AND DELIVERY LOGGING
+==================================================
+
+Do not silently swallow email errors.
+
+Email failure must not reverse or cancel:
+
+- account creation
+- organization-registration creation
+- compliance-case creation
+- approval decisions
+
+When an email fails:
+
+- keep the underlying action successful when appropriate
+- save a safe email-delivery status
+- log the provider response without secrets
+- show the platform admin a clear warning
+
+Example:
+
+“The action was completed, but the email notification could not be sent. The recipient can still see the in-app notification.”
+
+Track these statuses where practical:
+
+- queued
+- accepted by provider
+- sent
+- failed
+- skipped because no verified email
+- skipped because consent or policy prevents delivery
+
+Do not claim inbox delivery merely because the provider accepted the request.
+
+==================================================
+PART 7 — AUTHENTICATED END-TO-END TESTING
+==================================================
+
+Use safe test accounts and test organization data.
+
+TEST A — ACCOUNT VERIFICATION
+
+- Create a new test account.
+- Confirm the verification request is accepted.
+- Confirm the visible email branding says 365 Daily Devotional rather than Firebase.
+- Confirm the subject and sender display name are correct.
+- Confirm the verification link points to the correct production domain.
+- Confirm an unverified user cannot bypass verification.
+- Confirm “Resend Verification Email” works with loading state and cooldown.
+- Confirm “Use a Different Email,” “Cancel,” and “Back to Sign In” work.
+
+Replit may not claim inbox delivery unless it can actually inspect the inbox.
+
+TEST B — ORGANIZATION WELCOME EMAIL
+
+- Register a safe test church or ministry.
+- Confirm the organization record is created.
+- Confirm the welcome email is triggered.
+- Confirm it contains the owner name, organization name, approval status, feature summary, and correct language.
+- Confirm the email provider accepted or rejected the request.
+- Confirm an in-app welcome notification also exists.
+- Remove or clearly identify the test organization afterward.
+
+TEST C — BRANDING
+
+Using an authenticated organization owner:
+
+- open Church Administration → Branding
+- confirm dark and bright presets are visible
+- confirm red, blue, green, yellow, orange, pink, gold, and silver options exist
+- select a bright color
+- confirm live preview changes
+- save the color
+- refresh the page
+- confirm it remains saved
+- confirm automatic text contrast remains readable
+- confirm custom HEX input works
+
+TEST D — COMPLIANCE
+
+Using safe test data:
+
+- platform admin opens a compliance case
+- deadline saves correctly
+- owner receives a private in-app notice
+- owner receives an email attempt
+- owner sees the deadline
+- owner submits a response
+- platform admin sees the response
+- platform admin resolves the case
+- owner sees the resolution
+- resolution email is triggered
+
+TEST E — SUSPENSION RESTRICTIONS
+
+- set a test organization to suspended
+- confirm it cannot create new invitations
+- confirm existing church invitations cannot be used
+- confirm existing department invitations cannot be used
+- confirm new membership requests are blocked
+- confirm pending member approval is blocked
+- confirm the owner can still view and respond to compliance cases
+- restore the test organization after testing
+
+==================================================
+PART 8 — REQUIRED CONFIGURATION REPORT
+==================================================
+
+Report the exact environment-variable names required.
+
+Check whether these or equivalent existing secrets are already configured:
+
+- SENDGRID_API_KEY
+- SENDGRID_FROM_EMAIL
+- SENDGRID_FROM_NAME
+- REPLY_TO_EMAIL
+- RESEND_API_KEY
+- FIREBASE_PROJECT_ID
+- FIREBASE_CLIENT_EMAIL
+- FIREBASE_PRIVATE_KEY
+- APP_BASE_URL
+
+Do not reveal any secret value.
+
+Do not invent new environment-variable names unnecessarily.
+
+Use the app’s existing naming conventions wherever possible.
+
+==================================================
+PART 9 — FINAL REPORT
+==================================================
+
+The final report must state:
+
+1. Existing email provider found
+2. Which provider is being reused
+3. Verification-email implementation used
+4. Verification-email sender display name
+5. Verification-email subject
+6. Verification return URL
+7. Whether 365ddevotional@gmail.com is verified as a sender
+8. Actual From address used
+9. Actual Reply-To address used
+10. Required environment-secret names
+11. Welcome-email trigger result
+12. Welcome-email provider result
+13. Verification-email provider result
+14. Compliance-email provider result
+15. Branding authenticated test result
+16. Compliance owner-response test result
+17. Admin-resolution test result
+18. Suspension-restriction test result
+19. Any genuine defect fixed
+20. Any item that could not be tested
+21. Whether publishing is required
+
+Do not say an email was delivered unless inbox delivery was actually confirmed.
+
+Do not modify unrelated files.
+
+Do not perform a broad audit.
+
+Do not add unrelated features.
+
+Do not publish unless an actual code or configuration correction was made and tested.
