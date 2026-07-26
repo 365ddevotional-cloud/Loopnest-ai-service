@@ -86,6 +86,7 @@ const ChurchPrayer = lazy(() => import("@/pages/ChurchPrayer"));
 const ChurchGiving = lazy(() => import("@/pages/ChurchGiving"));
 const ChurchMessaging = lazy(() => import("@/pages/ChurchMessaging"));
 const ChurchMemberProfilePage = lazy(() => import("@/pages/ChurchMemberProfile"));
+const ChurchMemberPublicProfile = lazy(() => import("@/pages/ChurchMemberPublicProfile"));
 const ChurchDepartments = lazy(() => import("@/pages/ChurchDepartments"));
 const ChurchDepartmentView = lazy(() => import("@/pages/ChurchDepartmentView"));
 const ChurchPublicHome = lazy(() => import("@/pages/ChurchPublicHome"));
@@ -174,6 +175,7 @@ function Router() {
       <Route path="/church/:slug/giving/success" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchGiving /></Suspense>} />
       <Route path="/church/:slug/giving" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchGiving /></Suspense>} />
       <Route path="/church/:slug/messages" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchMessaging /></Suspense>} />
+      <Route path="/church/:slug/members/:memberId" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchMemberPublicProfile /></Suspense>} />
       <Route path="/church/:slug/members" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchMembers /></Suspense>} />
       <Route path="/church/:slug/profile" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchMemberProfilePage /></Suspense>} />
       <Route path="/church/:slug/departments/:deptSlug" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchDepartmentView /></Suspense>} />

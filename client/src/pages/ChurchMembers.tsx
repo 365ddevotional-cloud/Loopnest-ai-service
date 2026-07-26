@@ -1,4 +1,4 @@
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
 import { useI18n } from "@/hooks/useI18n";
@@ -40,6 +40,7 @@ const LEADER_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor
 export default function ChurchMembers() {
   const [, params] = useRoute("/church/:slug/members");
   const slug = params?.slug ?? "";
+  const [, setLocation] = useLocation();
   const { getIdToken, user, emailVerified } = useUser();
   const { t } = useI18n();
   const { toast } = useToast();
@@ -153,7 +154,13 @@ export default function ChurchMembers() {
                   const isCurrentUser = m.firebaseUid === user?.uid;
                   const canManage = isAdmin && !isCurrentUser && m.role !== "owner";
                   return (
-                    <Card key={m.id} className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+                    <Card
+                      key={m.id}
+                      className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99]"
+                      style={{ backgroundColor: "#fff" }}
+                      onClick={() => setLocation(`/church/${slug}/members/${m.id}`)}
+                      data-testid={`card-member-${m.id}`}
+                    >
                       <CardContent className="pt-4 pb-4 flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center text-sm font-bold"
                           style={{ backgroundColor: "#1a274418", color: "#1a2744" }}>
@@ -171,7 +178,7 @@ export default function ChurchMembers() {
                             <p className="text-xs truncate mt-0.5" style={{ color: "#7a7570" }}>{m.email}</p>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
                           {canManage ? (
                             <Select value={m.role} onValueChange={role => roleUpdate.mutate({ memberId: m.id, role })}>
                               <SelectTrigger className={`h-7 text-xs w-36 border ${roleColors[m.role] ?? ""}`}>
@@ -213,7 +220,13 @@ export default function ChurchMembers() {
                   const isCurrentUser = m.firebaseUid === user?.uid;
                   const canManage = isAdmin && !isCurrentUser;
                   return (
-                    <Card key={m.id} className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+                    <Card
+                      key={m.id}
+                      className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99]"
+                      style={{ backgroundColor: "#fff" }}
+                      onClick={() => setLocation(`/church/${slug}/members/${m.id}`)}
+                      data-testid={`card-member-${m.id}`}
+                    >
                       <CardContent className="pt-3.5 pb-3.5 flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center text-xs font-bold"
                           style={{ backgroundColor: "#1a274410", color: "#1a2744" }}>
@@ -230,7 +243,7 @@ export default function ChurchMembers() {
                             <p className="text-xs truncate mt-0.5" style={{ color: "#7a7570" }}>{m.email}</p>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
                           {canManage ? (
                             <Select value={m.role} onValueChange={role => roleUpdate.mutate({ memberId: m.id, role })}>
                               <SelectTrigger className={`h-7 text-xs w-36 border ${roleColors[m.role] ?? ""}`}>

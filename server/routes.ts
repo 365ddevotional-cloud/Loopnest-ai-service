@@ -3342,6 +3342,52 @@ export async function registerRoutes(
     } catch { res.status(500).json({ message: "Failed to remove photo" }); }
   });
 
+  // Auth: get a member's public profile (viewer must be active member of same church)
+  app.get("/api/churches/:id/members/:memberId/public-profile", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const memberId = Number(req.params.memberId);
+      // Verify viewer is active member
+      const viewer = await storage.getChurchMember(churchId, uid);
+      if (!viewer || viewer.status !== "active") return res.status(403).json({ message: "Not an active member" });
+      // Fetch target member
+      const target = await storage.getChurchMemberById(churchId, memberId);
+      if (!target || target.status !== "active") return res.status(404).json({ message: "Member not found" });
+      // Fetch target's profile
+      const profile = await storage.getChurchMemberProfile(churchId, target.firebaseUid);
+      // Fetch departments for this member
+      const deptRows = await db.execute(sql`
+        SELECT cd.name FROM church_department_members cdm
+        INNER JOIN church_departments cd ON cd.id = cdm.department_id
+        WHERE cdm.church_member_id = ${memberId} AND cdm.is_active = true AND cd.is_active = true
+      `);
+      const departments = (deptRows.rows as { name: string }[]).map(r => r.name);
+      const isOwnProfile = target.firebaseUid === uid;
+      const LEADER_ROLES_SET = ["owner", "lead_pastor", "administrator", "associate_pastor", "counselor", "ministry_leader", "group_leader", "prayer_team"];
+      const viewerIsLeader = LEADER_ROLES_SET.includes(viewer.role);
+      res.json({
+        member: {
+          id: target.id,
+          displayName: target.displayName,
+          role: target.role,
+          joinedAt: target.joinedAt,
+          firebaseUid: isOwnProfile || viewerIsLeader ? target.firebaseUid : undefined,
+        },
+        profile: profile ? {
+          bio: profile.bio,
+          city: profile.city,
+          country: profile.country,
+          photoUrl: profile.photoUrl,
+          allowMemberMessages: profile.allowMemberMessages,
+        } : null,
+        allowMessages: profile?.allowMemberMessages ?? true,
+        isOwnProfile,
+        departments,
+      });
+    } catch (e) { console.error(e); res.status(500).json({ message: "Server error" }); }
+  });
+
   // Auth: create invitation (owner/admin/lead_pastor) — only for approved orgs
   app.post("/api/churches/:id/invitations", async (req, res) => {
     const uid = await getUid(req, res); if (!uid) return;

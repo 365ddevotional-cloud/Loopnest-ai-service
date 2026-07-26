@@ -382,6 +382,7 @@ export interface IStorage {
   addChurchMember(data: InsertChurchMember): Promise<ChurchMember>;
   getChurchMembers(churchId: number): Promise<ChurchMember[]>;
   getChurchMember(churchId: number, firebaseUid: string): Promise<ChurchMember | undefined>;
+  getChurchMemberById(churchId: number, memberId: number): Promise<ChurchMember | undefined>;
   getUserChurches(firebaseUid: string): Promise<(ChurchMember & { church: Church })[]>;
   updateChurchMemberRole(id: number, role: string): Promise<ChurchMember>;
   updateChurchMemberStatus(id: number, status: string): Promise<ChurchMember>;
@@ -1713,6 +1714,12 @@ export class DatabaseStorage implements IStorage {
   async getChurchMember(churchId: number, firebaseUid: string): Promise<ChurchMember | undefined> {
     const [row] = await db.select().from(churchMembers)
       .where(and(eq(churchMembers.churchId, churchId), eq(churchMembers.firebaseUid, firebaseUid)));
+    return row;
+  }
+
+  async getChurchMemberById(churchId: number, memberId: number): Promise<ChurchMember | undefined> {
+    const [row] = await db.select().from(churchMembers)
+      .where(and(eq(churchMembers.churchId, churchId), eq(churchMembers.id, memberId)));
     return row;
   }
 

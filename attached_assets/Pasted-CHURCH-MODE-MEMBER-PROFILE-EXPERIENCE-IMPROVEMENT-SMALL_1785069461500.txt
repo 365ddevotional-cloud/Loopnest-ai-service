@@ -1,0 +1,194 @@
+CHURCH MODE — MEMBER PROFILE EXPERIENCE IMPROVEMENT (SMALL UI ENHANCEMENT ONLY)
+
+This is a focused usability improvement.
+
+DO NOT modify:
+- Church governance
+- Invitations
+- Messaging architecture
+- Offline Mode
+- Family Mode
+- Payments
+- Authentication
+- Android
+- Email
+- Admin Dashboard
+- Main navigation
+- Database design unless absolutely required
+
+Reuse existing Church Mode components wherever possible.
+
+====================================================
+CURRENT ISSUE
+====================================================
+
+On the Members page, each member card appears clickable, but tapping it does nothing.
+
+Instead, every member card should behave like a directory entry that opens that member's Church Profile.
+
+====================================================
+MEMBER CARD
+====================================================
+
+1. Make the entire member card clickable.
+
+2. Add subtle touch feedback:
+- hover effect (desktop)
+- tap animation (mobile)
+- pointer cursor where appropriate
+
+3. Do not interfere with any future action buttons.
+
+====================================================
+MEMBER PROFILE PAGE
+====================================================
+
+Opening a member should display a clean Church Profile page.
+
+Show:
+
+• Profile photo (or avatar)
+• Display name
+• Church role
+• Join date
+• Department(s)
+• Short biography (if available)
+• Favorite Bible verse (if provided)
+• Public church information only
+
+Display role badges clearly, such as:
+
+• Church Owner
+• Pastor
+• Moderator
+• Department Leader
+• Member
+
+====================================================
+PROFILE ACTIONS
+====================================================
+
+Add the following buttons:
+
+• Pray For This Member
+• Send Encouragement
+• Message
+    (only if current permissions already allow messaging)
+
+If Prayer Requests already exist, reuse the existing workflow.
+
+If Encouragement Messages already exist, reuse them.
+
+Do NOT build a new messaging system.
+
+====================================================
+PROFILE PHOTO
+====================================================
+
+Allow members to:
+
+• upload
+• replace
+• remove
+
+their own profile picture using the existing image upload system.
+
+====================================================
+OPTIONAL INFORMATION
+====================================================
+
+If already supported by existing data, show:
+
+• Active today / Recently active
+
+If no presence system already exists,
+DO NOT build one.
+
+====================================================
+PROFILE SHARING
+====================================================
+
+Add:
+
+• Copy Profile Link
+
+This should copy a shareable Church profile link.
+
+Reuse existing share utilities if available.
+
+====================================================
+SECURITY
+====================================================
+
+Viewing a profile must NEVER grant administrative permissions.
+
+Respect all existing visibility rules.
+
+Do not expose:
+
+• email addresses
+• phone numbers
+• bank information
+• private prayer requests
+• counseling history
+• moderation history
+• internal permissions
+
+Only public church profile information should be displayed.
+
+====================================================
+NAVIGATION
+====================================================
+
+Back button should return to Members page.
+
+Existing navigation must remain unchanged.
+
+====================================================
+TESTING
+====================================================
+
+Verify:
+
+✓ Tap Church Owner → profile opens
+
+✓ Tap Moderator → profile opens
+
+✓ Tap Department Leader → profile opens
+
+✓ Tap Member → profile opens
+
+✓ Profile picture upload works
+
+✓ Pray For This Member works
+
+✓ Send Encouragement works
+
+✓ Message button follows permissions
+
+✓ Copy Profile Link works
+
+✓ Back navigation works
+
+✓ Mobile layout works
+
+✓ Desktop layout works
+
+✓ Church Mode permissions unchanged
+
+✓ No unrelated functionality modified
+
+====================================================
+FINAL REPORT
+====================================================
+
+Report:
+
+• Files changed
+• Components reused
+• Routes added (if any)
+• Database changes (if any)
+• Test results
+• Confirmation that Church governance and permissions remain unchanged
+
+Create one checkpoint only after all tests pass successfully.
