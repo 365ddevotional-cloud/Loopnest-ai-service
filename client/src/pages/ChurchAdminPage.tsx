@@ -42,6 +42,9 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
   const [editingDept, setEditingDept] = useState<any | null>(null);
   const [editName, setEditName] = useState("");
   const [editType, setEditType] = useState("Custom");
+  const [editDescription, setEditDescription] = useState("");
+  const [editLogoUrl, setEditLogoUrl] = useState("");
+  const [editBannerUrl, setEditBannerUrl] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
   const { data: departments, isLoading } = useQuery<any[]>({
@@ -83,6 +86,9 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
     setEditingDept(dept);
     setEditName(dept.name);
     setEditType(dept.type ?? "Custom");
+    setEditDescription(dept.description ?? "");
+    setEditLogoUrl(dept.logoUrl ?? "");
+    setEditBannerUrl(dept.bannerUrl ?? "");
     setShowCreate(false);
   };
 
@@ -94,7 +100,13 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
       const r = await fetch(`/api/churches/departments/${editingDept.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token ?? ""}` },
-        body: JSON.stringify({ name: editName.trim(), type: editType }),
+        body: JSON.stringify({
+          name: editName.trim(),
+          type: editType,
+          description: editDescription || undefined,
+          logoUrl: editLogoUrl || undefined,
+          bannerUrl: editBannerUrl || undefined,
+        }),
       });
       if (!r.ok) { toast({ title: t("cm_error"), description: (await r.json()).message, variant: "destructive" }); return; }
       toast({ title: t("cm_deptUpdated") });
@@ -166,6 +178,23 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
                         {DEPT_TYPES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                       </select>
                     </div>
+                    <div className="space-y-1.5">
+                      <Label>{t("cm_deptDescription")}</Label>
+                      <Textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} rows={2} placeholder={t("cm_deptDescPlaceholder")} data-testid="input-edit-dept-description" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>{t("cm_deptLogo")} URL</Label>
+                      <Input value={editLogoUrl} onChange={e => setEditLogoUrl(e.target.value)} placeholder="https://..." data-testid="input-edit-dept-logo" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Banner URL</Label>
+                      <Input value={editBannerUrl} onChange={e => setEditBannerUrl(e.target.value)} placeholder="https://..." data-testid="input-edit-dept-banner" />
+                    </div>
+                    {editName.trim() !== editingDept?.name && (
+                      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+                        {t("cm_deptNameLabel")}: <strong>{editingDept?.name}</strong> → <strong>{editName.trim()}</strong>
+                      </p>
+                    )}
                     <div className="flex gap-3">
                       <Button variant="outline" size="sm" onClick={() => setEditingDept(null)} className="flex-1">{t("cm_cancel")}</Button>
                       <Button size="sm" onClick={handleSaveEdit} disabled={savingEdit || !editName.trim()} className="flex-1"
