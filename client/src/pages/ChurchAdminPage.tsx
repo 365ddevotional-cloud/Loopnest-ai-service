@@ -3,6 +3,9 @@ import { useI18n } from "@/hooks/useI18n";
 import { useRoute } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
+import { reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ChurchModeShell } from "@/components/ChurchModeShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -228,6 +231,9 @@ export default function ChurchAdminPage() {
   const { t } = useI18n();
   const qc = useQueryClient();
   const isSignedIn = !!user && !!emailVerified;
+  const [showReauthDialog, setShowReauthDialog] = useState(false);
+  const [reauthPassword, setReauthPassword] = useState("");
+  const [reauthLoading, setReauthLoading] = useState(false);
 
   const [activeTab, setActiveTab] = useState<AdminTab>("settings");
 
@@ -1033,7 +1039,7 @@ export default function ChurchAdminPage() {
                 <Button
                   onClick={() => {
                     const nameChanging = form.name !== undefined && form.name !== church?.name;
-                    if (nameChanging && !confirm(t("cm_nameChangeAlert"))) return;
+                    if (nameChanging) { setShowReauthDialog(true); return; }
                     saveSettings.mutate();
                   }}
                   disabled={saveSettings.isPending || Object.keys(form).length === 0}
@@ -2449,6 +2455,55 @@ export default function ChurchAdminPage() {
         )}
 
       </div>
+
+      {/* Firebase reauthentication dialog for name changes */}
+      <Dialog open={showReauthDialog} onOpenChange={open => { setShowReauthDialog(open); if (!open) setReauthPassword(""); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("cm_nameChangeReauth")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">{t("cm_reauthDesc")}</p>
+          <div className="space-y-1.5 mt-2">
+            <Label>{t("cm_enterPassword")}</Label>
+            <Input
+              type="password"
+              value={reauthPassword}
+              onChange={e => setReauthPassword(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && reauthPassword) e.currentTarget.closest("div")?.querySelector<HTMLButtonElement>("[data-testid='button-reauth-confirm']")?.click(); }}
+              placeholder="••••••••"
+              data-testid="input-reauth-password"
+            />
+          </div>
+          <DialogFooter className="mt-4 gap-2">
+            <Button variant="outline" onClick={() => { setShowReauthDialog(false); setReauthPassword(""); }} disabled={reauthLoading}>
+              {t("cm_cancel")}
+            </Button>
+            <Button
+              data-testid="button-reauth-confirm"
+              disabled={!reauthPassword || reauthLoading}
+              onClick={async () => {
+                const fbUser = auth.currentUser;
+                if (!fbUser?.email) { toast({ title: t("cm_error"), variant: "destructive" }); return; }
+                setReauthLoading(true);
+                try {
+                  await reauthenticateWithCredential(fbUser, EmailAuthProvider.credential(fbUser.email, reauthPassword));
+                  setShowReauthDialog(false);
+                  setReauthPassword("");
+                  saveSettings.mutate();
+                } catch {
+                  toast({ title: t("cm_reauthFailed"), variant: "destructive" });
+                } finally {
+                  setReauthLoading(false);
+                }
+              }}
+              style={{ backgroundColor: "#1a2744" }}
+            >
+              {reauthLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("cm_saving")}</> : t("cm_reauthConfirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </ChurchModeShell>
   );
 }

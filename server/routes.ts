@@ -3876,6 +3876,8 @@ export async function registerRoutes(
       if (!m || !["owner", "lead_pastor", "administrator"].includes(m.role)) return res.status(403).json({ message: "Not authorized" });
       const updated = await storage.archiveDepartment(deptId);
       storage.createAuditLog({ churchId: dept.churchId, departmentId: deptId, action: "department_archived", previousValue: dept.name, actorUid: uid, actorRole: m.role }).catch(() => {});
+      // Notify church members via pinned announcement
+      storage.createChurchAnnouncement({ churchId: dept.churchId, createdBy: uid, title: `Department Archived: ${dept.name}`, body: `The "${dept.name}" department has been archived by church leadership.`, isPinned: false, expiresAt: null }).catch(() => {});
       res.json(updated);
     } catch { res.status(500).json({ message: "Server error" }); }
   });
@@ -3941,6 +3943,7 @@ export async function registerRoutes(
       const parsed = schema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ message: "Invalid request" });
       const updated = await storage.updateDeletionRequestStatus(id, parsed.data.status, "admin", parsed.data.adminNote ?? undefined);
+      storage.createAuditLog({ churchId: updated.churchId, action: `deletion_request_${parsed.data.status}`, newValue: parsed.data.adminNote ?? undefined, actorUid: "platform_admin" }).catch(() => {});
       res.json(updated);
     } catch { res.status(500).json({ message: "Server error" }); }
   });
@@ -4432,8 +4435,16 @@ export async function registerRoutes(
       if (!isDeptLeader && !isChurchAdmin) return res.status(403).json({ message: "Not authorized" });
       const { name, type, description, logoUrl, bannerUrl } = req.body;
       const updated = await storage.updateDepartment(deptId, { name, type, description, logoUrl, bannerUrl });
-      if (dept && name && name !== dept.name) {
-        storage.createAuditLog({ churchId: dept.churchId, departmentId: deptId, action: "department_edited", previousValue: dept.name, newValue: name, actorUid: churchMember.firebaseUid, actorRole: churchMember.role }).catch(() => {});
+      if (dept) {
+        const changes: string[] = [];
+        if (name && name !== dept.name) changes.push(`name: "${dept.name}"→"${name}"`);
+        if (type && type !== dept.type) changes.push(`type: "${dept.type}"→"${type}"`);
+        if (description !== undefined && description !== dept.description) changes.push("description changed");
+        if (logoUrl !== undefined && logoUrl !== dept.logoUrl) changes.push("logo changed");
+        if (bannerUrl !== undefined && bannerUrl !== dept.bannerUrl) changes.push("banner changed");
+        if (changes.length > 0) {
+          storage.createAuditLog({ churchId: dept.churchId, departmentId: deptId, action: "department_edited", previousValue: dept.name, newValue: changes.join("; "), actorUid: churchMember.firebaseUid, actorRole: churchMember.role }).catch(() => {});
+        }
       }
       res.json(updated);
     } catch (e: any) { res.status(500).json({ message: e.message }); }

@@ -946,5 +946,10 @@
   "cm_deletionRequestPending": "Ya tienes una solicitud de eliminación pendiente. La revisaremos pronto.",
   "cm_deletionRequestStatus": "Estado de Solicitud de Eliminación",
   "cm_auditLogCreated": "Registro de auditoría creado",
-  "cm_nameChangeAlert": "Se envió una notificación de seguridad al correo del propietario de la iglesia."
+  "cm_nameChangeAlert": "Cambiar el nombre de la iglesia es una acción sensible. Se enviará una notificación de seguridad a su correo.",
+  "cm_nameChangeReauth": "Confirme su identidad",
+  "cm_reauthDesc": "Por seguridad, vuelva a ingresar su contraseña para confirmar este cambio de nombre.",
+  "cm_enterPassword": "Su contraseña",
+  "cm_reauthConfirm": "Confirmar y guardar",
+  "cm_reauthFailed": "Contraseña incorrecta. Por favor, inténtelo de nuevo."
 }

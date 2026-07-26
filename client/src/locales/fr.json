@@ -946,5 +946,10 @@
   "cm_deletionRequestPending": "Vous avez déjà une demande de suppression en attente. Nous la traiterons bientôt.",
   "cm_deletionRequestStatus": "Statut de la Demande de Suppression",
   "cm_auditLogCreated": "Journal d'audit créé",
-  "cm_nameChangeAlert": "Une notification de sécurité a été envoyée à l'e-mail du propriétaire de l'église."
+  "cm_nameChangeAlert": "Changer le nom de l'église est une action sensible. Une notification de sécurité sera envoyée à votre e-mail.",
+  "cm_nameChangeReauth": "Confirmez votre identité",
+  "cm_reauthDesc": "Pour des raisons de sécurité, veuillez saisir à nouveau votre mot de passe pour confirmer ce changement de nom.",
+  "cm_enterPassword": "Votre mot de passe",
+  "cm_reauthConfirm": "Confirmer et enregistrer",
+  "cm_reauthFailed": "Mot de passe incorrect. Veuillez réessayer."
 }

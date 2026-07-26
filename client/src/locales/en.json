@@ -946,5 +946,10 @@
   "cm_deletionRequestPending": "You already have a pending deletion request. We will review it shortly.",
   "cm_deletionRequestStatus": "Deletion Request Status",
   "cm_auditLogCreated": "Audit log created",
-  "cm_nameChangeAlert": "A security notification was sent to the church owner's email."
+  "cm_nameChangeAlert": "Changing the church name is a sensitive action. A security notification will be sent to your email.",
+  "cm_nameChangeReauth": "Confirm Your Identity",
+  "cm_reauthDesc": "For security, please re-enter your password to confirm this name change.",
+  "cm_enterPassword": "Your password",
+  "cm_reauthConfirm": "Confirm & Save",
+  "cm_reauthFailed": "Incorrect password. Please try again."
 }
