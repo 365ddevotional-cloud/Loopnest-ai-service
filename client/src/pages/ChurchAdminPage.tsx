@@ -94,6 +94,11 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
 
   const handleSaveEdit = async () => {
     if (!editingDept || !editName.trim()) return;
+    // Explicit confirmation when department name changes
+    if (editName.trim() !== editingDept.name) {
+      const confirmed = confirm(t("cm_confirmDeptRename").replace("{old}", editingDept.name).replace("{new}", editName.trim()));
+      if (!confirmed) return;
+    }
     setSavingEdit(true);
     try {
       const token = await getIdToken();

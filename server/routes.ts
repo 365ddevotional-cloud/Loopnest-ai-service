@@ -3139,7 +3139,7 @@ export async function registerRoutes(
           churchId: id,
           createdBy: uid,
           title: `Church Name Updated`,
-          body: `This church has been renamed from "${oldName}" to "${newName}" on ${new Date().toLocaleDateString()}. If you have questions, please contact your church leader.`,
+          body: `This church has been renamed from "${oldName}" to "${newName}" on ${new Date().toLocaleDateString()} by the church owner. If you have questions, please contact your church leader.`,
           isPinned: false,
           expiresAt: null,
           imageUrl: null,
@@ -4455,18 +4455,17 @@ export async function registerRoutes(
         if (bannerUrl !== undefined && bannerUrl !== dept.bannerUrl) changes.push("banner changed");
         if (changes.length > 0) {
           storage.createAuditLog({ churchId: dept.churchId, departmentId: deptId, action: "department_edited", previousValue: dept.name, newValue: changes.join("; "), actorUid: churchMember.firebaseUid, actorRole: churchMember.role }).catch(() => {});
-          // Notify active department members of the update
-          if (name && name !== dept.name) {
-            const deptMembers = await storage.getDepartmentMembers(deptId);
-            for (const dm of deptMembers) {
-              const memberEmail = dm.member?.email;
-              const memberName = dm.member?.displayName ?? dm.member?.email ?? "Member";
-              if (memberEmail) {
-                storage.createInboxThread(
-                  { userEmail: memberEmail, userName: memberName, subject: `Department Updated: ${dept.name}`, category: "General" },
-                  `Dear ${memberName},\n\nThe "${dept.name}" department has been updated. The department has been renamed to "${name}".\n\nIf you have any questions, please contact church leadership.\n\nGod bless,\nChurch Leadership`
-                ).catch(() => {});
-              }
+          // Notify all active department members of any relevant update
+          const deptMembers = await storage.getDepartmentMembers(deptId);
+          const changesSummary = changes.join(", ");
+          for (const dm of deptMembers) {
+            const memberEmail = dm.member?.email;
+            const memberName = dm.member?.displayName ?? dm.member?.email ?? "Member";
+            if (memberEmail) {
+              storage.createInboxThread(
+                { userEmail: memberEmail, userName: memberName, subject: `Department Updated: ${dept.name}`, category: "General" },
+                `Dear ${memberName},\n\nThe "${dept.name}" department has been updated by church leadership. Changes: ${changesSummary}.\n\nIf you have any questions, please contact church leadership.\n\nGod bless,\nChurch Leadership`
+              ).catch(() => {});
             }
           }
         }

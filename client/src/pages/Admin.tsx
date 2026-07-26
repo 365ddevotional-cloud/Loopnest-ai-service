@@ -13,6 +13,7 @@ import { useUpload } from "@/hooks/use-upload";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
+import { useI18n } from "@/hooks/useI18n";
 import { format, parseISO } from "date-fns";
 import { useLocation } from "wouter";
 import type { PrayerRequest, ThreadMessage, PrayerAttachment, Devotional, SundaySchoolLesson, InboxThread, InboxMessage, Song, SongTestimony, GivingMethod, DonationConfirmation } from "@shared/schema";
@@ -2577,7 +2578,7 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="church-deletions" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-church-deletions">
               <Trash2 className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Deletion Requests
+              Deletion Req.
             </TabsTrigger>
             <TabsTrigger value="analytics" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-analytics">
               <BarChart3 className="w-4 h-4 mr-1.5 flex-shrink-0" />
@@ -4759,6 +4760,7 @@ interface ChurchDeletionRequest {
 
 function ChurchDeletionRequestsAdmin() {
   const { toast } = useToast();
+  const { t } = useI18n();
   const [adminNote, setAdminNote] = useState<Record<number, string>>({});
   const { data: requests = [], isLoading, refetch } = useQuery<ChurchDeletionRequest[]>({
     queryKey: ["/api/admin/church-deletion-requests"],
@@ -4776,7 +4778,7 @@ function ChurchDeletionRequestsAdmin() {
       if (!r.ok) throw new Error((await r.json()).message);
       return r.json();
     },
-    onSuccess: () => { refetch(); toast({ title: "Deletion request updated" }); },
+    onSuccess: () => { refetch(); toast({ title: t("cm_deletionRequestUpdated") }); },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
@@ -4787,8 +4789,8 @@ function ChurchDeletionRequestsAdmin() {
     info_requested: "bg-blue-100 text-blue-800 border-blue-200",
   };
 
-  if (isLoading) return <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>;
-  if (!requests.length) return <p className="text-muted-foreground text-sm">No deletion requests found.</p>;
+  if (isLoading) return <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> {t("cm_loading")}</div>;
+  if (!requests.length) return <p className="text-muted-foreground text-sm">{t("cm_noDeletionRequests")}</p>;
 
   return (
     <div className="space-y-4">
@@ -4797,25 +4799,25 @@ function ChurchDeletionRequestsAdmin() {
           <CardContent className="p-4 space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <p className="font-semibold text-sm">Church ID: {req.churchId}</p>
+                <p className="font-semibold text-sm">{t("cm_churchIdLabel")} {req.churchId}</p>
                 <p className="text-xs text-muted-foreground">{format(parseISO(req.createdAt), "PPP")}</p>
               </div>
               <span className={`text-xs border rounded-full px-2 py-0.5 font-medium ${statusColor[req.status] ?? "bg-muted text-muted-foreground"}`}>{req.status}</span>
             </div>
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-0.5">Owner reason:</p>
+              <p className="text-xs font-medium text-muted-foreground mb-0.5">{t("cm_ownerReason")}</p>
               <p className="text-sm">{req.reason}</p>
             </div>
             {req.adminNote && (
               <div>
-                <p className="text-xs font-medium text-muted-foreground mb-0.5">Admin note:</p>
+                <p className="text-xs font-medium text-muted-foreground mb-0.5">{t("cm_adminNote")}</p>
                 <p className="text-sm italic">{req.adminNote}</p>
               </div>
             )}
             {req.status === "pending" && (
               <div className="space-y-2 pt-1">
                 <Textarea
-                  placeholder="Optional admin note…"
+                  placeholder={t("cm_adminNotePlaceholder")}
                   value={adminNote[req.id] ?? ""}
                   onChange={e => setAdminNote(prev => ({ ...prev, [req.id]: e.target.value }))}
                   className="text-sm min-h-[64px]"
@@ -4823,13 +4825,13 @@ function ChurchDeletionRequestsAdmin() {
                 />
                 <div className="flex gap-2 flex-wrap">
                   <Button size="sm" variant="destructive" onClick={() => action.mutate({ id: req.id, status: "approved" })} disabled={action.isPending} data-testid={`button-approve-deletion-${req.id}`}>
-                    <CheckCircle className="w-3.5 h-3.5 mr-1" /> Approve Deletion
+                    <CheckCircle className="w-3.5 h-3.5 mr-1" /> {t("cm_approveDeletion")}
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => action.mutate({ id: req.id, status: "info_requested" })} disabled={action.isPending} data-testid={`button-info-deletion-${req.id}`}>
-                    <AlertTriangle className="w-3.5 h-3.5 mr-1" /> Request More Info
+                    <AlertTriangle className="w-3.5 h-3.5 mr-1" /> {t("cm_requestMoreInfo")}
                   </Button>
                   <Button size="sm" variant="outline" className="border-green-300 text-green-700 hover:bg-green-50" onClick={() => action.mutate({ id: req.id, status: "rejected" })} disabled={action.isPending} data-testid={`button-reject-deletion-${req.id}`}>
-                    <XCircle className="w-3.5 h-3.5 mr-1" /> Reject
+                    <XCircle className="w-3.5 h-3.5 mr-1" /> {t("cm_rejectDeletion")}
                   </Button>
                 </div>
               </div>
