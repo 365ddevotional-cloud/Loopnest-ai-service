@@ -2807,8 +2807,8 @@ export class DatabaseStorage implements IStorage {
                 ? ["lead_pastor"]
                 : null; // everyone, members_specific, country, language → all active members
 
-    // 4. Deliver in-app (platform admin thread) and optionally email (inbox channel)
-    const deliverEmail = Array.isArray(ann.deliveryChannels) && ann.deliveryChannels.includes("inbox");
+    // 4. Deliver in-app (platform admin thread) and optionally email (explicit "email" channel or legacy "inbox")
+    const deliverEmail = Array.isArray(ann.deliveryChannels) && (ann.deliveryChannels.includes("email") || ann.deliveryChannels.includes("inbox"));
     let emailClient: { client: any; fromEmail: string } | null = null;
     if (deliverEmail) {
       try {

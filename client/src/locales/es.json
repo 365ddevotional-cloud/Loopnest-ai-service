@@ -1053,5 +1053,6 @@
   "cm_submittedBannerTitle": "Enviado — esperando que el administrador lo recoja",
   "cm_submittedBannerDesc": "Su organización ha sido enviada y está esperando que un administrador de plataforma inicie la revisión. Recibirá notificaciones en sus mensajes de plataforma.",
   "cm_markAsRead": "Marcar como leído",
-  "cm_platformAnnouncementFeed": "Avisos de la plataforma"
+  "cm_platformAnnouncementFeed": "Avisos de la plataforma",
+  "cm_evidenceUrlPlaceholder": "URL de evidencia/archivo adjunto (opcional)"
 }

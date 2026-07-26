@@ -1053,5 +1053,6 @@
   "cm_submittedBannerTitle": "Soumis — en attente de prise en charge par l'administrateur",
   "cm_submittedBannerDesc": "Votre organisation a été soumise et attend qu'un administrateur de plateforme commence l'examen. Vous serez notifié de toute mise à jour dans vos messages de plateforme.",
   "cm_markAsRead": "Marquer comme lu",
-  "cm_platformAnnouncementFeed": "Avis de la plateforme"
+  "cm_platformAnnouncementFeed": "Avis de la plateforme",
+  "cm_evidenceUrlPlaceholder": "URL de la pièce jointe/preuve (optionnel)"
 }

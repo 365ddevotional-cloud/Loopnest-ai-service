@@ -5080,7 +5080,7 @@ function ComplianceCasesAdmin() {
   const [newCaseForm, setNewCaseForm] = useState({ churchId: "", category: "other", severity: "medium", description: "", internalNotes: "" });
   const [showNewCase, setShowNewCase] = useState(false);
   const [replyMsg, setReplyMsg] = useState("");
-  const [enforcementForm, setEnforcementForm] = useState({ status: "", enforcementAction: "", enforcementReason: "" });
+  const [enforcementForm, setEnforcementForm] = useState<{ status: string; enforcementAction: string; enforcementReason: string; attachmentUrl: string }>({ status: "", enforcementAction: "", enforcementReason: "", attachmentUrl: "" });
 
   const { data: cases, isLoading, refetch } = useQuery<any[]>({
     queryKey: ["/api/admin/compliance-cases"],
@@ -5106,8 +5106,8 @@ function ComplianceCasesAdmin() {
   });
 
   const adminReply = useMutation({
-    mutationFn: async ({ id, message }: { id: number; message: string }) => {
-      const r = await fetch(`/api/admin/compliance-cases/${id}/respond`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message }) });
+    mutationFn: async ({ id, message, attachmentUrl }: { id: number; message: string; attachmentUrl?: string | null }) => {
+      const r = await fetch(`/api/admin/compliance-cases/${id}/respond`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, attachmentUrl: attachmentUrl || null }) });
       if (!r.ok) throw new Error("Failed");
       return r.json();
     },
@@ -5192,6 +5192,11 @@ function ComplianceCasesAdmin() {
                     <div key={r.id} className={`rounded p-2 text-xs ${r.senderType === "admin" ? "bg-primary/10 ml-4" : "bg-gray-50 mr-4"}`}>
                       <p className="font-semibold capitalize mb-0.5">{r.senderType}</p>
                       <p>{r.message}</p>
+                      {r.attachmentUrl && (
+                        <a href={r.attachmentUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-1 text-blue-600 underline text-xs">
+                          📎 Attachment
+                        </a>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -5199,7 +5204,8 @@ function ComplianceCasesAdmin() {
             </div>
             <div className="space-y-2 pt-2 border-t">
               <Textarea placeholder="Reply to org owner…" value={replyMsg} onChange={e => setReplyMsg(e.target.value)} rows={2} className="text-sm" data-testid="textarea-case-reply" />
-              <Button size="sm" onClick={() => adminReply.mutate({ id: selectedCase.id, message: replyMsg })} disabled={!replyMsg.trim() || adminReply.isPending} data-testid="button-send-case-reply">
+              <Input placeholder="Evidence/attachment URL (optional)" value={enforcementForm.attachmentUrl ?? ""} onChange={e => setEnforcementForm(p => ({ ...p, attachmentUrl: e.target.value }))} className="text-xs h-7" data-testid="input-case-attachment-url" />
+              <Button size="sm" onClick={() => adminReply.mutate({ id: selectedCase.id, message: replyMsg, attachmentUrl: enforcementForm.attachmentUrl ?? null })} disabled={!replyMsg.trim() || adminReply.isPending} data-testid="button-send-case-reply">
                 {adminReply.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5 mr-1" />Send Reply</>}
               </Button>
             </div>
@@ -5355,8 +5361,20 @@ function PlatformThreadsAdmin() {
 
 function PlatformAnnouncementsAdmin() {
   const { t } = useI18n();
-  const [form, setForm] = useState({ title: "", body: "", targetType: "everyone" });
+  const [form, setForm] = useState<{ title: string; body: string; targetType: string; targetFilter: string; deliveryChannels: string[] }>({
+    title: "", body: "", targetType: "everyone", targetFilter: "", deliveryChannels: ["in_app"],
+  });
   const [showForm, setShowForm] = useState(false);
+
+  const needsTargetFilter = ["members_specific", "country", "language"].includes(form.targetType);
+  const targetFilterPlaceholder = form.targetType === "members_specific"
+    ? "Comma-separated church IDs (e.g. 12,45,67)"
+    : form.targetType === "country"
+      ? "Country code(s), e.g. NG,US"
+      : "Language code(s), e.g. en,es";
+
+  const toggleChannel = (ch: string) =>
+    setForm(p => ({ ...p, deliveryChannels: p.deliveryChannels.includes(ch) ? p.deliveryChannels.filter(c => c !== ch) : [...p.deliveryChannels, ch] }));
 
   const { data: announcements, isLoading, refetch } = useQuery<any[]>({
     queryKey: ["/api/admin/platform-announcements"],
@@ -5365,11 +5383,12 @@ function PlatformAnnouncementsAdmin() {
 
   const create = useMutation({
     mutationFn: async (data: any) => {
-      const r = await fetch("/api/admin/platform-announcements", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...data, deliveryChannels: ["in_app"] }) });
+      const payload = { title: data.title, body: data.body, targetType: data.targetType, targetFilter: data.targetFilter || null, deliveryChannels: data.deliveryChannels };
+      const r = await fetch("/api/admin/platform-announcements", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!r.ok) throw new Error("Failed");
       return r.json();
     },
-    onSuccess: () => { refetch(); setShowForm(false); setForm({ title: "", body: "", targetType: "everyone" }); },
+    onSuccess: () => { refetch(); setShowForm(false); setForm({ title: "", body: "", targetType: "everyone", targetFilter: "", deliveryChannels: ["in_app"] }); },
   });
 
   const send = useMutation({
@@ -5393,11 +5412,28 @@ function PlatformAnnouncementsAdmin() {
           <CardContent className="p-4 space-y-3">
             <Input placeholder={t("cm_announcementTitle")} value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="text-sm" data-testid="input-announcement-title" />
             <Textarea placeholder={t("cm_announcementBody")} value={form.body} onChange={e => setForm(p => ({ ...p, body: e.target.value }))} rows={4} className="text-sm" data-testid="textarea-announcement-body" />
-            <select className="border rounded px-2 py-1 text-sm w-full" value={form.targetType} onChange={e => setForm(p => ({ ...p, targetType: e.target.value }))}>
-              {["everyone", "org_owners", "church_owners", "ministry_owners", "org_admins", "dept_leaders", "members_specific", "country", "language"].map(t => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
-            </select>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Audience</p>
+              <select className="border rounded px-2 py-1 text-sm w-full" value={form.targetType} onChange={e => setForm(p => ({ ...p, targetType: e.target.value, targetFilter: "" }))} data-testid="select-announcement-target">
+                {["everyone", "org_owners", "church_owners", "ministry_owners", "org_admins", "dept_leaders", "members_specific", "country", "language"].map(tKey => <option key={tKey} value={tKey}>{tKey.replace(/_/g, " ")}</option>)}
+              </select>
+              {needsTargetFilter && (
+                <Input className="mt-1.5 text-sm h-8" placeholder={targetFilterPlaceholder} value={form.targetFilter} onChange={e => setForm(p => ({ ...p, targetFilter: e.target.value }))} data-testid="input-announcement-target-filter" />
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Delivery channels</p>
+              <div className="flex gap-3 flex-wrap">
+                {[["in_app", "In-app banner"], ["inbox", "Platform inbox"], ["email", "Email (consented users)"]].map(([ch, label]) => (
+                  <label key={ch} className="flex items-center gap-1.5 text-xs cursor-pointer">
+                    <input type="checkbox" checked={form.deliveryChannels.includes(ch)} onChange={() => toggleChannel(ch)} data-testid={`checkbox-channel-${ch}`} />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => create.mutate(form)} disabled={create.isPending || !form.title || !form.body} data-testid="button-create-announcement">
+              <Button size="sm" onClick={() => create.mutate(form)} disabled={create.isPending || !form.title || !form.body || form.deliveryChannels.length === 0} data-testid="button-create-announcement">
                 {create.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Draft"}
               </Button>
               <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>

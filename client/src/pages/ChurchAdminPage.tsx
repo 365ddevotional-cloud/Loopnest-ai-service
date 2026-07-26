@@ -2646,6 +2646,7 @@ function ChurchGovernancePanel({ church, getIdToken }: { church: Church; getIdTo
   const [tab, setTab] = useState<"status" | "cases" | "appeals" | "messages">("status");
   const [appealMsg, setAppealMsg] = useState("");
   const [caseReplyMsg, setCaseReplyMsg] = useState<Record<number, string>>({});
+  const [caseAttachUrl, setCaseAttachUrl] = useState<Record<number, string>>({});
   const [threadMsg, setThreadMsg] = useState("");
   const [threadSubject, setThreadSubject] = useState("General Inquiry");
   const [submittingReview, setSubmittingReview] = useState(false);
@@ -2699,8 +2700,14 @@ function ChurchGovernancePanel({ church, getIdToken }: { church: Church; getIdTo
     const message = caseReplyMsg[caseId];
     if (!message?.trim()) return;
     const h = await authHeaders();
-    const r = await fetch(`/api/churches/${church.id}/compliance-cases/${caseId}/respond`, { method: "POST", headers: h, body: JSON.stringify({ message }) });
-    if (r.ok) { toast({ title: t("cm_submitResponse") }); setCaseReplyMsg(p => ({ ...p, [caseId]: "" })); qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "compliance-cases"] }); }
+    const payload: Record<string, string | null> = { message, attachmentUrl: caseAttachUrl[caseId]?.trim() || null };
+    const r = await fetch(`/api/churches/${church.id}/compliance-cases/${caseId}/respond`, { method: "POST", headers: h, body: JSON.stringify(payload) });
+    if (r.ok) {
+      toast({ title: t("cm_submitResponse") });
+      setCaseReplyMsg(p => ({ ...p, [caseId]: "" }));
+      setCaseAttachUrl(p => ({ ...p, [caseId]: "" }));
+      qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "compliance-cases"] });
+    }
     else toast({ title: t("cm_error"), variant: "destructive" });
   };
 
@@ -2862,18 +2869,27 @@ function ChurchGovernancePanel({ church, getIdToken }: { church: Church; getIdTo
                 )}
 
                 {!["resolved", "closed"].includes(c.status) && (
-                  <div className="flex gap-2 pt-1">
+                  <div className="space-y-1.5 pt-1">
                     <Textarea
                       placeholder={t("cm_submitResponse") + "…"}
                       value={caseReplyMsg[c.id] ?? ""}
                       onChange={e => setCaseReplyMsg(p => ({ ...p, [c.id]: e.target.value }))}
                       rows={2}
-                      className="text-xs flex-1"
+                      className="text-xs"
                       data-testid={`textarea-case-response-${c.id}`}
                     />
-                    <Button size="sm" onClick={() => submitCaseReply(c.id)} disabled={!caseReplyMsg[c.id]?.trim()} data-testid={`button-submit-case-response-${c.id}`}>
-                      <Send className="w-3.5 h-3.5" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder={t("cm_evidenceUrlPlaceholder")}
+                        value={caseAttachUrl[c.id] ?? ""}
+                        onChange={e => setCaseAttachUrl(p => ({ ...p, [c.id]: e.target.value }))}
+                        className="text-xs h-7 flex-1"
+                        data-testid={`input-case-attach-${c.id}`}
+                      />
+                      <Button size="sm" onClick={() => submitCaseReply(c.id)} disabled={!caseReplyMsg[c.id]?.trim()} data-testid={`button-submit-case-response-${c.id}`}>
+                        <Send className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                   </div>
                 )}
               </CardContent>

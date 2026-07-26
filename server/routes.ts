@@ -4038,12 +4038,13 @@ export async function registerRoutes(
       const { action, note } = parsed.data;
       // Require a reason when rejecting
       if (action === "reject" && !note?.trim()) return res.status(400).json({ message: "A reason is required when rejecting an application" });
-      // Enforce lifecycle: draft/submitted → pending_review → approved/rejected
-      // When admin approves/rejects from "submitted" state, log the pending_review step first
-      // so the full audit trail is preserved (submitted → pending_review → approved/rejected).
+      // Enforce lifecycle: draft/submitted MUST go through pending_review before approve/reject.
+      // If admin takes a terminal action on a church still in draft/submitted, auto-advance
+      // it through pending_review first so the required state progression is always satisfied.
       const currentChurch = await storage.getChurch(id);
-      if (currentChurch && ["draft", "submitted"].includes(currentChurch.platformStatus) && action !== "request_info") {
-        storage.createAuditLog({ churchId: id, action: "platform_pending_review", newValue: "auto-transitioned", actorUid: "platform_admin" }).catch(() => {});
+      if (currentChurch && action !== "request_info" && ["draft", "submitted"].includes(currentChurch.platformStatus)) {
+        await storage.updateChurchPlatformStatus(id, "pending_review", "Auto-advanced to pending_review", "platform_admin");
+        storage.createAuditLog({ churchId: id, action: "platform_pending_review", newValue: `auto-advanced before ${action}`, actorUid: "platform_admin" }).catch(() => {});
       }
       const platformStatus = action === "approve" ? "approved" : action === "reject" ? "rejected" : "pending_review";
       const updated = await storage.updateChurchPlatformStatus(id, platformStatus, note, "platform_admin");
@@ -4369,7 +4370,7 @@ export async function registerRoutes(
         body: z.string().min(1),
         targetType: z.enum(["everyone", "org_owners", "church_owners", "ministry_owners", "org_admins", "dept_leaders", "members_specific", "country", "language"]).default("everyone"),
         targetFilter: z.string().optional().nullable(),
-        deliveryChannels: z.array(z.enum(["in_app", "inbox"])).default(["in_app"]),
+        deliveryChannels: z.array(z.enum(["in_app", "inbox", "email"])).default(["in_app"]),
       });
       const parsed = schema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ message: "Invalid request" });
