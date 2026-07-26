@@ -2712,6 +2712,11 @@ export class DatabaseStorage implements IStorage {
     const userChurchIds = new Set(memberships.map(m => m.churchId));
     const userRoles = new Set(memberships.map(m => m.role));
 
+    // 1b. Fetch user profile for country targeting (user_profiles has country but not language)
+    const profileRes = await db.execute(sql`SELECT country FROM user_profiles WHERE firebase_uid = ${firebaseUid} LIMIT 1`);
+    const userProfile = profileRes.rows[0] as { country?: string } | undefined;
+    const userCountry = (userProfile?.country ?? "").toUpperCase().trim();
+
     // 2. Get all sent announcements
     const sent = await db.select().from(platformAnnouncements)
       .where(sql`sent_at IS NOT NULL`)
@@ -2740,16 +2745,25 @@ export class DatabaseStorage implements IStorage {
         case "org_admins":
           return ["owner", "lead_pastor", "administrator"].some(r => userRoles.has(r));
         case "dept_leaders":
-          return ["owner", "lead_pastor", "administrator", "department_leader"].some(r => userRoles.has(r));
+          // Canonical dept-leader-equivalent roles in this codebase
+          return ["owner", "lead_pastor", "administrator", "ministry_leader", "group_leader"].some(r => userRoles.has(r));
         case "members_specific": {
           const targetIds = (ann.targetFilter ?? "").split(",").map(Number).filter(Boolean);
           return targetIds.some(id => userChurchIds.has(id));
         }
-        // country/language require profile matching — return true if user is in any church
-        // (conservative: they may have received it; platform operator curates the send)
-        case "country":
-        case "language":
+        case "country": {
+          // targetFilter is comma-separated country codes, e.g. "NG,US"
+          if (!ann.targetFilter) return memberships.length > 0;
+          const codes = ann.targetFilter.toUpperCase().split(",").map(s => s.trim()).filter(Boolean);
+          if (codes.length === 0 || !userCountry) return false;
+          return codes.includes(userCountry);
+        }
+        case "language": {
+          // Language is not yet a stored user_profile field; fall back to showing
+          // to all active members when a language announcement was sent (platform
+          // operator is responsible for ensuring reach is appropriate).
           return memberships.length > 0;
+        }
         default:
           return false;
       }
@@ -2798,7 +2812,7 @@ export class DatabaseStorage implements IStorage {
       ann.targetType === "org_admins"
         ? ["owner", "lead_pastor", "administrator"]
         : ann.targetType === "dept_leaders"
-          ? ["owner", "lead_pastor", "administrator", "department_leader"]
+          ? ["owner", "lead_pastor", "administrator", "ministry_leader", "group_leader"]
           : ann.targetType === "org_owners"
             ? ["owner", "lead_pastor"]
             : ann.targetType === "church_owners"
@@ -2807,8 +2821,9 @@ export class DatabaseStorage implements IStorage {
                 ? ["lead_pastor"]
                 : null; // everyone, members_specific, country, language → all active members
 
-    // 4. Deliver in-app (platform admin thread) and optionally email (explicit "email" channel or legacy "inbox")
-    const deliverEmail = Array.isArray(ann.deliveryChannels) && (ann.deliveryChannels.includes("email") || ann.deliveryChannels.includes("inbox"));
+    // 4. Deliver in-app (platform admin thread) and optionally email.
+    // "email" channel is the only trigger for email sends; "inbox" is in-app only.
+    const deliverEmail = Array.isArray(ann.deliveryChannels) && ann.deliveryChannels.includes("email");
     let emailClient: { client: any; fromEmail: string } | null = null;
     if (deliverEmail) {
       try {

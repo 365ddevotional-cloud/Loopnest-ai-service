@@ -3,17 +3,20 @@
  * Runs migrations/0001_governance_schema.sql against the connected PostgreSQL
  * database on every server start.  All statements use IF NOT EXISTS / DO $$
  * guards so it is safe to run repeatedly on any existing database.
+ *
+ * CJS-safe: uses process.cwd() instead of import.meta.url so that the built
+ * dist/index.cjs (CommonJS) starts without crashing.
  */
 import { readFileSync } from "fs";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
+import { resolve } from "path";
 import { pool } from "./db";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export async function runGovernanceMigration(): Promise<void> {
   try {
-    const migrationPath = join(__dirname, "../migrations/0001_governance_schema.sql");
+    // process.cwd() is always the project root, both in dev (tsx) and in the
+    // CJS built output (node dist/index.cjs). This avoids import.meta.url which
+    // is undefined in CommonJS modules.
+    const migrationPath = resolve(process.cwd(), "migrations", "0001_governance_schema.sql");
     const migrationSql = readFileSync(migrationPath, "utf-8");
 
     // Execute the entire file in one shot via the pg Pool client.
