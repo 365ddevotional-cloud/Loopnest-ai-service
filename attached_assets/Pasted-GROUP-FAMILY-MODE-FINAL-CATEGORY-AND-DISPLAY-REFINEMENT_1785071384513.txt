@@ -1,0 +1,204 @@
+GROUP / FAMILY MODE — FINAL CATEGORY AND DISPLAY REFINEMENT
+
+This is a focused refinement only.
+
+Do not rebuild Group Mode.
+Do not refactor unrelated files.
+Do not modify Church Mode, Offline Mode, payments, authentication, email, Android publishing, admin governance, or unrelated pages.
+
+The existing Group Mode implementation is already working. Preserve all current functionality, including:
+
+- Group creation
+- Group joining
+- Join preview
+- Invitation codes
+- Copy invitation link
+- Members
+- Announcements
+- Prayer requests
+- Events
+- Owner controls
+- Leave group
+- Delete group
+- Existing database records and routes
+
+REQUIRED CHANGES
+
+1. EXPAND GROUP TYPE OPTIONS
+
+Update the group creation form so the owner can select from these group types:
+
+- Family
+- Prayer Group
+- Workplace
+- School Class
+- Football Team
+- Basketball Team
+- Sports Team
+- Boy Scouts / Girl Scouts
+- Military Unit
+- Business Network
+- Market Association
+- Community
+- Neighborhood
+- Volunteer Team
+- NGO / Nonprofit
+- Bible Study
+- Youth Group
+- Women's Group
+- Men's Group
+- Couples Group
+- Choir
+- Music Band
+- Alumni Group
+- Friends
+- Other / Custom
+
+Preserve the existing database groupType field.
+
+Do not create a separate database table merely for these preset options.
+
+2. CUSTOM GROUP TYPE
+
+When “Other / Custom” is selected:
+
+- Show a text field labelled “Enter your group type.”
+- Require a clear custom type before submission.
+- Trim leading and trailing spaces.
+- Limit it to a reasonable length, such as 60 characters.
+- Prevent empty or whitespace-only values.
+- Store the custom value as the group’s displayed type.
+- Examples may include:
+  - Nurses Prayer Circle
+  - Lagos Market Traders
+  - Airport Night Shift Team
+  - Bankers Fellowship
+  - Military Families Support Group
+
+Existing groups without a group type must continue working and may display “Community Group” as a safe fallback.
+
+3. GROUP TYPE DISPLAY BADGE
+
+Display the group type as a clean, readable badge on:
+
+- Group preview before joining
+- Group home page
+- Group list / My Groups page
+- Group settings page where appropriate
+
+Use tasteful badge styling based on category, but do not make the page childish or overly colorful.
+
+Examples:
+
+- Family: warm neutral badge
+- Prayer Group or Bible Study: purple badge
+- Workplace or Business Network: blue badge
+- Sports Team: green badge
+- Military Unit: dark olive or navy badge
+- Community or Neighborhood: teal badge
+- Custom: neutral gold or gray badge
+
+The badge must maintain accessible text contrast.
+
+4. GROUP CREATION FORM
+
+The form should clearly collect:
+
+- Group name
+- Group type
+- Custom group type, only when required
+- Short description
+- Privacy or joining rule, if already supported
+
+Do not add unnecessary new form fields.
+
+5. JOIN PREVIEW
+
+Before a person joins, confirm that the preview clearly displays:
+
+- Group name
+- Group type badge
+- Short description
+- Owner or administrator name, where permitted
+- Whether approval is required
+- Number of members, if already available
+- A clear confirmation button
+
+Do not expose private member information.
+
+6. INVITATION LINK
+
+Confirm the existing “Copy Invitation Link” button:
+
+- Copies a complete working URL
+- Opens the correct group join page
+- Includes the invitation code in the URL
+- Displays the join preview before membership is created
+- Works on mobile and desktop
+- Shows brief feedback such as “Invitation link copied”
+
+Preserve the separate “Copy Code” option.
+
+7. TERMINOLOGY
+
+Use the general title “Group Mode” rather than limiting the feature to “Family Mode.”
+
+Supporting explanatory text may say:
+
+“Create a private space for your family, prayer group, workplace, team, association, community, or other trusted group.”
+
+Do not rename database tables or routes simply for wording.
+
+8. LANGUAGES
+
+Add all new visible labels and validation messages to:
+
+- English
+- Spanish
+- French
+
+Maintain complete key parity across all three locale files.
+
+9. TESTING
+
+Perform focused tests for these exact scenarios:
+
+- Create a Family group.
+- Create a Prayer Group.
+- Create a Sports Team.
+- Create an Other / Custom group with the type “Market Association.”
+- Confirm an empty custom type is rejected.
+- Confirm each selected type persists after page refresh.
+- Confirm the group type badge appears on the group list, group home and join preview.
+- Copy an invitation code.
+- Copy an invitation link.
+- Open the invitation link in a separate test session.
+- Confirm the correct group name, group type and description appear before joining.
+- Join the group successfully.
+- Confirm existing groups without a groupType still open normally.
+- Confirm no React navigation warnings appear.
+- Confirm no new TypeScript or runtime errors are introduced.
+
+IMPORTANT
+
+- Do not create another large Group Mode rebuild.
+- Do not alter existing membership permissions.
+- Do not add payments, subscriptions, advanced moderation, video calls or new messaging systems.
+- Do not inspect or modify unrelated files.
+- Correct only genuine defects found within this exact scope.
+
+FINAL REPORT
+
+Report:
+
+- Exact files changed
+- Group type options added
+- How custom group types are stored
+- Fallback used for older groups
+- Where the group type badge appears
+- Invitation-link test result
+- English, Spanish and French locale parity result
+- TypeScript and runtime test results
+- Confirmation that no unrelated files were changed
+
+Create one checkpoint only after all focused tests pass.

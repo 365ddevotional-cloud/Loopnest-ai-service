@@ -1,5 +1,5 @@
 import { useUser } from "@/contexts/UserContext";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { Loader2, HandHeart, MessageSquare, BookOpen, Megaphone, Users, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,17 +9,17 @@ import type { Group, GroupMember } from "@shared/schema";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { getGroupTypeBadge } from "@/lib/groupTypes";
+import { useI18n } from "@/hooks/useI18n";
 
-const GROUP_TYPE_LABELS: Record<string, string> = {
-  family: "Family",
-  prayer: "Prayer Group",
-  workplace: "Workplace",
-  sports: "Sports Team",
-  community: "Community Organization",
-  other: "Other",
-};
-
-type GroupWithMember = GroupMember & { group: Group };
+function GroupTypeBadge({ groupType }: { groupType: string }) {
+  const { cls, label } = getGroupTypeBadge(groupType);
+  return (
+    <span className={`inline-block text-xs font-semibold px-2.5 py-0.5 rounded border ${cls}`}>
+      {label}
+    </span>
+  );
+}
 
 function useGroupData(groupId: number) {
   const { getIdToken } = useUser();
@@ -57,10 +57,11 @@ export default function GroupHome() {
   const { data, isLoading, error } = useGroupData(groupId);
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+  const { t } = useI18n();
 
   if (!user || !emailVerified) { navigate("/signin"); return null; }
   if (isLoading) return <div className="flex justify-center items-center min-h-[60vh]"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-  if (error || !data) return <div className="text-center py-10 text-muted-foreground">Group not found or you don't have access.</div>;
+  if (error || !data) return <div className="text-center py-10 text-muted-foreground">{t("gm_groupNotFound")}</div>;
 
   const { group, myMember, memberCount } = data;
 
@@ -68,7 +69,7 @@ export default function GroupHome() {
     navigator.clipboard.writeText(group.inviteCode).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      toast({ title: "Invite code copied!" });
+      toast({ title: t("gm_inviteCodeCopied") });
     });
   }
 
@@ -84,11 +85,11 @@ export default function GroupHome() {
               {group.name.slice(0, 2).toUpperCase()}
             </div>
           )}
-          <div>
+          <div className="space-y-1.5">
             <h2 className="font-serif text-2xl font-bold text-foreground">{group.name}</h2>
-            <p className="text-xs font-medium text-primary/70 uppercase tracking-wide mt-0.5">{GROUP_TYPE_LABELS[group.groupType] ?? group.groupType}</p>
+            <GroupTypeBadge groupType={group.groupType} />
             {group.description && <p className="text-sm text-muted-foreground mt-1 max-w-xs">{group.description}</p>}
-            <p className="text-sm text-muted-foreground mt-1">{memberCount} member{memberCount !== 1 ? "s" : ""}{group.country ? ` · ${group.country}` : ""}</p>
+            <p className="text-sm text-muted-foreground">{memberCount} {memberCount !== 1 ? t("gm_members") : t("gm_member")}{group.country ? ` · ${group.country}` : ""}</p>
           </div>
 
           {/* Invite code */}
@@ -99,16 +100,16 @@ export default function GroupHome() {
           >
             {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
             <span className="text-primary font-semibold">{group.inviteCode}</span>
-            <span className="text-muted-foreground">· tap to copy</span>
+            <span className="text-muted-foreground">· {t("gm_tapToCopy")}</span>
           </button>
         </div>
 
         {/* Action grid */}
         <div className="grid grid-cols-2 gap-3">
-          <ActionCard href={`/group/${groupId}/prayers`} icon={HandHeart} label="Prayer Requests" color="bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400" />
-          <ActionCard href={`/group/${groupId}/messages`} icon={MessageSquare} label="Messages" color="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" />
-          <ActionCard href={`/group/${groupId}/devotionals`} icon={BookOpen} label="Devotional Sharing" color="bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400" />
-          <ActionCard href={`/group/${groupId}/announcements`} icon={Megaphone} label="Announcements" color="bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400" />
+          <ActionCard href={`/group/${groupId}/prayers`} icon={HandHeart} label={t("gm_prayerRequests")} color="bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400" />
+          <ActionCard href={`/group/${groupId}/messages`} icon={MessageSquare} label={t("gm_messages")} color="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" />
+          <ActionCard href={`/group/${groupId}/devotionals`} icon={BookOpen} label={t("gm_devotionalSharing")} color="bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400" />
+          <ActionCard href={`/group/${groupId}/announcements`} icon={Megaphone} label={t("gm_announcements")} color="bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400" />
         </div>
 
         {/* Members quick view */}
@@ -116,10 +117,10 @@ export default function GroupHome() {
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium">{memberCount} Members</span>
+              <span className="text-sm font-medium">{memberCount} {t("gm_members")}</span>
             </div>
             <Link href={`/group/${groupId}/members`} className="text-sm text-primary hover:underline" data-testid="link-view-members">
-              View all
+              {t("gm_viewAll")}
             </Link>
           </CardContent>
         </Card>

@@ -1,0 +1,115 @@
+CHURCH MEMBER PROFILE — FINAL REAL-FLOW VERIFICATION ONLY
+
+The clickable Church member cards and member profile page have already been implemented.
+
+Do not rebuild, refactor, or add new features. Do not touch Family/Group Mode, Church governance, invitations, messaging architecture, payments, offline mode, authentication, or unrelated files.
+
+IMPORTANT
+
+The previous test used an invalid URL such as /church/members/1 and received a 404 because it did not use a real church slug and real membership record.
+
+This time, test the feature through the genuine user interface and real route structure.
+
+VERIFY THESE EXACT ITEMS
+
+1. Use an existing real church in the development database, preferably Holiness Church.
+
+2. Use the actual church slug and actual membership IDs returned from the database or API. Do not invent IDs or manually test an invalid URL.
+
+3. Open the real Church Members page while authenticated as a valid member or church owner.
+
+4. Tap the Church Owner card.
+
+Confirm:
+- The entire card is clickable.
+- The correct Church Owner profile opens.
+- The profile belongs to the same church.
+- The name and role are correct.
+- No private or sensitive account information is exposed.
+- No administrative privilege is granted merely by viewing the profile.
+
+5. Return to the Members page using the profile back button or browser back navigation.
+
+Confirm:
+- The Members page is restored correctly.
+- The previous scroll position is preserved where reasonably possible.
+- No blank page or full-app header duplication appears.
+
+6. Tap an ordinary Member card.
+
+Confirm:
+- The correct ordinary member profile opens.
+- The role displays as Member.
+- The profile does not accidentally show the Church Owner’s information.
+- The profile remains inside the correct church shell.
+
+7. Verify the profile fields that genuinely exist:
+- Profile photo or fallback avatar
+- Display name
+- Church role
+- Join date
+- Departments, when assigned
+- Short bio, when available
+- Public church information only
+
+Do not invent blank profile information.
+
+8. Verify the action buttons:
+- Message button is shown only when current messaging permissions permit it.
+- Prayer Request button opens the correct existing prayer-request flow, if that integration was implemented.
+- Buttons must not navigate to the profile again because of card-click propagation.
+- Buttons must not expose administrative controls to ordinary members.
+
+9. Verify permissions using at least:
+- Church Owner viewing a member
+- Ordinary member viewing the Church Owner
+- Ordinary member viewing another ordinary member
+- Unauthenticated visitor attempting to open the profile URL
+- Authenticated user who does not belong to that church attempting to open the profile URL
+
+Expected security:
+- Unauthenticated user must sign in.
+- A non-member must not gain private church access by manually changing the URL.
+- Server-side membership validation must protect the endpoint; client-side hiding alone is insufficient.
+
+10. Mobile verification:
+- Test at an iPhone-sized viewport.
+- Confirm cards have visible tap feedback.
+- Confirm no horizontal overflow.
+- Confirm profile text and buttons do not overlap.
+- Confirm the browser bottom bar does not hide essential controls.
+
+11. Confirm both leadership cards and congregation cards use the same correct profile-navigation behavior.
+
+12. Check the browser console and server logs for new runtime errors.
+
+13. Run TypeScript checks limited to:
+- ChurchMembers.tsx
+- The new church member profile page
+- App.tsx
+- The directly affected storage/interface and route files
+
+Distinguish any pre-existing errors from errors caused by this feature.
+
+IMPORTANT RULES
+
+- Do not use an invented slug, church ID, or membership ID.
+- Do not declare PASS from code inspection alone.
+- Do not modify anything unless a genuine defect is reproduced.
+- If a defect is found, fix only that defect and rerun the affected real-flow test.
+- Do not expand the member profile feature.
+
+FINAL REPORT
+
+Provide:
+1. PASS or FAIL for each numbered test.
+2. The real church slug used.
+3. The roles tested, without exposing passwords or sensitive information.
+4. The exact real profile URL pattern verified.
+5. Evidence that both the Church Owner and ordinary Member cards opened the correct profiles.
+6. Evidence that a non-member could not access another church’s member profile.
+7. Any profile field or button that could not be tested and the exact reason.
+8. Exact files changed only if a genuine correction was required.
+9. Confirmation that Family/Group Mode and unrelated features were not modified.
+
+Create a checkpoint only if an actual correction is made. If everything passes without changes, provide the verification report without creating another checkpoint.

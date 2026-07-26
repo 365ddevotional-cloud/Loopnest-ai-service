@@ -12,35 +12,44 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, Loader2, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
-
-const GROUP_TYPES = [
-  { value: "family", label: "Family" },
-  { value: "prayer", label: "Prayer Group" },
-  { value: "workplace", label: "Workplace" },
-  { value: "sports", label: "Sports Team" },
-  { value: "community", label: "Community Organization" },
-  { value: "other", label: "Other" },
-];
+import { GROUP_TYPES } from "@/lib/groupTypes";
+import { useI18n } from "@/hooks/useI18n";
 
 const schema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(80),
-  groupType: z.enum(["family", "prayer", "workplace", "sports", "community", "other"]),
+  groupType: z.string().min(1, "Please select a group type"),
+  customGroupType: z.string().max(60, "Group type must be 60 characters or less").optional(),
   description: z.string().max(300).optional(),
   country: z.string().optional(),
   privacy: z.enum(["join_code", "invite_only"]),
+}).superRefine((data, ctx) => {
+  if (data.groupType === "custom") {
+    const trimmed = (data.customGroupType ?? "").trim();
+    if (!trimmed) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Please enter a custom group type.",
+        path: ["customGroupType"],
+      });
+    }
+  }
 });
+
 type FormData = z.infer<typeof schema>;
 
 export default function GroupCreate() {
   const { user, emailVerified, getIdToken } = useUser();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", groupType: "family", description: "", country: "", privacy: "join_code" },
+    defaultValues: { name: "", groupType: "family", customGroupType: "", description: "", country: "", privacy: "join_code" },
   });
+
+  const watchedType = form.watch("groupType");
 
   useEffect(() => {
     if (!user || !emailVerified) navigate("/signin");
@@ -52,17 +61,20 @@ export default function GroupCreate() {
     setLoading(true);
     try {
       const token = await getIdToken();
+      const finalType = data.groupType === "custom"
+        ? (data.customGroupType ?? "").trim()
+        : data.groupType;
       const res = await fetch("/api/groups", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, groupType: finalType }),
       });
-      if (!res.ok) throw new Error((await res.json()).message || "Failed to create group");
+      if (!res.ok) throw new Error((await res.json()).message || t("gm_createError"));
       const group = await res.json();
-      toast({ title: "Group created!", description: `Invite code: ${group.inviteCode}` });
+      toast({ title: t("gm_groupCreated"), description: `${t("gm_inviteCodeLabel")}: ${group.inviteCode}` });
       navigate(`/group/${group.id}`);
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("gm_error"), description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -74,36 +86,36 @@ export default function GroupCreate() {
         <button onClick={() => navigate("/groups")} className="p-2 -ml-2 rounded-lg hover:bg-muted/60 text-muted-foreground">
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h1 className="font-serif text-xl font-bold">Create a Group</h1>
+        <h1 className="font-serif text-xl font-bold">{t("gm_createGroup")}</h1>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base"><Users className="w-4 h-4" /> Group Details</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base"><Users className="w-4 h-4" /> {t("gm_groupDetails")}</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField control={form.control} name="name" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Group Name *</FormLabel>
-                  <FormControl><Input placeholder="e.g. Johnson Family, Friday Prayer Group" data-testid="input-group-name" {...field} /></FormControl>
+                  <FormLabel>{t("gm_groupName")} *</FormLabel>
+                  <FormControl><Input placeholder={t("gm_groupNamePlaceholder")} data-testid="input-group-name" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
 
               <FormField control={form.control} name="groupType" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Group Type *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormLabel>{t("gm_groupType")} *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger data-testid="select-group-type">
-                        <SelectValue placeholder="Select a type" />
+                        <SelectValue placeholder={t("gm_selectType")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {GROUP_TYPES.map(t => (
-                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      {GROUP_TYPES.map(gt => (
+                        <SelectItem key={gt.value} value={gt.value}>{gt.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -111,17 +123,35 @@ export default function GroupCreate() {
                 </FormItem>
               )} />
 
+              {watchedType === "custom" && (
+                <FormField control={form.control} name="customGroupType" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("gm_customGroupType")}</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={t("gm_customGroupTypePlaceholder")}
+                        maxLength={60}
+                        data-testid="input-custom-group-type"
+                        {...field}
+                        onChange={e => field.onChange(e.target.value)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              )}
+
               <FormField control={form.control} name="description" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description (optional)</FormLabel>
-                  <FormControl><Textarea placeholder="What is this group for?" rows={3} data-testid="input-group-description" {...field} /></FormControl>
+                  <FormLabel>{t("gm_description")}</FormLabel>
+                  <FormControl><Textarea placeholder={t("gm_descriptionPlaceholder")} rows={3} data-testid="input-group-description" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
 
               <FormField control={form.control} name="country" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Country (optional)</FormLabel>
+                  <FormLabel>{t("gm_country")}</FormLabel>
                   <FormControl><Input placeholder="e.g. Nigeria, United States" data-testid="input-group-country" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
@@ -129,16 +159,16 @@ export default function GroupCreate() {
 
               <FormField control={form.control} name="privacy" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Privacy</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormLabel>{t("gm_privacy")}</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger data-testid="select-group-privacy">
                         <SelectValue />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="join_code">Join by Code — anyone with the code can join</SelectItem>
-                      <SelectItem value="invite_only">Invite Only — owner must share code personally</SelectItem>
+                      <SelectItem value="join_code">{t("gm_privacyJoinCode")}</SelectItem>
+                      <SelectItem value="invite_only">{t("gm_privacyInviteOnly")}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -147,7 +177,7 @@ export default function GroupCreate() {
 
               <Button type="submit" className="w-full" disabled={loading} data-testid="button-submit-create">
                 {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                {loading ? "Creating…" : "Create Group"}
+                {loading ? t("gm_creating") : t("gm_createGroup")}
               </Button>
             </form>
           </Form>

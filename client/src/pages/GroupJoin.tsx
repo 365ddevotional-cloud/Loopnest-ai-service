@@ -6,15 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, Loader2, LogIn, Users, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getGroupTypeBadge } from "@/lib/groupTypes";
+import { useI18n } from "@/hooks/useI18n";
 
-const GROUP_TYPE_LABELS: Record<string, string> = {
-  family: "Family",
-  prayer: "Prayer Group",
-  workplace: "Workplace",
-  sports: "Sports Team",
-  community: "Community Organization",
-  other: "Other",
-};
+function GroupTypeBadge({ groupType }: { groupType: string }) {
+  const { cls, label } = getGroupTypeBadge(groupType);
+  return (
+    <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded border ${cls}`}>
+      {label}
+    </span>
+  );
+}
 
 type GroupPreview = {
   group: { id: number; name: string; groupType: string; description?: string | null; country?: string | null };
@@ -26,6 +28,7 @@ export default function GroupJoin() {
   const [, navigate] = useLocation();
   const [, params] = useRoute("/groups/join/:code");
   const { toast } = useToast();
+  const { t } = useI18n();
   const [code, setCode] = useState((params as any)?.code ?? "");
   const [looking, setLooking] = useState(false);
   const [joining, setJoining] = useState(false);
@@ -36,10 +39,18 @@ export default function GroupJoin() {
     if (!user || !emailVerified) navigate("/signin");
   }, [user, emailVerified]);
 
+  useEffect(() => {
+    const urlCode = (params as any)?.code;
+    if (urlCode && !preview && !looking) {
+      setCode(urlCode.toUpperCase());
+      handleLookupCode(urlCode.toUpperCase());
+    }
+  }, []);
+
   if (!user || !emailVerified) return null;
 
-  async function handleLookup() {
-    const trimmed = code.trim().toUpperCase();
+  async function handleLookupCode(lookupCode: string) {
+    const trimmed = lookupCode.trim().toUpperCase();
     if (!trimmed) return;
     setLooking(true);
     setPreview(null);
@@ -56,6 +67,10 @@ export default function GroupJoin() {
     }
   }
 
+  async function handleLookup() {
+    handleLookupCode(code);
+  }
+
   async function handleJoin() {
     const trimmed = code.trim().toUpperCase();
     if (!trimmed) return;
@@ -70,16 +85,16 @@ export default function GroupJoin() {
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 409) {
-          toast({ title: "Already a member", description: `You're already in ${data.group?.name ?? "this group"}.` });
+          toast({ title: t("gm_alreadyMember"), description: `${data.group?.name ?? t("gm_thisGroup")}` });
           navigate(`/group/${data.group.id}`);
           return;
         }
-        throw new Error(data.message || "Failed to join group");
+        throw new Error(data.message || t("gm_joinError"));
       }
-      toast({ title: "Joined!", description: `You have joined ${data.group.name}` });
+      toast({ title: t("gm_joinSuccess"), description: `${t("gm_joinedDesc")} ${data.group.name}` });
       navigate(`/group/${data.group.id}`);
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("gm_error"), description: err.message, variant: "destructive" });
     } finally {
       setJoining(false);
     }
@@ -91,12 +106,12 @@ export default function GroupJoin() {
         <button onClick={() => navigate("/groups")} className="p-2 -ml-2 rounded-lg hover:bg-muted/60 text-muted-foreground">
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h1 className="font-serif text-xl font-bold">Join a Group</h1>
+        <h1 className="font-serif text-xl font-bold">{t("gm_joinGroup")}</h1>
       </div>
 
       <Card>
         <CardContent className="pt-6 space-y-4">
-          <p className="text-sm text-muted-foreground">Enter the invite code shared by the group owner.</p>
+          <p className="text-sm text-muted-foreground">{t("gm_enterCodePrompt")}</p>
           <div className="flex gap-2">
             <Input
               placeholder="e.g. ABC-1234"
@@ -114,7 +129,7 @@ export default function GroupJoin() {
 
           {notFound && (
             <p className="text-sm text-destructive text-center" data-testid="text-invalid-code">
-              Invalid invite code. Please check and try again.
+              {t("gm_invalidCode")}
             </p>
           )}
         </CardContent>
@@ -123,19 +138,19 @@ export default function GroupJoin() {
       {preview && (
         <Card className="border-primary/30" data-testid="card-group-preview">
           <CardContent className="pt-5 space-y-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-start gap-3">
               <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center text-primary font-bold text-lg flex-shrink-0">
                 {preview.group.name.slice(0, 2).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="font-semibold text-foreground truncate" data-testid="text-preview-name">{preview.group.name}</h2>
-                <p className="text-sm text-muted-foreground" data-testid="text-preview-type">
-                  {GROUP_TYPE_LABELS[preview.group.groupType] ?? preview.group.groupType}
-                  {preview.group.country ? ` · ${preview.group.country}` : ""}
-                </p>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                <div className="mt-1" data-testid="text-preview-type">
+                  <GroupTypeBadge groupType={preview.group.groupType} />
+                </div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1.5">
                   <Users className="w-3 h-3" />
-                  <span>{preview.memberCount} member{preview.memberCount !== 1 ? "s" : ""}</span>
+                  <span>{preview.memberCount} {preview.memberCount !== 1 ? t("gm_members") : t("gm_member")}</span>
+                  {preview.group.country ? <><span>·</span><span>{preview.group.country}</span></> : null}
                 </div>
               </div>
             </div>
@@ -144,7 +159,7 @@ export default function GroupJoin() {
             )}
             <Button onClick={handleJoin} disabled={joining} className="w-full gap-2" data-testid="button-join-submit">
               {joining ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
-              {joining ? "Joining…" : `Join ${preview.group.name}`}
+              {joining ? t("gm_joining") : `${t("gm_joinGroup")} — ${preview.group.name}`}
             </Button>
           </CardContent>
         </Card>
