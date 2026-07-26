@@ -1,0 +1,479 @@
+CHURCH MODE GOVERNANCE, ORGANIZATION APPROVAL, COMPLIANCE, LEGAL SAFEGUARDS, AND PLATFORM COMMUNICATION
+
+Implement the following improvements for Church Mode.
+
+IMPORTANT
+
+- Do not modify unrelated app features.
+- Preserve all existing organizations, churches, ministries, departments, members, invitations, and data.
+- Reuse the existing authentication, notification, email, translation, and messaging systems wherever possible.
+- Make all changes secure, auditable, scalable, and professionally designed.
+- Do not remove any existing functionality unless explicitly stated.
+
+====================================================
+1. ORGANIZATION APPROVAL SYSTEM
+====================================================
+
+Every organization that creates an official community inside Church Mode must be reviewed before becoming publicly active.
+
+This applies equally to:
+
+• Churches
+• Christian Ministries
+• Christian Organizations
+• Christian Associations
+• Fellowships
+• Mission Organizations
+• Bible Study Organizations
+• Campus Ministries
+• Prayer Networks
+• Other Christian Communities approved by the platform.
+
+Ordinary members joining an existing organization do NOT require platform approval.
+
+Workflow:
+
+Draft
+
+↓
+
+Submitted
+
+↓
+
+Pending Platform Review
+
+↓
+
+Approved
+
+or
+
+Needs More Information
+
+or
+
+Rejected
+
+While Pending Review:
+
+• The organization is not publicly discoverable.
+• Invitation codes remain inactive.
+• Members cannot join.
+• Public pages remain hidden.
+• The owner may continue editing information.
+
+Display:
+
+"Your organization is currently under review by the platform."
+
+====================================================
+2. PLATFORM REVIEW
+====================================================
+
+Platform Administrators review:
+
+• Organization name
+• Organization type
+• Denomination (if applicable)
+• Description
+• Country
+• Contact details
+• Logo
+• Website
+• Any required supporting information
+
+Administrators may:
+
+• Approve
+• Reject
+• Request Additional Information
+
+Every action must be recorded in the audit log.
+
+====================================================
+3. PLATFORM APPROVAL IS NOT AN ENDORSEMENT
+====================================================
+
+IMPORTANT
+
+Never display:
+
+✓ Verified Church
+✓ Certified Church
+✓ Official Church
+
+Instead display neutral wording such as:
+
+• Approved for Church Mode
+• Platform Approved
+• Community Approved
+
+Approval means ONLY that the organization satisfied the platform's submission requirements.
+
+Approval DOES NOT mean:
+
+• endorsement
+• accreditation
+• certification
+• theological approval
+• financial approval
+• legal guarantee
+• guarantee of future conduct
+
+This explanation should appear in the Terms of Use and relevant policy pages.
+
+====================================================
+4. PRIVATE PLATFORM ADMIN ↔ ORGANIZATION OWNER COMMUNICATION
+====================================================
+
+Create a secure communication channel between:
+
+Platform Administrator
+
+and
+
+Organization Owner
+
+Only those two parties may see these messages.
+
+Topics include:
+
+• policy clarification
+• compliance
+• abuse reports
+• impersonation
+• copyright
+• inappropriate content
+• fraud prevention
+• legal requests
+• account verification
+• organization review
+
+No ordinary member may view these conversations.
+
+====================================================
+5. COMPLIANCE CASES
+====================================================
+
+Instead of warnings, create Compliance Cases.
+
+Each case stores:
+
+• Case Number
+• Organization
+• Owner
+• Date
+• Status
+• Category
+• Severity
+• Description
+• Attachments
+• Internal Notes
+• Owner Responses
+• Resolution History
+
+Statuses include:
+
+Open
+
+Waiting for Owner
+
+Under Review
+
+Resolved
+
+Closed
+
+Suspended
+
+====================================================
+6. FAIR REVIEW PROCESS
+====================================================
+
+Never assume wrongdoing.
+
+Always use language such as:
+
+"We received a report alleging..."
+
+instead of
+
+"You violated..."
+
+The owner must have an opportunity to respond before permanent enforcement whenever practical and legally appropriate.
+
+====================================================
+7. OWNER RESPONSE
+====================================================
+
+Organization owners may:
+
+• submit explanations
+• upload documents
+• upload evidence
+• communicate privately with Platform Administration
+
+Responses become part of the permanent audit history.
+
+====================================================
+8. ENFORCEMENT OPTIONS
+====================================================
+
+Platform Administrators may choose:
+
+No Action
+
+Warning
+
+Request Changes
+
+Temporary Restriction
+
+Temporary Suspension
+
+Permanent Removal
+
+Every action requires:
+
+• reason
+• administrator
+• timestamp
+
+====================================================
+9. APPEALS
+====================================================
+
+Organization owners may submit an appeal after rejection or suspension.
+
+Appeals become part of the audit history.
+
+====================================================
+10. ORGANIZATION DELETION
+====================================================
+
+Organization owners may NOT permanently delete their own organization.
+
+Instead they submit:
+
+Request Organization Deletion
+
+The request includes:
+
+• reason
+• confirmation
+• optional explanation
+
+Status:
+
+Pending Review
+
+The platform reviews the request.
+
+Target review time:
+
+Within 48 hours.
+
+Deletion is never automatic.
+
+Platform Administrators decide whether to:
+
+• approve
+• reject
+• archive
+• suspend instead
+
+Prefer:
+
+Disable
+
+↓
+
+Suspend
+
+↓
+
+Archive
+
+↓
+
+Delete
+
+====================================================
+11. LEGAL SAFEGUARDS
+====================================================
+
+Create professionally written legal policies explaining:
+
+• Organizations remain solely responsible for their teachings, publications, donations, fundraising, events, counseling, communications, leadership, and activities.
+
+• The platform provides technology only.
+
+• Platform approval is not an endorsement or certification.
+
+• The platform may investigate reports fairly.
+
+• Organizations may respond before enforcement where practical.
+
+• The platform may suspend or remove organizations violating platform policies or applicable laws.
+
+• Records may be retained for security, fraud prevention, legal compliance, dispute resolution, and audit purposes.
+
+• Platform Administrators reserve the right to review applications and moderate participation according to published policies.
+
+Use language consistent with modern app-store expectations and generally accepted platform governance practices.
+
+====================================================
+12. PLATFORM UPDATE NOTIFICATIONS
+====================================================
+
+Whenever significant platform updates occur, notify users appropriately.
+
+Recipients may include:
+
+• Organization Owners
+• Organization Administrators
+• Department Leaders
+• Members
+• Individual App Users
+
+Depending on the nature of the update.
+
+Examples:
+
+• New feature
+• Policy update
+• Privacy update
+• Terms update
+• Church Mode enhancement
+• Security improvement
+• Bug fix
+• Maintenance
+• New ministry tools
+
+Allow Platform Administrators to target:
+
+• Everyone
+• Organization Owners only
+• Church Owners only
+• Ministry Owners only
+• Organization Administrators
+• Department Leaders
+• Members of selected organizations
+• Specific countries
+• Specific languages
+
+Support:
+
+• In-app notifications
+• Inbox messages
+• Email notifications (where appropriate)
+
+Allow users to mark announcements as read while ensuring legally required notices remain accessible.
+
+====================================================
+13. ADMIN DASHBOARD
+====================================================
+
+Add dashboard sections for:
+
+• Pending Organization Applications
+• Pending Compliance Cases
+• Appeals
+• Pending Deletion Requests
+• Recent Approvals
+• Recent Suspensions
+• Platform Announcements
+• Policy Updates
+• System Notifications
+
+====================================================
+14. AUDIT HISTORY
+====================================================
+
+Audit:
+
+• approvals
+• rejections
+• organization edits
+• department edits
+• organization deletion requests
+• compliance actions
+• member approvals
+• invitations
+• announcements
+• policy acknowledgements
+
+Store:
+
+• user
+• role
+• organization
+• action
+• previous value
+• new value
+• date/time
+
+====================================================
+15. PLATFORM DESIGN PRINCIPLES
+====================================================
+
+Design these systems using proven platform concepts commonly found in mature online services, including:
+
+• transparent moderation workflows
+• appeals
+• audit logs
+• secure authentication
+• private administrative communication
+• policy acknowledgements
+• announcement systems
+• staged enforcement
+• clear user notifications
+• privacy protections
+
+Do NOT copy another company's policies or copyrighted wording.
+
+Implement original text and original workflows appropriate for this platform.
+
+====================================================
+16. TESTING
+====================================================
+
+Replit must fully test:
+
+✓ Organization application
+✓ Review
+✓ Approval
+✓ Rejection
+✓ Request More Information
+✓ Invitation activation after approval
+✓ Compliance messaging
+✓ Appeals
+✓ Deletion requests
+✓ Platform announcements
+✓ User notifications
+✓ Audit logging
+
+Confirm that:
+
+• Only Platform Administrators can approve organizations.
+• Only Organization Owners receive private compliance messages.
+• Members cannot access compliance information.
+• Existing churches continue functioning.
+• Existing ministries continue functioning.
+• Existing organizations continue functioning.
+• Existing departments continue functioning.
+• Existing invitations continue functioning.
+• No unrelated features were modified.
+
+Provide a complete implementation report including:
+
+• Files changed
+• Database changes
+• Security changes
+• New permissions
+• Audit implementation
+• Notification implementation
+• Testing performed
+• Remaining manual verification steps
+• Confirmation that unrelated features were not modified.

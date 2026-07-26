@@ -1,0 +1,462 @@
+CHURCH INVITATIONS, PENDING APPROVALS, NAME EDITING, MEMBER NOTIFICATIONS, AND CHURCH DELETION REQUESTS
+
+Please implement the following Church Mode improvements carefully.
+
+IMPORTANT:
+
+- Do not redesign unrelated Church Mode pages.
+- Do not modify devotionals, songs, donations, analytics, main navigation, or unrelated authentication features.
+- Preserve all existing churches, members, departments, invitations, and messages.
+- Do not delete existing records.
+- Reuse the existing authentication, notification, email, database, and translation systems.
+- Make focused, safe changes only.
+- Test the complete flow before reporting success.
+
+====================================================
+1. ADD COPY BUTTONS BESIDE EVERY INVITATION CODE
+====================================================
+
+On the Church Administration → Invitations page:
+
+- Add a visible “Copy Code” button directly beside every generated invitation code.
+- The church owner must not need to highlight the code manually.
+- Tapping the button must copy the exact code to the clipboard.
+- Show a brief success message such as “Invitation code copied.”
+- Keep the existing Copy Link and Share options where they already exist.
+- Make the button easy to tap on mobile.
+- Support English, Spanish, and French.
+
+The full invitation card should clearly show:
+
+- Invitation code
+- Church name
+- Church denomination/type
+- Department or group name, where applicable
+- Invitation type
+- Expiry date
+- Number approved
+- Whether approval is required
+
+====================================================
+2. SHOW THE CHURCH NAME WHEN A CODE IS VERIFIED
+====================================================
+
+There is a display bug in the invitation verification page.
+
+When the invitation code for “Holiness church” is entered, the page shows only “Baptist” and does not clearly show the church name.
+
+Correct behavior:
+
+- Display the church name prominently.
+- Display the denomination/type beneath it.
+
+Example:
+
+Holiness church
+Baptist
+
+For a department invitation, display:
+
+Holiness church
+Baptist
+Bible Study Department
+
+Do not replace the church name with the denomination.
+
+Verify that the API response and frontend field mapping use:
+
+- church.name for the church name
+- church.denomination or church.type for Baptist, Pentecostal, etc.
+- department.name for a department invitation
+
+Also display the church logo where available.
+
+====================================================
+3. SHOW PENDING MEMBER-APPROVAL COUNTS
+====================================================
+
+Church owners and authorized church administrators must immediately see how many membership requests are waiting.
+
+Add a numeric badge to the Members tab/menu:
+
+- 1 pending request → show 1
+- 2 pending requests → show 2
+- 10 pending requests → show 10
+- No pending requests → hide the badge or show 0 only where appropriate
+
+The count must appear in relevant locations, including:
+
+- Church Administration Members tab
+- Church Mode hamburger menu Members item, where practical
+- Church dashboard summary, where a members summary already exists
+
+When the owner approves or declines one request:
+
+- Update the count immediately.
+- Do not require a full-page refresh.
+- If 3 requests existed and one was handled, the badge must change to 2.
+- When all are handled, the badge must disappear or become 0.
+
+Use only pending, active membership requests for this count.
+
+Do not count:
+
+- approved members
+- declined requests
+- removed members
+- expired invitation attempts
+- duplicate requests
+
+====================================================
+4. ALLOW THE CHURCH OWNER TO EDIT CHURCH INFORMATION
+====================================================
+
+In Church Administration → Settings, allow the church owner to edit:
+
+- Church name
+- Denomination/type
+- Church description
+- Address
+- Country
+- Contact details
+- Service times
+- Other existing editable church information
+
+The church name must be editable in case the owner made a spelling or naming mistake.
+
+Before saving a church-name change:
+
+1. Show a confirmation dialog containing:
+   - Current church name
+   - Proposed new church name
+   - A clear warning that members will be notified
+
+2. Require the authenticated owner to confirm the change.
+
+3. For sensitive church-name changes, require recent authentication:
+   - Ask the owner to re-enter their password where Firebase email/password authentication is used, or
+   - use the appropriate Firebase reauthentication process for their sign-in provider
+
+4. Do not trust only a frontend confirmation box.
+
+5. Verify ownership server-side before updating the name.
+
+====================================================
+5. ALLOW AUTHORIZED USERS TO EDIT DEPARTMENT NAMES
+====================================================
+
+Allow:
+
+- Church owner
+- Authorized church administrators
+- Authorized department leader
+
+to edit a department’s:
+
+- Name
+- Type
+- Description
+- Logo
+- Banner
+
+A department leader may edit only their own authorized department.
+
+Before changing a department name:
+
+- Show the old name and new name.
+- Ask for confirmation.
+- Save only after server-side authorization.
+- Update all department pages, invitations, headers, and lists immediately.
+
+Regular members must not be able to rename departments.
+
+====================================================
+6. NOTIFY MEMBERS ABOUT CHURCH OR DEPARTMENT NAME CHANGES
+====================================================
+
+When a church name changes, automatically notify all active members of that church.
+
+The message should include:
+
+- Previous name
+- New name
+- Date of change
+- Name or role of the person who made the change
+- A short explanation such as:
+  “Your church name has been updated by church leadership.”
+
+Example:
+
+Church Name Update
+
+The church name was changed from:
+“Old Church Name”
+
+to:
+“New Church Name”
+
+Changed on: July 25, 2026
+
+When a department name changes, notify:
+
+- all active members of that department
+- church owners and relevant church administrators
+
+Include:
+
+- Previous department name
+- New department name
+- Church name
+- Date of change
+- Person/role responsible
+
+Deliver these notifications through the existing in-app church notification or announcement system.
+
+Also send an email notification only where:
+
+- the user has a valid email
+- the email system is working
+- the communication is considered an essential account/church notification
+
+Do not expose one member’s email address to other members.
+
+====================================================
+7. SEND OWNER SECURITY EMAIL FOR CHURCH-NAME CHANGES
+====================================================
+
+When a church-name change is requested:
+
+- Send a security notification to the email address registered to the church owner.
+- The email must state:
+  - Old church name
+  - Proposed or completed new church name
+  - Date and time
+  - That the change was made from their account
+  - What to do if they did not authorize it
+
+Where safely possible, require the owner to confirm the change through a secure email confirmation link before finalizing it.
+
+If implementing an email-confirmation link would risk blocking the feature because of the current Firebase email-action configuration, use this safer flow:
+
+1. Require Firebase reauthentication before saving.
+2. Save the change.
+3. Send an immediate security-alert email afterward.
+
+Do not silently change the church name without authentication and notification.
+
+====================================================
+8. DEPARTMENT/GROUP DELETION
+====================================================
+
+Authorized church leadership may delete or archive a department/group belonging to their church.
+
+Before deleting:
+
+- Show a strong confirmation dialog.
+- Clearly display the department name.
+- Explain what will happen to its members, posts, tasks, events, attendance, and messages.
+- Prefer soft deletion/archive instead of immediate permanent deletion.
+- Remove the department from active navigation.
+- Preserve records for audit/recovery where appropriate.
+
+Notify department members that the department was closed or archived, including the date.
+
+Do not allow one church to delete another church’s department.
+
+====================================================
+9. CHURCH OWNERS CANNOT DIRECTLY DELETE THEIR CHURCH
+====================================================
+
+Do not provide a direct “Delete Church” action to church owners.
+
+Instead, add:
+
+“Request Church Deletion”
+
+The request form must include:
+
+- Church name
+- Owner name
+- Owner email
+- Reason for deletion
+- Optional additional explanation
+- Confirmation checkbox
+- Warning that access and records may be affected
+
+After submission:
+
+- Create a deletion-request record.
+- Set status to “Pending Review.”
+- Show the owner:
+  “Your church deletion request has been submitted for administrator review. Please allow up to 48 hours.”
+
+The church must remain active while the request is pending unless the platform administrator suspends it.
+
+The platform administrator must have a secure admin page showing:
+
+- Pending deletion requests
+- Church name
+- Owner
+- Email
+- Country
+- Reason
+- Request date/time
+- Relevant church statistics
+- Approve
+- Reject
+- Request More Information
+
+Only the authenticated platform administrator may approve final church deletion.
+
+Prefer a staged deletion process:
+
+1. Pending
+2. Approved
+3. Scheduled for deletion or archived
+4. Completed
+
+Before completion:
+
+- notify the church owner
+- record the administrator who approved it
+- record the date/time
+- preserve an audit log
+- use soft deletion/archive first where practical
+
+If rejected, notify the owner with the reason.
+
+The stated review target should be up to 48 hours, but do not automatically approve a deletion merely because 48 hours passed.
+
+====================================================
+10. AUDIT HISTORY
+====================================================
+
+Create or reuse an audit log for:
+
+- Church-name changes
+- Department-name changes
+- Department deletion/archive
+- Church deletion requests
+- Church deletion approval or rejection
+- Invitation creation
+- Member approval and decline actions
+
+Record:
+
+- Action
+- Previous value
+- New value
+- User ID
+- User role
+- Church ID
+- Department ID where applicable
+- Date/time
+
+Ordinary church members must not have access to the full administrative audit log.
+
+====================================================
+11. TRANSLATION
+====================================================
+
+Add or reuse English, Spanish, and French translations for:
+
+- Copy Code
+- Code Copied
+- Pending Approval
+- Pending Approvals
+- Edit Church Name
+- Edit Department Name
+- Previous Name
+- New Name
+- Confirm Change
+- Church Name Updated
+- Department Name Updated
+- Request Church Deletion
+- Deletion Reason
+- Pending Review
+- Allow Up to 48 Hours
+- Approve Deletion
+- Reject Deletion
+- Archive Department
+- Delete Department
+- Security Confirmation Required
+
+====================================================
+12. REQUIRED TESTING
+====================================================
+
+Replit must test the actual running application.
+
+Test A — Invitation copy button:
+
+1. Create three invitations.
+2. Tap Copy Code for each.
+3. Confirm the exact code is copied.
+4. Confirm it works on mobile and desktop.
+
+Test B — Invitation details:
+
+1. Verify a code for Holiness church.
+2. Confirm “Holiness church” appears prominently.
+3. Confirm “Baptist” appears separately.
+4. Verify a department code.
+5. Confirm the church and department names both appear.
+
+Test C — Pending count:
+
+1. Create three membership requests.
+2. Confirm the Members badge shows 3.
+3. Approve one.
+4. Confirm it changes to 2.
+5. Decline one.
+6. Confirm it changes to 1.
+7. Approve the last one.
+8. Confirm it becomes 0 or disappears.
+
+Test D — Church rename:
+
+1. Rename a test church.
+2. Confirm reauthentication/confirmation is required.
+3. Confirm the new name appears everywhere.
+4. Confirm active members receive a notification with old name, new name, and date.
+5. Confirm the owner receives the security email where email delivery is available.
+
+Test E — Department rename:
+
+1. Rename a test department.
+2. Confirm the new name appears everywhere.
+3. Confirm its members receive a notification.
+4. Confirm an unauthorized member cannot rename it.
+
+Test F — Department deletion:
+
+1. Archive/delete a test department.
+2. Confirm it disappears from active navigation.
+3. Confirm members are notified.
+4. Confirm unrelated departments remain unchanged.
+
+Test G — Church deletion request:
+
+1. Submit a test deletion request.
+2. Confirm the owner sees Pending Review and the 48-hour message.
+3. Confirm the platform admin can view it.
+4. Approve or reject the test request safely without deleting real church data.
+5. Confirm the action is logged.
+
+Do not report success based only on source-code inspection.
+
+FINAL REPORT MUST INCLUDE:
+
+- Files changed
+- Database fields/tables added or reused
+- Invitation copy-button implementation
+- Church-name display fix
+- Pending-count implementation
+- Church and department editing authorization
+- Notification delivery implementation
+- Church deletion request workflow
+- Admin approval workflow
+- Audit-log implementation
+- Tests passed
+- Tests not fully verifiable and why
+- Confirmation that unrelated app features were not modified
