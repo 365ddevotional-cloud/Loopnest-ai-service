@@ -4224,13 +4224,19 @@ export async function registerRoutes(
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 
-  // Owner: submit appeal (owner-only governance channel)
+  // Owner: submit appeal — only allowed when org is rejected or suspended
   app.post("/api/churches/:churchId/appeal", async (req, res) => {
     const uid = await getUid(req, res); if (!uid) return;
     try {
       const churchId = Number(req.params.churchId);
       const member = await storage.getChurchMember(churchId, uid);
       if (!member || member.role !== "owner") return res.status(403).json({ message: "Forbidden" });
+      // Appeals are only accepted for rejected or suspended organisations
+      const church = await storage.getChurch(churchId);
+      if (!church) return res.status(404).json({ message: "Church not found" });
+      if (!["rejected", "suspended"].includes(church.platformStatus ?? "")) {
+        return res.status(400).json({ message: "Appeals may only be submitted for rejected or suspended organisations." });
+      }
       const { message, caseId } = req.body;
       if (!message?.trim()) return res.status(400).json({ message: "Message is required" });
       const appeal = await storage.createComplianceAppeal({ churchId, ownerUid: uid, message: message.trim(), caseId: caseId ?? null, status: "pending" });

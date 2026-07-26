@@ -2791,7 +2791,12 @@ export class DatabaseStorage implements IStorage {
     if (ann.targetType === "everyone" || ann.targetType === "org_owners" || ann.targetType === "org_admins") {
       recipientChurches = approvedChurches;
     } else if (ann.targetType === "country" && ann.targetFilter) {
-      recipientChurches = approvedChurches.filter(c => (c as any).country === ann.targetFilter);
+      // targetFilter is comma-separated country codes e.g. "NG,US,GB"
+      const countryCodes = ann.targetFilter.toUpperCase().split(",").map(s => s.trim()).filter(Boolean);
+      recipientChurches = approvedChurches.filter(c => {
+        const cc = ((c as any).country ?? "").toUpperCase().trim();
+        return cc && countryCodes.includes(cc);
+      });
     } else if (ann.targetType === "dept_leaders") {
       // dept_leaders: all approved orgs (qualifying role check below will filter to dept leaders)
       recipientChurches = approvedChurches;
@@ -2832,9 +2837,16 @@ export class DatabaseStorage implements IStorage {
       } catch { /* email optional — log and continue */ console.warn("[Announcement] SendGrid not available; skipping email delivery"); }
     }
 
+    const deliverInbox = Array.isArray(ann.deliveryChannels) && ann.deliveryChannels.includes("inbox");
+
     let deliveryCount = 0;
     const subject = `[Platform Announcement] ${ann.title}`;
     const msgBody = `**${ann.title}**\n\n${ann.body}`;
+
+    // Note: "in_app" channel is served by getSentAnnouncementsForUser reading the
+    // platformAnnouncements table — no per-user DB row needed beyond marking sent.
+    // "inbox" channel writes to the platformAdminThreads conversation thread.
+    // "email" channel sends via SendGrid (handled below).
 
     for (const church of recipientChurches) {
       try {
@@ -2844,15 +2856,17 @@ export class DatabaseStorage implements IStorage {
         );
         if (qualifiedMembers.length === 0) continue;
 
-        // 4a. In-app: get or create platform admin thread, post message
-        const existingThreads = await db.select().from(platformAdminThreads).where(eq(platformAdminThreads.churchId, church.id));
-        let thread = existingThreads[0];
-        if (!thread) {
-          const ownerUid = members.find(m => m.role === "owner")?.firebaseUid ?? members[0]?.firebaseUid ?? "unknown";
-          [thread] = await db.insert(platformAdminThreads).values({ churchId: church.id, ownerUid, subject, status: "open", hasUnreadAdmin: false, hasUnreadOwner: true }).returning();
+        // 4a. Inbox channel: create/update platform admin thread with announcement message
+        if (deliverInbox) {
+          const existingThreads = await db.select().from(platformAdminThreads).where(eq(platformAdminThreads.churchId, church.id));
+          let thread = existingThreads[0];
+          if (!thread) {
+            const ownerUid = members.find(m => m.role === "owner")?.firebaseUid ?? members[0]?.firebaseUid ?? "unknown";
+            [thread] = await db.insert(platformAdminThreads).values({ churchId: church.id, ownerUid, subject, status: "open", hasUnreadAdmin: false, hasUnreadOwner: true }).returning();
+          }
+          await db.insert(platformAdminMessages).values({ threadId: thread.id, senderType: "admin", senderUid: "platform_admin", message: msgBody });
+          await db.update(platformAdminThreads).set({ hasUnreadOwner: true, updatedAt: new Date() }).where(eq(platformAdminThreads.id, thread.id));
         }
-        await db.insert(platformAdminMessages).values({ threadId: thread.id, senderType: "admin", senderUid: "platform_admin", message: msgBody });
-        await db.update(platformAdminThreads).set({ hasUnreadOwner: true, updatedAt: new Date() }).where(eq(platformAdminThreads.id, thread.id));
 
         // 4b. Email: send to qualified member emails (respects opt-in via email_consent_notifications)
         if (emailClient) {
@@ -2878,8 +2892,13 @@ export class DatabaseStorage implements IStorage {
       } catch { /* skip failed church delivery */ }
     }
 
-    // 5. Mark announcement as sent
+    // 5. Mark announcement as sent and write audit trail
     const [row] = await db.update(platformAnnouncements).set({ sentAt: new Date() }).where(eq(platformAnnouncements.id, id)).returning();
+    await this.createAuditLog({
+      action: "announcement_sent",
+      newValue: JSON.stringify({ title: ann.title, targetType: ann.targetType, channels: ann.deliveryChannels, recipientCount: deliveryCount }),
+      actorUid: "platform_admin",
+    }).catch(() => {});
     return { ...row, deliveryCount };
   }
 
