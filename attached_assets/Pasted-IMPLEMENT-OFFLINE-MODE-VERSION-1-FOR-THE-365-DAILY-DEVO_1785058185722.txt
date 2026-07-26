@@ -1,0 +1,207 @@
+IMPLEMENT OFFLINE MODE VERSION 1 FOR THE 365 DAILY DEVOTIONAL APP.
+
+IMPORTANT SCOPE RULES:
+- Make only the minimum changes required for Offline Mode Version 1.
+- Do not rebuild or refactor the app.
+- Do not inspect or modify unrelated files.
+- Do not change Church Mode, Family Mode, payments, authentication, admin governance, email systems, or Android publishing.
+- Preserve all existing features and designs.
+- Use the app’s existing PWA/service-worker structure if one already exists.
+- Do not add expensive or unnecessary infrastructure.
+- Test the completed offline flow before reporting completion.
+
+GOAL:
+Allow users to continue reading important devotional content when internet service is unavailable, while clearly identifying which actions still require an internet connection.
+
+1. AUTOMATIC OFFLINE AVAILABILITY
+
+After a signed-in or guest user successfully opens the current day’s devotional while online:
+
+- Cache the complete devotional content needed to display that page.
+- Cache the required page shell, fonts, icons, logo, CSS, and essential local assets.
+- Make that devotional available when the user later loses internet service.
+- Do not automatically download the entire devotional library.
+
+Also preserve the most recently opened devotional pages, using a reasonable storage limit so the cache does not grow without control.
+
+2. MANUAL DOWNLOAD BUTTON
+
+Add a clear button on each devotional page:
+
+“Download for Offline Reading”
+
+After it is downloaded:
+
+- Change the button state to “Available Offline.”
+- Allow the user to remove the download later.
+- Do not create duplicate stored copies.
+- Store the devotional ID, title, date, language, Bible translation where relevant, and downloaded timestamp.
+- The downloaded content must remain readable after closing and reopening the browser or installed app.
+
+3. OFFLINE CONTENT PAGE
+
+Create a focused page named:
+
+“Offline Content”
+
+It should show:
+
+- All devotionals deliberately downloaded by the user.
+- The devotional date and title.
+- Downloaded language.
+- Downloaded date.
+- Open button.
+- Remove Download button.
+- Remove All Downloads button with confirmation.
+- Approximate storage usage when the browser makes that information available.
+
+Include an empty state:
+
+“No offline devotionals yet.”
+
+Add a link or menu item to this page in the most relevant existing account/library area without crowding the main navigation.
+
+4. CONNECTION STATUS
+
+Add a small, non-obstructive connection indicator:
+
+- “Offline” when the device has no connection.
+- “Back Online” briefly when connection returns.
+
+Do not cover important buttons or page content.
+
+When offline, pages that are available locally should open normally.
+
+When requested content is not stored offline, show a mature message:
+
+“This content is not available offline yet. Reconnect to the internet or download it while online.”
+
+Include a button to return to Offline Content or the last available page.
+
+5. FAVORITES AND NOTES
+
+For existing favorites and personal devotional notes:
+
+- Keep the currently stored local information available offline where technically safe.
+- When a signed-in user changes a favorite or note offline, queue the change locally.
+- Synchronize it when the connection returns.
+- Prevent duplicate synchronization.
+- Show a small status such as “Waiting to sync” where appropriate.
+- Do not claim that synchronization succeeded until the server confirms it.
+
+If the existing architecture makes offline write synchronization risky, implement read-only offline access first and clearly report that limitation rather than introducing unsafe data behavior.
+
+6. FEATURES THAT MUST REMAIN ONLINE-ONLY
+
+Do not cache sensitive or rapidly changing Church Mode information for general offline access.
+
+The following must show a clear “Internet connection required” message while offline:
+
+- Church or ministry administration
+- Private messages
+- Counseling
+- Member approvals
+- Invitation creation or verification
+- Giving and payments
+- Financial reports
+- Compliance cases
+- App-admin controls
+- Account creation, sign-in, password reset, and email verification
+- Live analytics
+- Content uploads
+- Any destructive action
+
+Never cache authentication tokens, passwords, bank details, private counseling messages, compliance messages, or payment information in the offline content store.
+
+7. SECURITY AND PRIVACY
+
+- Use safe browser storage appropriate for structured devotional content, preferably IndexedDB where needed.
+- Do not store sensitive account credentials.
+- Keep offline content separated by user account where applicable.
+- On sign-out or account switch, prevent one user from seeing another user’s private offline notes or account-specific saved data.
+- Public devotional downloads may remain available only if doing so matches the current app’s privacy model.
+- Clear account-specific cached data when necessary for secure account switching.
+- Do not expose private API responses through the service-worker cache.
+
+8. CACHE MANAGEMENT
+
+Use versioned caches.
+
+On deployment of a new app version:
+
+- Update essential app-shell files safely.
+- Remove obsolete cache versions.
+- Preserve valid user-downloaded devotional content where possible.
+- Do not allow stale API responses to permanently override newer online content.
+- Use network-first behavior for changing online data.
+- Use cache-first or stale-while-revalidate only for safe static assets and downloaded devotional content.
+
+9. MULTI-LANGUAGE SUPPORT
+
+Offline Mode interface labels must work in:
+
+- English
+- Spanish
+- French
+
+Add all new translation keys to the existing locale files and keep them in full parity.
+
+Store and display the actual language version downloaded by the user. Do not silently replace a downloaded Spanish or French devotional with English while offline.
+
+User-generated content must remain unchanged.
+
+10. ACCESSIBILITY AND MOBILE DESIGN
+
+- Buttons must have at least a 44–48 px practical tap area.
+- Use readable font sizes.
+- Maintain adequate contrast.
+- Add accessible labels to download, remove, offline-status, and synchronization controls.
+- Ensure the Offline Content page works properly on iPhone Safari, Android Chrome, installed PWA, tablet, and desktop.
+- Do not create horizontal overflow.
+
+11. TESTING REQUIRED
+
+Before reporting completion, test all of the following:
+
+A. Open today’s devotional online, turn off network access, refresh, and confirm it still opens.
+
+B. Download another devotional manually, close the app/browser, reopen offline, and confirm it opens.
+
+C. Confirm a devotional that was never opened or downloaded shows the correct offline-unavailable message.
+
+D. Remove one download and confirm it is no longer available offline.
+
+E. Confirm Remove All Downloads works only after confirmation.
+
+F. Confirm connection indicator changes correctly from online to offline and back online.
+
+G. Confirm English, Spanish, and French Offline Mode labels render correctly.
+
+H. Confirm account switching does not expose another account’s private notes or account-specific cached data.
+
+I. Confirm Church Mode administration, payments, messages, and other sensitive features remain online-only.
+
+J. Confirm no passwords, Firebase tokens, banking information, private messages, counseling information, or payment data are written into the offline cache.
+
+K. Confirm the current app still runs normally online.
+
+L. Confirm there are no new TypeScript, build, service-worker, or runtime errors caused by this work.
+
+12. FINAL REPORT
+
+Do not merely say “completed.”
+
+Provide:
+
+- Exact files changed.
+- Storage method used.
+- Service-worker caching strategy used.
+- Which content works offline.
+- Which features remain online-only.
+- Cache size or retention limits.
+- How account-specific data is isolated.
+- Results for every required test above.
+- Any limitation that still requires manual testing on a real installed phone.
+- Confirmation that no unrelated feature was changed.
+
+Create a checkpoint only after the implementation and tests are complete.

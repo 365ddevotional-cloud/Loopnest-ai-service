@@ -67,6 +67,8 @@ import SongDetail from "@/pages/SongDetail";
 import SignIn from "@/pages/SignIn";
 import MyLibrary from "@/pages/MyLibrary";
 import AccountPage from "@/pages/AccountPage";
+import OfflineContent from "@/pages/OfflineContent";
+import { OfflineStatusBanner } from "@/components/OfflineStatusBanner";
 import PromisePopup from "@/components/PromisePopup";
 import NotFound from "@/pages/not-found";
 import { lazy, Suspense } from "react";
@@ -173,6 +175,7 @@ function Router() {
       <Route path="/my-library" component={MyLibrary} />
       <Route path="/account" component={AccountPage} />
       <Route path="/devotional/today" component={PublicDevotionalToday} />
+      <Route path="/offline-content" component={OfflineContent} />
       <Route path="/devotional/:date" component={SingleDevotional} />
       <Route path="/public/archive" component={PublicArchive} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
@@ -257,6 +260,7 @@ function AppContent() {
         <FloatingFeedbackButton />
         <AudioMiniPlayer />
         <MiniPlayer />
+        <OfflineStatusBanner />
       </div>
       <MenuTransitionOverlay isVisible={isTransitioning} onComplete={completeTransition} />
     </>

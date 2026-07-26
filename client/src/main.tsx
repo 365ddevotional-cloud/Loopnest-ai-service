@@ -4,7 +4,7 @@ import "./index.css";
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js?v=6')
+    navigator.serviceWorker.register('/service-worker.js?v=8')
       .then((registration) => {
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;

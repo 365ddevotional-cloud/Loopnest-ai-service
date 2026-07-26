@@ -1,10 +1,11 @@
 const DB_NAME = "devotionalOfflineDB";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 const STORE_DEVOTIONALS = "devotionals";
 const STORE_SUNDAY_LESSONS = "sundayLessons";
 const STORE_BIBLE_KJV = "bibleKJV";
 const STORE_METADATA = "metadata";
+const STORE_DOWNLOADS = "userDownloads";
 
 let dbInstance: IDBDatabase | null = null;
 
@@ -43,6 +44,14 @@ function openDB(): Promise<IDBDatabase> {
           if (!store.indexNames.contains("byId")) {
             store.createIndex("byId", "id", { unique: true });
           }
+        }
+      }
+
+      if (oldVersion < 3) {
+        if (!db.objectStoreNames.contains(STORE_DOWNLOADS)) {
+          const dlStore = db.createObjectStore(STORE_DOWNLOADS, { keyPath: "id" });
+          dlStore.createIndex("byUid", "firebaseUid", { unique: false });
+          dlStore.createIndex("byDate", "date", { unique: false });
         }
       }
     };
@@ -120,6 +129,40 @@ function txCount(storeName: string): Promise<number> {
         const req = store.count();
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
+      })
+  );
+}
+
+function txDelete(storeName: string, key: string | number): Promise<void> {
+  return openDB().then(
+    (db) =>
+      new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, "readwrite");
+        const store = tx.objectStore(storeName);
+        store.delete(key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      })
+  );
+}
+
+function txDeleteByIndex(storeName: string, indexName: string, key: string | null): Promise<void> {
+  return openDB().then(
+    (db) =>
+      new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, "readwrite");
+        const store = tx.objectStore(storeName);
+        const index = store.index(indexName);
+        const req = index.openCursor(IDBKeyRange.only(key));
+        req.onsuccess = () => {
+          const cursor = req.result;
+          if (cursor) {
+            cursor.delete();
+            cursor.continue();
+          }
+        };
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
       })
   );
 }
@@ -224,5 +267,47 @@ export async function isBibleSyncComplete(): Promise<boolean> {
     return status === true;
   } catch {
     return false;
+  }
+}
+
+export interface UserDownload {
+  id: number;
+  date: string;
+  title: string;
+  language: string;
+  translation: string;
+  downloadedAt: number;
+  firebaseUid: string | null;
+}
+
+export async function saveDownload(record: UserDownload): Promise<void> {
+  await txPut(STORE_DOWNLOADS, [record]);
+}
+
+export async function getDownload(id: number): Promise<UserDownload | undefined> {
+  return txGet<UserDownload>(STORE_DOWNLOADS, id);
+}
+
+export async function getAllDownloads(firebaseUid?: string | null): Promise<UserDownload[]> {
+  const all = await txGetAll<UserDownload>(STORE_DOWNLOADS);
+  if (firebaseUid !== undefined) {
+    return all.filter((d) => d.firebaseUid === firebaseUid);
+  }
+  return all;
+}
+
+export async function removeDownload(id: number): Promise<void> {
+  await txDelete(STORE_DOWNLOADS, id);
+}
+
+export async function clearUserDownloads(firebaseUid: string | null): Promise<void> {
+  if (firebaseUid === null) {
+    const all = await txGetAll<UserDownload>(STORE_DOWNLOADS);
+    const nullItems = all.filter((d) => d.firebaseUid === null);
+    for (const item of nullItems) {
+      await txDelete(STORE_DOWNLOADS, item.id);
+    }
+  } else {
+    await txDeleteByIndex(STORE_DOWNLOADS, "byUid", firebaseUid);
   }
 }

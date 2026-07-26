@@ -5,7 +5,7 @@ import { useUser } from "@/contexts/UserContext";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, BookMarked, Heart, Download, Play, ExternalLink, Trash2, Music2, UserCircle, Clock, BookOpen, Flame, Share2, Bookmark, HandHeart, CheckCircle2, Pencil, X } from "lucide-react";
+import { Loader2, BookMarked, Heart, Download, Play, ExternalLink, Trash2, Music2, UserCircle, Clock, BookOpen, Flame, Share2, Bookmark, HandHeart, CheckCircle2, Pencil, X, WifiOff } from "lucide-react";
 import { Link } from "wouter";
 import type { Song, Devotional, PrayerRequest } from "@shared/schema";
 import { ShareButton } from "@/components/ShareButton";
@@ -362,6 +362,31 @@ export default function MyLibrary() {
             ))}
           </div>
         )}
+      </section>
+
+      {/* Offline Devotionals */}
+      <section data-testid="section-offline-content-link">
+        <div className="flex items-center gap-2 mb-3">
+          <WifiOff className="w-4 h-4 text-primary" aria-hidden="true" />
+          <h2 className="font-serif text-lg text-foreground">Offline Devotionals</h2>
+        </div>
+        <Link href="/offline-content">
+          <div
+            className="flex items-center gap-3 p-4 rounded-xl border border-border/40 bg-card hover:bg-muted/20 hover:border-primary/20 transition-colors cursor-pointer"
+            data-testid="link-offline-content"
+            role="link"
+            aria-label="Go to Offline Content page"
+          >
+            <div className="w-10 h-10 rounded-lg flex-shrink-0 bg-primary/10 flex items-center justify-center">
+              <Download className="w-5 h-5 text-primary" aria-hidden="true" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-sm text-foreground">Offline Devotionals</div>
+              <div className="text-xs text-muted-foreground">Manage downloads · Read without internet</div>
+            </div>
+            <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
+          </div>
+        </Link>
       </section>
 
       {/* Download History */}

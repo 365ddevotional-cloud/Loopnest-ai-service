@@ -1,5 +1,5 @@
-const CACHE_NAME = '365dd-v7';
-const API_CACHE_NAME = '365dd-api-v4';
+const CACHE_NAME = '365dd-v8';
+const API_CACHE_NAME = '365dd-api-v5';
 
 const STATIC_ASSETS = [
   '/',
@@ -7,6 +7,26 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/offline.html',
 ];
+
+const SENSITIVE_API_PATTERNS = [
+  /^\/api\/auth\//,
+  /^\/api\/admin/,
+  /^\/api\/stripe/,
+  /^\/api\/donations/,
+  /^\/api\/giving/,
+  /^\/api\/inbox/,
+  /^\/api\/churches\/[^/]+\/messages/,
+  /^\/api\/churches\/[^/]+\/admin/,
+  /^\/api\/churches\/[^/]+\/compliance/,
+  /^\/api\/churches\/[^/]+\/invitations/,
+  /^\/api\/churches\/[^/]+\/members\/approve/,
+  /^\/api\/analytics/,
+  /^\/api\/prayer-requests\/[^/]+\/replies/,
+];
+
+function isSensitiveApiPath(pathname) {
+  return SENSITIVE_API_PATTERNS.some((pattern) => pattern.test(pathname));
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -42,6 +62,10 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   if (isApiRequest(url)) {
+    if (isSensitiveApiPath(url.pathname)) {
+      return;
+    }
+
     event.respondWith(
       fetch(event.request).then((response) => {
         if (response.ok) {

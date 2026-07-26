@@ -1,17 +1,22 @@
 import { useRoute } from "wouter";
 import { useDevotionalByDate } from "@/hooks/use-devotionals";
 import { DevotionalCard } from "@/components/DevotionalCard";
-import { Loader2, ArrowLeft, Calendar, Clock } from "lucide-react";
+import { DevotionalDownloadButton } from "@/components/DevotionalDownloadButton";
+import { Loader2, ArrowLeft, Calendar, Clock, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { format, parseISO } from "date-fns";
 import { Card } from "@/components/ui/card";
+import { useConnectionStatus } from "@/hooks/use-connection-status";
+import { useI18n } from "@/hooks/useI18n";
 
 export default function SingleDevotional() {
   const [, params] = useRoute("/devotional/:date");
   const date = params?.date || "";
   const { data, isLoading } = useDevotionalByDate(date);
+  const { isOnline } = useConnectionStatus();
+  const { t } = useI18n();
 
   if (isLoading) {
     return (
@@ -59,11 +64,48 @@ export default function SingleDevotional() {
 
   if (!data?.devotional) {
     return (
-      <div className="text-center py-20">
-        <h2 className="text-2xl font-bold mb-4">Devotional Not Found</h2>
+      <div className="space-y-6">
         <Link href="/archive">
-          <Button variant="outline" data-testid="button-back-archive-notfound">Back to Archive</Button>
+          <Button variant="ghost" className="hover:bg-primary/5 text-muted-foreground" data-testid="button-back-archive-notfound">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Archive
+          </Button>
         </Link>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <Card className="max-w-2xl mx-auto p-8 md:p-12 text-center bg-card border-primary/10" data-testid="card-offline-unavailable">
+            <div className="bg-muted p-4 rounded-full w-fit mx-auto mb-6">
+              <WifiOff className="w-8 h-8 text-muted-foreground" aria-hidden="true" />
+            </div>
+            {!isOnline ? (
+              <>
+                <h2 className="font-serif text-2xl font-bold text-foreground mb-3" data-testid="text-offline-unavailable-heading">
+                  {t("offlineNotAvailable")}
+                </h2>
+                <p className="text-muted-foreground mb-6" data-testid="text-offline-unavailable-hint">
+                  {t("offlineNotAvailableHint")}
+                </p>
+                <Link href="/offline-content">
+                  <Button variant="outline" className="min-h-[48px]" data-testid="button-go-offline-content">
+                    {t("offlineGoToContent")}
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <h2 className="font-serif text-2xl font-bold text-foreground mb-4">
+                  Devotional Not Found
+                </h2>
+                <Link href="/archive">
+                  <Button variant="outline" data-testid="button-back-archive-empty">Back to Archive</Button>
+                </Link>
+              </>
+            )}
+          </Card>
+        </motion.div>
       </div>
     );
   }
@@ -83,6 +125,10 @@ export default function SingleDevotional() {
       >
         <DevotionalCard devotional={data.devotional} showNotes={true} />
       </motion.div>
+
+      <div className="flex justify-end px-1" data-testid="section-offline-download">
+        <DevotionalDownloadButton devotional={data.devotional} />
+      </div>
     </div>
   );
 }
