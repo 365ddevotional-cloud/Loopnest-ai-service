@@ -2791,12 +2791,10 @@ export class DatabaseStorage implements IStorage {
     if (ann.targetType === "everyone" || ann.targetType === "org_owners" || ann.targetType === "org_admins") {
       recipientChurches = approvedChurches;
     } else if (ann.targetType === "country" && ann.targetFilter) {
-      // targetFilter is comma-separated country codes e.g. "NG,US,GB"
-      const countryCodes = ann.targetFilter.toUpperCase().split(",").map(s => s.trim()).filter(Boolean);
-      recipientChurches = approvedChurches.filter(c => {
-        const cc = ((c as any).country ?? "").toUpperCase().trim();
-        return cc && countryCodes.includes(cc);
-      });
+      // Country targeting filters at member level (user_profiles.country) for consistency
+      // with getSentAnnouncementsForUser — we use all approved churches here and filter
+      // members by their profile country inside the delivery loop.
+      recipientChurches = approvedChurches;
     } else if (ann.targetType === "dept_leaders") {
       // dept_leaders: all approved orgs (qualifying role check below will filter to dept leaders)
       recipientChurches = approvedChurches;
@@ -2848,24 +2846,49 @@ export class DatabaseStorage implements IStorage {
     // "inbox" channel writes to the platformAdminThreads conversation thread.
     // "email" channel sends via SendGrid (handled below).
 
+    // Pre-fetch country codes for country-targeted announcements (unified member-level filter)
+    const countryFilter = ann.targetType === "country" && ann.targetFilter
+      ? ann.targetFilter.toUpperCase().split(",").map(s => s.trim()).filter(Boolean)
+      : null;
+
     for (const church of recipientChurches) {
       try {
         const members = await db.select().from(churchMembers).where(eq(churchMembers.churchId, church.id));
-        const qualifiedMembers = members.filter(m =>
+        let qualifiedMembers = members.filter(m =>
           m.status === "active" && (targetRoles === null || targetRoles.includes(m.role))
         );
         if (qualifiedMembers.length === 0) continue;
 
-        // 4a. Inbox channel: create/update platform admin thread with announcement message
+        // Country targeting: filter at member level via user_profiles for consistency with feed
+        if (countryFilter && countryFilter.length > 0) {
+          const uids = qualifiedMembers.map(m => m.firebaseUid);
+          const profileRows = await db.execute(sql`SELECT firebase_uid, country FROM user_profiles WHERE firebase_uid = ANY(${sql.raw(`ARRAY[${uids.map(u => `'${u.replace(/'/g, "''")}'`).join(",")}]`)})`);
+          const profileMap = new Map((profileRows.rows as any[]).map(r => [r.firebase_uid, (r.country ?? "").toUpperCase().trim()]));
+          qualifiedMembers = qualifiedMembers.filter(m => {
+            const c = profileMap.get(m.firebaseUid) ?? "";
+            return c && countryFilter.includes(c);
+          });
+          if (qualifiedMembers.length === 0) continue;
+        }
+
+        // 4a. Inbox channel: deliver per-recipient thread so each targeted user sees the message
         if (deliverInbox) {
-          const existingThreads = await db.select().from(platformAdminThreads).where(eq(platformAdminThreads.churchId, church.id));
-          let thread = existingThreads[0];
-          if (!thread) {
-            const ownerUid = members.find(m => m.role === "owner")?.firebaseUid ?? members[0]?.firebaseUid ?? "unknown";
-            [thread] = await db.insert(platformAdminThreads).values({ churchId: church.id, ownerUid, subject, status: "open", hasUnreadAdmin: false, hasUnreadOwner: true }).returning();
+          for (const m of qualifiedMembers) {
+            try {
+              // Each qualified member gets their own platform admin thread (keyed by churchId+uid)
+              const existingThreads = await db.select().from(platformAdminThreads)
+                .where(and(eq(platformAdminThreads.churchId, church.id), eq(platformAdminThreads.ownerUid, m.firebaseUid)));
+              let thread = existingThreads[0];
+              if (!thread) {
+                [thread] = await db.insert(platformAdminThreads).values({
+                  churchId: church.id, ownerUid: m.firebaseUid, subject, status: "open",
+                  hasUnreadAdmin: false, hasUnreadOwner: true,
+                }).returning();
+              }
+              await db.insert(platformAdminMessages).values({ threadId: thread.id, senderType: "admin", senderUid: "platform_admin", message: msgBody });
+              await db.update(platformAdminThreads).set({ hasUnreadOwner: true, updatedAt: new Date() }).where(eq(platformAdminThreads.id, thread.id));
+            } catch { /* skip individual member inbox failure */ }
           }
-          await db.insert(platformAdminMessages).values({ threadId: thread.id, senderType: "admin", senderUid: "platform_admin", message: msgBody });
-          await db.update(platformAdminThreads).set({ hasUnreadOwner: true, updatedAt: new Date() }).where(eq(platformAdminThreads.id, thread.id));
         }
 
         // 4b. Email: send to qualified member emails (respects opt-in via email_consent_notifications)

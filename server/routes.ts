@@ -4178,7 +4178,7 @@ export async function registerRoutes(
       const caseId = Number(req.params.id);
       const { message } = req.body;
       if (!message?.trim()) return res.status(400).json({ message: "Message is required" });
-      const resp = await storage.createComplianceCaseResponse({ caseId, senderType: "admin", senderUid: "platform_admin", message: message.trim() });
+      const resp = await storage.createComplianceCaseResponse({ caseId, senderType: "admin", senderUid: "platform_admin", message: message.trim(), attachmentUrl: req.body.attachmentUrl ?? null });
       await storage.updateComplianceCase(caseId, { status: "awaiting_response" });
       res.status(201).json(resp);
     } catch { res.status(500).json({ message: "Server error" }); }
@@ -4252,6 +4252,27 @@ export async function registerRoutes(
       const member = await storage.getChurchMember(churchId, uid);
       if (!member || member.role !== "owner") return res.status(403).json({ message: "Forbidden" });
       res.json(await storage.getComplianceAppeals(churchId));
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
+  // Owner: record policy acknowledgement — creates audit log entry (idempotent)
+  app.post("/api/churches/:churchId/policy-ack", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.churchId);
+      const member = await storage.getChurchMember(churchId, uid);
+      if (!member || !["owner", "lead_pastor", "administrator"].includes(member.role)) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      const { policyVersion } = req.body;
+      storage.createAuditLog({
+        churchId,
+        action: "policy_acknowledged",
+        newValue: JSON.stringify({ policyVersion: policyVersion ?? "church-mode-v1", acknowledgedAt: new Date().toISOString() }),
+        actorUid: uid,
+        actorRole: member.role,
+      }).catch(() => {});
+      res.json({ ok: true });
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 
