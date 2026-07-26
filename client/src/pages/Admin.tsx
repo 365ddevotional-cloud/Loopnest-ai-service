@@ -8,11 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2, Upload, Gift, Video, Building2, DollarSign } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2, Upload, Gift, Video, Building2, DollarSign, Menu } from "lucide-react";
 import { useUpload } from "@/hooks/use-upload";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { format, parseISO } from "date-fns";
 import { useLocation } from "wouter";
@@ -2498,12 +2498,82 @@ function DonationConfirmationsAdmin() {
 export default function Admin() {
   const { isAdmin, isLoading } = useAuth();
   const [, setLocation] = useLocation();
+  const [activeTab, setActiveTab] = useState("inbox");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const { data: prayerRequests = [] } = useQuery<PrayerRequest[]>({
+    queryKey: ["/api/prayer-requests"],
+    enabled: isAdmin,
+  });
+  const { data: inboxThreads = [] } = useQuery<InboxThread[]>({
+    queryKey: ["/api/inbox/threads"],
+    enabled: isAdmin,
+  });
+  const { data: allTestimonies = [] } = useQuery<any[]>({
+    queryKey: ["/api/testimonies/all"],
+    enabled: isAdmin,
+  });
+
+  const prayerNewCount = prayerRequests.filter(r => r.status === "new").length;
+  const inboxUnreadCount = inboxThreads.filter((t: any) => t.hasUnreadAdmin).length;
+  const testimoniesPendingCount = allTestimonies.filter(t => t.status === "pending").length;
 
   useEffect(() => {
     if (!isLoading && !isAdmin) {
       setLocation("/admin-login");
     }
   }, [isAdmin, isLoading, setLocation]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [menuOpen]);
+
+  const ADMIN_TABS = [
+    { value: "inbox",                  label: "Prayer Inbox",       icon: Inbox,         count: prayerNewCount },
+    { value: "messages",               label: "Messages",           icon: MessageSquare, count: inboxUnreadCount },
+    { value: "testimonies",            label: "Testimonies",        icon: Star,          count: testimoniesPendingCount },
+    { value: "archive",                label: "Archive",            icon: Archive,       count: 0 },
+    { value: "preview",                label: "Preview",            icon: Telescope,     count: 0 },
+    { value: "sunday-school",          label: "Sunday School",      icon: GraduationCap, count: 0 },
+    { value: "devotionals",            label: "Create New",         icon: ShieldCheck,   count: 0 },
+    { value: "promises",               label: "Promises",           icon: Sparkles,      count: 0 },
+    { value: "songs",                  label: "Songs",              icon: Music,         count: 0 },
+    { value: "donations",              label: "Donations",          icon: Gift,          count: 0 },
+    { value: "churches",               label: "Churches",           icon: Building2,     count: 0 },
+    { value: "church-oversight",       label: "Oversight",          icon: TrendingUp,    count: 0 },
+    { value: "church-deletions",       label: "Deletion Requests",  icon: Trash2,        count: 0 },
+    { value: "analytics",              label: "Analytics",          icon: BarChart3,     count: 0 },
+    { value: "org-applications",       label: "Applications",       icon: ShieldCheck,   count: 0 },
+    { value: "compliance",             label: "Compliance",         icon: Flag,          count: 0 },
+    { value: "appeals",                label: "Appeals",            icon: ThumbsUp,      count: 0 },
+    { value: "platform-threads",       label: "Org Messages",       icon: MessageSquare, count: 0 },
+    { value: "platform-announcements", label: "Announcements",      icon: Send,          count: 0 },
+  ] as const;
+
+  const activeTabInfo = ADMIN_TABS.find(t => t.value === activeTab);
+  const ActiveIcon = activeTabInfo?.icon;
 
   if (isLoading || !isAdmin) {
     return (
@@ -2515,7 +2585,7 @@ export default function Admin() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="mb-8 flex items-center gap-4">
+      <div className="mb-6 flex items-center gap-4">
         <div className="p-3 bg-primary/10 rounded-xl">
           <ShieldCheck className="w-8 h-8 text-primary" />
         </div>
@@ -2525,87 +2595,92 @@ export default function Admin() {
         </div>
       </div>
 
-      <Tabs defaultValue="inbox" className="space-y-6">
-        <div className="overflow-x-auto w-full pb-1 -mb-1">
-          <TabsList className="flex min-w-max gap-0.5 h-auto p-1 bg-muted/50 border border-border/30 rounded-lg">
-            <TabsTrigger value="inbox" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-inbox">
-              <Inbox className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Prayer Inbox
-            </TabsTrigger>
-            <TabsTrigger value="messages" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-messages">
-              <MessageSquare className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Messages
-            </TabsTrigger>
-            <TabsTrigger value="testimonies" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-testimonies">
-              <Star className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Testimonies
-            </TabsTrigger>
-            <TabsTrigger value="archive" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-archive">
-              <Archive className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Archive
-            </TabsTrigger>
-            <TabsTrigger value="preview" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-preview">
-              <Telescope className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Preview
-            </TabsTrigger>
-            <TabsTrigger value="sunday-school" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-sunday-school">
-              <GraduationCap className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Sunday School
-            </TabsTrigger>
-            <TabsTrigger value="devotionals" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-devotionals">
-              <ShieldCheck className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Create New
-            </TabsTrigger>
-            <TabsTrigger value="promises" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-promises">
-              <Sparkles className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Promises
-            </TabsTrigger>
-            <TabsTrigger value="songs" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-songs">
-              <Music className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Songs
-            </TabsTrigger>
-            <TabsTrigger value="donations" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-donations">
-              <Gift className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Donations
-            </TabsTrigger>
-            <TabsTrigger value="churches" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-churches">
-              <Building2 className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Churches
-            </TabsTrigger>
-            <TabsTrigger value="church-oversight" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-church-oversight">
-              <TrendingUp className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Oversight
-            </TabsTrigger>
-            <TabsTrigger value="church-deletions" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-church-deletions">
-              <Trash2 className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Deletion Req.
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-analytics">
-              <BarChart3 className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="org-applications" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-org-applications">
-              <ShieldCheck className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Applications
-            </TabsTrigger>
-            <TabsTrigger value="compliance" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-compliance">
-              <Flag className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Compliance
-            </TabsTrigger>
-            <TabsTrigger value="appeals" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-appeals">
-              <ThumbsUp className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Appeals
-            </TabsTrigger>
-            <TabsTrigger value="platform-threads" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-platform-threads">
-              <MessageSquare className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Org Msgs
-            </TabsTrigger>
-            <TabsTrigger value="platform-announcements" className="flex-shrink-0 min-h-[48px] text-xs sm:text-sm px-2 sm:px-3 font-bold" data-testid="tab-platform-announcements">
-              <Send className="w-4 h-4 mr-1.5 flex-shrink-0" />
-              Announce
-            </TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); setMenuOpen(false); }} className="space-y-6">
+        {/* Hamburger navigation bar */}
+        <div className="relative" ref={menuRef}>
+          <div className="flex items-center justify-between bg-card border border-border/40 rounded-xl px-4 py-2.5 shadow-sm gap-3" data-testid="admin-nav-bar">
+            <div className="flex items-center gap-2 min-w-0">
+              {ActiveIcon && <ActiveIcon className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />}
+              <span className="font-semibold text-foreground text-sm truncate" data-testid="admin-nav-active-label">
+                {activeTabInfo?.label ?? "Dashboard"}
+              </span>
+              {activeTabInfo && activeTabInfo.count > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold px-1.5 flex-shrink-0" aria-label={`${activeTabInfo.count} items`}>
+                  {activeTabInfo.count > 99 ? "99+" : activeTabInfo.count}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => setMenuOpen(prev => !prev)}
+              aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={menuOpen}
+              aria-haspopup="true"
+              aria-controls="admin-nav-menu"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-muted/70 transition-colors text-foreground min-h-[44px] flex-shrink-0"
+              data-testid="button-admin-hamburger"
+            >
+              {menuOpen
+                ? <X className="w-5 h-5" aria-hidden="true" />
+                : <Menu className="w-5 h-5" aria-hidden="true" />}
+              <span className="text-sm font-medium hidden sm:inline select-none">
+                {menuOpen ? "Close" : "Sections"}
+              </span>
+            </button>
+          </div>
+
+          {menuOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-40 bg-black/20"
+                aria-hidden="true"
+                onClick={() => setMenuOpen(false)}
+              />
+              <nav
+                id="admin-nav-menu"
+                className="absolute left-0 right-0 z-50 mt-1 bg-card border border-border rounded-xl shadow-xl overflow-hidden"
+                aria-label="Admin Dashboard sections"
+                data-testid="admin-nav-menu"
+              >
+                <div className="max-h-[70vh] overflow-y-auto divide-y divide-border/20">
+                  {ADMIN_TABS.map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = tab.value === activeTab;
+                    return (
+                      <button
+                        key={tab.value}
+                        onClick={() => { setActiveTab(tab.value); setMenuOpen(false); }}
+                        className={`w-full flex items-center gap-3 px-4 py-3.5 min-h-[48px] text-left transition-colors ${
+                          isActive
+                            ? "bg-primary/10 text-primary font-semibold"
+                            : "text-foreground hover:bg-muted/60"
+                        }`}
+                        data-testid={`admin-menu-item-${tab.value}`}
+                        aria-current={isActive ? "page" : undefined}
+                      >
+                        <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`} aria-hidden="true" />
+                        <span className="flex-1 text-sm">{tab.label}</span>
+                        {tab.count > 0 && (
+                          <span className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold px-1.5" aria-label={`${tab.count} pending`}>
+                            {tab.count > 99 ? "99+" : tab.count}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </nav>
+            </>
+          )}
         </div>
+
+        {/* Hidden TabsList — required by Radix Tabs for keyboard association */}
+        <TabsList className="sr-only" aria-hidden="true">
+          {ADMIN_TABS.map(tab => (
+            <TabsTrigger key={tab.value} value={tab.value} data-testid={`tab-${tab.value}`}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
         <TabsContent value="inbox">
           <Card className="border-primary/10 shadow-lg shadow-primary/5">

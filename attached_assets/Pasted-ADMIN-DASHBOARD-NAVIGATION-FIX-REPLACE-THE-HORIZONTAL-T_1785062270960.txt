@@ -1,0 +1,124 @@
+ADMIN DASHBOARD NAVIGATION FIX — REPLACE THE HORIZONTAL TAB BAR WITH A HAMBURGER MENU
+
+This change applies only to the main 365 Daily Devotional App Admin Dashboard.
+
+Do not modify:
+- the public main app navigation
+- Church Mode navigation
+- Family Mode
+- Offline Mode
+- authentication
+- payments
+- email
+- unrelated pages or files
+
+CURRENT PROBLEM
+
+On the Admin Dashboard, the navigation sections are arranged in a horizontally scrolling bar. On mobile, the admin must keep scrolling sideways to find sections such as:
+
+- Prayer Inbox
+- Messages
+- Testimonials
+- Archive
+- Devotionals
+- Sunday School
+- Songs
+- Users
+- Notifications
+- Donations
+- other existing admin sections
+
+This is difficult to use and should be replaced with a hamburger menu.
+
+REQUIRED CHANGE
+
+1. Remove the horizontally scrolling Admin Dashboard navigation bar.
+
+2. Add a clearly visible hamburger menu button near the Admin Dashboard heading or in the Admin Dashboard header.
+
+3. When the hamburger button is tapped:
+   - open a clean dropdown or slide-down menu;
+   - show every existing Admin Dashboard section;
+   - preserve the exact existing routes, tabs, permissions, counts, and functionality;
+   - do not remove or rename any existing admin section unless required for translation consistency.
+
+4. Each menu item must:
+   - have its existing icon where available;
+   - show its full readable label;
+   - have a minimum touch height of approximately 48px;
+   - use the full row as the clickable area;
+   - navigate to the selected admin section;
+   - automatically close the menu after selection.
+
+5. Clearly highlight the currently active Admin Dashboard section.
+
+6. Show notification badges or pending counts beside the relevant menu items where those counts already exist, including examples such as:
+   - unread messages;
+   - new prayer requests;
+   - pending approvals;
+   - new testimonials;
+   - unresolved items.
+
+Do not create false counts. Reuse only existing real data.
+
+7. The menu must close when:
+   - the hamburger button is tapped again;
+   - the close icon is tapped;
+   - the user selects an item;
+   - the user taps outside the menu;
+   - the Escape key is pressed on desktop.
+
+8. The menu must be:
+   - mobile-friendly;
+   - suitable for iPhone Safari;
+   - suitable for Android Chrome;
+   - responsive on tablets and desktop;
+   - keyboard accessible;
+   - screen-reader accessible;
+   - correctly layered above dashboard content;
+   - not hidden behind the sticky Daily Devotional header.
+
+9. Prevent background page scrolling while the menu is open if it is implemented as an overlay or drawer.
+
+10. Preserve the current Admin Dashboard page content and state when opening or closing the menu.
+
+11. Do not change the Prayer & Counseling Inbox layout, message content, reply functions, category controls, statuses, or any other dashboard feature. Only improve the Admin Dashboard navigation.
+
+12. Add all new menu labels and accessibility text to:
+   - English
+   - Spanish
+   - French
+
+Keep all locale files in full key parity.
+
+TESTING
+
+Test the following:
+
+- Open the Admin Dashboard on mobile.
+- Confirm the old horizontal scrolling navigation is gone.
+- Open the hamburger menu.
+- Confirm every existing Admin Dashboard section is present.
+- Tap Prayer Inbox and confirm it opens correctly.
+- Open the menu again and navigate to at least three other admin sections.
+- Confirm the active section is highlighted.
+- Confirm existing badges or counts display correctly.
+- Confirm tapping outside closes the menu.
+- Confirm the menu does not cover or break important page controls.
+- Confirm the menu works on iPhone-sized and Android-sized screens.
+- Confirm desktop keyboard navigation works.
+- Confirm no unrelated navigation was changed.
+- Run focused TypeScript/build checks on only the affected Admin Dashboard navigation files.
+
+FINAL REPORT
+
+Report:
+- exact files changed;
+- the full list of Admin Dashboard sections included in the hamburger menu;
+- how active-state highlighting works;
+- how badges and counts are preserved;
+- mobile and desktop test results;
+- translation-key parity results;
+- confirmation that Church Mode and the public main app menu were not modified.
+
+Make only the minimum targeted changes, test them, and create one checkpoint after the work passes.
