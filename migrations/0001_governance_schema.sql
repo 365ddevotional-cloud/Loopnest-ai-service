@@ -189,3 +189,6 @@ END $$;
 
 -- Add preferred_language to user_profiles (idempotent)
 ALTER TABLE "user_profiles" ADD COLUMN IF NOT EXISTS "preferred_language" text;
+
+-- Add response_deadline to compliance_cases (idempotent)
+ALTER TABLE "compliance_cases" ADD COLUMN IF NOT EXISTS "response_deadline" timestamp;

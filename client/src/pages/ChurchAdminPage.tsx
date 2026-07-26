@@ -28,6 +28,80 @@ import { Switch } from "@/components/ui/switch";
 
 interface MyRole { role: string | null; memberId: number | null; status: string | null; }
 
+// ── Brand Color Palette ───────────────────────────────────────────────────────
+const BRAND_COLOR_GROUPS = [
+  { name: "Reds", colors: [
+    { hex: "#8B0000", name: "Dark Red" }, { hex: "#CC0000", name: "Bright Red" },
+    { hex: "#DC143C", name: "Crimson" }, { hex: "#FF2400", name: "Scarlet" },
+    { hex: "#7D0025", name: "Burgundy" }, { hex: "#C41E3A", name: "Rose Red" },
+  ]},
+  { name: "Blues", colors: [
+    { hex: "#000080", name: "Navy" }, { hex: "#1d3461", name: "Midnight Blue" },
+    { hex: "#4169E1", name: "Royal Blue" }, { hex: "#0047AB", name: "Bright Blue" },
+    { hex: "#1a5276", name: "Ocean Blue" }, { hex: "#87CEEB", name: "Sky Blue" },
+    { hex: "#ADD8E6", name: "Light Blue" }, { hex: "#00CED1", name: "Turquoise" },
+  ]},
+  { name: "Greens", colors: [
+    { hex: "#145a32", name: "Deep Forest" }, { hex: "#228B22", name: "Forest Green" },
+    { hex: "#2ECC71", name: "Emerald" }, { hex: "#32CD32", name: "Bright Green" },
+    { hex: "#6B8E23", name: "Olive" }, { hex: "#00A693", name: "Mint" },
+  ]},
+  { name: "Yellows", colors: [
+    { hex: "#FFC200", name: "Golden Yellow" }, { hex: "#DAA520", name: "Mustard" },
+    { hex: "#FFF44F", name: "Lemon" }, { hex: "#FFFACD", name: "Pale Yellow" },
+  ]},
+  { name: "Oranges", colors: [
+    { hex: "#FF7F00", name: "Bright Orange" }, { hex: "#CC4400", name: "Burnt Orange" },
+    { hex: "#FFBF00", name: "Amber" }, { hex: "#E8593A", name: "Coral" },
+  ]},
+  { name: "Pinks", colors: [
+    { hex: "#FFB6C1", name: "Blush" }, { hex: "#FFC0CB", name: "Pink" },
+    { hex: "#FF69B4", name: "Hot Pink" }, { hex: "#FF007F", name: "Rose" },
+  ]},
+  { name: "Purples", colors: [
+    { hex: "#4a235a", name: "Deep Purple" }, { hex: "#4B0082", name: "Indigo" },
+    { hex: "#800080", name: "Purple" }, { hex: "#8B00FF", name: "Violet" },
+    { hex: "#B19CD9", name: "Lavender" }, { hex: "#DDA0DD", name: "Plum" },
+  ]},
+  { name: "Browns", colors: [
+    { hex: "#784212", name: "Deep Brown" }, { hex: "#7B3F00", name: "Chocolate" },
+    { hex: "#6F4E37", name: "Coffee" }, { hex: "#CD7F32", name: "Bronze" },
+    { hex: "#C19A6B", name: "Tan" },
+  ]},
+  { name: "Neutrals", colors: [
+    { hex: "#FFFFFF", name: "White" }, { hex: "#F5F5DC", name: "Cream" },
+    { hex: "#C0C0C0", name: "Silver" }, { hex: "#808080", name: "Gray" },
+    { hex: "#36454F", name: "Charcoal" }, { hex: "#000000", name: "Black" },
+  ]},
+  { name: "Metallics", colors: [
+    { hex: "#B8860B", name: "Gold" }, { hex: "#9E9E9E", name: "Silver" },
+    { hex: "#A05040", name: "Copper" }, { hex: "#F7E7CE", name: "Champagne" },
+  ]},
+];
+
+function getContrastColor(hex: string): string {
+  try {
+    const c = hex.replace("#", "");
+    if (c.length !== 6) return "#ffffff";
+    const r = parseInt(c.substring(0, 2), 16);
+    const g = parseInt(c.substring(2, 4), 16);
+    const b = parseInt(c.substring(4, 6), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5 ? "#111111" : "#ffffff";
+  } catch { return "#ffffff"; }
+}
+
+function isLowContrast(hex: string): boolean {
+  try {
+    const c = hex.replace("#", "");
+    if (c.length !== 6) return false;
+    const r = parseInt(c.substring(0, 2), 16);
+    const g = parseInt(c.substring(2, 4), 16);
+    const b = parseInt(c.substring(4, 6), 16);
+    const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return lum > 0.4 && lum < 0.7;
+  } catch { return false; }
+}
+
 const DEPT_TYPES = ["Youth Ministry","Children's Ministry","Women's Fellowship","Men's Fellowship","Choir","Ushering","Media","Evangelism","Prayer Team","Sunday School","Hospitality","Finance","Protocol","Follow-Up","Missions","Custom"];
 
 function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdToken: () => Promise<string | null> }) {
@@ -1274,37 +1348,111 @@ export default function ChurchAdminPage() {
                 </div>
 
                 {/* Theme Color */}
-                <div className="space-y-1.5">
-                  <Label className="text-sm">{t("cm_headerThemeColor")}</Label>
-                  <p className="text-xs" style={{ color: "#7a7570" }}>{t("cm_headerThemeHint")}</p>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={brandingForm.themeColor || church.themeColor || "#1d3461"}
-                      onChange={e => setBrandingForm(f => ({ ...f, themeColor: e.target.value }))}
-                      className="w-12 h-10 rounded-lg border cursor-pointer"
-                      style={{ borderColor: "#e8e3dc" }}
-                      data-testid="input-branding-theme-color"
-                    />
-                    <Input
-                      value={brandingForm.themeColor || church.themeColor || ""}
-                      onChange={e => setBrandingForm(f => ({ ...f, themeColor: e.target.value }))}
-                      placeholder="#1d3461"
-                      className="w-32 font-mono"
-                      data-testid="input-branding-theme-hex"
-                    />
-                    <button onClick={() => setBrandingForm(f => ({ ...f, themeColor: "" }))} className="text-xs px-2 py-1 rounded" style={{ color: "#7a7570" }}>
-                      {t("cm_reset")}
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm">{t("cm_headerThemeColor")}</Label>
+                    <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>{t("cm_headerThemeHint")}</p>
+                  </div>
+
+                  {/* Color Picker + HEX Input */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex flex-col items-center gap-1">
+                      <input
+                        type="color"
+                        value={brandingForm.themeColor || church.themeColor || "#1d3461"}
+                        onChange={e => setBrandingForm(f => ({ ...f, themeColor: e.target.value }))}
+                        className="w-14 h-11 rounded-lg border-2 cursor-pointer p-0.5"
+                        style={{ borderColor: "#e8e3dc" }}
+                        data-testid="input-branding-theme-color"
+                        title={t("cm_colorPickerTitle")}
+                      />
+                      <span className="text-xs" style={{ color: "#7a7570" }}>{t("cm_colorPickerTitle")}</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Input
+                        value={brandingForm.themeColor || church.themeColor || ""}
+                        onChange={e => {
+                          const v = e.target.value;
+                          if (/^#[0-9A-Fa-f]{0,6}$/.test(v) || v === "") setBrandingForm(f => ({ ...f, themeColor: v }));
+                        }}
+                        placeholder="#1d3461"
+                        className="w-28 font-mono text-sm"
+                        data-testid="input-branding-theme-hex"
+                      />
+                      <span className="text-xs" style={{ color: "#7a7570" }}>HEX</span>
+                    </div>
+                    <button
+                      onClick={() => setBrandingForm(f => ({ ...f, themeColor: "#1d3461" }))}
+                      className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:bg-gray-50"
+                      style={{ color: "#7a7570", borderColor: "#e8e3dc" }}
+                      data-testid="button-reset-theme-color"
+                    >
+                      {t("cm_colorResetDefault")}
                     </button>
                   </div>
-                  <div className="flex gap-2 flex-wrap mt-2">
-                    {["#1d3461", "#7a1520", "#1a5276", "#145a32", "#784212", "#4a235a"].map(c => (
-                      <button key={c} onClick={() => setBrandingForm(f => ({ ...f, themeColor: c }))}
-                        className="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110"
-                        style={{ backgroundColor: c, borderColor: brandingForm.themeColor === c ? "#fff" : "transparent", outline: brandingForm.themeColor === c ? `2px solid ${c}` : "none" }}
-                        title={c}
-                      />
-                    ))}
+
+                  {/* Low contrast warning */}
+                  {isLowContrast(brandingForm.themeColor || church.themeColor || "#1d3461") && (
+                    <p className="text-xs flex items-center gap-1.5 px-3 py-2 rounded-lg" style={{ color: "#92400e", backgroundColor: "#fef3c7" }}>
+                      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                      {t("cm_colorLowContrast")}
+                    </p>
+                  )}
+
+                  {/* Live Preview */}
+                  {(() => {
+                    const activeColor = brandingForm.themeColor || church.themeColor || "#1d3461";
+                    const textColor = getContrastColor(activeColor);
+                    return (
+                      <div className="rounded-xl overflow-hidden border shadow-sm" style={{ borderColor: "#e8e3dc" }}>
+                        <div className="px-4 py-3 flex items-center justify-between" style={{ backgroundColor: activeColor, color: textColor }}>
+                          <span className="font-semibold text-sm">{church.name}</span>
+                          <div className="w-20 h-6 rounded text-xs flex items-center justify-center font-medium" style={{ backgroundColor: textColor, color: activeColor }}>
+                            {t("cm_colorPreviewBtn")}
+                          </div>
+                        </div>
+                        <div className="px-4 py-1.5 bg-white border-b-2" style={{ borderColor: activeColor }}>
+                          <span className="text-xs font-medium" style={{ color: activeColor }}>{t("cm_colorPreviewNav")}</span>
+                        </div>
+                        <div className="px-4 py-2 bg-gray-50 flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: activeColor }} />
+                          <span className="text-xs" style={{ color: "#7a7570" }}>{t("cm_colorPreviewLabel")}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Preset Color Palette */}
+                  <div>
+                    <p className="text-xs font-medium mb-2" style={{ color: "#4a4540" }}>{t("cm_colorPresets")}</p>
+                    <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                      {BRAND_COLOR_GROUPS.map(group => (
+                        <div key={group.name}>
+                          <p className="text-xs mb-1" style={{ color: "#7a7570" }}>{group.name}</p>
+                          <div className="flex gap-1.5 flex-wrap">
+                            {group.colors.map(c => {
+                              const active = (brandingForm.themeColor || church.themeColor || "#1d3461").toLowerCase() === c.hex.toLowerCase();
+                              return (
+                                <button
+                                  key={c.hex}
+                                  onClick={() => setBrandingForm(f => ({ ...f, themeColor: c.hex }))}
+                                  className="w-8 h-8 rounded-lg border-2 transition-all hover:scale-110 hover:shadow-md flex-shrink-0"
+                                  style={{
+                                    backgroundColor: c.hex,
+                                    borderColor: active ? "#1a2744" : c.hex === "#FFFFFF" ? "#d1d5db" : c.hex,
+                                    boxShadow: active ? `0 0 0 3px ${c.hex}44` : undefined,
+                                    outline: active ? "2px solid #1a2744" : "none",
+                                    outlineOffset: "2px",
+                                  }}
+                                  title={c.name}
+                                  data-testid={`color-swatch-${c.hex.replace("#", "")}`}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -2849,6 +2997,19 @@ function ChurchGovernancePanel({ church, getIdToken }: { church: Church; getIdTo
                   <Badge className="text-xs capitalize">{c.status?.replace("_", " ")}</Badge>
                 </div>
                 <p className="text-xs bg-gray-50 rounded p-2">{c.description}</p>
+
+                {c.responseDeadline && (
+                  <div className="flex items-center gap-1.5 text-xs px-2 py-1.5 rounded" style={{
+                    backgroundColor: new Date(c.responseDeadline) < new Date() ? "#fef2f2" : "#fefce8",
+                    color: new Date(c.responseDeadline) < new Date() ? "#7f1d1d" : "#78350f",
+                  }}>
+                    <ClockIcon className="w-3 h-3 flex-shrink-0" />
+                    <span>
+                      {new Date(c.responseDeadline) < new Date() ? t("cm_deadlinePassed") : t("cm_respondBy")}{" "}
+                      {new Date(c.responseDeadline).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+                )}
 
                 {c.responses?.length > 0 && (
                   <div className="space-y-1.5">

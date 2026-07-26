@@ -2856,6 +2856,8 @@ export async function registerRoutes(
       if (!dept || !dept.isActive) return res.status(404).json({ message: "Invitation not found or no longer active" });
       const church = await storage.getChurch(dept.churchId);
       if (!church) return res.status(404).json({ message: "Church not found" });
+      // Platform governance gate: department invites are also only usable for approved orgs
+      if (church.platformStatus !== "approved") return res.status(403).json({ message: "This organization is not currently active on the platform" });
       return res.json({
         church: { id: church.id, name: church.name, slug: church.slug, description: church.description, logoUrl: church.logoUrl, denomination: church.denomination, approvalMode: church.approvalMode },
         invitation: {
@@ -4097,12 +4099,38 @@ export async function registerRoutes(
         severity: z.enum(["low", "medium", "high", "critical"]).default("medium"),
         description: z.string().min(10),
         internalNotes: z.string().optional(),
+        responseDeadline: z.string().datetime().optional().nullable(),
       });
       const parsed = schema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ message: "Invalid request" });
       const caseNumber = `CASE-${Date.now().toString(36).toUpperCase()}`;
-      const created = await storage.createComplianceCase({ ...parsed.data, caseNumber, createdBy: "platform_admin", status: "open" });
+      const deadlineDate = parsed.data.responseDeadline ? new Date(parsed.data.responseDeadline) : null;
+      const created = await storage.createComplianceCase({ ...parsed.data, caseNumber, createdBy: "platform_admin", status: "open", responseDeadline: deadlineDate });
       storage.createAuditLog({ churchId: parsed.data.churchId, action: "compliance_case_opened", newValue: caseNumber, actorUid: "platform_admin" }).catch(() => {});
+      // Notify church owner by email
+      (async () => {
+        try {
+          const members = await storage.getChurchMembers(parsed.data.churchId);
+          const owner = members.find(m => m.role === "owner");
+          const ch = await storage.getChurch(parsed.data.churchId);
+          if (owner?.email && ch) {
+            const sgMail = (await import("@sendgrid/mail")).default;
+            sgMail.setApiKey(process.env.SENDGRID_API_KEY || "");
+            await sgMail.send({
+              to: owner.email,
+              from: process.env.SENDGRID_FROM_EMAIL || "noreply@365devotional.app",
+              subject: `Compliance Notice — Case ${caseNumber} | ${ch.name}`,
+              html: `<p>Dear ${owner.displayName ?? owner.email},</p>
+<p>A compliance case (<strong>${caseNumber}</strong>) has been opened for <strong>${ch.name}</strong>.</p>
+<p><strong>Category:</strong> ${parsed.data.category}<br/>
+<strong>Severity:</strong> ${parsed.data.severity}<br/>
+<strong>Summary:</strong> ${parsed.data.description}</p>
+<p>Please log in to your church administration panel to review the case details and submit a response. You may also contact our support team if you have questions.</p>
+<p style="margin-top:24px;font-size:12px;color:#888;">This is an automated compliance notification. Case reference: ${caseNumber}.</p>`,
+            });
+          }
+        } catch { /* email failure is non-blocking */ }
+      })();
       res.status(201).json(created);
     } catch { res.status(500).json({ message: "Server error" }); }
   });

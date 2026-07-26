@@ -5077,7 +5077,7 @@ function GovernanceApplicationsAdmin() {
 function ComplianceCasesAdmin() {
   const { t } = useI18n();
   const [selectedCase, setSelectedCase] = useState<any | null>(null);
-  const [newCaseForm, setNewCaseForm] = useState({ churchId: "", category: "other", severity: "medium", description: "", internalNotes: "" });
+  const [newCaseForm, setNewCaseForm] = useState({ churchId: "", category: "other", severity: "medium", description: "", internalNotes: "", responseDeadline: "" });
   const [showNewCase, setShowNewCase] = useState(false);
   const [replyMsg, setReplyMsg] = useState("");
   const [enforcementForm, setEnforcementForm] = useState<{ status: string; enforcementAction: string; enforcementReason: string; attachmentUrl: string }>({ status: "", enforcementAction: "", enforcementReason: "", attachmentUrl: "" });
@@ -5093,7 +5093,7 @@ function ComplianceCasesAdmin() {
       if (!r.ok) throw new Error((await r.json()).message ?? "Failed");
       return r.json();
     },
-    onSuccess: () => { refetch(); setShowNewCase(false); setNewCaseForm({ churchId: "", category: "other", severity: "medium", description: "", internalNotes: "" }); },
+    onSuccess: () => { refetch(); setShowNewCase(false); setNewCaseForm({ churchId: "", category: "other", severity: "medium", description: "", internalNotes: "", responseDeadline: "" }); },
   });
 
   const updateCase = useMutation({
@@ -5140,8 +5140,22 @@ function ComplianceCasesAdmin() {
             </div>
             <Textarea placeholder="Description (min 10 chars) — will be shown to org owner" value={newCaseForm.description} onChange={e => setNewCaseForm(p => ({ ...p, description: e.target.value }))} className="text-sm" rows={3} data-testid="textarea-case-description" />
             <Textarea placeholder="Internal notes (admin only)" value={newCaseForm.internalNotes} onChange={e => setNewCaseForm(p => ({ ...p, internalNotes: e.target.value }))} className="text-sm" rows={2} />
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-600">Response Deadline (optional)</label>
+              <input
+                type="datetime-local"
+                className="border rounded px-2 py-1 text-sm w-56"
+                value={newCaseForm.responseDeadline}
+                onChange={e => setNewCaseForm(p => ({ ...p, responseDeadline: e.target.value }))}
+                data-testid="input-case-deadline"
+              />
+              <p className="text-xs text-gray-400">If set, the owner sees this deadline in their compliance dashboard.</p>
+            </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => openCase.mutate(newCaseForm)} disabled={openCase.isPending || !newCaseForm.churchId || newCaseForm.description.length < 10} data-testid="button-submit-new-case">
+              <Button size="sm" onClick={() => openCase.mutate({
+                ...newCaseForm,
+                responseDeadline: newCaseForm.responseDeadline ? new Date(newCaseForm.responseDeadline).toISOString() : null,
+              })} disabled={openCase.isPending || !newCaseForm.churchId || newCaseForm.description.length < 10} data-testid="button-submit-new-case">
                 {openCase.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Open Case"}
               </Button>
               <Button size="sm" variant="outline" onClick={() => setShowNewCase(false)}>Cancel</Button>
@@ -5167,6 +5181,11 @@ function ComplianceCasesAdmin() {
                 <Badge className={`text-xs ${statusColors[c.status] ?? ""}`}>{c.status?.replace("_", " ")}</Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{c.description}</p>
+              {c.responseDeadline && (
+                <p className="text-xs mt-1" style={{ color: new Date(c.responseDeadline) < new Date() ? "#dc2626" : "#92400e" }}>
+                  Deadline: {new Date(c.responseDeadline).toLocaleDateString()} {new Date(c.responseDeadline) < new Date() ? "— OVERDUE" : ""}
+                </p>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -5183,6 +5202,13 @@ function ComplianceCasesAdmin() {
               <p><strong>Church:</strong> #{selectedCase.churchId}</p>
               <p><strong>Category:</strong> {selectedCase.category} · <strong>Severity:</strong> <span className={severityColors[selectedCase.severity]}>{selectedCase.severity}</span></p>
               <p><strong>Status:</strong> {selectedCase.status?.replace("_", " ")}</p>
+              {selectedCase.responseDeadline && (
+                <p className="text-xs px-2 py-1.5 rounded" style={{ backgroundColor: new Date(selectedCase.responseDeadline) < new Date() ? "#fef2f2" : "#fefce8", color: "#78350f" }}>
+                  <strong>Response Deadline:</strong>{" "}
+                  {new Date(selectedCase.responseDeadline).toLocaleString()}
+                  {new Date(selectedCase.responseDeadline) < new Date() && " — OVERDUE"}
+                </p>
+              )}
               <p className="bg-gray-50 rounded p-2">{selectedCase.description}</p>
               {selectedCase.internalNotes && <p className="text-xs bg-amber-50 rounded p-2 text-amber-800">Internal: {selectedCase.internalNotes}</p>}
               {selectedCase.responses?.length > 0 && (

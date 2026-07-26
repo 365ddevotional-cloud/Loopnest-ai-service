@@ -1,0 +1,667 @@
+COMPLETE GOVERNANCE SAFEGUARDS, COMPLIANCE COMMUNICATIONS, ORGANIZATION RESTRICTIONS, AND STATUS DASHBOARD
+
+Please complete the remaining governance and compliance work for Church Mode.
+
+This applies to every approved community type, including:
+
+- Churches
+- Christian ministries
+- Christian organizations
+- Christian associations
+- Fellowships
+- Mission organizations
+- Prayer networks
+- Campus ministries
+- Bible study organizations
+- Other Christian communities accepted by the platform
+
+IMPORTANT:
+
+- Do not modify unrelated devotional, music, donation, marketplace, authentication, or general app features.
+- Preserve all existing churches, ministries, organizations, members, invitations, departments, messages, and records.
+- Reuse the existing governance, compliance, notification, email, role, audit-log, translation, and organization-status systems.
+- Do not create duplicate systems.
+- Do not claim success based only on code inspection.
+- Test the actual running application.
+- Make focused, secure changes only.
+
+====================================================
+1. RESTRICT SUSPENDED, REJECTED, OR INACTIVE ORGANIZATIONS
+====================================================
+
+Organizations with any of these statuses must not accept new members:
+
+- suspended
+- rejected
+- inactive
+- archived
+- pending deletion
+- permanently removed
+
+While restricted, block:
+
+- creation of new invitation codes
+- use of existing invitation codes
+- new membership requests
+- approval of pending membership requests
+- creation of new departments or groups
+- public organization discovery
+- public organization join links
+- organization-wide announcements to ordinary members, where suspension rules require it
+
+The server must enforce these restrictions.
+
+Do not rely only on hidden or disabled frontend buttons.
+
+Invitation verification must return a clear message such as:
+
+“This organization is not currently accepting new members.”
+
+Do not reveal confidential compliance details to the person attempting to join.
+
+====================================================
+2. ACCESS THAT MUST REMAIN AVAILABLE DURING SUSPENSION
+====================================================
+
+A suspended organization owner must still be able to:
+
+- sign in
+- see the organization’s current compliance status
+- read private messages from the Platform Administrator
+- open compliance cases
+- respond to allegations or requests
+- upload supporting documents
+- view required actions and deadlines
+- submit an appeal where allowed
+- view final decisions
+- request clarification
+- access permitted account records
+- request an export of their organization’s data where supported
+
+Do not completely lock the owner out of the account, because they need access to respond and appeal.
+
+Ordinary members may see a neutral notice if their organization is temporarily unavailable, but they must never see private allegations, internal evidence, owner responses, or administrator notes.
+
+====================================================
+3. END-TO-END COMPLIANCE CASE WORKFLOW
+====================================================
+
+Test and complete this full workflow:
+
+1. Platform Administrator opens a compliance case.
+2. A unique case number is created.
+3. The organization owner receives a private in-app notice.
+4. The owner receives an email notification where email delivery is available.
+5. The owner opens the case.
+6. The owner reads:
+   - the allegation or concern
+   - the relevant policy
+   - requested action
+   - response deadline
+   - possible consequences
+   - appeal information
+7. The owner submits a response.
+8. The owner may upload supporting documents or evidence.
+9. Platform Administrator reviews the response.
+10. Administrator may:
+    - request more information
+    - issue no action
+    - issue a warning
+    - request corrective action
+    - temporarily restrict the organization
+    - temporarily suspend the organization
+    - resolve the case
+    - permanently remove the organization where justified
+11. The owner receives the decision privately.
+12. The resolution is saved in the audit history.
+13. If permitted, the owner may submit an appeal.
+14. The appeal is reviewed and a final decision is recorded.
+15. The owner receives confirmation when the case is resolved or closed.
+
+Case statuses should include:
+
+- Open
+- Waiting for Owner Response
+- Waiting for Platform Review
+- More Information Requested
+- Corrective Action Required
+- Under Appeal
+- Resolved
+- Closed
+- Suspended
+- Permanently Removed
+
+====================================================
+4. FAIR AND CAREFUL LANGUAGE
+====================================================
+
+Until a matter is decided, do not present an allegation as a proven fact.
+
+Use language such as:
+
+- “We received a report alleging…”
+- “A concern has been raised regarding…”
+- “This matter is currently under review.”
+- “Please provide your response by…”
+
+Avoid language such as:
+
+- “You committed fraud”
+- “You violated the law”
+- “You are guilty”
+
+unless the platform has reached a documented decision and the wording has been approved for that decision.
+
+Include a notice that:
+
+- the message is confidential
+- it is intended for the organization owner
+- the owner should respond through the secure case page
+- retaliation against a reporter or member is prohibited where relevant
+
+====================================================
+5. REAL EMAIL NOTIFICATIONS FOR IMPORTANT CASE EVENTS
+====================================================
+
+Send email notifications to the organization owner for important compliance events, including:
+
+- compliance case opened
+- additional information requested
+- response deadline approaching
+- response received
+- warning issued
+- corrective action required
+- temporary restriction applied
+- suspension applied
+- suspension lifted
+- case resolved
+- case closed
+- appeal received
+- appeal decided
+- organization application approved
+- organization application rejected
+- organization deletion request updated
+
+Requirements:
+
+- Send only to the organization owner’s registered email.
+- Do not expose member, reporter, administrator, or other organization email addresses.
+- Use the existing approved email-delivery system.
+- Do not expose secrets in frontend code.
+- Record whether the email was:
+  - queued
+  - sent
+  - failed
+- Record the provider response or safe error code.
+- Do not claim delivery if the provider only accepted the request.
+- Keep the full private notice available in-app even if email delivery fails.
+- Avoid placing highly sensitive evidence directly in the email; direct the owner to sign in securely.
+
+Email subject examples:
+
+- Action Required: Compliance Case [Case Number]
+- Additional Information Requested
+- Organization Status Updated
+- Compliance Case Resolved
+- Appeal Decision Available
+
+Support English, Spanish, and French.
+
+====================================================
+6. RESPONSE DEADLINES AND REMINDERS
+====================================================
+
+Allow the Platform Administrator to assign a response deadline.
+
+Examples:
+
+- 24 hours
+- 48 hours
+- 7 days
+- custom date and time
+
+The owner must see:
+
+- exact deadline
+- time remaining
+- required action
+- consequences of no response, stated carefully
+
+Send reminders where appropriate:
+
+- when the case opens
+- 24 hours before the deadline
+- shortly before expiration where practical
+- after the deadline passes
+
+Missing a deadline must not automatically cause permanent deletion.
+
+The Platform Administrator must review the case before major enforcement, except where urgent safety, legal, fraud, or security concerns justify immediate temporary restriction.
+
+====================================================
+7. COMPLIANCE STATUS DASHBOARD FOR ORGANIZATION OWNERS
+====================================================
+
+Add a clear “Organization Status” or “Compliance Status” dashboard visible only to:
+
+- organization owner
+- authorized organization administrators where allowed
+- Platform Administrator
+
+Possible status cards:
+
+GREEN — GOOD STANDING
+
+- Approved for Church Mode
+- No action required
+- No open compliance cases
+
+YELLOW — ACTION REQUIRED
+
+- More information requested
+- Required profile or policy update
+- Deadline displayed
+
+ORANGE — UNDER REVIEW
+
+- Application or compliance case is being reviewed
+- New-member activity may be limited depending on status
+
+RED — RESTRICTED OR SUSPENDED
+
+- New invitations and membership activity paused
+- Required actions displayed
+- Appeal option shown where permitted
+
+GRAY — ARCHIVED OR CLOSED
+
+- Organization is no longer publicly active
+- Historical records retained according to policy
+
+The dashboard must show:
+
+- current platform status
+- approval status
+- open cases
+- case numbers
+- required actions
+- deadlines
+- recent administrator messages
+- appeal availability
+- deletion-request status
+- last status-update date
+- support/contact option
+
+Do not use wording such as:
+
+- Verified Church
+- Certified Ministry
+- Official Christian Organization
+
+Use neutral wording such as:
+
+- Approved for Church Mode
+- Platform Approved
+- Community Approved
+
+Include a visible explanation:
+
+“Platform approval means the organization satisfied the platform’s submission requirements. It is not an endorsement, accreditation, certification, theological approval, financial approval, or guarantee of future conduct.”
+
+====================================================
+8. PLATFORM ADMIN TRUST & SAFETY CENTER
+====================================================
+
+Create or complete a centralized admin section containing:
+
+- Pending Organization Applications
+- Applications Needing More Information
+- Approved Organizations
+- Rejected Organizations
+- Open Compliance Cases
+- Cases Waiting for Owner Response
+- Cases Waiting for Admin Review
+- Corrective Actions
+- Suspended Organizations
+- Appeals
+- Organization Deletion Requests
+- Private Admin–Owner Messages
+- Policy Notices
+- Platform Announcements
+- Audit Logs
+- Email Delivery Status
+
+Add search and filters for:
+
+- organization name
+- organization type
+- country
+- owner email
+- case number
+- status
+- severity
+- category
+- application date
+- response deadline
+
+Only authenticated Platform Administrators may access this center.
+
+====================================================
+9. ORGANIZATION APPLICATION APPROVAL
+====================================================
+
+Confirm that every new official organization must pass platform review before becoming publicly active.
+
+This applies to:
+
+- churches
+- ministries
+- organizations
+- associations
+- fellowships
+- prayer groups
+- mission organizations
+- campus ministries
+- Bible study organizations
+- other Christian communities
+
+Application statuses:
+
+- Draft
+- Submitted
+- Pending Review
+- Needs More Information
+- Approved
+- Rejected
+- Withdrawn
+
+While not approved:
+
+- public page remains hidden
+- invitation codes remain inactive
+- new members cannot join
+- public discovery remains disabled
+- owner may continue editing the application
+- owner may communicate privately with the Platform Administrator
+
+Existing organizations must not be accidentally disabled by this change.
+
+Apply a safe migration rule for existing active organizations, such as preserving their existing active status or placing them into a clearly documented legacy-review status without interrupting current members.
+
+====================================================
+10. PRIVATE ADMIN–OWNER COMMUNICATION
+====================================================
+
+Private compliance communication must be visible only to:
+
+- Platform Administrator
+- the specific organization owner
+
+Church members, ministry members, department leaders, unrelated organization administrators, and other users must never see these messages.
+
+Support:
+
+- threaded messages
+- attachments
+- date and time
+- read/unread status
+- case association
+- administrator identity or official platform label
+- owner replies
+- status updates
+- resolved indicator
+
+Add a strong server-side authorization check on every read, reply, attachment, and update endpoint.
+
+====================================================
+11. APPEALS
+====================================================
+
+Allow an eligible organization owner to submit an appeal after:
+
+- application rejection
+- temporary suspension
+- permanent removal decision
+- other major enforcement where the policy permits appeal
+
+The appeal must include:
+
+- case or decision number
+- explanation
+- optional supporting documents
+- submission date
+- appeal status
+
+Statuses:
+
+- Submitted
+- Under Review
+- More Information Requested
+- Approved
+- Denied
+- Closed
+
+An appeal should be reviewed by an authorized Platform Administrator.
+
+Where practical, prevent the same administrator from being the sole reviewer of their own disputed decision.
+
+Record the final appeal decision and notify the owner privately.
+
+====================================================
+12. AUDIT LOG
+====================================================
+
+Record all major actions, including:
+
+- organization application submitted
+- request for more information
+- organization approved or rejected
+- compliance case opened
+- private notice sent
+- owner response submitted
+- evidence uploaded
+- deadline changed
+- warning issued
+- restriction applied or removed
+- suspension applied or lifted
+- appeal submitted
+- appeal decided
+- case resolved or closed
+- invitation blocked due to organization status
+- member approval blocked due to organization status
+- email queued, sent, or failed
+- deletion request submitted, approved, rejected, or completed
+
+Record:
+
+- actor user ID
+- actor role
+- organization ID
+- case ID
+- action
+- previous value
+- new value
+- date and time
+- safe IP/device information where legally appropriate
+- reason
+- related record ID
+
+Audit records must not be editable by ordinary users.
+
+====================================================
+13. PLATFORM-WIDE UPDATE NOTIFICATIONS
+====================================================
+
+Complete the platform update-notification system.
+
+Platform Administrator should be able to notify:
+
+- all users
+- organization owners only
+- organization administrators
+- department leaders
+- ordinary members
+- selected organizations
+- selected countries
+- selected languages
+- individual users
+
+Categories:
+
+- feature update
+- policy update
+- privacy update
+- terms update
+- security notice
+- maintenance notice
+- Church Mode update
+- ministry tool update
+- urgent service notice
+
+Support:
+
+- in-app inbox
+- notification center
+- email where appropriate
+- read/unread tracking
+- publication date
+- effective date
+- acknowledgment where legally or operationally necessary
+
+Language targeting should respect the user’s preferred language:
+
+- English
+- Spanish
+- French
+
+Do not send optional promotional email to users who have not consented.
+
+Essential account, policy, security, compliance, and service notices may be treated separately from optional marketing communications, subject to the platform’s published privacy and communication policies.
+
+====================================================
+14. LEGAL AND POLICY PRESENTATION
+====================================================
+
+Add or update clear, original policy language explaining:
+
+- organizations are responsible for their own content, leadership, teachings, fundraising, counseling, events, communications, and activities
+- the platform provides technology and moderation services
+- platform approval is not endorsement, accreditation, certification, theological approval, financial approval, or legal guarantee
+- reports may be reviewed and investigated
+- organizations may respond where practical
+- temporary restrictions may be used while serious matters are reviewed
+- enforcement decisions may be appealed where permitted
+- records may be retained for fraud prevention, security, disputes, legal compliance, and audit
+- false or malicious reports may lead to action
+- retaliation, harassment, impersonation, fraud, illegal conduct, and abuse of the platform are prohibited
+- platform policies may be updated with appropriate notice
+
+Do not copy policy wording from Facebook, TikTok, Gmail, Apple, Google, or another company.
+
+Use only original wording and broadly accepted platform-governance concepts.
+
+Do not claim that these policies guarantee immunity from lawsuits.
+
+Include a clear recommendation in the implementation report that final Terms of Use, Privacy Policy, Community Standards, and organization policies should be reviewed by a qualified attorney before public enforcement.
+
+====================================================
+15. REQUIRED END-TO-END TESTING
+====================================================
+
+Replit must test the actual running application.
+
+TEST A — RESTRICTED ORGANIZATION
+
+1. Set a test organization to suspended.
+2. Confirm it cannot create an invitation.
+3. Confirm its existing invitation cannot be used.
+4. Confirm it cannot approve a pending member.
+5. Confirm the owner can still access compliance messages and appeal tools.
+6. Restore the organization.
+7. Confirm normal membership actions work again.
+
+TEST B — COMPLIANCE CASE
+
+1. Platform Administrator opens a test case.
+2. Confirm the owner receives a private in-app notice.
+3. Confirm the email request is sent or the exact delivery failure is recorded.
+4. Owner opens the case.
+5. Owner submits a response.
+6. Owner uploads a test document.
+7. Administrator requests more information.
+8. Owner responds again.
+9. Administrator resolves the case.
+10. Confirm the owner sees “Resolved.”
+11. Confirm the audit trail is complete.
+
+TEST C — APPEAL
+
+1. Apply an appeal-eligible test decision.
+2. Owner submits an appeal.
+3. Administrator reviews it.
+4. Confirm the final decision is saved and communicated.
+
+TEST D — STATUS DASHBOARD
+
+1. Test good standing.
+2. Test action required.
+3. Test under review.
+4. Test suspended.
+5. Test archived.
+6. Confirm correct status, actions, and deadlines appear.
+7. Confirm ordinary members cannot see private case details.
+
+TEST E — APPLICATION REVIEW
+
+1. Submit a new ministry application.
+2. Confirm it remains hidden while pending.
+3. Request more information.
+4. Owner responds.
+5. Approve it.
+6. Confirm its invitations and public page become active.
+7. Repeat with a rejected test application and confirm it remains inactive.
+
+TEST F — PLATFORM ANNOUNCEMENTS
+
+1. Send an announcement to organization owners only.
+2. Confirm ordinary users do not receive it.
+3. Send a Spanish notice to Spanish-language users.
+4. Confirm language filtering works.
+5. Confirm read/unread tracking works.
+
+TEST G — AUTHORIZATION
+
+Attempt direct API access as:
+
+- ordinary member
+- department leader
+- unrelated organization owner
+- suspended organization owner
+- unauthenticated user
+
+Confirm none can access another organization’s private compliance cases, messages, attachments, audit logs, or admin tools.
+
+====================================================
+16. FINAL REPORT
+====================================================
+
+Provide a concise but complete report containing:
+
+- files changed
+- database tables and fields added or reused
+- organization-status enforcement
+- invitation and membership restrictions
+- compliance-case workflow
+- private messaging authorization
+- email notification implementation
+- compliance status dashboard
+- appeal implementation
+- Trust & Safety Center
+- platform announcement targeting
+- audit logging
+- tests passed
+- tests failed
+- items requiring manual verification
+- email-delivery limitations
+- legal-policy items requiring attorney review
+- confirmation that unrelated app features were not modified

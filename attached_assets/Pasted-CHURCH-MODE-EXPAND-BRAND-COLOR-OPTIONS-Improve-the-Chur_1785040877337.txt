@@ -1,0 +1,193 @@
+CHURCH MODE – EXPAND BRAND COLOR OPTIONS
+
+Improve the Church Branding page by expanding the available color choices for churches, ministries, Christian organizations, fellowships, and associations.
+
+IMPORTANT
+
+• Do not modify unrelated features.
+• Preserve all existing branding settings.
+• Existing churches should keep their current colors after this update.
+• This is only a branding enhancement.
+
+====================================================
+1. EXPAND THE COLOR PALETTE
+====================================================
+
+The current palette contains mostly dark colors.
+
+Keep those colors, but greatly expand the available options.
+
+Include both DARK and BRIGHT versions of major colors.
+
+Examples:
+
+REDS
+• Dark Red
+• Bright Red
+• Crimson
+• Scarlet
+• Burgundy
+• Rose Red
+
+BLUES
+• Navy
+• Royal Blue
+• Bright Blue
+• Sky Blue
+• Light Blue
+• Cyan
+• Turquoise
+
+GREENS
+• Forest Green
+• Emerald
+• Bright Green
+• Lime
+• Olive
+• Mint
+
+YELLOWS
+• Bright Yellow
+• Golden Yellow
+• Mustard
+• Lemon
+
+ORANGES
+• Bright Orange
+• Burnt Orange
+• Amber
+• Coral
+
+PINKS
+• Pink
+• Hot Pink
+• Rose
+• Blush
+
+PURPLES
+• Purple
+• Lavender
+• Violet
+• Plum
+
+BROWNS
+• Chocolate
+• Coffee
+• Tan
+• Bronze
+
+NEUTRALS
+• White
+• Ivory
+• Cream
+• Beige
+• Silver
+• Gray
+• Charcoal
+• Black
+
+METALLIC LOOKS
+• Gold
+• Silver
+• Bronze
+• Champagne
+
+====================================================
+2. COLOR PICKER
+====================================================
+
+In addition to the preset colors, provide a full color picker so organizations can choose virtually any color they prefer.
+
+Allow:
+
+• Color wheel
+• HEX value
+• RGB support
+• Live preview
+
+====================================================
+3. LIVE PREVIEW
+====================================================
+
+Whenever a color is selected, immediately preview it on:
+
+• Church header
+• Church title
+• Buttons
+• Accent borders
+• Navigation highlights
+
+No save should be required before previewing.
+
+====================================================
+4. ACCESSIBILITY
+====================================================
+
+Automatically ensure text remains readable.
+
+If a light background is selected:
+
+• Automatically use dark text.
+
+If a dark background is selected:
+
+• Automatically use white/light text.
+
+Maintain proper contrast for accessibility.
+
+====================================================
+5. SAFE COLORS
+====================================================
+
+Prevent selections that make text unreadable.
+
+If necessary:
+
+• Automatically adjust text color.
+• Show a warning if a color combination has poor contrast.
+
+====================================================
+6. RESET
+====================================================
+
+Allow organizations to restore the default Church Mode branding with one tap.
+
+====================================================
+7. FUTURE EXPANSION
+====================================================
+
+Design the branding system so future updates can also support:
+
+• Gradients
+• Background patterns
+• Seasonal themes
+• Ministry-specific themes
+• Event-specific branding
+• Holiday themes (Christmas, Easter, Thanksgiving, etc.)
+
+without requiring database redesign.
+
+====================================================
+8. TESTING
+====================================================
+
+Replit should test:
+
+✓ Existing colors still work.
+✓ New preset colors work.
+✓ Color picker works.
+✓ Live preview updates instantly.
+✓ Saving and reopening preserves the chosen color.
+✓ Existing organizations keep their current branding.
+✓ Text remains readable on every color.
+✓ Mobile responsiveness is maintained.
+✓ No unrelated features are modified.
+
+Provide a report showing:
+
+• Files changed
+• Components updated
+• New color palette
+• Accessibility improvements
+• Testing completed
+• Confirmation that no existing branding was broken.

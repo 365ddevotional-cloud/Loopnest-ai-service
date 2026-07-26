@@ -1311,6 +1311,7 @@ export const complianceCases = pgTable("compliance_cases", {
   enforcementAction: text("enforcement_action"), // ENFORCEMENT_ACTIONS
   enforcementReason: text("enforcement_reason"),
   enforcementAt: timestamp("enforcement_at"),
+  responseDeadline: timestamp("response_deadline"), // optional owner response deadline
   createdBy: text("created_by").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
