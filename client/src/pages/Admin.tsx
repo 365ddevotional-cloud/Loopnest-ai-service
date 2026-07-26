@@ -5394,7 +5394,7 @@ function PlatformAnnouncementsAdmin() {
             <Input placeholder={t("cm_announcementTitle")} value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="text-sm" data-testid="input-announcement-title" />
             <Textarea placeholder={t("cm_announcementBody")} value={form.body} onChange={e => setForm(p => ({ ...p, body: e.target.value }))} rows={4} className="text-sm" data-testid="textarea-announcement-body" />
             <select className="border rounded px-2 py-1 text-sm w-full" value={form.targetType} onChange={e => setForm(p => ({ ...p, targetType: e.target.value }))}>
-              {["everyone", "org_owners", "org_admins"].map(t => <option key={t} value={t}>{t.replace("_", " ")}</option>)}
+              {["everyone", "org_owners", "church_owners", "ministry_owners", "org_admins", "dept_leaders", "members_specific", "country", "language"].map(t => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
             </select>
             <div className="flex gap-2">
               <Button size="sm" onClick={() => create.mutate(form)} disabled={create.isPending || !form.title || !form.body} data-testid="button-create-announcement">

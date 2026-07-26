@@ -2704,17 +2704,58 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getSentAnnouncementsForUser(firebaseUid: string): Promise<(PlatformAnnouncement & { isRead: boolean })[]> {
+    // 1. Get user's active church memberships
+    const memberships = await db.select().from(churchMembers)
+      .where(and(eq(churchMembers.firebaseUid, firebaseUid), eq(churchMembers.status, "active")));
+    if (memberships.length === 0) return [];
+
+    const userChurchIds = new Set(memberships.map(m => m.churchId));
+    const userRoles = new Set(memberships.map(m => m.role));
+
+    // 2. Get all sent announcements
     const sent = await db.select().from(platformAnnouncements)
       .where(sql`sent_at IS NOT NULL`)
       .orderBy(desc(platformAnnouncements.sentAt));
     if (sent.length === 0) return [];
+
+    // 3. Get read status for this user
     const reads = await db.select().from(platformAnnouncementReads)
       .where(and(
         eq(platformAnnouncementReads.firebaseUid, firebaseUid),
         inArray(platformAnnouncementReads.announcementId, sent.map(a => a.id))
       ));
     const readSet = new Set(reads.map(r => r.announcementId));
-    return sent.map(a => ({ ...a, isRead: readSet.has(a.id) }));
+
+    // 4. Filter to announcements this user was actually targeted by
+    const isRecipient = (ann: PlatformAnnouncement): boolean => {
+      switch (ann.targetType) {
+        case "everyone":
+          return memberships.length > 0;
+        case "org_owners":
+          return userRoles.has("owner") || userRoles.has("lead_pastor");
+        case "church_owners":
+          return userRoles.has("owner");
+        case "ministry_owners":
+          return userRoles.has("lead_pastor");
+        case "org_admins":
+          return ["owner", "lead_pastor", "administrator"].some(r => userRoles.has(r));
+        case "dept_leaders":
+          return ["owner", "lead_pastor", "administrator", "department_leader"].some(r => userRoles.has(r));
+        case "members_specific": {
+          const targetIds = (ann.targetFilter ?? "").split(",").map(Number).filter(Boolean);
+          return targetIds.some(id => userChurchIds.has(id));
+        }
+        // country/language require profile matching — return true if user is in any church
+        // (conservative: they may have received it; platform operator curates the send)
+        case "country":
+        case "language":
+          return memberships.length > 0;
+        default:
+          return false;
+      }
+    };
+
+    return sent.filter(isRecipient).map(a => ({ ...a, isRead: readSet.has(a.id) }));
   }
 
   async markAnnouncementRead(announcementId: number, firebaseUid: string): Promise<void> {
@@ -2752,16 +2793,19 @@ export class DatabaseStorage implements IStorage {
     }
 
     // 3. Determine qualifying member roles for this target type
-    // "everyone" and "members_specific" target all active members, not just leaders
-    const everyoneTarget = ann.targetType === "everyone" || ann.targetType === "members_specific";
+    // null = no role filter (reach all active members in scope)
     const targetRoles: string[] | null =
       ann.targetType === "org_admins"
         ? ["owner", "lead_pastor", "administrator"]
         : ann.targetType === "dept_leaders"
           ? ["owner", "lead_pastor", "administrator", "department_leader"]
-          : everyoneTarget
-            ? null  // null = no role filter, reach all active members
-            : ["owner", "lead_pastor"];
+          : ann.targetType === "org_owners"
+            ? ["owner", "lead_pastor"]
+            : ann.targetType === "church_owners"
+              ? ["owner"]
+              : ann.targetType === "ministry_owners"
+                ? ["lead_pastor"]
+                : null; // everyone, members_specific, country, language → all active members
 
     // 4. Deliver in-app (platform admin thread) and optionally email (inbox channel)
     const deliverEmail = Array.isArray(ann.deliveryChannels) && ann.deliveryChannels.includes("inbox");

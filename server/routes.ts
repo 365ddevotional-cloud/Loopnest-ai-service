@@ -2988,6 +2988,24 @@ export async function registerRoutes(
     try {
       const church = await storage.getChurchBySlug(req.params.slug);
       if (!church || church.status !== "active") return res.status(404).json({ message: "Church not found" });
+
+      // For authenticated members of this church, allow access regardless of platformStatus
+      // so admins/owners can still manage their org during review.
+      // For everyone else (unauthenticated or non-members), require platformStatus === approved.
+      const uid = req.headers.authorization?.startsWith("Bearer ")
+        ? await (async () => {
+            try {
+              const { getAuth } = await import("firebase-admin/auth");
+              const decoded = await getAuth().verifyIdToken(req.headers.authorization!.slice(7));
+              return decoded.uid;
+            } catch { return null; }
+          })()
+        : null;
+      if (!uid || !(await storage.getChurchMember(church.id, uid))) {
+        // Non-member or unauthenticated — only expose if platform-approved
+        if (church.platformStatus !== "approved") return res.status(404).json({ message: "Church not found" });
+      }
+
       res.json(church);
     } catch { res.status(500).json({ message: "Server error" }); }
   });
@@ -4020,7 +4038,13 @@ export async function registerRoutes(
       const { action, note } = parsed.data;
       // Require a reason when rejecting
       if (action === "reject" && !note?.trim()) return res.status(400).json({ message: "A reason is required when rejecting an application" });
-      // "request_info" moves to pending_review (actively under review); approve/reject are terminal
+      // Enforce lifecycle: draft/submitted → pending_review → approved/rejected
+      // When admin approves/rejects from "submitted" state, log the pending_review step first
+      // so the full audit trail is preserved (submitted → pending_review → approved/rejected).
+      const currentChurch = await storage.getChurch(id);
+      if (currentChurch && ["draft", "submitted"].includes(currentChurch.platformStatus) && action !== "request_info") {
+        storage.createAuditLog({ churchId: id, action: "platform_pending_review", newValue: "auto-transitioned", actorUid: "platform_admin" }).catch(() => {});
+      }
       const platformStatus = action === "approve" ? "approved" : action === "reject" ? "rejected" : "pending_review";
       const updated = await storage.updateChurchPlatformStatus(id, platformStatus, note, "platform_admin");
       storage.createAuditLog({ churchId: id, action: `platform_${action}`, newValue: note, actorUid: "platform_admin" }).catch(() => {});
@@ -4343,7 +4367,7 @@ export async function registerRoutes(
       const schema = z.object({
         title: z.string().min(1),
         body: z.string().min(1),
-        targetType: z.enum(["everyone", "org_owners", "org_admins", "members_specific", "country", "language"]).default("everyone"),
+        targetType: z.enum(["everyone", "org_owners", "church_owners", "ministry_owners", "org_admins", "dept_leaders", "members_specific", "country", "language"]).default("everyone"),
         targetFilter: z.string().optional().nullable(),
         deliveryChannels: z.array(z.enum(["in_app", "inbox"])).default(["in_app"]),
       });

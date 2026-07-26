@@ -1374,7 +1374,7 @@ export const insertPlatformAdminMessageSchema = createInsertSchema(platformAdmin
 export type PlatformAdminMessage = typeof platformAdminMessages.$inferSelect;
 export type InsertPlatformAdminMessage = z.infer<typeof insertPlatformAdminMessageSchema>;
 
-export const ANNOUNCEMENT_TARGET_TYPES = ["everyone", "org_owners", "org_admins", "dept_leaders", "members_specific", "country", "language"] as const;
+export const ANNOUNCEMENT_TARGET_TYPES = ["everyone", "org_owners", "church_owners", "ministry_owners", "org_admins", "dept_leaders", "members_specific", "country", "language"] as const;
 export const ANNOUNCEMENT_DELIVERY_CHANNELS = ["in_app", "inbox"] as const;
 
 export const platformAnnouncements = pgTable("platform_announcements", {
