@@ -1,0 +1,136 @@
+FIX MUSIC PLAYER VOLUME CONTROL ON MOBILE AND DESKTOP
+
+This is a targeted music-player correction only.
+
+Do NOT redesign the music section.
+Do NOT modify Church Mode, Group Mode, Family Mode, Offline Mode, authentication, donations, payments, reminders, or unrelated files.
+Preserve the current music-player appearance unless a very small mobile usability adjustment is required.
+
+CURRENT ISSUE
+
+The volume slider works on desktop/computer, but on mobile phones it does not respond correctly to touch.
+
+The progress/seek control appears to work, so do not unnecessarily rewrite the entire audio player.
+
+REQUIRED INVESTIGATION
+
+Inspect the existing music-player volume implementation and determine the exact mobile failure, including:
+
+- whether the slider depends only on mouse events;
+- whether touch or pointer events are missing;
+- whether an overlay, floating chat button, container, or invisible element is intercepting touch;
+- whether CSS such as pointer-events, z-index, touch-action, overflow, opacity, or positioning blocks interaction;
+- whether the HTML input range is styled in a way that prevents dragging on iOS Safari or Android Chrome;
+- whether the audio element volume property is updated correctly;
+- whether React state and the actual audio element volume become out of sync;
+- whether mobile browsers restrict programmatic volume control.
+
+IMPORTANT MOBILE-BROWSER LIMITATION
+
+Before changing code, verify actual browser capabilities:
+
+- On iPhone/iPad Safari, browsers may prevent web pages from changing the device media volume programmatically.
+- If iOS does not permit true audio-volume adjustment from an in-page slider, do not pretend it works.
+- In that case:
+  1. keep the control working on supported browsers such as desktop and Android where possible;
+  2. detect unsupported iOS behavior;
+  3. replace or disable the nonfunctional slider on iPhone/iPad with a clear message such as:
+     “Use your iPhone or iPad volume buttons to adjust the sound.”
+  4. do not leave a slider visible that appears usable but has no effect.
+
+REQUIRED FIX
+
+1. Use a proper accessible range input or the existing control with Pointer Events so it supports:
+   - mouse;
+   - touch;
+   - stylus;
+   - keyboard.
+
+2. Prefer standard events such as:
+   - onInput / onChange for input[type="range"];
+   - or pointerdown, pointermove, and pointerup if a custom slider is genuinely necessary.
+
+3. Do not rely only on:
+   - onMouseDown;
+   - onMouseMove;
+   - mouse coordinates.
+
+4. Make the mobile touch target comfortably large without visually making the slider oversized.
+
+5. Ensure the slider:
+   - can be tapped;
+   - can be dragged;
+   - updates smoothly;
+   - does not accidentally scroll the page while actively dragging;
+   - does not interfere with the song-progress slider;
+   - does not restart or pause the song unexpectedly.
+
+6. Synchronize the UI with the actual audio state:
+   - slider value;
+   - audioElement.volume;
+   - mute state;
+   - stored preference, if the app already saves volume.
+
+7. Preserve volume when moving to the next song during the same session.
+
+8. If the user mutes and then raises the slider:
+   - unmute automatically;
+   - restore the selected volume.
+
+9. Handle volume values safely from 0 to 1 internally, even if the visible UI uses 0 to 100.
+
+10. Add proper accessibility:
+   - label: “Volume”;
+   - current value announced;
+   - keyboard arrow support;
+   - visible focus state.
+
+TESTING REQUIRED
+
+Test the running music player with an actual song.
+
+DESKTOP:
+- Chrome or Edge.
+- Click the volume track.
+- Drag the volume knob.
+- Use keyboard arrows.
+- Confirm audible and numerical volume changes.
+
+ANDROID-SIZED MOBILE VIEW:
+- Tap different locations on the slider.
+- Drag left and right.
+- Confirm the audio element volume changes.
+- Confirm the page does not scroll during the active drag.
+- Confirm the seek bar still works independently.
+
+IPHONE / IOS:
+- Verify whether Safari permits programmatic media-volume control.
+- If supported, confirm tap and drag work.
+- If not supported, confirm the slider is not misleading and the user sees:
+  “Use your iPhone or iPad volume buttons to adjust the sound.”
+
+OTHER CHECKS:
+- Move to the next song and confirm the volume setting remains consistent.
+- Test mute and unmute.
+- Confirm the floating chat button does not cover or intercept the volume control.
+- Confirm no horizontal overflow is introduced.
+- Confirm browser console and server logs remain clean.
+
+FINAL REPORT
+
+Report:
+
+1. Exact root cause.
+2. Whether the original implementation used mouse-only events.
+3. Whether any overlay was intercepting mobile touch.
+4. Desktop result.
+5. Android/mobile result.
+6. iPhone/iPad result and any genuine Safari limitation.
+7. Exact files changed.
+8. Confirmation that the music progress slider still works.
+9. Confirmation that no unrelated files were changed.
+10. Any physical-device test still required.
+
+Do not claim that iPhone volume control works unless it was genuinely verified or is technically supported.
+
+Create a checkpoint only after the available tests pass.

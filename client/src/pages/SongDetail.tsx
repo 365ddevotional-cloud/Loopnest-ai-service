@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRoute, Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
-  Play, Pause, Volume2, Download, Share2,
+  Play, Pause, Volume2, VolumeX, Download, Share2,
   Heart, ChevronLeft, Music2, BookOpen, Loader2, ExternalLink,
   Gift, X, AlertCircle, BookMarked, SkipForward, Settings2,
   Copy, Check, Calendar, Send, CheckCircle2, RefreshCw,
@@ -353,6 +353,21 @@ export default function SongDetail() {
   const displayVolume = isCurrentSong ? volume : 1;
   const displayLoading = isCurrentSong && audioLoading;
 
+  // iOS Safari does not allow programmatic media-volume control
+  const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+
+  // Remember last non-zero volume for mute/unmute toggle
+  const prevVolumeRef = useRef<number>(1);
+  const handleMuteToggle = () => {
+    if (displayVolume === 0) {
+      // Unmute — restore previous volume (at least 0.2 if ref was never set)
+      setVolume(prevVolumeRef.current > 0 ? prevVolumeRef.current : 0.7);
+    } else {
+      prevVolumeRef.current = displayVolume;
+      setVolume(0);
+    }
+  };
+
   const handlePlayPause = () => {
     if (!song) return;
     if (isCurrentSong) togglePlay();
@@ -608,19 +623,50 @@ export default function SongDetail() {
                 <span>{formatTime(displayDuration)}</span>
               </div>
             </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <Volume2 className="w-3.5 h-3.5 text-muted-foreground" />
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={displayVolume}
-                onChange={(e) => setVolume(Number(e.target.value))}
-                className="w-16 h-1.5 accent-primary cursor-pointer"
-                data-testid="input-song-volume"
-              />
-            </div>
+            {isIOSDevice ? (
+              /* iOS Safari cannot control media volume programmatically */
+              <p className="text-[10px] text-muted-foreground text-right leading-tight max-w-[80px] flex-shrink-0">
+                Use iPhone volume buttons
+              </p>
+            ) : (
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  onClick={handleMuteToggle}
+                  aria-label={displayVolume === 0 ? "Unmute" : "Mute"}
+                  className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 p-1 -m-1"
+                  data-testid="button-mute-toggle"
+                >
+                  {displayVolume === 0
+                    ? <VolumeX className="w-3.5 h-3.5" />
+                    : <Volume2 className="w-3.5 h-3.5" />
+                  }
+                </button>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={displayVolume}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    if (v > 0) prevVolumeRef.current = v;
+                    setVolume(v);
+                  }}
+                  aria-label="Volume"
+                  aria-valuetext={`${Math.round(displayVolume * 100)}%`}
+                  style={{
+                    // Tall hit-box (44 px) for comfortable mobile touch;
+                    // the track visually stays thin via accent-primary + browser defaults
+                    height: "44px",
+                    // Prevent page scroll while dragging the slider horizontally
+                    touchAction: "none",
+                    cursor: "pointer",
+                  }}
+                  className="w-16 accent-primary"
+                  data-testid="input-song-volume"
+                />
+              </div>
+            )}
           </div>
 
           {/* Play Next suggestion */}
