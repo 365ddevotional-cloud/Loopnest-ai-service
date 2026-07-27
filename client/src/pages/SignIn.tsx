@@ -585,8 +585,11 @@ export default function SignIn() {
               {resetSent ? (
                 <div className="text-center space-y-3 py-4">
                   <CheckCircle className="w-10 h-10 mx-auto text-green-600" />
-                  <p className="text-sm font-medium">Password reset email sent</p>
-                  <p className="text-xs text-muted-foreground">Check your inbox for instructions from Firebase / Google.</p>
+                  <p className="text-sm font-medium">Check your inbox</p>
+                  <p className="text-xs text-muted-foreground">
+                    If an account exists for this email, a password-reset link has been sent from 365 Daily Devotional.
+                    Please also check your Spam, Junk, Promotions, or Updates folder.
+                  </p>
                   <Button variant="outline" size="sm" onClick={() => setTab("signin")}>Back to Sign In</Button>
                 </div>
               ) : (

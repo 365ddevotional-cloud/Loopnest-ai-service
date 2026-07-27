@@ -229,58 +229,7 @@ export function Header() {
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center gap-1">
-          <button
-            onClick={() => navigateWithTransition("/how-to-use")}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-muted-foreground hover:bg-primary/5 hover:text-primary"
-            data-testid="button-how-to-use"
-          >
-            <HelpCircle className="w-4 h-4" />
-            {t("howToUse")}
-          </button>
-          {visibleNavItems.map((item) => {
-            const isActive = !item.external && location === item.href;
-            if (item.external) {
-              return (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-muted-foreground hover:bg-primary/5 hover:text-primary"
-                  data-testid={`link-${item.label.toLowerCase().replace(/\s+/g, '-')}-nav`}
-                >
-                  <item.icon className="w-4 h-4" />
-                  {item.label}
-                </a>
-              );
-            }
-            return (
-              <button
-                key={item.href}
-                onClick={() => navigateWithTransition(item.href)}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer",
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
-                    : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
-                )}
-                data-testid={`link-${item.label.toLowerCase().replace(/\s+/g, '-')}-nav`}
-              >
-                <item.icon className="w-4 h-4" />
-                {item.label}
-              </button>
-            );
-          })}
-          {isAdmin && (
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-              data-testid="button-logout"
-            >
-              <LogOut className="w-4 h-4" />
-              {t("logout")}
-            </button>
-          )}
+          {/* Sign In / authenticated account — always first */}
           {appUser && appEmailVerified ? (
             <>
               <button
@@ -333,6 +282,58 @@ export function Header() {
               Sign In
             </button>
           )}
+          <button
+            onClick={() => navigateWithTransition("/how-to-use")}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-muted-foreground hover:bg-primary/5 hover:text-primary"
+            data-testid="button-how-to-use"
+          >
+            <HelpCircle className="w-4 h-4" />
+            {t("howToUse")}
+          </button>
+          {visibleNavItems.map((item) => {
+            const isActive = !item.external && location === item.href;
+            if (item.external) {
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                  data-testid={`link-${item.label.toLowerCase().replace(/\s+/g, '-')}-nav`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </a>
+              );
+            }
+            return (
+              <button
+                key={item.href}
+                onClick={() => navigateWithTransition(item.href)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                    : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                )}
+                data-testid={`link-${item.label.toLowerCase().replace(/\s+/g, '-')}-nav`}
+              >
+                <item.icon className="w-4 h-4" />
+                {item.label}
+              </button>
+            );
+          })}
+          {isAdmin && (
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              data-testid="button-logout"
+            >
+              <LogOut className="w-4 h-4" />
+              {t("logout")}
+            </button>
+          )}
           <TranslationSelector />
           <LanguageSwitcher />
           <SettingsModal />
@@ -383,6 +384,42 @@ export function Header() {
             </SheetHeader>
             
             <nav className="flex flex-col gap-2 pb-6">
+              {/* Sign In / Account — first item */}
+              {appUser && appEmailVerified ? (
+                <div className="flex flex-col gap-1 border border-primary/10 rounded-xl overflow-hidden">
+                  <MobileNavItem
+                    onClick={() => navigateWithTransition("/my-library")}
+                    isActive={location === "/my-library"}
+                    icon={Library}
+                    label="My Library"
+                    data-testid="button-my-library-nav-mobile-top"
+                  />
+                  <MobileNavItem
+                    onClick={() => navigateWithTransition("/account")}
+                    isActive={location === "/account"}
+                    icon={UserCircle}
+                    label="My Account"
+                    data-testid="button-my-account-nav-mobile-top"
+                  />
+                  <button
+                    onClick={async () => { setMobileMenuOpen(false); await signUserOut(); setLocation("/signin"); }}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    data-testid="button-user-signout-nav-mobile-top"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <MobileNavItem
+                  onClick={() => navigateWithTransition("/signin")}
+                  isActive={location === "/signin"}
+                  icon={UserCircle}
+                  label="Sign In"
+                  data-testid="button-signin-nav-mobile-top"
+                />
+              )}
+
               {/* Daily Faith */}
               <MobileNavGroup
                 label="Daily Faith"
@@ -540,48 +577,38 @@ export function Header() {
                 />
               </MobileNavGroup>
 
-              {/* My Account */}
-              <MobileNavGroup
-                label="My Account"
-                isOpen={openGroup === "my-account"}
-                onToggle={() => toggleGroup("my-account")}
-                data-testid="group-my-account"
-              >
-                {appUser && appEmailVerified ? (
-                  <>
-                    <MobileNavItem
-                      onClick={() => navigateWithTransition("/my-library")}
-                      isActive={location === "/my-library"}
-                      icon={Library}
-                      label="My Library"
-                      data-testid="button-my-library-nav-mobile"
-                    />
-                    <MobileNavItem
-                      onClick={() => navigateWithTransition("/account")}
-                      isActive={location === "/account"}
-                      icon={UserCircle}
-                      label="My Account"
-                      data-testid="button-my-account-nav-mobile"
-                    />
-                    <button
-                      onClick={async () => { setMobileMenuOpen(false); await signUserOut(); setLocation("/signin"); }}
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                      data-testid="button-user-signout-nav-mobile"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Sign Out
-                    </button>
-                  </>
-                ) : (
+              {/* My Account — only shown when authenticated; Sign In is shown at the top when not */}
+              {appUser && appEmailVerified && (
+                <MobileNavGroup
+                  label="My Account"
+                  isOpen={openGroup === "my-account"}
+                  onToggle={() => toggleGroup("my-account")}
+                  data-testid="group-my-account"
+                >
                   <MobileNavItem
-                    onClick={() => navigateWithTransition("/signin")}
-                    isActive={location === "/signin"}
-                    icon={UserCircle}
-                    label="Sign In / My Library"
-                    data-testid="button-signin-nav-mobile"
+                    onClick={() => navigateWithTransition("/my-library")}
+                    isActive={location === "/my-library"}
+                    icon={Library}
+                    label="My Library"
+                    data-testid="button-my-library-nav-mobile"
                   />
-                )}
-              </MobileNavGroup>
+                  <MobileNavItem
+                    onClick={() => navigateWithTransition("/account")}
+                    isActive={location === "/account"}
+                    icon={UserCircle}
+                    label="My Account"
+                    data-testid="button-my-account-nav-mobile"
+                  />
+                  <button
+                    onClick={async () => { setMobileMenuOpen(false); await signUserOut(); setLocation("/signin"); }}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    data-testid="button-user-signout-nav-mobile"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </button>
+                </MobileNavGroup>
+              )}
 
               {/* Administration */}
               <MobileNavGroup

@@ -221,18 +221,23 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = useCallback(async (email: string) => {
     try {
-      await sendPasswordResetEmail(auth, email, {
-        url: "https://365dailydevotional.com",
-        handleCodeInApp: false,
-      });
+      // No actionCodeSettings/continueUrl — avoids auth/unauthorized-continue-uri
+      // on domains not listed in Firebase authorized domains
+      await sendPasswordResetEmail(auth, email);
       return { success: true };
     } catch (err: any) {
-      const code = err?.code ?? "";
-      const error =
-        code === "auth/user-not-found" || code === "auth/invalid-email"
-          ? "No account found with that email address."
-          : "Could not send reset email. Please try again.";
-      return { success: false, error };
+      const code = err?.code ?? "unknown";
+      console.error("[resetPassword] Firebase error:", code, err?.message);
+      // auth/user-not-found: treat as success to prevent account enumeration
+      if (code === "auth/user-not-found") {
+        return { success: true };
+      }
+      // auth/invalid-email or auth/invalid-credential: surface as input error
+      if (code === "auth/invalid-email" || code === "auth/invalid-credential") {
+        return { success: false, error: "Please enter a valid email address." };
+      }
+      // Anything else is a technical failure
+      return { success: false, error: `Could not send reset email (${code}). Please try again.` };
     }
   }, []);
 
