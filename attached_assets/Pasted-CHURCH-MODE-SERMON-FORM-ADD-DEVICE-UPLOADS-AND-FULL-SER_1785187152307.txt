@@ -1,0 +1,326 @@
+CHURCH MODE SERMON FORM — ADD DEVICE UPLOADS AND FULL SERMON BODY
+
+This is a targeted improvement to the existing Church Mode sermon creation form.
+
+Do NOT rebuild the sermon system.
+Do NOT modify Church governance, Family/Group Mode, payments, authentication, offline mode, reminders, music, or unrelated files.
+Preserve the current Church Mode design and existing sermon records.
+
+CURRENT PROBLEMS
+
+1. The “MP3 or podcast link” field only accepts pasted text, but on mobile the user may not be able to paste or may already have the audio file saved on the device.
+
+2. The “Link to sermon notes PDF” field only accepts a URL. Church admins should also be able to upload a PDF directly from their phone or computer.
+
+3. The form has title, speaker, scripture, links, image, and summary fields, but there is no clear field for the full sermon message/body.
+
+4. Some large dark fields appear blank or unclear because they do not have visible labels. Every field must have a clear label above it, not only placeholder text.
+
+REQUIRED CHANGES
+
+1. FULL SERMON BODY
+
+Add a clearly labeled required field:
+
+Label:
+“Sermon Message”
+
+Helper text:
+“Enter the complete sermon message, teaching, explanation, key points, and application.”
+
+Use a large multiline rich-text editor or textarea suitable for a full sermon.
+
+It must support:
+- multiple paragraphs;
+- headings;
+- numbered and bulleted points;
+- scripture quotations;
+- line breaks;
+- bold and italic text if the existing editor system supports it safely;
+- long sermon content without truncation.
+
+The sermon body must be saved in the database and displayed on the published sermon page.
+
+Do not use the “Brief summary or description” field as the sermon body. Keep both fields:
+- Sermon Message = full content;
+- Brief Summary = short overview.
+
+2. AUDIO: LINK OR DEVICE UPLOAD
+
+Replace the single “MP3 or podcast link” experience with a clearly labeled section:
+
+“Sermon Audio”
+
+Provide two options:
+
+A. Paste Audio Link
+- Accept valid MP3, M4A, WAV, AAC, podcast, or supported audio URLs.
+
+B. Upload Audio from Device
+- Allow the admin to choose an audio file from iPhone, Android, tablet, or computer.
+- Use the existing secure upload/storage system if one already exists.
+- Do not store the file directly inside the database.
+- Store only the resulting secure file URL and metadata in the sermon record.
+
+Accepted formats:
+- .mp3
+- .m4a
+- .aac
+- .wav
+- other browser-supported audio formats where safe
+
+Show:
+- selected filename;
+- file size;
+- upload progress;
+- success status;
+- remove/replace option;
+- clear error if unsupported or too large.
+
+Do not require both a link and an upload. Either one should be sufficient.
+
+If both are provided, clearly define which one is used, preferably the uploaded file unless the admin chooses otherwise.
+
+3. PDF SERMON NOTES: LINK OR DEVICE UPLOAD
+
+Replace the single “Link to sermon notes PDF” field with:
+
+“Sermon Notes PDF”
+
+Provide:
+
+A. Paste PDF Link
+
+B. Upload PDF from Device
+
+Requirements:
+- accept PDF only;
+- show filename and file size;
+- show upload progress;
+- allow remove or replace;
+- reject non-PDF files with a clear message;
+- save the secure uploaded-file URL to the sermon record;
+- make the published PDF downloadable or viewable by permitted church members.
+
+Do not automatically expose private storage URLs publicly if the existing app uses protected files.
+
+4. OUTLINE DOCUMENT
+
+For “Link to outline document,” also provide an optional file upload if supported safely.
+
+Allow:
+- PDF;
+- DOC;
+- DOCX;
+- TXT.
+
+Keep the URL option as well.
+
+5. SERMON IMAGE
+
+For “Image URL,” add:
+
+- Paste Image URL
+- Upload Image from Device
+
+Allow safe image formats:
+- JPG/JPEG
+- PNG
+- WEBP
+
+Show an image preview before saving.
+
+6. CLEAR FIELD LABELS
+
+Add visible labels above every field, including:
+
+- Sermon Title
+- Pastor / Speaker Name
+- Main Scripture
+- Sermon Message
+- Video Link
+- Sermon Audio
+- Sermon Notes PDF
+- Outline Document
+- Sermon Image
+- Brief Summary
+- Published Status
+
+Do not rely on placeholder text alone.
+
+Placeholders should remain examples only.
+
+7. FORM LAYOUT
+
+Organize the form into clear sections:
+
+SECTION 1 — Sermon Details
+- Sermon Title
+- Pastor / Speaker
+- Main Scripture
+- Sermon Message
+- Brief Summary
+
+SECTION 2 — Media
+- Video Link
+- Sermon Audio: link or upload
+- Sermon Image: link or upload
+
+SECTION 3 — Documents
+- Sermon Notes PDF: link or upload
+- Outline Document: link or upload
+
+SECTION 4 — Publishing
+- Published / Draft setting
+
+Use collapsible sections on mobile if helpful, but do not hide required information confusingly.
+
+8. MOBILE INPUT AND PASTE FIX
+
+Inspect why the existing URL inputs are difficult or impossible to paste into on mobile.
+
+Confirm:
+- inputs are not read-only;
+- no invisible overlay blocks touch;
+- pointer-events are enabled;
+- long-press paste works;
+- Safari and Chrome autofill do not cover the field;
+- the field receives focus normally;
+- no JavaScript handler prevents paste.
+
+Do not disable paste.
+
+Allow:
+- keyboard entry;
+- long-press Paste;
+- browser Autofill where appropriate;
+- clipboard paste.
+
+9. DATA AND BACKWARD COMPATIBILITY
+
+Preserve all existing sermons.
+
+Existing URL-based records must continue to work.
+
+Add new database fields only where required, such as:
+- sermonBody
+- audioUploadUrl
+- audioFileName
+- audioFileSize
+- notesPdfUploadUrl
+- notesPdfFileName
+- outlineUploadUrl
+- imageUploadUrl
+
+Reuse existing equivalent fields instead of creating unnecessary duplicates.
+
+10. SECURITY
+
+- Only authorized church owners, pastors, or permitted leaders may upload or edit sermons.
+- Validate file type on both client and server.
+- Enforce reasonable file-size limits.
+- Sanitize rich-text sermon content.
+- Do not allow executable files.
+- Do not expose private account data.
+- Use unique storage paths per church and sermon.
+- Prevent one church from accessing another church’s uploaded files.
+
+11. PUBLISHED SERMON PAGE
+
+Confirm the public/member sermon view shows:
+
+- title;
+- speaker;
+- scripture;
+- full sermon message;
+- summary;
+- image;
+- embedded or playable audio where available;
+- video link or embed where available;
+- sermon notes PDF button;
+- outline document button;
+- publication date;
+- church name.
+
+If no media or document was added, hide the empty button or section.
+
+12. VALIDATION
+
+Required:
+- Sermon Title
+- Main Scripture
+- Sermon Message
+
+Optional:
+- Speaker
+- Summary
+- Video
+- Audio
+- PDF
+- Outline
+- Image
+
+Show friendly inline error messages.
+
+Do not silently fail.
+
+13. TESTING
+
+Test on desktop and mobile-sized views.
+
+Test these exact scenarios:
+
+A. Create a text-only sermon with:
+- title;
+- scripture;
+- full sermon message;
+- summary.
+
+B. Upload an MP3 from the test device and confirm:
+- upload succeeds;
+- progress is shown;
+- filename is saved;
+- audio plays on the published sermon.
+
+C. Paste a valid audio URL and confirm it remains supported.
+
+D. Upload a PDF and confirm:
+- it is saved;
+- the button appears;
+- it opens or downloads.
+
+E. Upload an image and confirm preview and published display.
+
+F. Long-press and paste into the audio URL and PDF URL fields on a mobile-sized browser.
+
+G. Save as Draft and confirm members cannot see it.
+
+H. Publish and confirm members can see it.
+
+I. Edit an existing sermon and confirm all old data remains intact.
+
+J. Remove an uploaded file and confirm only that file reference is removed.
+
+K. Confirm one church cannot access another church’s uploaded sermon files.
+
+L. Confirm no browser console or server errors.
+
+FINAL REPORT
+
+Report:
+
+1. Root cause of the mobile paste problem.
+2. Exact sermon-body field added.
+3. Storage/upload technology used.
+4. Audio formats and size limit.
+5. PDF/document formats and size limits.
+6. Exact database fields added or reused.
+7. Files changed.
+8. Desktop test result.
+9. Mobile test result.
+10. Confirmation that existing sermons still work.
+11. Confirmation that unrelated features were not changed.
+12. Any manual physical-device test still required.
+
+Do not merely describe the changes.
+Implement them, test them, and create a checkpoint only after successful verification.
