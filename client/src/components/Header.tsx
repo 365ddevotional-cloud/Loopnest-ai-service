@@ -4,7 +4,7 @@ import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHe
 import { GameConsoleIcon } from "@/interactive/GameConsoleIcon";
 import { SiYoutube } from "react-icons/si";
 import { cn } from "@/lib/utils";
-import logoImage from "@assets/IMG_202512182225101_-_Copy_1767468127874.PNG";
+import logoImage from "@assets/IMG_0618_1785225816241.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { useNotifications } from "@/hooks/use-notifications";
