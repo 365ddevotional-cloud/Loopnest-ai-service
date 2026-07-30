@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Music2, Play, ExternalLink, Loader2, Clock, RotateCcw, Sparkles } from "lucide-react";
-import type { Song } from "@shared/schema";
+import type { Song, SongCollection } from "@shared/schema";
 import { useMusicPlayer, type RecentlyPlayedEntry } from "@/contexts/MusicPlayerContext";
 
 function SongCard({ song, isFeatured }: { song: Song; isFeatured?: boolean }) {
@@ -132,6 +132,10 @@ export default function Music() {
     queryKey: ["/api/songs/library"],
   });
 
+  const { data: collections = [] } = useQuery<(SongCollection & { songs?: Song[] })[]>({
+    queryKey: ["/api/songs/collections"],
+  });
+
   const { continueListening, recentlyPlayed, recommendations } = useMusicPlayer();
 
   const today = new Date().toISOString().split("T")[0];
@@ -221,6 +225,35 @@ export default function Music() {
               <RecentCard key={entry.songId} entry={entry} />
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Collections */}
+      {collections.filter(c => c.isPublished).length > 0 && (
+        <div className="space-y-3" data-testid="section-collections">
+          <h2 className="font-serif text-lg font-semibold text-foreground flex items-center gap-2">
+            <span className="text-amber-500">♫</span>
+            Collections
+          </h2>
+          {collections.filter(c => c.isPublished).map(col => (
+            <div key={col.id} className="rounded-xl border border-border/50 bg-card overflow-hidden">
+              <div className="flex items-center gap-3 p-3 border-b border-border/30">
+                {col.coverImageUrl && (
+                  <img src={col.coverImageUrl} alt={col.title} className="w-10 h-10 rounded object-cover flex-shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm text-foreground">{col.title}</p>
+                  {col.description && <p className="text-xs text-muted-foreground truncate">{col.description}</p>}
+                </div>
+                {col.releaseDate && <span className="text-xs text-muted-foreground flex-shrink-0">{col.releaseDate}</span>}
+              </div>
+              {col.songs && col.songs.length > 0 && (
+                <div className="p-2 space-y-1">
+                  {col.songs.map(song => <SongCard key={song.id} song={song} />)}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

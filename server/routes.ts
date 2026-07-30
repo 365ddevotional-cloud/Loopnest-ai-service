@@ -1883,6 +1883,141 @@ export async function registerRoutes(
     }
   });
 
+  // ── Song Collections ──────────────────────────────────────────────────────
+
+  // Public: get all published collections with their active songs
+  app.get("/api/songs/collections", async (_req, res) => {
+    try {
+      const collections = await storage.getPublicSongCollections();
+      res.json(collections);
+    } catch (err) {
+      console.error("Error fetching song collections:", err);
+      res.status(500).json({ message: "Could not fetch collections" });
+    }
+  });
+
+  // Admin: list all collections
+  app.get("/api/song-collections", requireAdmin, async (_req, res) => {
+    try {
+      res.json(await storage.getSongCollections());
+    } catch (err) {
+      res.status(500).json({ message: "Could not fetch collections" });
+    }
+  });
+
+  // Admin: create collection
+  app.post("/api/song-collections", requireAdmin, async (req, res) => {
+    try {
+      const { title, description, coverImageUrl, releaseDate, isPublished, displayOrder } = req.body;
+      if (!title?.trim()) return res.status(400).json({ message: "title is required" });
+      const col = await storage.createSongCollection({
+        title: title.trim(), description: description || null,
+        coverImageUrl: coverImageUrl || null, releaseDate: releaseDate || null,
+        isPublished: isPublished !== false, displayOrder: Number(displayOrder) || 0,
+      });
+      res.json(col);
+    } catch (err) {
+      res.status(500).json({ message: "Could not create collection" });
+    }
+  });
+
+  // Admin: update collection
+  app.patch("/api/song-collections/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      res.json(await storage.updateSongCollection(id, req.body));
+    } catch (err) {
+      res.status(500).json({ message: "Could not update collection" });
+    }
+  });
+
+  // Admin: delete collection
+  app.delete("/api/song-collections/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      await storage.deleteSongCollection(id);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ message: "Could not delete collection" });
+    }
+  });
+
+  // Admin: get song IDs in a collection
+  app.get("/api/song-collections/:id/songs", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      res.json(await storage.getCollectionSongIds(id));
+    } catch (err) {
+      res.status(500).json({ message: "Could not fetch collection songs" });
+    }
+  });
+
+  // Admin: add song to collection
+  app.post("/api/song-collections/:id/songs", requireAdmin, async (req, res) => {
+    const collectionId = Number(req.params.id);
+    const { songId, displayOrder } = req.body;
+    if (isNaN(collectionId) || !songId) return res.status(400).json({ message: "songId is required" });
+    try {
+      await storage.addSongToCollection(collectionId, Number(songId), Number(displayOrder) || 0);
+      res.json({ success: true });
+    } catch (err: any) {
+      if (err?.code === "23505") return res.json({ success: true }); // already in collection
+      res.status(500).json({ message: "Could not add song" });
+    }
+  });
+
+  // Admin: remove song from collection
+  app.delete("/api/song-collections/:id/songs/:songId", requireAdmin, async (req, res) => {
+    const collectionId = Number(req.params.id);
+    const songId = Number(req.params.songId);
+    if (isNaN(collectionId) || isNaN(songId)) return res.status(400).json({ message: "Invalid IDs" });
+    try {
+      await storage.removeSongFromCollection(collectionId, songId);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ message: "Could not remove song" });
+    }
+  });
+
+  // ── Song Analytics ─────────────────────────────────────────────────────────
+
+  // Public: record engagement event (play, share, audio_download, video_download)
+  app.post("/api/songs/:id/events", async (req, res) => {
+    const songId = Number(req.params.id);
+    if (isNaN(songId)) return res.status(400).json({ message: "Invalid ID" });
+    const { eventType, sessionId } = req.body;
+    const validTypes = ["play", "share", "audio_download", "video_download"];
+    if (!eventType || !validTypes.includes(eventType)) {
+      return res.status(400).json({ message: "Invalid eventType" });
+    }
+    try {
+      if (eventType === "play" && sessionId) {
+        const alreadyCounted = await storage.checkRecentPlay(songId, String(sessionId), 30);
+        if (alreadyCounted) return res.json({ recorded: false, reason: "already counted" });
+      }
+      const userId = (req as any).firebaseUid ?? undefined;
+      await storage.recordSongEvent(songId, eventType, userId, sessionId ?? undefined);
+      res.json({ recorded: true });
+    } catch (err) {
+      console.error("Error recording song event:", err);
+      res.status(500).json({ message: "Could not record event" });
+    }
+  });
+
+  // Admin: get song stats
+  app.get("/api/songs/:id/stats", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      res.json(await storage.getSongStats(id));
+    } catch (err) {
+      res.status(500).json({ message: "Could not fetch stats" });
+    }
+  });
+
   // ── End Songs ─────────────────────────────────────────────────────────────
 
   // Quick Prayer ("Pray With Someone Now")

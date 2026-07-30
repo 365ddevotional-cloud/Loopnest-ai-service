@@ -16,7 +16,7 @@ import { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { format, parseISO } from "date-fns";
 import { useLocation } from "wouter";
-import type { PrayerRequest, ThreadMessage, PrayerAttachment, Devotional, SundaySchoolLesson, InboxThread, InboxMessage, Song, SongTestimony, GivingMethod, DonationConfirmation } from "@shared/schema";
+import type { PrayerRequest, ThreadMessage, PrayerAttachment, Devotional, SundaySchoolLesson, InboxThread, InboxMessage, Song, SongTestimony, GivingMethod, DonationConfirmation, SongCollection } from "@shared/schema";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getDevotionalStatus } from "@/lib/date-utils";
@@ -2978,11 +2978,14 @@ export default function Admin() {
 
 interface BatchSong {
   id: string;
-  file: File;
+  file: File | null; // null for manually-added blank songs
   title: string;
   slug: string;
   artist: string;
   featuredArtist: string;
+  choir: string;
+  instrumentalist: string;
+  genre: string;
   labelName: string;
   producer: string;
   composer: string;
@@ -2992,6 +2995,11 @@ interface BatchSong {
   scriptureText: string;
   lyrics: string;
   shortDescription: string;
+  description: string;
+  featuredWeekStart: string;
+  featuredWeekEnd: string;
+  copyrightNotice: string;
+  releaseYear: number;
   coverFile: File | null;
   coverPreview: string | null;
   videoFile: File | null;
@@ -3000,10 +3008,17 @@ interface BatchSong {
   videoError: string | null;
   downloadEnabled: boolean;
   isActive: boolean;
-  releaseYear: number;
   status: "waiting" | "uploading" | "completed" | "failed";
   error: string | null;
   expanded: boolean;
+}
+
+function getBatchMissingFields(song: BatchSong): string[] {
+  const missing: string[] = [];
+  if (!song.title.trim()) missing.push("title");
+  if (!song.scriptureReference.trim()) missing.push("scripture ref");
+  if (!song.file) missing.push("audio file");
+  return missing;
 }
 
 async function doFileUpload(file: File): Promise<string> {
@@ -3019,6 +3034,56 @@ async function doFileUpload(file: File): Promise<string> {
   return objectPath;
 }
 
+function SongAssignPanel({ collectionId, allSongs, onAdd, onRemove }: {
+  collectionId: number;
+  allSongs: Song[];
+  onAdd: (songId: number) => void;
+  onRemove: (songId: number) => void;
+}) {
+  const { data: assignedIds = [] } = useQuery<number[]>({
+    queryKey: [`/api/song-collections/${collectionId}/songs`],
+  });
+  const [search, setSearch] = useState("");
+  const filtered = allSongs.filter(s =>
+    !search || s.title.toLowerCase().includes(search.toLowerCase()) || (s.artist ?? "").toLowerCase().includes(search.toLowerCase())
+  );
+  return (
+    <div className="border-t border-border/30 p-3 space-y-2 bg-muted/10">
+      <div className="flex items-center gap-2">
+        <Input
+          className="h-7 text-xs"
+          placeholder="Search songs to assign..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <span className="text-xs text-muted-foreground whitespace-nowrap">{assignedIds.length} in collection</span>
+      </div>
+      <div className="max-h-48 overflow-y-auto space-y-0.5">
+        {filtered.map(song => {
+          const isAssigned = assignedIds.includes(song.id);
+          return (
+            <div key={song.id} className="flex items-center gap-2 py-1 px-2 rounded hover:bg-muted/30">
+              <input
+                type="checkbox"
+                id={`assign-${collectionId}-${song.id}`}
+                checked={isAssigned}
+                onChange={(e) => { if (e.target.checked) onAdd(song.id); else onRemove(song.id); }}
+                className="w-3.5 h-3.5 cursor-pointer"
+              />
+              <label htmlFor={`assign-${collectionId}-${song.id}`} className="flex-1 text-xs cursor-pointer truncate">
+                {song.title}
+                {song.artist && <span className="text-muted-foreground ml-1">— {song.artist}</span>}
+              </label>
+              {isAssigned && <span className="text-[10px] text-primary font-bold">✓</span>}
+            </div>
+          );
+        })}
+        {filtered.length === 0 && <p className="text-xs text-muted-foreground py-2 text-center">No songs match "{search}"</p>}
+      </div>
+    </div>
+  );
+}
+
 function SongsAdmin() {
   const { toast } = useToast();
   const [editingSong, setEditingSong] = useState<Song | null>(null);
@@ -3027,6 +3092,10 @@ function SongsAdmin() {
   const [batchMode, setBatchMode] = useState(false);
   const [batchSongs, setBatchSongs] = useState<BatchSong[]>([]);
   const [batchUploading, setBatchUploading] = useState(false);
+  const [editingCollection, setEditingCollection] = useState<Partial<SongCollection> | null>(null);
+  const [showCollectionForm, setShowCollectionForm] = useState(false);
+  const [assigningSongsTo, setAssigningSongsTo] = useState<number | null>(null);
+  const [viewStatsFor, setViewStatsFor] = useState<number | null>(null);
 
   const { data: songs = [], isLoading, refetch } = useQuery<Song[]>({
     queryKey: ["/api/songs"],
@@ -3094,6 +3163,64 @@ function SongsAdmin() {
       toast({ title: "Song deleted" });
     },
     onError: () => toast({ title: "Error", description: "Could not delete song.", variant: "destructive" }),
+  });
+
+  // Song Collections queries + mutations
+  const { data: collections = [] } = useQuery<SongCollection[]>({
+    queryKey: ["/api/song-collections"],
+  });
+
+  const createCollectionMutation = useMutation({
+    mutationFn: (data: Partial<SongCollection>) => apiRequest("POST", "/api/song-collections", data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/song-collections"] }); setShowCollectionForm(false); setEditingCollection(null); toast({ title: "Collection created" }); },
+    onError: () => toast({ title: "Error", description: "Could not create collection.", variant: "destructive" }),
+  });
+
+  const updateCollectionMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<SongCollection> }) => apiRequest("PATCH", `/api/song-collections/${id}`, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/song-collections"] }); setShowCollectionForm(false); setEditingCollection(null); toast({ title: "Collection updated" }); },
+    onError: () => toast({ title: "Error", description: "Could not update collection.", variant: "destructive" }),
+  });
+
+  const deleteCollectionMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/song-collections/${id}`),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/song-collections"] }); toast({ title: "Collection deleted" }); },
+    onError: () => toast({ title: "Error", variant: "destructive" }),
+  });
+
+  const addToCollectionMutation = useMutation({
+    mutationFn: ({ collectionId, songId }: { collectionId: number; songId: number }) =>
+      apiRequest("POST", `/api/song-collections/${collectionId}/songs`, { songId }),
+    onSuccess: (_, vars) => { queryClient.invalidateQueries({ queryKey: [`/api/song-collections/${vars.collectionId}/songs`] }); toast({ title: "Song added to collection" }); },
+    onError: () => toast({ title: "Error", variant: "destructive" }),
+  });
+
+  const removeFromCollectionMutation = useMutation({
+    mutationFn: ({ collectionId, songId }: { collectionId: number; songId: number }) =>
+      apiRequest("DELETE", `/api/song-collections/${collectionId}/songs/${songId}`),
+    onSuccess: (_, vars) => { queryClient.invalidateQueries({ queryKey: [`/api/song-collections/${vars.collectionId}/songs`] }); toast({ title: "Song removed" }); },
+    onError: () => toast({ title: "Error", variant: "destructive" }),
+  });
+
+  const handleSaveCollection = () => {
+    if (!editingCollection?.title?.trim()) { toast({ title: "Title is required", variant: "destructive" }); return; }
+    const payload = {
+      title: editingCollection.title.trim(),
+      description: editingCollection.description || null,
+      coverImageUrl: editingCollection.coverImageUrl || null,
+      releaseDate: editingCollection.releaseDate || null,
+      isPublished: editingCollection.isPublished !== false,
+      displayOrder: Number(editingCollection.displayOrder) || 0,
+    };
+    const id = (editingCollection as SongCollection).id;
+    if (id) { updateCollectionMutation.mutate({ id, data: payload }); }
+    else { createCollectionMutation.mutate(payload); }
+  };
+
+  // Song stats query (fetched on demand when viewStatsFor is set)
+  const { data: viewedSongStats } = useQuery<{ plays: number; shares: number; audioDownloads: number; videoDownloads: number; playsLast7: number; playsLast30: number }>({
+    queryKey: [`/api/songs/${viewStatsFor}/stats`],
+    enabled: viewStatsFor !== null,
   });
 
   const audioUpload = useUpload();
@@ -3303,89 +3430,118 @@ function SongsAdmin() {
       return {
         id: `batch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         file, title, slug,
-        artist: "", featuredArtist: "",
+        artist: "", featuredArtist: "", choir: "", instrumentalist: "", genre: "",
         labelName: "SpiritTone Records",
         producer: "Moses Afolabi",
         composer: "", lyricist: "",
         language: "English",
         scriptureReference: "", scriptureText: "",
-        lyrics: "", shortDescription: "",
+        lyrics: "", shortDescription: "", description: "",
+        featuredWeekStart: "", featuredWeekEnd: "",
+        copyrightNotice: `© ${new Date().getFullYear()} SpiritTone Records. All rights reserved.`,
+        releaseYear: new Date().getFullYear(),
         coverFile: null, coverPreview: null,
         videoFile: null, videoUploadStatus: "none" as const, videoDownloadEnabled: false, videoError: null,
         downloadEnabled: true, isActive: true,
-        releaseYear: new Date().getFullYear(),
         status: "waiting", error: null, expanded: true,
       };
     });
     setBatchSongs(prev => [...prev, ...newSongs]);
   };
 
+  const addBlankSong = () => {
+    setBatchSongs(prev => [...prev, {
+      id: `batch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      file: null, title: "", slug: "",
+      artist: "", featuredArtist: "", choir: "", instrumentalist: "", genre: "",
+      labelName: "SpiritTone Records", producer: "Moses Afolabi",
+      composer: "", lyricist: "", language: "English",
+      scriptureReference: "", scriptureText: "",
+      lyrics: "", shortDescription: "", description: "",
+      featuredWeekStart: "", featuredWeekEnd: "",
+      copyrightNotice: `© ${new Date().getFullYear()} SpiritTone Records. All rights reserved.`,
+      releaseYear: new Date().getFullYear(),
+      coverFile: null, coverPreview: null,
+      videoFile: null, videoUploadStatus: "none" as const, videoDownloadEnabled: false, videoError: null,
+      downloadEnabled: true, isActive: true,
+      status: "waiting", error: null, expanded: true,
+    }]);
+  };
+
+  const processOneBatchSong = async (bsong: BatchSong, asDraft: boolean) => {
+    if (!bsong.title.trim()) {
+      setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, status: "failed", error: "Title is required." } : s));
+      return;
+    }
+    if (!asDraft && !bsong.file) {
+      setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, status: "failed", error: "Audio file required to publish. Use 'Draft' to save without audio." } : s));
+      return;
+    }
+    setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, status: "uploading" } : s));
+    try {
+      let audioPath: string | null = null;
+      if (bsong.file) audioPath = await doFileUpload(bsong.file);
+      let coverPath: string | null = null;
+      if (bsong.coverFile) coverPath = await doFileUpload(bsong.coverFile);
+      let videoPath: string | null = null;
+      if (bsong.videoFile) {
+        setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, videoUploadStatus: "uploading" } : s));
+        try {
+          videoPath = await doFileUpload(bsong.videoFile!);
+          setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, videoUploadStatus: "completed" } : s));
+        } catch (videoErr) {
+          const vmsg = videoErr instanceof Error ? videoErr.message : "Video upload failed";
+          setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, videoUploadStatus: "failed", videoError: vmsg } : s));
+        }
+      }
+      const songSlug = bsong.slug || bsong.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      await apiRequest("POST", "/api/songs", {
+        title: bsong.title, slug: songSlug,
+        artist: bsong.artist || null, featuredArtist: bsong.featuredArtist || null,
+        choir: bsong.choir || null, instrumentalist: bsong.instrumentalist || null, genre: bsong.genre || null,
+        labelName: bsong.labelName || "SpiritTone Records", producer: bsong.producer || "Moses Afolabi",
+        composer: bsong.composer || null, lyricist: bsong.lyricist || null,
+        language: bsong.language || "English",
+        scriptureReference: bsong.scriptureReference, scriptureText: bsong.scriptureText || null,
+        lyrics: bsong.lyrics || null, shortDescription: bsong.shortDescription || null,
+        description: bsong.description || null,
+        featuredWeekStart: bsong.featuredWeekStart || null, featuredWeekEnd: bsong.featuredWeekEnd || null,
+        copyrightNotice: bsong.copyrightNotice || null,
+        audioUrl: audioPath, coverImageUrl: coverPath,
+        downloadStatus: bsong.downloadEnabled ? "free" : "disabled",
+        videoUrl: videoPath, videoDownloadStatus: bsong.videoDownloadEnabled && videoPath ? "free" : "disabled",
+        isActive: asDraft ? false : bsong.isActive,
+        releaseYear: bsong.releaseYear || null,
+      });
+      setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, status: "completed", expanded: false } : s));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, status: "failed", error: msg } : s));
+    }
+  };
+
   const handleUploadAll = async (asDraft = false) => {
     const queue = batchSongs.filter(s => s.status === "waiting" || s.status === "failed");
     if (queue.length === 0) return;
     setBatchUploading(true);
-
-    const processOne = async (bsong: BatchSong) => {
-      if (!bsong.title || !bsong.scriptureReference) {
-        setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, status: "failed", error: "Title and scripture reference are required." } : s));
-        return;
-      }
-      setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, status: "uploading" } : s));
-      try {
-        const audioPath = await doFileUpload(bsong.file);
-        let coverPath: string | null = null;
-        if (bsong.coverFile) coverPath = await doFileUpload(bsong.coverFile);
-
-        let videoPath: string | null = null;
-        if (bsong.videoFile) {
-          setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, videoUploadStatus: "uploading" } : s));
-          try {
-            videoPath = await doFileUpload(bsong.videoFile);
-            setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, videoUploadStatus: "completed" } : s));
-          } catch (videoErr) {
-            const vmsg = videoErr instanceof Error ? videoErr.message : "Video upload failed";
-            setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, videoUploadStatus: "failed", videoError: vmsg } : s));
-          }
-        }
-
-        const songSlug = bsong.slug || bsong.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-        await apiRequest("POST", "/api/songs", {
-          title: bsong.title, slug: songSlug,
-          artist: bsong.artist || null,
-          featuredArtist: bsong.featuredArtist || null,
-          labelName: bsong.labelName || "SpiritTone Records",
-          producer: bsong.producer || "Moses Afolabi",
-          composer: bsong.composer || null,
-          lyricist: bsong.lyricist || null,
-          language: bsong.language || "English",
-          scriptureReference: bsong.scriptureReference,
-          scriptureText: bsong.scriptureText || null,
-          lyrics: bsong.lyrics || null,
-          shortDescription: bsong.shortDescription || null,
-          audioUrl: audioPath,
-          coverImageUrl: coverPath,
-          downloadStatus: bsong.downloadEnabled ? "free" : "disabled",
-          videoUrl: videoPath,
-          videoDownloadStatus: bsong.videoDownloadEnabled && videoPath ? "free" : "disabled",
-          isActive: asDraft ? false : bsong.isActive,
-          releaseYear: bsong.releaseYear || null,
-        });
-        setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, status: "completed", expanded: false } : s));
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Upload failed";
-        setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, status: "failed", error: msg } : s));
-      }
-    };
-
     for (let i = 0; i < queue.length; i += 2) {
-      const chunk = queue.slice(i, i + 2);
-      await Promise.all(chunk.map(processOne));
+      await Promise.all(queue.slice(i, i + 2).map(s => processOneBatchSong(s, asDraft)));
     }
-
     setBatchUploading(false);
     queryClient.invalidateQueries({ queryKey: ["/api/songs"] });
     queryClient.invalidateQueries({ queryKey: ["/api/songs/featured"] });
     queryClient.invalidateQueries({ queryKey: ["/api/songs/library"] });
+  };
+
+  const handleUploadOneSong = async (bsongId: string, asDraft: boolean) => {
+    const bsong = batchSongs.find(s => s.id === bsongId);
+    if (!bsong) return;
+    await processOneBatchSong(bsong, asDraft);
+    if (batchSongs.find(s => s.id === bsongId)?.status === "completed") {
+      queryClient.invalidateQueries({ queryKey: ["/api/songs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/songs/library"] });
+      toast({ title: asDraft ? "Saved as draft" : "Song uploaded" });
+    }
   };
 
   return (
@@ -3405,6 +3561,23 @@ function SongsAdmin() {
                   Add Audio Files
                   <input type="file" multiple className="hidden" accept=".mp3,.m4a,.wav,.aac,.ogg" disabled={batchUploading} onChange={handleBatchFilesSelected} data-testid="input-batch-audio-files" />
                 </label>
+                <Button size="sm" variant="outline" disabled={batchUploading} onClick={addBlankSong} data-testid="button-add-blank-song">
+                  <Plus className="w-3.5 h-3.5 mr-1" />
+                  Add Blank Song
+                </Button>
+                {batchSongs.length > 0 && !batchUploading && (
+                  <>
+                    <Button size="sm" variant="ghost" className="text-xs" onClick={() => setBatchSongs(prev => prev.map(s => ({ ...s, expanded: true })))} data-testid="button-expand-all">
+                      Expand All
+                    </Button>
+                    <Button size="sm" variant="ghost" className="text-xs" onClick={() => setBatchSongs(prev => prev.map(s => ({ ...s, expanded: false })))} data-testid="button-collapse-all">
+                      Collapse All
+                    </Button>
+                    <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" onClick={() => setBatchSongs(prev => prev.filter(s => s.status !== "completed"))} data-testid="button-clear-completed" disabled={!batchSongs.some(s => s.status === "completed")}>
+                      Clear Completed
+                    </Button>
+                  </>
+                )}
                 <Button size="sm" variant="outline" disabled={batchUploading || batchSongs.filter(s => s.status === "waiting" || s.status === "failed").length === 0} onClick={() => handleUploadAll(true)} data-testid="button-save-all-drafts">
                   Save All as Drafts
                 </Button>
@@ -3431,7 +3604,7 @@ function SongsAdmin() {
             {batchSongs.length === 0 ? (
               <div className="text-center py-10 text-muted-foreground space-y-2">
                 <Music2 className="w-10 h-10 mx-auto opacity-40" />
-                <p className="text-sm">No songs added yet. Tap "Add Audio Files" to select multiple songs at once.</p>
+                <p className="text-sm">No songs added yet. Use "Add Audio Files" or "Add Blank Song" to get started.</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -3439,10 +3612,15 @@ function SongsAdmin() {
                   <div key={song.id} className={`rounded-lg border p-3 transition-colors ${song.status === "completed" ? "border-green-400/50 bg-green-50/20 dark:bg-green-950/20" : song.status === "failed" ? "border-red-400/50 bg-red-50/20 dark:bg-red-950/20" : song.status === "uploading" ? "border-blue-400/50 bg-blue-50/20 dark:bg-blue-950/20" : "border-border/50 bg-card"}`} data-testid={`card-batch-song-${idx}`}>
                     <div className="flex items-center gap-2">
                       <div className={`w-2 h-2 rounded-full flex-shrink-0 ${song.status === "completed" ? "bg-green-500" : song.status === "failed" ? "bg-red-500" : song.status === "uploading" ? "bg-blue-500 animate-pulse" : "bg-muted-foreground/30"}`} />
-                      <span className="text-xs font-semibold flex-1 truncate">{song.title || song.file.name}</span>
+                      <span className="text-xs font-semibold flex-1 truncate">{song.title || song.file?.name || "Untitled Song"}</span>
                       <Badge variant="outline" className={`text-xs flex-shrink-0 ${song.status === "completed" ? "border-green-400 text-green-700" : song.status === "failed" ? "border-red-400 text-red-700" : song.status === "uploading" ? "border-blue-400 text-blue-700" : ""}`}>
                         {song.status === "waiting" ? "Waiting" : song.status === "uploading" ? "Uploading…" : song.status === "completed" ? "Completed ✓" : "Failed"}
                       </Badge>
+                      {song.status === "waiting" && getBatchMissingFields(song).length > 0 && (
+                        <span className="text-[10px] text-amber-600 dark:text-amber-400 hidden sm:block flex-shrink-0 truncate max-w-[130px]">
+                          ⚠ {getBatchMissingFields(song).join(", ")}
+                        </span>
+                      )}
                       {song.videoFile && (
                         <Badge variant="outline" className={`text-xs flex-shrink-0 ${song.videoUploadStatus === "completed" ? "border-green-400 text-green-700" : song.videoUploadStatus === "failed" ? "border-red-400 text-red-700" : song.videoUploadStatus === "uploading" ? "border-blue-400 text-blue-700" : "border-blue-300/60 text-blue-600"}`}>
                           <Video className="w-2.5 h-2.5 mr-0.5" />
@@ -3451,7 +3629,17 @@ function SongsAdmin() {
                       )}
                       {!batchUploading && song.status !== "uploading" && (
                         <div className="flex items-center gap-1 flex-shrink-0">
-                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" title={song.expanded ? "Collapse" : "Edit"} onClick={() => updateBatchSong(song.id, { expanded: !song.expanded })}>
+                          {song.status !== "completed" && (
+                            <>
+                              <Button size="sm" variant="outline" className="h-6 px-1.5 text-[10px]" onClick={() => handleUploadOneSong(song.id, false)} data-testid={`button-upload-one-${idx}`}>
+                                <Upload className="w-2.5 h-2.5 mr-0.5" />Upload
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-muted-foreground" onClick={() => handleUploadOneSong(song.id, true)} data-testid={`button-draft-one-${idx}`}>
+                                Draft
+                              </Button>
+                            </>
+                          )}
+                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" title={song.expanded ? "Collapse" : "Expand"} onClick={() => updateBatchSong(song.id, { expanded: !song.expanded })}>
                             <Edit className="w-3 h-3" />
                           </Button>
                           {song.status !== "completed" && (
@@ -3470,6 +3658,22 @@ function SongsAdmin() {
                     )}
                     {song.expanded && song.status !== "completed" && (
                       <div className="mt-3 space-y-2 border-t border-border/30 pt-3">
+                        {/* Audio file picker for blank songs */}
+                        {!song.file && (
+                          <div className="space-y-0.5">
+                            <Label className="text-xs text-amber-600 dark:text-amber-400">Audio File <span className="text-muted-foreground font-normal">(attach before publishing)</span></Label>
+                            <label className="inline-flex items-center gap-1.5 text-xs border border-amber-400/50 bg-amber-50/20 rounded px-2 py-1.5 cursor-pointer hover:bg-amber-50/40 transition-colors">
+                              <Music className="w-3 h-3 text-amber-600" />
+                              Attach Audio File
+                              <input type="file" className="hidden" accept=".mp3,.m4a,.wav,.aac,.ogg" onChange={(e) => {
+                                const f = e.target.files?.[0]; e.target.value = "";
+                                if (!f) return;
+                                if (f.size > 80 * 1024 * 1024) { toast({ title: "File too large", description: "Audio must be under 80MB.", variant: "destructive" }); return; }
+                                updateBatchSong(song.id, { file: f });
+                              }} />
+                            </label>
+                          </div>
+                        )}
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-0.5">
                             <Label className="text-xs">Title *</Label>
@@ -3527,6 +3731,48 @@ function SongsAdmin() {
                         <div className="space-y-0.5">
                           <Label className="text-xs">Short Description</Label>
                           <Input className="h-7 text-xs" value={song.shortDescription} onChange={(e) => updateBatchSong(song.id, { shortDescription: e.target.value })} placeholder="Brief summary" />
+                        </div>
+                        {/* Additional details */}
+                        <div className="pt-2 border-t border-border/20 space-y-2">
+                          <p className="text-[10px] uppercase font-semibold text-muted-foreground/60 tracking-wider">Additional Details</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-0.5">
+                              <Label className="text-xs">Featured Artist</Label>
+                              <Input className="h-7 text-xs" value={song.featuredArtist} onChange={(e) => updateBatchSong(song.id, { featuredArtist: e.target.value })} placeholder="Optional" />
+                            </div>
+                            <div className="space-y-0.5">
+                              <Label className="text-xs">Genre</Label>
+                              <Input className="h-7 text-xs" value={song.genre} onChange={(e) => updateBatchSong(song.id, { genre: e.target.value })} placeholder="e.g. Worship" />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-0.5">
+                              <Label className="text-xs">Choir / Group</Label>
+                              <Input className="h-7 text-xs" value={song.choir} onChange={(e) => updateBatchSong(song.id, { choir: e.target.value })} placeholder="Optional" />
+                            </div>
+                            <div className="space-y-0.5">
+                              <Label className="text-xs">Instrumentalist</Label>
+                              <Input className="h-7 text-xs" value={song.instrumentalist} onChange={(e) => updateBatchSong(song.id, { instrumentalist: e.target.value })} placeholder="Optional" />
+                            </div>
+                          </div>
+                          <div className="space-y-0.5">
+                            <Label className="text-xs">Full Description</Label>
+                            <Textarea className="text-xs" value={song.description} onChange={(e) => updateBatchSong(song.id, { description: e.target.value })} placeholder="Full description for the song detail page..." rows={2} />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-0.5">
+                              <Label className="text-xs">Featured Week Start</Label>
+                              <Input className="h-7 text-xs" type="date" value={song.featuredWeekStart} onChange={(e) => updateBatchSong(song.id, { featuredWeekStart: e.target.value })} />
+                            </div>
+                            <div className="space-y-0.5">
+                              <Label className="text-xs">Featured Week End</Label>
+                              <Input className="h-7 text-xs" type="date" value={song.featuredWeekEnd} onChange={(e) => updateBatchSong(song.id, { featuredWeekEnd: e.target.value })} />
+                            </div>
+                          </div>
+                          <div className="space-y-0.5">
+                            <Label className="text-xs">Copyright Notice</Label>
+                            <Input className="h-7 text-xs" value={song.copyrightNotice} onChange={(e) => updateBatchSong(song.id, { copyrightNotice: e.target.value })} placeholder="© 2026 SpiritTone Records" />
+                          </div>
                         </div>
                         <div className="space-y-0.5">
                           <Label className="text-xs">Lyrics</Label>
@@ -3701,6 +3947,16 @@ function SongsAdmin() {
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => setViewStatsFor(viewStatsFor === song.id ? null : song.id)}
+                      data-testid={`button-view-stats-${song.id}`}
+                      className="text-xs"
+                    >
+                      <BarChart3 className="w-3 h-3 mr-1" />
+                      Stats
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => openEdit(song)}
                       data-testid={`button-edit-song-${song.id}`}
                     >
@@ -3726,6 +3982,145 @@ function SongsAdmin() {
           )}
         </CardContent>
       </Card>
+
+      {/* Song Collections */}
+      <Card className="border-primary/10 shadow-lg shadow-primary/5">
+        <CardHeader className="bg-muted/30 border-b border-border">
+          <div className="flex items-center justify-between">
+            <CardTitle className="font-serif text-xl text-primary flex items-center gap-2">
+              <Music2 className="w-5 h-5" />
+              Song Collections
+            </CardTitle>
+            <Button size="sm" onClick={() => { setEditingCollection({ isPublished: true, displayOrder: collections.length }); setShowCollectionForm(true); setAssigningSongsTo(null); }} data-testid="button-new-collection">
+              <Plus className="w-4 h-4 mr-1.5" />
+              New Collection
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground pt-1">Group songs into albums or themed playlists shown on the Music page.</p>
+        </CardHeader>
+        <CardContent className="p-6 space-y-4">
+          {/* Create/Edit form */}
+          {showCollectionForm && editingCollection !== null && (
+            <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-3">
+              <h4 className="font-semibold text-sm text-primary">
+                {(editingCollection as SongCollection).id ? "Edit Collection" : "New Collection"}
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Title *</Label>
+                  <Input value={editingCollection.title ?? ""} onChange={(e) => setEditingCollection({ ...editingCollection, title: e.target.value })} placeholder="e.g. Psalms Medley" data-testid="input-collection-title" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Release Date</Label>
+                  <Input type="date" value={editingCollection.releaseDate ?? ""} onChange={(e) => setEditingCollection({ ...editingCollection, releaseDate: e.target.value || null })} />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Description</Label>
+                <Textarea value={editingCollection.description ?? ""} onChange={(e) => setEditingCollection({ ...editingCollection, description: e.target.value || null })} rows={2} placeholder="Short description for this collection..." />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Cover Image URL</Label>
+                  <Input value={editingCollection.coverImageUrl ?? ""} onChange={(e) => setEditingCollection({ ...editingCollection, coverImageUrl: e.target.value || null })} placeholder="https://... or storage path" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Display Order</Label>
+                  <Input type="number" value={editingCollection.displayOrder ?? 0} onChange={(e) => setEditingCollection({ ...editingCollection, displayOrder: Number(e.target.value) })} />
+                </div>
+              </div>
+              <label className="flex items-center gap-2 text-xs cursor-pointer">
+                <input type="checkbox" checked={editingCollection.isPublished !== false} onChange={(e) => setEditingCollection({ ...editingCollection, isPublished: e.target.checked })} className="w-3.5 h-3.5" />
+                Published (visible on Music page)
+              </label>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => { setShowCollectionForm(false); setEditingCollection(null); }}>Cancel</Button>
+                <Button size="sm" onClick={handleSaveCollection} disabled={createCollectionMutation.isPending || updateCollectionMutation.isPending} data-testid="button-save-collection">
+                  {(createCollectionMutation.isPending || updateCollectionMutation.isPending) && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                  Save Collection
+                </Button>
+              </div>
+            </div>
+          )}
+          {collections.length === 0 && !showCollectionForm && (
+            <p className="text-sm text-muted-foreground text-center py-4">No collections yet. Create one to group songs into albums or themed playlists.</p>
+          )}
+          <div className="space-y-3">
+            {collections.map((col) => (
+              <div key={col.id} className="rounded-lg border border-border/50 bg-card overflow-hidden" data-testid={`card-collection-${col.id}`}>
+                <div className="flex items-center gap-3 p-3">
+                  {col.coverImageUrl && (
+                    <img src={col.coverImageUrl} alt={col.title} className="w-12 h-12 rounded object-cover flex-shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-sm">{col.title}</p>
+                      <Badge variant={col.isPublished ? "default" : "secondary"} className="text-xs">{col.isPublished ? "Published" : "Draft"}</Badge>
+                      {col.releaseDate && <span className="text-xs text-muted-foreground">{col.releaseDate}</span>}
+                    </div>
+                    {col.description && <p className="text-xs text-muted-foreground mt-0.5 truncate">{col.description}</p>}
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Button size="sm" variant={assigningSongsTo === col.id ? "secondary" : "outline"} className="text-xs" onClick={() => setAssigningSongsTo(assigningSongsTo === col.id ? null : col.id)} data-testid={`button-assign-songs-${col.id}`}>
+                      <Music className="w-3 h-3 mr-1" />Songs
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => { setEditingCollection({ ...col }); setShowCollectionForm(true); setAssigningSongsTo(null); }} data-testid={`button-edit-collection-${col.id}`}>
+                      <Edit className="w-3 h-3" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => { if (confirm(`Delete "${col.title}"? This cannot be undone.`)) deleteCollectionMutation.mutate(col.id); }} data-testid={`button-delete-collection-${col.id}`}>
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+                {assigningSongsTo === col.id && (
+                  <SongAssignPanel
+                    collectionId={col.id}
+                    allSongs={songs}
+                    onAdd={(songId) => addToCollectionMutation.mutate({ collectionId: col.id, songId })}
+                    onRemove={(songId) => removeFromCollectionMutation.mutate({ collectionId: col.id, songId })}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Song Analytics */}
+      {viewStatsFor !== null && (
+        <Card className="border-primary/10 shadow-lg shadow-primary/5">
+          <CardHeader className="bg-muted/30 border-b border-border">
+            <div className="flex items-center justify-between">
+              <CardTitle className="font-serif text-xl text-primary flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                Analytics — {songs.find(s => s.id === viewStatsFor)?.title}
+              </CardTitle>
+              <Button size="sm" variant="ghost" onClick={() => setViewStatsFor(null)}><X className="w-4 h-4" /></Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            {viewedSongStats ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {([
+                  { label: "Total Plays", value: viewedSongStats.plays },
+                  { label: "Plays (7 days)", value: viewedSongStats.playsLast7 },
+                  { label: "Plays (30 days)", value: viewedSongStats.playsLast30 },
+                  { label: "Shares", value: viewedSongStats.shares },
+                  { label: "Audio Downloads", value: viewedSongStats.audioDownloads },
+                  { label: "Video Downloads", value: viewedSongStats.videoDownloads },
+                ] as { label: string; value: number }[]).map(({ label, value }) => (
+                  <div key={label} className="p-3 rounded-lg border border-border/50 bg-muted/20 text-center">
+                    <p className="text-2xl font-bold font-mono text-foreground">{value.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{label}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Song Testimonies */}
       <Card className="border-primary/10 shadow-lg shadow-primary/5">

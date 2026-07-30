@@ -1,0 +1,453 @@
+ADMIN DASHBOARD — UPGRADE “UPLOAD MULTIPLE SONGS” TO FULL SONG BATCH UPLOAD
+
+This is a targeted enhancement to the existing Songs section in the Admin Dashboard.
+
+Do NOT rebuild the music system.
+Do NOT change the public music player, existing songs, Church Mode, Group Mode, authentication, payments, devotionals, or unrelated files.
+Preserve the existing single-song upload flow and all currently published songs.
+
+CURRENT PROBLEM
+
+The “Upload Multiple Songs” feature currently allows the admin to select only audio files.
+
+This is incomplete because every song also needs its own:
+- cover graphic;
+- thumbnail;
+- MP4 or music video;
+- lyrics;
+- scripture/reference;
+- artist or record-label information;
+- featured dates;
+- audio-download setting;
+- video-download setting;
+- publication status;
+- other existing song fields already available in the single-song uploader.
+
+The batch uploader must work like multiple copies of the existing “Upload One Song” form, with one complete editable form card for each selected song.
+
+REQUIRED RESULT
+
+When the admin clicks “Upload Multiple Songs,” the batch-upload section must allow multiple full song records to be created together.
+
+Each song in the batch must remain independently editable.
+
+1. FILE-SELECTION STARTING POINT
+
+Keep the existing “Add Audio Files” button.
+
+Allow the admin to select multiple audio files at once.
+
+After selection:
+- create one batch song card for every selected audio file;
+- automatically use the audio filename as a temporary suggested song title;
+- remove the file extension from the suggested title;
+- allow the title to be edited;
+- do not upload immediately;
+- keep every song as a draft inside the batch until the admin chooses “Upload All Songs” or saves drafts.
+
+Also add:
+
+- “Add Blank Song”
+- “Add More Songs”
+
+“Add Blank Song” must allow a song record to be prepared even before an audio file is selected.
+
+2. COMPLETE FORM FOR EACH SONG
+
+Every song card in the batch must include the same relevant fields and controls as the existing single-song uploader.
+
+Inspect and reuse the current single-song form instead of creating inconsistent duplicate logic.
+
+Each batch song card must include clearly labeled fields for:
+
+BASIC INFORMATION
+- Song Title
+- Artist / Performing Artist
+- Record Label
+- Composer / Songwriter
+- Scripture Reference
+- Short Description
+- Full Lyrics
+- Genre or Style, if the existing song system supports it
+- Language, if already supported
+
+AUDIO
+- Upload Audio File
+- Replace Audio File
+- Remove Audio File
+- Audio filename
+- Audio file size
+- Audio format
+- Upload status or progress
+
+Allow supported audio formats already accepted by the single uploader, including safe formats such as:
+- MP3
+- M4A
+- AAC
+- WAV
+
+VIDEO
+- Upload MP4 / Video File
+- Replace Video File
+- Remove Video File
+- Video filename
+- Video file size
+- Upload progress
+- Optional video URL, only if the single-song form already supports it
+
+Accept safe formats already supported by the application, especially:
+- MP4
+- WebM, if currently supported
+
+ARTWORK AND THUMBNAILS
+- Upload Main Song Graphic / Cover Art
+- Upload Thumbnail
+- Preview each uploaded image
+- Replace image
+- Remove image
+
+Accept:
+- JPG / JPEG
+- PNG
+- WEBP
+
+If the existing system uses one image for both cover and thumbnail, reuse it while still clearly explaining that in the form.
+Do not introduce unnecessary duplicate image fields if only one is genuinely needed.
+
+LYRICS
+- Add a large multiline “Full Lyrics” field
+- Preserve line breaks and song sections
+- Support labels such as:
+  [Intro]
+  [Verse 1]
+  [Chorus]
+  [Bridge]
+  [Outro]
+
+If the single-song uploader already has a lyrics editor, reuse the exact same component.
+
+DATES AND FEATURE SETTINGS
+- Featured Start Date
+- Featured End Date
+- Song of the Week status, if applicable
+- Active / Inactive
+- Draft / Published
+
+DOWNLOAD CONTROLS
+- Audio Download Enabled
+- Video Download Enabled
+- MP4 Available
+- Any other existing download controls from the current single-song uploader
+
+COMMENTS OR TESTIMONY SETTINGS
+- Preserve any existing comment/testimony count or enablement controls if those are currently part of song creation.
+- Do not create unrelated new social features.
+
+3. REUSE THE SINGLE-SONG COMPONENT
+
+Refactor only where necessary so the single-song and batch-song forms use a shared reusable song-form component.
+
+The goal is:
+- same fields;
+- same validation;
+- same upload behavior;
+- same database mapping;
+- same security rules;
+- no divergence between single and multiple upload.
+
+Do not broadly refactor unrelated music-player files.
+
+Possible structure:
+- SongUploadForm or SongEditorFields shared component
+- Single uploader renders it once
+- Batch uploader renders it once per batch item
+
+Use the existing project architecture and naming conventions.
+
+4. BATCH SONG CARD DESIGN
+
+Each selected song should appear inside its own clearly separated card.
+
+Each card should show a compact header with:
+- sequence number;
+- song title;
+- audio filename;
+- completion status;
+- validation status;
+- expand/collapse control;
+- remove-from-batch button.
+
+Example:
+
+Song 1 — There’s A Way Out
+Status: Missing thumbnail and lyrics
+[Expand]
+
+Song 2 — Lazarus Come Forth
+Status: Ready to upload
+[Expand]
+
+Cards should be collapsible so a large batch does not create an unmanageable page.
+
+The first incomplete song may remain expanded by default.
+
+5. PER-SONG STATUS
+
+Each batch song must show one of these states:
+
+- Incomplete
+- Ready
+- Uploading
+- Uploaded
+- Failed
+- Saved as Draft
+
+Show the exact missing required fields for incomplete songs.
+
+Example:
+“Missing: title, cover image, featured dates.”
+
+Do not show only a generic error.
+
+6. INDIVIDUAL ACTIONS
+
+Each song card must have:
+
+- Save This Song as Draft
+- Upload This Song
+- Duplicate Song Details, if useful and safe
+- Remove from Batch
+
+Uploading one song must not upload the other songs.
+
+Removing one song must not erase other batch entries.
+
+7. BATCH ACTIONS
+
+Keep and improve these controls:
+
+- Add Audio Files
+- Add Blank Song
+- Save All as Drafts
+- Upload All Songs
+- Cancel Batch
+
+Add:
+- Expand All
+- Collapse All
+- Clear Completed, only after successful uploads
+- Retry Failed Uploads
+
+“Upload All Songs” must:
+
+1. validate each song separately;
+2. clearly list incomplete songs;
+3. allow the admin to correct incomplete songs;
+4. upload valid songs safely;
+5. show overall progress;
+6. show per-song progress;
+7. avoid uploading the same song twice if a retry occurs;
+8. continue other uploads if one song fails, where technically safe;
+9. provide a final batch summary.
+
+Example summary:
+- 8 uploaded successfully
+- 2 saved as drafts
+- 1 failed
+- 1 incomplete
+
+8. REQUIRED FIELDS
+
+Use the same required-field rules as the single-song uploader.
+
+At minimum, confirm whether the existing system requires:
+
+- Song Title
+- Audio File
+- Cover Art
+- Featured Start Date
+- Featured End Date
+
+Lyrics, video, thumbnail, scripture, and description may remain optional unless the existing single uploader already requires them.
+
+Do not arbitrarily make optional fields required.
+
+9. DRAFT SUPPORT
+
+“Save All as Drafts” must save each song as its own real draft record.
+
+A draft must preserve:
+- entered metadata;
+- lyrics;
+- uploaded file references;
+- dates;
+- image references;
+- download settings;
+- progress already completed.
+
+The admin must be able to reopen and finish each draft later.
+
+Do not store unfinished batch data only in temporary React state if the user explicitly chooses Save as Draft.
+
+10. UPLOAD STORAGE
+
+Reuse the exact upload/storage provider already used by the working single-song uploader.
+
+Do not:
+- save large audio or video binary files directly in the database;
+- use base64 inside database text fields;
+- introduce a second conflicting storage provider;
+- expose private credentials;
+- create insecure public upload endpoints.
+
+Store only:
+- secure file URL or storage key;
+- filename;
+- file size;
+- MIME type;
+- duration or dimensions when available;
+- other existing metadata.
+
+Use unique paths or keys for every song and media type.
+
+11. SECURITY AND VALIDATION
+
+Validate on both client and server:
+
+- permitted file types;
+- maximum file sizes;
+- authenticated admin authorization;
+- MIME type;
+- filename safety;
+- upload ownership;
+- duplicate submission protection.
+
+Only authorized app administrators may create or upload songs.
+
+Do not allow executable files or unsafe file extensions.
+
+12. MOBILE AND DESKTOP
+
+The complete batch uploader must work on:
+- desktop;
+- tablet;
+- iPhone;
+- Android.
+
+On mobile:
+- cards should stack vertically;
+- buttons should wrap cleanly;
+- file pickers must open normally;
+- large controls must remain tappable;
+- the admin should not need horizontal scrolling;
+- collapse/expand must work by touch;
+- long lyrics fields must remain usable.
+
+13. UNSAVED-CHANGES PROTECTION
+
+If the admin attempts to:
+- leave the page;
+- close the batch;
+- click Cancel Batch;
+- refresh after entering unsaved information;
+
+show a warning such as:
+
+“You have unsaved song information. Leaving now may discard this batch.”
+
+Do not show the warning after everything has been uploaded or saved.
+
+14. EXISTING SONGS
+
+Do not alter, delete, duplicate, or republish existing song records.
+
+The Song of the Week list and existing edit buttons must continue working exactly as before.
+
+15. TESTING
+
+Test all of the following:
+
+A. Select three audio files at once.
+- Confirm three independent song cards appear.
+
+B. For Song 1:
+- upload audio;
+- upload cover art;
+- upload thumbnail;
+- upload MP4;
+- enter lyrics;
+- enter scripture;
+- set dates;
+- enable audio and video downloads;
+- publish successfully.
+
+C. For Song 2:
+- upload audio and graphic;
+- leave video empty;
+- save as draft.
+
+D. For Song 3:
+- leave a required field empty;
+- click Upload All Songs;
+- confirm the exact missing field is shown;
+- confirm valid songs are handled safely without corrupting the incomplete one.
+
+E. Add a blank song manually and then attach its audio.
+
+F. Replace one selected audio file without affecting the others.
+
+G. Remove one song from the batch.
+
+H. Upload one individual song from inside the batch.
+
+I. Retry a deliberately failed upload and confirm no duplicate song record is created.
+
+J. Reopen a saved draft and confirm all metadata and uploaded-file references remain.
+
+K. Confirm lyrics preserve line breaks and section headings.
+
+L. Confirm MP4 plays on the public song page.
+
+M. Confirm cover art and thumbnail display correctly.
+
+N. Confirm audio-download and video-download settings are respected.
+
+O. Confirm the existing single-song uploader still works.
+
+P. Confirm the existing Song of the Week list still works.
+
+Q. Confirm no browser-console or server errors.
+
+R. Test responsive behavior at mobile width.
+
+16. FINAL REPORT
+
+Report:
+
+1. Root cause of the original audio-only batch limitation.
+2. Shared component reused or created.
+3. Exact fields now available for each batch song.
+4. Audio formats and size limit.
+5. Video formats and size limit.
+6. Image formats and size limit.
+7. Storage technology reused.
+8. Database fields reused or added.
+9. Files changed.
+10. Batch progress behavior.
+11. Draft behavior.
+12. Duplicate-upload protection.
+13. Desktop test result.
+14. Mobile test result.
+15. Confirmation that existing songs were unchanged.
+16. Confirmation that the single-song uploader still works.
+17. Any remaining physical-device test required.
+
+IMPORTANT
+
+Do not merely describe a plan.
+
+Implement the complete full-song batch uploader, test it, and create a checkpoint only after successful verification.
+
+Do not inspect or modify unrelated files.
+Do not perform a broad audit or refactor.
+Make only the minimum changes necessary for this feature.

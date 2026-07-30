@@ -1,0 +1,399 @@
+17. ORGANIZE EXISTING SONGS AS STANDALONE SONGS OR SONG COLLECTIONS
+
+Extend the existing song-management area so already uploaded songs can be reorganized without uploading them again.
+
+IMPORTANT:
+- Do not duplicate the audio, video, artwork, or database record.
+- Do not delete or re-upload media when moving a song.
+- Reuse the existing song record and update only its organization or collection assignment.
+- Preserve all existing links, play history, likes, shares, downloads, comments, featured dates, and publication status.
+
+A. SONG ORGANIZATION OPTIONS
+
+Beside every existing song in the Admin Dashboard, add a compact organization control such as:
+
+- Standalone Song
+- Add to Song Collection
+- Move to Another Collection
+- Remove from Collection
+- Create New Collection with This Song
+
+Use a clear label such as:
+
+“Song Placement”
+
+A song may be:
+
+1. A standalone single song;
+2. Part of one song collection or batch;
+3. Moved from one collection to another;
+4. Removed from a collection and returned to standalone status.
+
+Do not create a second song record when moving it.
+
+B. COLLECTIONS / BATCHES
+
+Treat a batch of already uploaded songs as a reusable song collection, album, playlist, series, or grouped release.
+
+The admin must be able to:
+
+- Create a new collection;
+- Name the collection;
+- Add a description;
+- Upload collection artwork, if desired;
+- Add existing uploaded songs;
+- Add newly uploaded songs;
+- Remove songs from the collection;
+- Reorder songs inside the collection;
+- Move songs between collections;
+- Publish or unpublish the collection;
+- Keep a song standalone when appropriate.
+
+Each collection should support:
+
+- Collection title;
+- Cover image;
+- Description;
+- Release or featured date;
+- Published / Draft status;
+- Ordered song list;
+- Total number of songs;
+- Total play count for all included songs, if practical.
+
+Use terminology that works for the ministry music section. “Song Collection” is preferred unless the existing application already uses Album, Playlist, Batch, or Series.
+
+C. REORDERING
+
+Allow the admin to change:
+
+- The order of standalone songs in the public music list;
+- The order of songs inside each collection;
+- The order of collections.
+
+Use:
+- drag-and-drop where reliable;
+- Move Up / Move Down buttons as an accessible fallback;
+- a numeric position field only if needed.
+
+The ordering must persist in the database and remain after refresh.
+
+D. CONTROLS BESIDE EACH EXISTING SONG
+
+Beside each uploaded song, keep the existing controls and add:
+
+- Placement: Standalone or Collection name;
+- Move / Organize button;
+- Statistics button;
+- Reorder handle or Move Up / Move Down;
+- Edit;
+- Active / Inactive;
+- Delete, preserving the existing confirmation rules.
+
+On mobile, place secondary controls inside a three-dot menu or expandable action area so the song row does not overflow horizontally.
+
+E. PUBLIC DISPLAY
+
+On the public music page:
+
+- Standalone songs should remain visible as individual songs.
+- Collections should have their own clear section or collection card.
+- Opening a collection should display its ordered song list.
+- A song inside a collection must still open in the existing song player.
+- Moving a song into a collection must not break its existing direct song URL.
+- Removing a song from a collection must not delete it.
+
+If a song is allowed to appear both standalone and inside a collection under the current product decision, add an explicit admin setting:
+
+“Also show as standalone song.”
+
+Default this setting carefully so existing public song visibility is not unexpectedly changed.
+
+18. SONG ANALYTICS — PLAYS, LIKES, SHARES, AND DOWNLOADS
+
+Add lightweight, reliable analytics for each song.
+
+The admin should be able to see, beside each song or through a Statistics panel:
+
+- Total Plays;
+- Unique Listeners when reliably identifiable;
+- Likes;
+- Shares;
+- Audio Downloads;
+- Video Downloads;
+- Date first published;
+- Most recent play date;
+- Plays today;
+- Plays in the last 7 days;
+- Plays in the last 30 days.
+
+Also provide collection-level totals where practical:
+
+- Total collection plays;
+- Total likes;
+- Total shares;
+- Total downloads.
+
+Do not introduce a costly external analytics service unless one is already used by the project.
+Use the existing database and backend.
+
+A. PLAY COUNTING RULES
+
+A play must not be counted merely because the page opened.
+
+Count a play only after meaningful listening has occurred.
+
+Preferred rule:
+- Count one play after the listener has played at least 10 seconds;
+OR
+- Count one play after at least 25% of a very short song has played.
+
+Use a safe and practical implementation based on the current player.
+
+Prevent obvious artificial inflation:
+
+- Do not count repeated play events caused by pause/resume during the same listening session.
+- Do not count every browser rerender.
+- Do not count seeking by itself.
+- Count at most one play per song per listening session unless the user genuinely restarts and listens again after completion or after a reasonable cooldown.
+- Do not rely only on client-side visible counters.
+- Record validated events through the backend.
+
+Anonymous listeners may be counted through a privacy-respecting session identifier.
+Signed-in users may use their account identifier.
+Do not store unnecessary personal information or expose listener identities to ordinary admins.
+
+B. UNIQUE LISTENERS
+
+Where technically reliable, track approximate unique listeners using:
+
+- signed-in user ID;
+- or a privacy-safe anonymous session/device identifier.
+
+Do not claim exact unique-listener accuracy if browser privacy restrictions prevent it.
+
+Do not use invasive fingerprinting.
+
+C. LIKES
+
+Add or preserve a Like button on each song.
+
+Rules:
+- A signed-in user may like or unlike a song.
+- Prevent one signed-in account from creating multiple simultaneous likes on the same song.
+- Show the current like count publicly if appropriate.
+- Anonymous likes should not be accepted unless the current system already supports secure anonymous reactions.
+- Liking must not interrupt playback.
+
+If the app already uses “Favorite,” keep Favorite separate from Like unless they are intentionally the same feature.
+
+D. SHARES
+
+Every time the user successfully activates the Share action, record a share event.
+
+Use the Web Share API on supported mobile devices and the existing copy-link fallback elsewhere.
+
+Count a share when:
+- the native share sheet is successfully opened or completed as technically detectable;
+- or the Copy Link action succeeds.
+
+Avoid counting page loads as shares.
+
+Because browsers do not always report whether the recipient completed the external share, label this metric internally as “Share Actions” if that is more accurate.
+
+E. DOWNLOAD COUNTS
+
+When audio or video download is enabled:
+
+- Count a download only when the authorized download endpoint is called successfully.
+- Separate Audio Downloads and Video Downloads.
+- Do not count clicking a disabled button.
+- Do not count failed downloads.
+- Preserve the existing download permission settings.
+
+F. ANALYTICS DATABASE DESIGN
+
+Use normalized analytics tables or the project’s established event-tracking pattern.
+
+Suggested structure, adapted to the existing schema:
+
+song_engagement_events
+- id
+- songId
+- eventType: play, like, unlike, share, audio_download, video_download
+- userId nullable
+- anonymousSessionId nullable
+- createdAt
+- metadata only when genuinely necessary
+
+For efficient display, either:
+- calculate aggregates safely;
+- or maintain counters transactionally while keeping event records for auditing.
+
+Add proper indexes for:
+- songId;
+- eventType;
+- createdAt;
+- userId or anonymousSessionId where needed.
+
+Do not expose raw identifiers in the public API.
+
+G. ADMIN STATISTICS DISPLAY
+
+In the Admin Dashboard song list, show compact counters such as:
+
+Plays 1,245
+Likes 187
+Shares 63
+Downloads 92
+
+Add a “View Statistics” action that opens a detailed panel or page.
+
+The detail view should show:
+
+- Total plays;
+- Unique listeners;
+- Likes;
+- Share actions;
+- Audio downloads;
+- Video downloads;
+- Plays today;
+- Last 7 days;
+- Last 30 days;
+- Simple daily trend;
+- Publication date;
+- Last played date.
+
+Use a simple chart only if the project already has a chart library.
+Do not add a heavy dependency merely for one chart.
+A clear daily table or lightweight CSS bar chart is acceptable.
+
+H. PUBLIC COUNTERS
+
+On the public song page, show only the counters approved for public visibility:
+
+- Plays;
+- Likes;
+- Shares, if desired.
+
+Downloads may remain admin-only unless the current design already displays them.
+
+Use readable formatting:
+
+- 999
+- 1K
+- 12.4K
+- 1.2M
+
+The full exact number should remain available in the admin statistics view.
+
+I. REAL-TIME OR NEAR-REAL-TIME UPDATES
+
+Counters should update after a successful action without requiring a full page refresh.
+
+They do not need expensive real-time sockets.
+A normal API mutation followed by a local counter update or query refresh is sufficient.
+
+J. EXISTING SONG DATA
+
+For songs already uploaded:
+
+- initialize their analytics counters at zero unless reliable historical data already exists;
+- do not invent past play numbers;
+- do not reset any existing likes, favorites, comments, testimony counts, or download counts;
+- migrate existing engagement data if compatible.
+
+If the existing application already tracks any of these events, reuse and consolidate that system instead of creating duplicate analytics.
+
+19. ADDITIONAL TESTS FOR ORGANIZATION AND ANALYTICS
+
+Test:
+
+A. Move an existing standalone song into a newly created collection.
+- Confirm no duplicate song is created.
+- Confirm the same song URL still works.
+- Confirm media files are unchanged.
+
+B. Move a song from Collection A to Collection B.
+- Confirm it disappears from A and appears in B.
+- Confirm statistics remain attached to the song.
+
+C. Remove a song from a collection.
+- Confirm it becomes standalone.
+- Confirm the song is not deleted.
+
+D. Reorder three songs.
+- Refresh the page.
+- Confirm the saved order remains.
+
+E. Reorder songs inside a collection.
+- Confirm the public collection uses the saved order.
+
+F. Play a song for less than the qualifying threshold.
+- Confirm no play is counted.
+
+G. Play beyond the qualifying threshold.
+- Confirm exactly one play is counted.
+
+H. Pause and resume repeatedly.
+- Confirm the same listening session does not create multiple false plays.
+
+I. Reload the page repeatedly without listening.
+- Confirm play count does not increase.
+
+J. Like and unlike a song.
+- Confirm the count and user state update correctly.
+- Confirm duplicate likes are prevented.
+
+K. Use Share or Copy Link.
+- Confirm one share action is recorded.
+
+L. Successfully download audio.
+- Confirm Audio Downloads increases once.
+
+M. Attempt a failed or disabled download.
+- Confirm the count does not increase.
+
+N. Confirm an existing song moved between standalone and collection retains:
+- play count;
+- likes;
+- shares;
+- downloads;
+- comments;
+- artwork;
+- audio;
+- video;
+- lyrics;
+- featured dates;
+- publication status.
+
+O. Test desktop and mobile layouts.
+
+P. Confirm no unrelated features were modified.
+
+20. ADD TO THE FINAL REPORT
+
+Also report:
+
+- How standalone and collection placement is stored;
+- Whether one song can appear in more than one collection;
+- Whether a collection is implemented as an album, playlist, or song collection;
+- How song ordering persists;
+- Exact rule used to count a play;
+- Duplicate-play prevention method;
+- How anonymous sessions are handled;
+- Whether unique listeners are exact or approximate;
+- How likes are protected from duplication;
+- What qualifies as a share;
+- What qualifies as a download;
+- Analytics tables or fields added;
+- Existing engagement data migrated;
+- Public counters displayed;
+- Admin counters displayed;
+- Tests performed with exact results.
+
+IMPORTANT:
+Do not invent historical analytics for songs that were already published.
+Do not duplicate existing song records when organizing them.
+Do not move or copy the actual media files merely to change song placement.
+Do not add invasive tracking.
+Do not break existing direct song URLs.

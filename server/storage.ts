@@ -23,6 +23,9 @@ import {
   userSavedSongs,
   userFavoriteSongs,
   userDownloadHistory,
+  songCollections,
+  songCollectionItems,
+  songEngagementEvents,
   churchGivingSettings,
   churchGivingCategories,
   churchDepartments,
@@ -102,6 +105,9 @@ import {
   type UserDownloadRecord,
   type UserPlaybackHistory,
   type UserMusicSettings,
+  type SongCollection,
+  type InsertSongCollection,
+  type SongCollectionItem,
   type UserSavedDevotional,
   type UserDevotionalHistory,
   type UserDevotionalStreak,
@@ -203,7 +209,7 @@ import {
   type GroupAnnouncement,
   type InsertGroupAnnouncement,
 } from "@shared/schema";
-import { eq, desc, and, isNull, or, ilike, lte, notInArray, inArray, sql, gte, count, countDistinct } from "drizzle-orm";
+import { eq, desc, asc, and, isNull, or, ilike, lte, notInArray, inArray, sql, gte, count, countDistinct } from "drizzle-orm";
 
 export interface ChurchDashboardStats {
   activeMembers: number;
@@ -375,6 +381,21 @@ export interface IStorage {
   upsertPlaybackPosition(uid: string, songId: number, lastPosition: number, durationSecs: number, progressPercent: number): Promise<void>;
   getUserMusicSettings(uid: string): Promise<UserMusicSettings | null>;
   upsertUserMusicSettings(uid: string, settings: Partial<Pick<UserMusicSettings, "autoplayNext" | "rememberPosition" | "defaultSpeed" | "repeatMode" | "shuffle">>): Promise<UserMusicSettings>;
+
+  // Song Collections
+  getSongCollections(): Promise<SongCollection[]>;
+  getPublicSongCollections(): Promise<(SongCollection & { songs: Song[] })[]>;
+  createSongCollection(data: InsertSongCollection): Promise<SongCollection>;
+  updateSongCollection(id: number, data: Partial<InsertSongCollection>): Promise<SongCollection>;
+  deleteSongCollection(id: number): Promise<void>;
+  addSongToCollection(collectionId: number, songId: number, displayOrder?: number): Promise<void>;
+  removeSongFromCollection(collectionId: number, songId: number): Promise<void>;
+  getCollectionSongIds(collectionId: number): Promise<number[]>;
+
+  // Song Analytics
+  recordSongEvent(songId: number, eventType: string, userId?: string, sessionId?: string): Promise<void>;
+  getSongStats(songId: number): Promise<{ plays: number; shares: number; audioDownloads: number; videoDownloads: number; playsLast7: number; playsLast30: number }>;
+  checkRecentPlay(songId: number, sessionId: string, minutesBack?: number): Promise<boolean>;
 
   // Phase F: Devotional Account Sync
   getSavedDevotionals(uid: string): Promise<(UserSavedDevotional & { devotional: Devotional })[]>;
@@ -1360,6 +1381,109 @@ export class DatabaseStorage implements IStorage {
       .where(eq(songs.id, id))
       .returning();
     return updated;
+  }
+
+  // ── Song Collections ────────────────────────────────────────────────────────
+
+  async getSongCollections(): Promise<SongCollection[]> {
+    return db.select().from(songCollections)
+      .orderBy(asc(songCollections.displayOrder), desc(songCollections.createdAt));
+  }
+
+  async getPublicSongCollections(): Promise<(SongCollection & { songs: Song[] })[]> {
+    const cols = await db.select().from(songCollections)
+      .where(eq(songCollections.isPublished, true))
+      .orderBy(asc(songCollections.displayOrder), desc(songCollections.createdAt));
+    const result: (SongCollection & { songs: Song[] })[] = [];
+    for (const col of cols) {
+      const items = await db.select({ song: songs }).from(songCollectionItems)
+        .innerJoin(songs, eq(songCollectionItems.songId, songs.id))
+        .where(and(eq(songCollectionItems.collectionId, col.id), eq(songs.isActive, true)))
+        .orderBy(asc(songCollectionItems.displayOrder));
+      result.push({ ...col, songs: items.map(i => i.song) });
+    }
+    return result;
+  }
+
+  async createSongCollection(data: InsertSongCollection): Promise<SongCollection> {
+    const [created] = await db.insert(songCollections).values(data).returning();
+    return created;
+  }
+
+  async updateSongCollection(id: number, data: Partial<InsertSongCollection>): Promise<SongCollection> {
+    const [updated] = await db.update(songCollections)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(songCollections.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteSongCollection(id: number): Promise<void> {
+    await db.delete(songCollections).where(eq(songCollections.id, id));
+  }
+
+  async addSongToCollection(collectionId: number, songId: number, displayOrder = 0): Promise<void> {
+    await db.insert(songCollectionItems)
+      .values({ collectionId, songId, displayOrder })
+      .onConflictDoNothing();
+  }
+
+  async removeSongFromCollection(collectionId: number, songId: number): Promise<void> {
+    await db.delete(songCollectionItems).where(
+      and(eq(songCollectionItems.collectionId, collectionId), eq(songCollectionItems.songId, songId))
+    );
+  }
+
+  async getCollectionSongIds(collectionId: number): Promise<number[]> {
+    const items = await db.select({ songId: songCollectionItems.songId })
+      .from(songCollectionItems)
+      .where(eq(songCollectionItems.collectionId, collectionId))
+      .orderBy(asc(songCollectionItems.displayOrder));
+    return items.map(i => i.songId);
+  }
+
+  // ── Song Analytics ──────────────────────────────────────────────────────────
+
+  async recordSongEvent(songId: number, eventType: string, userId?: string, sessionId?: string): Promise<void> {
+    await db.insert(songEngagementEvents).values({
+      songId, eventType, userId: userId ?? null, sessionId: sessionId ?? null,
+    });
+  }
+
+  async getSongStats(songId: number): Promise<{ plays: number; shares: number; audioDownloads: number; videoDownloads: number; playsLast7: number; playsLast30: number }> {
+    const now = new Date();
+    const last7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const last30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const rows = await db.execute(sql`
+      SELECT event_type,
+             COUNT(*)::int AS total,
+             SUM(CASE WHEN created_at >= ${last7} THEN 1 ELSE 0 END)::int AS last7,
+             SUM(CASE WHEN created_at >= ${last30} THEN 1 ELSE 0 END)::int AS last30
+      FROM song_engagement_events
+      WHERE song_id = ${songId}
+      GROUP BY event_type
+    `);
+    const stats = { plays: 0, shares: 0, audioDownloads: 0, videoDownloads: 0, playsLast7: 0, playsLast30: 0 };
+    for (const row of rows.rows as any[]) {
+      if (row.event_type === "play") { stats.plays = row.total ?? 0; stats.playsLast7 = row.last7 ?? 0; stats.playsLast30 = row.last30 ?? 0; }
+      else if (row.event_type === "share") stats.shares = row.total ?? 0;
+      else if (row.event_type === "audio_download") stats.audioDownloads = row.total ?? 0;
+      else if (row.event_type === "video_download") stats.videoDownloads = row.total ?? 0;
+    }
+    return stats;
+  }
+
+  async checkRecentPlay(songId: number, sessionId: string, minutesBack = 30): Promise<boolean> {
+    const since = new Date(Date.now() - minutesBack * 60 * 1000);
+    const rows = await db.select().from(songEngagementEvents).where(
+      and(
+        eq(songEngagementEvents.songId, songId),
+        eq(songEngagementEvents.eventType, "play"),
+        eq(songEngagementEvents.sessionId, sessionId),
+        sql`${songEngagementEvents.createdAt} >= ${since}`
+      )
+    ).limit(1);
+    return rows.length > 0;
   }
 
   async getSongTestimonies(songId?: number): Promise<SongTestimony[]> {

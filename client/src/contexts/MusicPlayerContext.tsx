@@ -122,6 +122,17 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
   const dbSyncRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playSongRef = useRef<(song: Song) => void>(() => {});
 
+  // Play counting: track 10 continuous seconds of playback per session per song
+  const sessionIdRef = useRef<string>("");
+  const playCountedRef = useRef<Set<number>>(new Set());
+  const playTrackRef = useRef<{ songId: number; lastTime: number; accumulated: number }>({ songId: 0, lastTime: -1, accumulated: 0 });
+  useEffect(() => {
+    const key = "music-session-id";
+    let id = sessionStorage.getItem(key);
+    if (!id) { id = Math.random().toString(36).slice(2) + Date.now().toString(36); sessionStorage.setItem(key, id); }
+    sessionIdRef.current = id;
+  }, []);
+
   // Fetch all songs for recommendations (lazy, on first play)
   const songsFetchedRef = useRef(false);
   const fetchAllSongs = useCallback(async () => {
@@ -227,7 +238,33 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
   // Attach persistent audio event listeners once on mount
   useEffect(() => {
     const audio = audioRef.current;
-    const onTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const onTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+      // 10-second continuous play counting (skip if seeking/jumping)
+      const song = currentSongRef.current;
+      if (song && audio.currentTime > 0) {
+        const track = playTrackRef.current;
+        if (track.songId !== song.id) {
+          playTrackRef.current = { songId: song.id, lastTime: audio.currentTime, accumulated: 0 };
+        } else if (track.lastTime >= 0) {
+          const delta = audio.currentTime - track.lastTime;
+          if (delta > 0 && delta < 3) { // small positive delta = normal playback
+            playTrackRef.current.accumulated = track.accumulated + delta;
+            if (playTrackRef.current.accumulated >= 10 && !playCountedRef.current.has(song.id)) {
+              playCountedRef.current.add(song.id);
+              fetch(`/api/songs/${song.id}/events`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ eventType: "play", sessionId: sessionIdRef.current }),
+              }).catch(() => {});
+            }
+          }
+          playTrackRef.current.lastTime = audio.currentTime;
+        } else {
+          playTrackRef.current.lastTime = audio.currentTime;
+        }
+      }
+    };
     const onDurationChange = () => {
       if (isFinite(audio.duration) && audio.duration > 0) setDuration(audio.duration);
     };

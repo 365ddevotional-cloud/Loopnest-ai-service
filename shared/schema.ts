@@ -599,6 +599,44 @@ export const userMusicSettings = pgTable("user_music_settings", {
 export type UserPlaybackHistory = typeof userPlaybackHistory.$inferSelect;
 export type UserMusicSettings = typeof userMusicSettings.$inferSelect;
 
+// ── Song Collections ──────────────────────────────────────────────────────────
+export const songCollections = pgTable("song_collections", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  coverImageUrl: text("cover_image_url"),
+  releaseDate: text("release_date"),
+  isPublished: boolean("is_published").notNull().default(true),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const songCollectionItems = pgTable("song_collection_items", {
+  id: serial("id").primaryKey(),
+  collectionId: integer("collection_id").notNull().references(() => songCollections.id, { onDelete: "cascade" }),
+  songId: integer("song_id").notNull().references(() => songs.id, { onDelete: "cascade" }),
+  displayOrder: integer("display_order").notNull().default(0),
+}, (t) => ({
+  uniqueCollectionSong: unique().on(t.collectionId, t.songId),
+}));
+
+export const insertSongCollectionSchema = createInsertSchema(songCollections).omit({ id: true, createdAt: true, updatedAt: true });
+export type SongCollection = typeof songCollections.$inferSelect;
+export type InsertSongCollection = z.infer<typeof insertSongCollectionSchema>;
+export type SongCollectionItem = typeof songCollectionItems.$inferSelect;
+
+// ── Song Engagement Events ─────────────────────────────────────────────────────
+export const songEngagementEvents = pgTable("song_engagement_events", {
+  id: serial("id").primaryKey(),
+  songId: integer("song_id").notNull().references(() => songs.id, { onDelete: "cascade" }),
+  eventType: text("event_type").notNull(), // 'play', 'share', 'audio_download', 'video_download'
+  userId: text("user_id"),
+  sessionId: text("session_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export type SongEngagementEvent = typeof songEngagementEvents.$inferSelect;
+
 // Giving Methods Table — Admin-managed voluntary support options
 export const givingMethods = pgTable("giving_methods", {
   id: serial("id").primaryKey(),
