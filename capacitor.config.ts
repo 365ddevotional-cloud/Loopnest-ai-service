@@ -6,6 +6,8 @@ const config: CapacitorConfig = {
   webDir: 'dist/public',
   server: {
     androidScheme: 'https',
+    url: 'https://365dailydevotional.com',
+    cleartext: false,
   },
   android: {
     allowMixedContent: false,
