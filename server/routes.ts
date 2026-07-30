@@ -1,5 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
+import fs from "fs";
+import path from "path";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
@@ -264,6 +266,22 @@ export async function registerRoutes(
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
+  });
+
+  // Temporary: serve the release AAB for download (admin-only)
+  app.get("/admin/download/app-release.aab", (req, res) => {
+    const adminPassword = process.env.ADMIN_PASSWORD || "";
+    const auth = req.headers["x-admin-password"] || req.query.token;
+    if (!adminPassword || auth !== adminPassword) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const aabPath = path.join(process.cwd(), "365-daily-devotional-release.aab");
+    if (!fs.existsSync(aabPath)) {
+      return res.status(404).json({ message: "AAB file not found" });
+    }
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.setHeader("Content-Disposition", 'attachment; filename="365-daily-devotional-release.aab"');
+    res.sendFile(aabPath);
   });
 
   // Digital Asset Links for Google Play TWA verification
