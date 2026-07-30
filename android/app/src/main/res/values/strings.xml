@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">365 Daily Devotional</string>
+    <string name="title_activity_main">365 Daily Devotional</string>
+    <string name="package_name">app.replit.attachment_parser__365ddevotional.twa</string>
+    <string name="custom_url_scheme">app.replit.attachment_parser__365ddevotional.twa</string>
+</resources>

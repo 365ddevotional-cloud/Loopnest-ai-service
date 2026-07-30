@@ -6,3 +6,9 @@ id = "kTqgp1rjWZWxGNDktMyfH"
 uri = "file://365-devotional-upload-keystore.zip"
 type = "unspecified"
 title = "365 Daily Devotional — New Upload Keystore Package"
+
+[[outputs]]
+id = "Pd1Iek2N9T0fxLDd59pDr"
+uri = "file://365-daily-devotional-release.aab"
+type = "unspecified"
+title = "365 Daily Devotional — Release AAB (signed)"
