@@ -13,7 +13,7 @@ import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckChe
 import { useUpload } from "@/hooks/use-upload";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Component } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { format, parseISO } from "date-fns";
 import { useLocation } from "wouter";
@@ -3026,6 +3026,26 @@ interface BatchSong {
   expanded: boolean;
 }
 
+class BatchUploadErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="rounded-lg border border-red-400/50 bg-red-50/20 dark:bg-red-950/20 p-6 text-center space-y-3">
+          <p className="text-sm font-medium text-red-700 dark:text-red-400">Something went wrong while preparing these songs.</p>
+          <p className="text-xs text-muted-foreground">Your selected files have not been uploaded. Please remove the affected song or try again.</p>
+          <Button size="sm" variant="outline" onClick={() => this.setState({ hasError: false })}>Try Again</Button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function getBatchMissingFields(song: BatchSong): string[] {
   const missing: string[] = [];
   if (!song.title.trim()) missing.push("title");
@@ -3667,6 +3687,7 @@ function SongsAdmin() {
                 <p className="text-sm">No songs added yet. Use "Add Audio Files" or "Add Blank Song" to get started.</p>
               </div>
             ) : (
+              <BatchUploadErrorBoundary>
               <div className="space-y-3">
                 {batchSongs.map((song, idx) => (
                   <div key={song.id} className={`rounded-lg border p-3 transition-colors ${song.status === "completed" ? "border-green-400/50 bg-green-50/20 dark:bg-green-950/20" : song.status === "failed" ? "border-red-400/50 bg-red-50/20 dark:bg-red-950/20" : song.status === "uploading" ? "border-blue-400/50 bg-blue-50/20 dark:bg-blue-950/20" : "border-border/50 bg-card"}`} data-testid={`card-batch-song-${idx}`}>
@@ -3821,10 +3842,10 @@ function SongsAdmin() {
                         {/* Song Type */}
                         <div className="space-y-1">
                           <Label className="text-xs">Song Type</Label>
-                          <Select value={song.songType || ""} onValueChange={(v) => updateBatchSong(song.id, { songType: v })}>
+                          <Select value={song.songType || "none"} onValueChange={(v) => updateBatchSong(song.id, { songType: v === "none" ? "" : v })}>
                             <SelectTrigger><SelectValue placeholder="Select type…" /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">— None —</SelectItem>
+                              <SelectItem value="none">— None —</SelectItem>
                               {SONG_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                             </SelectContent>
                           </Select>
@@ -4033,6 +4054,7 @@ function SongsAdmin() {
                   </div>
                 )}
               </div>
+              </BatchUploadErrorBoundary>
             )}
           </CardContent>
         </Card>
@@ -4128,73 +4150,43 @@ function SongsAdmin() {
                       </p>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 flex-shrink-0 flex-wrap justify-end">
-                    {song.audioUrl && (
-                      <Badge variant="outline" className="text-xs border-amber-400/50 text-amber-600">
-                        <Music className="w-2.5 h-2.5 mr-1" />
-                        Audio
-                      </Badge>
-                    )}
-                    <Badge variant="outline" className={`text-xs ${song.downloadStatus === "disabled" ? "border-muted-foreground/40 text-muted-foreground" : "border-green-400/60 text-green-700"}`}>
-                      <Download className="w-2.5 h-2.5 mr-1" />
-                      {song.downloadStatus === "disabled" ? "Audio DL Off" : "Audio DL On"}
-                    </Badge>
-                    {(song as any).videoUrl ? (
-                      <Badge variant="outline" className="text-xs border-blue-400/50 text-blue-600">
-                        <Video className="w-2.5 h-2.5 mr-1" />
-                        MP4
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground/60">
-                        No Video
-                      </Badge>
-                    )}
-                    {(song as any).videoUrl && (
-                      <Badge variant="outline" className={`text-xs ${(song as any).videoDownloadStatus === "disabled" ? "border-muted-foreground/40 text-muted-foreground" : "border-blue-400/60 text-blue-700"}`}>
-                        <Download className="w-2.5 h-2.5 mr-1" />
-                        {(song as any).videoDownloadStatus === "disabled" ? "Video DL Off" : "Video DL On"}
-                      </Badge>
-                    )}
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     {song.language && song.language !== "English" && (
-                      <Badge variant="outline" className="text-xs border-violet-400/50 text-violet-600">{song.language}</Badge>
+                      <Badge variant="outline" className="text-xs border-violet-400/50 text-violet-600 hidden sm:inline-flex">{song.language}</Badge>
                     )}
                     {(song as any).songType && (
-                      <Badge variant="outline" className="text-xs border-cyan-400/50 text-cyan-600">{(song as any).songType}</Badge>
+                      <Badge variant="outline" className="text-xs border-cyan-400/50 text-cyan-600 hidden sm:inline-flex">{(song as any).songType}</Badge>
                     )}
                     <Badge variant={song.isActive ? "default" : "secondary"} className="text-xs">
                       {song.isActive ? "Active" : "Inactive"}
                     </Badge>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setViewTestimonyFor(viewTestimonyFor === song.id ? null : song.id)}
-                      data-testid={`button-view-testimonies-${song.id}`}
-                      className="text-xs"
-                    >
-                      <MessageSquare className="w-3 h-3 mr-1" />
-                      {testimonies.filter((t) => t.songId === song.id).length}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setViewStatsFor(viewStatsFor === song.id ? null : song.id)}
-                      data-testid={`button-view-stats-${song.id}`}
-                      className="text-xs"
-                    >
-                      <BarChart3 className="w-3 h-3 mr-1" />
-                      Stats
-                    </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button size="sm" variant="outline" title="Duplicate" data-testid={`button-duplicate-song-${song.id}`}>
-                          <Copy className="w-3 h-3" />
+                        <Button size="sm" variant="outline" className="h-8 w-8 p-0" aria-label="Song actions" data-testid={`button-actions-song-${song.id}`}>
+                          <Menu className="w-3.5 h-3.5" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="w-52">
+                        {song.audioUrl && (
+                          <DropdownMenuItem asChild>
+                            <a href={song.audioUrl} target="_blank" rel="noopener noreferrer">
+                              <Music className="w-3.5 h-3.5 mr-2" /> Preview Audio
+                            </a>
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={() => openEdit(song)} data-testid={`menu-edit-song-${song.id}`}>
+                          <Edit className="w-3.5 h-3.5 mr-2" /> Edit Song
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setViewStatsFor(viewStatsFor === song.id ? null : song.id)} data-testid={`menu-stats-song-${song.id}`}>
+                          <BarChart3 className="w-3.5 h-3.5 mr-2" /> View Stats
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setViewTestimonyFor(viewTestimonyFor === song.id ? null : song.id)} data-testid={`menu-testimonies-song-${song.id}`}>
+                          <MessageSquare className="w-3.5 h-3.5 mr-2" /> Testimonies ({testimonies.filter((t) => t.songId === song.id).length})
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => openDuplicate(song, "copy")}>
                           <Copy className="w-3.5 h-3.5 mr-2" /> Duplicate Song
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => openDuplicate(song, "translation")}>
                           Duplicate + Translation
                         </DropdownMenuItem>
@@ -4204,29 +4196,20 @@ function SongsAdmin() {
                         <DropdownMenuItem onClick={() => openDuplicate(song, "remix")}>
                           Duplicate + Remix
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => {
+                            if (confirm(`Delete "${song.title}"? This cannot be undone.`)) {
+                              deleteSongMutation.mutate(song.id);
+                            }
+                          }}
+                          data-testid={`menu-delete-song-${song.id}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Song
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openEdit(song)}
-                      data-testid={`button-edit-song-${song.id}`}
-                    >
-                      <Edit className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => {
-                        if (confirm(`Delete "${song.title}"? This cannot be undone.`)) {
-                          deleteSongMutation.mutate(song.id);
-                        }
-                      }}
-                      data-testid={`button-delete-song-${song.id}`}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
                   </div>
                 </div>
               ))}
@@ -4756,10 +4739,10 @@ function SongsAdmin() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">Song Type</Label>
-                  <Select value={(editingSong as any).songType ?? ""} onValueChange={(v) => setEditingSong({ ...editingSong, songType: v || null } as any)}>
+                  <Select value={(editingSong as any).songType || "none"} onValueChange={(v) => setEditingSong({ ...editingSong, songType: v === "none" ? null : v } as any)}>
                     <SelectTrigger><SelectValue placeholder="Select type…" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">— None —</SelectItem>
+                      <SelectItem value="none">— None —</SelectItem>
                       {SONG_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                     </SelectContent>
                   </Select>

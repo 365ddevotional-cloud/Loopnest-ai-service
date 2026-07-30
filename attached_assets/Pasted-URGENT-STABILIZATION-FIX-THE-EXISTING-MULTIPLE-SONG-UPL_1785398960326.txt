@@ -1,0 +1,338 @@
+URGENT STABILIZATION — FIX THE EXISTING MULTIPLE-SONG UPLOADER AND MOBILE SONG ACTIONS MENU ONLY
+
+This is a focused repair and consolidation task.
+
+DO NOT add any new large music features during this task.
+DO NOT implement Master Song linking, language-version switching, bulk editing, song scheduling, archive/version history, artist pages, new analytics systems, or unrelated enhancements yet.
+
+DO NOT rebuild or refactor the music system.
+DO NOT modify Church Mode, Family/Group Mode, authentication, payments, devotionals, Sunday School, notifications, Android publishing, or unrelated files.
+
+The objective is to make the EXISTING multiple-song upload workflow reliable, consistent, understandable, and mobile-safe.
+
+CURRENT VERIFIED PROBLEMS
+
+1. The Batch Upload Songs section currently contains:
+   - Add Audio Files
+   - Add Blank Song
+   - Save All as Drafts
+   - Upload All Songs
+
+2. When Add Audio Files is tapped on a real mobile device:
+   - the device file picker opens correctly;
+   - selecting multiple audio files causes the application to show a completely blank dark page;
+   - selecting only one audio file also causes the same blank page.
+
+3. Replit previously reported that selecting audio files would generate full batch song cards, but this is not working in the live application.
+
+4. Add Blank Song creates a metadata form but does not clearly request or attach the actual audio file, causing two inconsistent workflows.
+
+5. Existing song rows contain too many inline controls. On mobile, the controls extend far beyond the page width and create severe horizontal overflow.
+
+FIRST: INVESTIGATE THE REAL BLANK-PAGE FAILURE
+
+Before changing the interface:
+
+1. Reproduce the issue using the actual existing Batch Upload Songs page.
+
+2. Test:
+   - selecting one supported audio file;
+   - selecting two or more supported audio files;
+   - cancelling the file picker;
+   - selecting an unsupported file;
+   - selecting a file larger than the permitted size.
+
+3. Inspect:
+   - browser console errors;
+   - React runtime errors;
+   - file-input event handling;
+   - FileList conversion;
+   - batch-song state initialization;
+   - object URL creation and cleanup;
+   - audio metadata reading;
+   - duplicate key or undefined-property errors;
+   - mobile Safari and mobile Chrome behavior;
+   - accidental full-page navigation or form submission;
+   - memory exhaustion from reading files into base64;
+   - component crashes caused by trying to render incomplete batch records.
+
+4. Report the exact root cause before declaring the repair complete.
+
+CANONICAL MULTIPLE-SONG UPLOAD WORKFLOW
+
+Preserve Upload Multiple Songs as the entry point.
+
+When it opens, show one Batch Upload Songs workspace containing these two input choices:
+
+A. ADD AUDIO FILES
+- Allow the admin to choose one or several supported audio files.
+- Selecting files must never navigate away, reload the page, or produce a blank screen.
+- Convert FileList safely with Array.from().
+- Do not store full audio files as base64 in React state.
+- Keep actual File objects only where required for upload.
+- Generate object URLs only for temporary previews and revoke them safely when removed or when the component unmounts.
+- Give every new batch record a stable unique client ID. Do not use filename alone as a React key.
+- Create exactly one expandable batch card for every selected audio file.
+- Automatically use the filename without extension as a temporary title.
+- Preserve each selected File object and show:
+  - filename
+  - file size
+  - audio type
+  - Replace Audio
+  - Remove Audio
+  - audio-ready confirmation
+
+B. ADD BLANK SONG
+- Keep this as an alternative for entering song details before an audio file is ready.
+- It must create the same exact batch-card structure used for selected audio files.
+- The blank card must include a visible required Audio File control:
+  “Upload or Select Audio File”
+- Do not maintain a separate reduced metadata system for blank songs.
+
+ONE SHARED BATCH CARD COMPONENT
+
+Both Add Audio Files and Add Blank Song must use one shared batch-song card component and one shared data model.
+
+Each batch card must contain the important Upload One Song fields, using the same validation and field ordering wherever practical:
+
+REQUIRED OR PRIMARY
+- Audio file
+- Song title
+- URL-safe slug
+- Artist or vocalist
+- Ministry or label
+- Language
+- Song type
+- Cover artwork
+- Lyrics
+- Status: Draft, Active, or Inactive
+
+ADDITIONAL
+- Featured artist
+- Producer
+- Composer
+- Lyricist
+- Choir or group
+- Instrumentalist
+- Genre
+- SpiritTone Records logo
+- Scripture reference
+- Scripture text
+- Release year
+- MP4 video file
+- Short description
+- Full description
+- Featured week start
+- Featured week end
+- Copyright notice
+- Audio-download setting
+- Video-download setting
+- Collections or albums
+
+Do not require every optional field before saving a draft.
+
+The card should be collapsed by default after its title and audio file are valid, but must be expandable for full editing.
+
+At the top of every card show:
+- sequence number
+- title or filename
+- language
+- song type
+- audio attached or missing
+- cover attached or missing
+- MP4 attached or missing
+- validation status
+- expand/collapse
+- remove card
+
+BATCH ACTIONS
+
+1. Save All as Drafts
+- Save every valid card as Draft.
+- Allow incomplete optional metadata.
+- Do not publish.
+- Clearly identify any card missing required title or audio.
+
+2. Upload All Songs
+- Validate every card before upload.
+- Display errors inside the affected card.
+- Do not clear or lose valid forms because one card fails.
+- Upload files sequentially or with a safe low concurrency limit to avoid mobile browser memory failure.
+- Show per-song progress:
+  - Waiting
+  - Uploading audio
+  - Uploading cover
+  - Uploading video
+  - Saving record
+  - Complete
+  - Failed
+- Show overall progress such as “2 of 5 completed.”
+- Permit retrying only failed songs.
+- Prevent duplicate submission while an upload is in progress.
+
+3. Cancel Batch
+- Require confirmation when unsaved records exist.
+- Revoke all temporary object URLs.
+- Clear only the batch workspace.
+
+SUPPORTED FILE HANDLING
+
+- Accept the same safe audio types already supported by Upload One Song.
+- Accept MP3 and any other formats the existing backend genuinely supports.
+- Reject unsupported formats with a readable message instead of crashing.
+- Enforce the existing maximum file size.
+- Show the maximum permitted size next to the input.
+- Handle zero-byte and corrupted files gracefully.
+- Do not claim that WAV, M4A, or other formats are supported unless the actual backend upload and playback pipeline supports them.
+
+MOBILE AND DESKTOP SONG ROW ACTIONS
+
+The current existing-song list has too many inline controls and overflows horizontally on mobile.
+
+Replace the excessive inline action controls beside EACH song with a compact Actions menu.
+
+Use either:
+- a three-dot vertical menu; or
+- a clearly labeled hamburger/Actions button.
+
+The Actions menu should open as a dropdown, popover, or bottom sheet that fits mobile screens.
+
+Move these existing actions into that menu where they currently exist:
+- Preview or Play
+- Edit Song
+- Audio status/settings
+- Audio-download setting
+- Video status/settings
+- Video-download setting
+- Duplicate options
+- Add to or manage collections
+- Change between standalone/single-song and collection/batch placement where already supported
+- Statistics
+- Activate or deactivate
+- Archive if already implemented
+- Delete
+
+Do not invent actions whose backend does not yet exist.
+
+Keep only concise identifying information visible on the main row:
+- thumbnail
+- title
+- artist or label
+- language badge
+- song-type badge
+- Active/Inactive badge
+- play count if already implemented and reliable
+- Actions button
+
+RESPONSIVE REQUIREMENTS
+
+- No song row may cause horizontal page overflow.
+- No controls may extend outside the viewport.
+- Dropdowns must remain fully visible within the screen.
+- On narrow mobile screens, use a bottom sheet if a dropdown cannot fit.
+- Close the menu when:
+  - an action is selected;
+  - the user taps outside;
+  - Escape is pressed on desktop.
+- Give all buttons adequate touch size.
+- Maintain keyboard accessibility and ARIA labels.
+
+IMPORTANT CONSISTENCY RULES
+
+1. There must be only one batch-song card structure.
+2. Add Audio Files and Add Blank Song must feed the same card component.
+3. Do not create another separate multiple-upload page or modal.
+4. Do not change Upload One Song except to reuse safe shared validation or components.
+5. Preserve all already uploaded songs and their metadata.
+6. Do not delete, rename, reset, reseed, or duplicate existing song records.
+7. Do not modify existing audio, video, artwork, language, statistics, collections, or download settings.
+8. Do not run destructive database migrations.
+9. Make the smallest targeted changes possible.
+10. Do not touch unrelated files.
+
+TESTING — ACTUAL BEHAVIOR REQUIRED
+
+Run these tests against the real implementation:
+
+A. MULTIPLE AUDIO FILES
+- Open Upload Multiple Songs.
+- Select at least two supported audio files.
+- Confirm two editable cards appear.
+- Confirm there is no blank screen.
+- Confirm both cards preserve their own correct File objects.
+- Confirm removing one card does not remove the other.
+- Save both as drafts.
+- Confirm both records appear correctly in the admin song list.
+
+B. ONE AUDIO FILE
+- Select one supported audio file.
+- Confirm exactly one card appears.
+- Complete required metadata.
+- Upload successfully.
+- Confirm playback works after upload.
+
+C. BLANK SONG
+- Tap Add Blank Song.
+- Confirm the same complete batch card appears.
+- Confirm it provides a visible audio-file control.
+- Attach an audio file afterward.
+- Save successfully.
+
+D. ERROR HANDLING
+- Cancel the picker.
+- Select an unsupported file.
+- Attempt an oversized file.
+- Confirm no blank page or React crash.
+- Confirm readable errors.
+
+E. MOBILE RESPONSIVENESS
+- Test on an iPhone-sized viewport.
+- Test on an Android-sized viewport.
+- Confirm selected audio files generate cards.
+- Confirm the page remains usable after selecting files.
+- Confirm no horizontal overflow.
+- Confirm every existing song has a usable Actions menu.
+- Open the first song’s menu, a middle song’s menu, and the last song’s menu.
+- Confirm the menu remains within the viewport.
+
+F. REGRESSION
+- Confirm Upload One Song still works.
+- Confirm existing songs still play.
+- Confirm existing MP4 files still work.
+- Confirm filters still work.
+- Confirm language and song-type badges still work.
+- Confirm collections still work.
+- Confirm existing statistics are unchanged.
+- Confirm no unrelated features were modified.
+
+ERROR BOUNDARY
+
+Add a narrowly scoped error boundary around the Batch Upload workspace if one does not already exist.
+
+If a card unexpectedly crashes, show:
+“Something went wrong while preparing these songs. Your selected files have not been uploaded. Please remove the affected song or try again.”
+
+Do not allow the entire application to become a blank page.
+
+FINAL REPORT
+
+Provide:
+
+1. Exact root cause of the blank page.
+2. Exact files changed.
+3. Confirmation that only targeted music-admin files were changed.
+4. Before-and-after explanation of the batch workflow.
+5. Test results for one file and multiple files.
+6. Mobile Safari result.
+7. Android Chrome result.
+8. Confirmation that Add Audio Files and Add Blank Song now use one shared card.
+9. Confirmation that existing song rows no longer overflow horizontally.
+10. Screenshot of:
+   - two selected audio files rendered as two batch cards;
+   - one expanded batch card showing its audio file and metadata;
+   - the new mobile song Actions menu.
+11. Any remaining limitation stated honestly.
+12. Create a checkpoint only after these tests pass.
+
+Do not merely describe or propose the fix.
+Implement it, reproduce the previous failure, correct the root cause, test it with real selected files, and report the evidence.
