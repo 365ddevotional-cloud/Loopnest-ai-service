@@ -3000,14 +3000,17 @@ interface BatchSong {
   featuredWeekEnd: string;
   copyrightNotice: string;
   releaseYear: number;
+  labelLogoFile: File | null;
+  labelLogoPreview: string | null;
   coverFile: File | null;
   coverPreview: string | null;
   videoFile: File | null;
   videoUploadStatus: "none" | "uploading" | "completed" | "failed";
-  videoDownloadEnabled: boolean;
   videoError: string | null;
-  downloadEnabled: boolean;
+  downloadStatus: "free" | "disabled";
+  videoDownloadStatus: "free" | "disabled";
   isActive: boolean;
+  collectionIds: number[];
   status: "waiting" | "uploading" | "completed" | "failed";
   error: string | null;
   expanded: boolean;
@@ -3415,6 +3418,26 @@ function SongsAdmin() {
     setBatchSongs(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
   };
 
+  const makeBatchSong = (file: File | null, overrides: Partial<BatchSong> = {}): BatchSong => ({
+    id: `batch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    file, title: "", slug: "",
+    artist: "", featuredArtist: "", choir: "", instrumentalist: "", genre: "",
+    labelName: "SpiritTone Records", producer: "Moses Afolabi",
+    composer: "", lyricist: "", language: "English",
+    scriptureReference: "", scriptureText: "",
+    lyrics: "", shortDescription: "", description: "",
+    featuredWeekStart: "", featuredWeekEnd: "",
+    copyrightNotice: `© ${new Date().getFullYear()} SpiritTone Records. All rights reserved.`,
+    releaseYear: new Date().getFullYear(),
+    labelLogoFile: null, labelLogoPreview: null,
+    coverFile: null, coverPreview: null,
+    videoFile: null, videoUploadStatus: "none" as const, videoError: null,
+    downloadStatus: "free" as const, videoDownloadStatus: "disabled" as const,
+    isActive: true, collectionIds: [],
+    status: "waiting", error: null, expanded: true,
+    ...overrides,
+  });
+
   const handleBatchFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     e.target.value = "";
@@ -3427,45 +3450,13 @@ function SongsAdmin() {
       const rawTitle = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]+/g, " ").trim();
       const title = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
       const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-      return {
-        id: `batch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        file, title, slug,
-        artist: "", featuredArtist: "", choir: "", instrumentalist: "", genre: "",
-        labelName: "SpiritTone Records",
-        producer: "Moses Afolabi",
-        composer: "", lyricist: "",
-        language: "English",
-        scriptureReference: "", scriptureText: "",
-        lyrics: "", shortDescription: "", description: "",
-        featuredWeekStart: "", featuredWeekEnd: "",
-        copyrightNotice: `© ${new Date().getFullYear()} SpiritTone Records. All rights reserved.`,
-        releaseYear: new Date().getFullYear(),
-        coverFile: null, coverPreview: null,
-        videoFile: null, videoUploadStatus: "none" as const, videoDownloadEnabled: false, videoError: null,
-        downloadEnabled: true, isActive: true,
-        status: "waiting", error: null, expanded: true,
-      };
+      return makeBatchSong(file, { title, slug });
     });
     setBatchSongs(prev => [...prev, ...newSongs]);
   };
 
   const addBlankSong = () => {
-    setBatchSongs(prev => [...prev, {
-      id: `batch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      file: null, title: "", slug: "",
-      artist: "", featuredArtist: "", choir: "", instrumentalist: "", genre: "",
-      labelName: "SpiritTone Records", producer: "Moses Afolabi",
-      composer: "", lyricist: "", language: "English",
-      scriptureReference: "", scriptureText: "",
-      lyrics: "", shortDescription: "", description: "",
-      featuredWeekStart: "", featuredWeekEnd: "",
-      copyrightNotice: `© ${new Date().getFullYear()} SpiritTone Records. All rights reserved.`,
-      releaseYear: new Date().getFullYear(),
-      coverFile: null, coverPreview: null,
-      videoFile: null, videoUploadStatus: "none" as const, videoDownloadEnabled: false, videoError: null,
-      downloadEnabled: true, isActive: true,
-      status: "waiting", error: null, expanded: true,
-    }]);
+    setBatchSongs(prev => [...prev, makeBatchSong(null)]);
   };
 
   const processOneBatchSong = async (bsong: BatchSong, asDraft: boolean) => {
@@ -3481,6 +3472,8 @@ function SongsAdmin() {
     try {
       let audioPath: string | null = null;
       if (bsong.file) audioPath = await doFileUpload(bsong.file);
+      let logoPath: string | null = null;
+      if (bsong.labelLogoFile) logoPath = await doFileUpload(bsong.labelLogoFile);
       let coverPath: string | null = null;
       if (bsong.coverFile) coverPath = await doFileUpload(bsong.coverFile);
       let videoPath: string | null = null;
@@ -3495,11 +3488,13 @@ function SongsAdmin() {
         }
       }
       const songSlug = bsong.slug || bsong.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-      await apiRequest("POST", "/api/songs", {
+      const saved = await apiRequest("POST", "/api/songs", {
         title: bsong.title, slug: songSlug,
         artist: bsong.artist || null, featuredArtist: bsong.featuredArtist || null,
         choir: bsong.choir || null, instrumentalist: bsong.instrumentalist || null, genre: bsong.genre || null,
-        labelName: bsong.labelName || "SpiritTone Records", producer: bsong.producer || "Moses Afolabi",
+        labelName: bsong.labelName || "SpiritTone Records",
+        labelLogoUrl: logoPath,
+        producer: bsong.producer || "Moses Afolabi",
         composer: bsong.composer || null, lyricist: bsong.lyricist || null,
         language: bsong.language || "English",
         scriptureReference: bsong.scriptureReference, scriptureText: bsong.scriptureText || null,
@@ -3508,11 +3503,20 @@ function SongsAdmin() {
         featuredWeekStart: bsong.featuredWeekStart || null, featuredWeekEnd: bsong.featuredWeekEnd || null,
         copyrightNotice: bsong.copyrightNotice || null,
         audioUrl: audioPath, coverImageUrl: coverPath,
-        downloadStatus: bsong.downloadEnabled ? "free" : "disabled",
-        videoUrl: videoPath, videoDownloadStatus: bsong.videoDownloadEnabled && videoPath ? "free" : "disabled",
+        downloadStatus: bsong.downloadStatus,
+        videoUrl: videoPath, videoDownloadStatus: videoPath ? bsong.videoDownloadStatus : "disabled",
         isActive: asDraft ? false : bsong.isActive,
         releaseYear: bsong.releaseYear || null,
       });
+      // Assign to collections if any selected
+      if (bsong.collectionIds.length > 0) {
+        const newSongId = (await saved.json()).id;
+        if (newSongId) {
+          await Promise.allSettled(bsong.collectionIds.map(cid =>
+            apiRequest("POST", `/api/song-collections/${cid}/songs`, { songId: newSongId })
+          ));
+        }
+      }
       setBatchSongs(prev => prev.map(s => s.id === bsong.id ? { ...s, status: "completed", expanded: false } : s));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Upload failed";
@@ -3657,181 +3661,289 @@ function SongsAdmin() {
                       </Button>
                     )}
                     {song.expanded && song.status !== "completed" && (
-                      <div className="mt-3 space-y-2 border-t border-border/30 pt-3">
-                        {/* Audio file picker for blank songs */}
-                        {!song.file && (
-                          <div className="space-y-0.5">
-                            <Label className="text-xs text-amber-600 dark:text-amber-400">Audio File <span className="text-muted-foreground font-normal">(attach before publishing)</span></Label>
-                            <label className="inline-flex items-center gap-1.5 text-xs border border-amber-400/50 bg-amber-50/20 rounded px-2 py-1.5 cursor-pointer hover:bg-amber-50/40 transition-colors">
-                              <Music className="w-3 h-3 text-amber-600" />
-                              Attach Audio File
-                              <input type="file" className="hidden" accept=".mp3,.m4a,.wav,.aac,.ogg" onChange={(e) => {
-                                const f = e.target.files?.[0]; e.target.value = "";
-                                if (!f) return;
-                                if (f.size > 80 * 1024 * 1024) { toast({ title: "File too large", description: "Audio must be under 80MB.", variant: "destructive" }); return; }
-                                updateBatchSong(song.id, { file: f });
-                              }} />
-                            </label>
+                      <div className="mt-3 border-t border-border/30 pt-4 space-y-4">
+
+                        {/* Audio file — always shown at top */}
+                        <div className="space-y-2">
+                          <Label className="text-xs">Song Audio File <span className="text-muted-foreground">(MP3/M4A/WAV, max 80MB)</span></Label>
+                          {song.file && (
+                            <div className="flex items-center gap-2 p-2 rounded-md bg-muted/30 border">
+                              <Music className="w-4 h-4 text-primary flex-shrink-0" />
+                              <span className="text-xs text-foreground truncate flex-1">{song.file.name}</span>
+                              <Button size="sm" variant="ghost" className="text-destructive h-6 text-xs flex-shrink-0" onClick={() => updateBatchSong(song.id, { file: null })}>
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          )}
+                          <label className={`inline-flex items-center gap-1.5 text-xs border rounded-md px-3 py-1.5 cursor-pointer hover:bg-muted transition-colors ${!song.file ? "border-amber-400/60 bg-amber-50/20 hover:bg-amber-50/40" : ""}`}>
+                            <Upload className="w-3 h-3" />
+                            {song.file ? "Replace Audio" : "Upload Audio"}
+                            <input type="file" className="hidden" accept=".mp3,.m4a,.wav,.aac,.ogg" onChange={(e) => {
+                              const f = e.target.files?.[0]; e.target.value = "";
+                              if (!f) return;
+                              if (f.size > 80 * 1024 * 1024) { toast({ title: "File too large", description: "Audio must be under 80MB.", variant: "destructive" }); return; }
+                              updateBatchSong(song.id, { file: f });
+                            }} />
+                          </label>
+                        </div>
+
+                        {/* Title + Slug */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Title *</Label>
+                            <Input value={song.title} onChange={(e) => updateBatchSong(song.id, { title: e.target.value })} placeholder="Song title" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Slug * (URL-safe)</Label>
+                            <Input value={song.slug} onChange={(e) => updateBatchSong(song.id, { slug: e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") })} placeholder="song-url-slug" />
+                          </div>
+                        </div>
+
+                        {/* Artist + Featured Artist */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Artist / Vocalist</Label>
+                            <Input value={song.artist} onChange={(e) => updateBatchSong(song.id, { artist: e.target.value })} placeholder="Optional vocalist" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Featured Artist</Label>
+                            <Input value={song.featuredArtist} onChange={(e) => updateBatchSong(song.id, { featuredArtist: e.target.value })} placeholder="ft. Artist (optional)" />
+                          </div>
+                        </div>
+
+                        {/* Ministry + Producer */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Ministry / Label Name</Label>
+                            <Input value={song.labelName} onChange={(e) => updateBatchSong(song.id, { labelName: e.target.value })} />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Producer</Label>
+                            <Input value={song.producer} onChange={(e) => updateBatchSong(song.id, { producer: e.target.value })} />
+                          </div>
+                        </div>
+
+                        {/* Composer + Lyricist */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Composer</Label>
+                            <Input value={song.composer} onChange={(e) => updateBatchSong(song.id, { composer: e.target.value })} placeholder="Optional" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Lyricist</Label>
+                            <Input value={song.lyricist} onChange={(e) => updateBatchSong(song.id, { lyricist: e.target.value })} placeholder="Optional" />
+                          </div>
+                        </div>
+
+                        {/* Choir + Instrumentalist */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Choir / Group</Label>
+                            <Input value={song.choir} onChange={(e) => updateBatchSong(song.id, { choir: e.target.value })} placeholder="Optional choir name" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Instrumentalist</Label>
+                            <Input value={song.instrumentalist} onChange={(e) => updateBatchSong(song.id, { instrumentalist: e.target.value })} placeholder="Optional" />
+                          </div>
+                        </div>
+
+                        {/* Genre + Language */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Genre</Label>
+                            <Input value={song.genre} onChange={(e) => updateBatchSong(song.id, { genre: e.target.value })} placeholder="e.g. Gospel, Worship" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Language</Label>
+                            <Input value={song.language} onChange={(e) => updateBatchSong(song.id, { language: e.target.value })} placeholder="English" />
+                          </div>
+                        </div>
+
+                        {/* Logo */}
+                        <div className="space-y-2">
+                          <Label className="text-xs">SpiritTone Records Logo <span className="text-muted-foreground">(PNG/JPG/SVG, max 5MB)</span></Label>
+                          {song.labelLogoPreview && (
+                            <div className="flex items-center gap-2">
+                              <img src={song.labelLogoPreview} alt="Logo preview" className="h-10 object-contain border rounded p-1 bg-muted/30" />
+                              <Button size="sm" variant="ghost" className="text-destructive h-7 text-xs" onClick={() => updateBatchSong(song.id, { labelLogoFile: null, labelLogoPreview: null })}>
+                                <X className="w-3 h-3 mr-1" /> Remove
+                              </Button>
+                            </div>
+                          )}
+                          <label className="inline-flex items-center gap-1.5 text-xs border rounded-md px-3 py-1.5 cursor-pointer hover:bg-muted transition-colors">
+                            <Upload className="w-3 h-3" />
+                            {song.labelLogoPreview ? "Replace Logo" : "Upload Logo"}
+                            <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.webp,.svg" onChange={(e) => {
+                              const f = e.target.files?.[0]; e.target.value = "";
+                              if (!f) return;
+                              if (f.size > 5 * 1024 * 1024) { toast({ title: "File too large", description: "Logo must be under 5MB.", variant: "destructive" }); return; }
+                              updateBatchSong(song.id, { labelLogoFile: f, labelLogoPreview: URL.createObjectURL(f) });
+                            }} />
+                          </label>
+                        </div>
+
+                        {/* Cover Artwork */}
+                        <div className="space-y-2">
+                          <Label className="text-xs">Song Cover Artwork <span className="text-muted-foreground">(JPG/PNG/WebP, max 10MB)</span></Label>
+                          {song.coverPreview && (
+                            <div className="flex items-center gap-2">
+                              <img src={song.coverPreview} alt="Cover preview" className="h-20 w-20 rounded object-cover border" />
+                              <Button size="sm" variant="ghost" className="text-destructive h-7 text-xs" onClick={() => updateBatchSong(song.id, { coverFile: null, coverPreview: null })}>
+                                <X className="w-3 h-3 mr-1" /> Remove
+                              </Button>
+                            </div>
+                          )}
+                          <label className="inline-flex items-center gap-1.5 text-xs border rounded-md px-3 py-1.5 cursor-pointer hover:bg-muted transition-colors">
+                            <Upload className="w-3 h-3" />
+                            {song.coverPreview ? "Replace Cover" : "Upload Cover"}
+                            <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.webp" onChange={(e) => {
+                              const f = e.target.files?.[0]; e.target.value = "";
+                              if (!f) return;
+                              if (f.size > 10 * 1024 * 1024) { toast({ title: "File too large", description: "Cover must be under 10MB.", variant: "destructive" }); return; }
+                              updateBatchSong(song.id, { coverFile: f, coverPreview: URL.createObjectURL(f) });
+                            }} />
+                          </label>
+                        </div>
+
+                        {/* Scripture Reference + Release Year */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Scripture Reference *</Label>
+                            <Input value={song.scriptureReference} onChange={(e) => updateBatchSong(song.id, { scriptureReference: e.target.value })} placeholder="Psalm 23:1" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Release Year</Label>
+                            <Input type="number" value={song.releaseYear} onChange={(e) => updateBatchSong(song.id, { releaseYear: Number(e.target.value) })} placeholder="2026" />
+                          </div>
+                        </div>
+
+                        {/* Scripture Text */}
+                        <div className="space-y-1">
+                          <Label className="text-xs">Scripture Text (optional)</Label>
+                          <Input value={song.scriptureText} onChange={(e) => updateBatchSong(song.id, { scriptureText: e.target.value })} placeholder="The LORD is my shepherd; I shall not want." />
+                        </div>
+
+                        {/* Video */}
+                        <div className="space-y-2">
+                          <Label className="text-xs">Song Video File <span className="text-muted-foreground">(MP4 only, max 500MB — optional)</span></Label>
+                          {song.videoFile && (
+                            <div className="flex items-center gap-2 p-2 rounded-md bg-muted/30 border">
+                              <Video className="w-4 h-4 text-primary flex-shrink-0" />
+                              <span className="text-xs text-foreground truncate flex-1">{song.videoFile.name}</span>
+                              {song.videoUploadStatus === "failed" && song.videoError && <span className="text-xs text-red-600 flex-shrink-0">{song.videoError}</span>}
+                              <Button size="sm" variant="ghost" className="text-destructive h-6 text-xs flex-shrink-0" onClick={() => updateBatchSong(song.id, { videoFile: null, videoDownloadStatus: "disabled", videoUploadStatus: "none", videoError: null })}>
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          )}
+                          <label className={`inline-flex items-center gap-1.5 text-xs border rounded-md px-3 py-1.5 cursor-pointer hover:bg-muted transition-colors ${song.videoUploadStatus === "uploading" ? "opacity-60 pointer-events-none" : ""}`}>
+                            <Video className="w-3 h-3" />
+                            {song.videoFile ? "Replace Video" : "Upload MP4"}
+                            <input type="file" className="hidden" accept=".mp4,video/mp4" onChange={(e) => {
+                              const f = e.target.files?.[0]; e.target.value = "";
+                              if (!f) return;
+                              if (!f.name.toLowerCase().endsWith(".mp4") && f.type !== "video/mp4") { toast({ title: "Invalid file", description: "Please upload an MP4 video file.", variant: "destructive" }); return; }
+                              if (f.size > 500 * 1024 * 1024) { toast({ title: "File too large", description: "Video must be under 500MB.", variant: "destructive" }); return; }
+                              updateBatchSong(song.id, { videoFile: f, videoDownloadStatus: "free", videoUploadStatus: "none", videoError: null });
+                            }} />
+                          </label>
+                        </div>
+
+                        {/* Lyrics */}
+                        <div className="space-y-1">
+                          <Label className="text-xs">Lyrics (use blank lines between sections)</Label>
+                          <Textarea value={song.lyrics} onChange={(e) => updateBatchSong(song.id, { lyrics: e.target.value })} rows={8} placeholder={"[Verse 1]\n..."} className="font-mono text-xs" />
+                        </div>
+
+                        {/* Short Description */}
+                        <div className="space-y-1">
+                          <Label className="text-xs">Short Description <span className="text-muted-foreground">(shown in library listing)</span></Label>
+                          <Textarea value={song.shortDescription} onChange={(e) => updateBatchSong(song.id, { shortDescription: e.target.value })} rows={2} placeholder="One-line summary shown in the song library..." />
+                        </div>
+
+                        {/* Full Description */}
+                        <div className="space-y-1">
+                          <Label className="text-xs">Full Description <span className="text-muted-foreground">(shown on song detail page)</span></Label>
+                          <Textarea value={song.description} onChange={(e) => updateBatchSong(song.id, { description: e.target.value })} rows={3} placeholder="Full description for the song detail page..." />
+                        </div>
+
+                        {/* Featured Week */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Featured Week Start</Label>
+                            <Input type="date" value={song.featuredWeekStart} onChange={(e) => updateBatchSong(song.id, { featuredWeekStart: e.target.value })} />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Featured Week End</Label>
+                            <Input type="date" value={song.featuredWeekEnd} onChange={(e) => updateBatchSong(song.id, { featuredWeekEnd: e.target.value })} />
+                          </div>
+                        </div>
+
+                        {/* Copyright */}
+                        <div className="space-y-1">
+                          <Label className="text-xs">Copyright Notice</Label>
+                          <Input value={song.copyrightNotice} onChange={(e) => updateBatchSong(song.id, { copyrightNotice: e.target.value })} placeholder="© 2026 SpiritTone Records. All rights reserved." />
+                        </div>
+
+                        {/* Download + Status selects */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Audio Download</Label>
+                            <Select value={song.downloadStatus} onValueChange={(v) => updateBatchSong(song.id, { downloadStatus: v as "free" | "disabled" })}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="free">Audio Download Enabled</SelectItem>
+                                <SelectItem value="disabled">Audio Download Disabled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Video Download {!song.videoFile && <span className="text-muted-foreground text-[10px]">(upload MP4 first)</span>}</Label>
+                            <Select value={song.videoDownloadStatus} onValueChange={(v) => updateBatchSong(song.id, { videoDownloadStatus: v as "free" | "disabled" })} disabled={!song.videoFile}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="free">Video Download Enabled</SelectItem>
+                                <SelectItem value="disabled">Video Download Disabled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs">Song Status</Label>
+                          <Select value={song.isActive ? "active" : "inactive"} onValueChange={(v) => updateBatchSong(song.id, { isActive: v === "active" })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="inactive">Inactive</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Song Collections */}
+                        {collections.length > 0 && (
+                          <div className="space-y-1">
+                            <Label className="text-xs">Song Collections</Label>
+                            <div className="flex flex-wrap gap-x-4 gap-y-2 p-2 rounded-md border border-border/50 bg-muted/20">
+                              {collections.map(col => (
+                                <label key={col.id} className="flex items-center gap-1.5 text-xs cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    className="w-3 h-3"
+                                    checked={song.collectionIds.includes(col.id)}
+                                    onChange={(e) => updateBatchSong(song.id, {
+                                      collectionIds: e.target.checked
+                                        ? [...song.collectionIds, col.id]
+                                        : song.collectionIds.filter(cid => cid !== col.id),
+                                    })}
+                                  />
+                                  {col.title}
+                                </label>
+                              ))}
+                            </div>
                           </div>
                         )}
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-0.5">
-                            <Label className="text-xs">Title *</Label>
-                            <Input className="h-7 text-xs" value={song.title} onChange={(e) => updateBatchSong(song.id, { title: e.target.value })} placeholder="Song title" />
-                          </div>
-                          <div className="space-y-0.5">
-                            <Label className="text-xs">Slug</Label>
-                            <Input className="h-7 text-xs" value={song.slug} onChange={(e) => updateBatchSong(song.id, { slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })} placeholder="song-url-slug" />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-0.5">
-                            <Label className="text-xs">Scripture Reference *</Label>
-                            <Input className="h-7 text-xs" value={song.scriptureReference} onChange={(e) => updateBatchSong(song.id, { scriptureReference: e.target.value })} placeholder="Psalm 23:1" />
-                          </div>
-                          <div className="space-y-0.5">
-                            <Label className="text-xs">Artist / Vocalist</Label>
-                            <Input className="h-7 text-xs" value={song.artist} onChange={(e) => updateBatchSong(song.id, { artist: e.target.value })} placeholder="Optional" />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-0.5">
-                            <Label className="text-xs">Producer</Label>
-                            <Input className="h-7 text-xs" value={song.producer} onChange={(e) => updateBatchSong(song.id, { producer: e.target.value })} placeholder="Moses Afolabi" />
-                          </div>
-                          <div className="space-y-0.5">
-                            <Label className="text-xs">Composer</Label>
-                            <Input className="h-7 text-xs" value={song.composer} onChange={(e) => updateBatchSong(song.id, { composer: e.target.value })} placeholder="Optional" />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-0.5">
-                            <Label className="text-xs">Lyricist</Label>
-                            <Input className="h-7 text-xs" value={song.lyricist} onChange={(e) => updateBatchSong(song.id, { lyricist: e.target.value })} placeholder="Optional" />
-                          </div>
-                          <div className="space-y-0.5">
-                            <Label className="text-xs">Language</Label>
-                            <Input className="h-7 text-xs" value={song.language} onChange={(e) => updateBatchSong(song.id, { language: e.target.value })} placeholder="English" />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-0.5">
-                            <Label className="text-xs">Label / Ministry</Label>
-                            <Input className="h-7 text-xs" value={song.labelName} onChange={(e) => updateBatchSong(song.id, { labelName: e.target.value })} placeholder="SpiritTone Records" />
-                          </div>
-                          <div className="space-y-0.5">
-                            <Label className="text-xs">Release Year</Label>
-                            <Input className="h-7 text-xs" type="number" value={song.releaseYear} onChange={(e) => updateBatchSong(song.id, { releaseYear: Number(e.target.value) })} />
-                          </div>
-                        </div>
-                        <div className="space-y-0.5">
-                          <Label className="text-xs">Scripture Text</Label>
-                          <Input className="h-7 text-xs" value={song.scriptureText} onChange={(e) => updateBatchSong(song.id, { scriptureText: e.target.value })} placeholder="Optional scripture text" />
-                        </div>
-                        <div className="space-y-0.5">
-                          <Label className="text-xs">Short Description</Label>
-                          <Input className="h-7 text-xs" value={song.shortDescription} onChange={(e) => updateBatchSong(song.id, { shortDescription: e.target.value })} placeholder="Brief summary" />
-                        </div>
-                        {/* Additional details */}
-                        <div className="pt-2 border-t border-border/20 space-y-2">
-                          <p className="text-[10px] uppercase font-semibold text-muted-foreground/60 tracking-wider">Additional Details</p>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="space-y-0.5">
-                              <Label className="text-xs">Featured Artist</Label>
-                              <Input className="h-7 text-xs" value={song.featuredArtist} onChange={(e) => updateBatchSong(song.id, { featuredArtist: e.target.value })} placeholder="Optional" />
-                            </div>
-                            <div className="space-y-0.5">
-                              <Label className="text-xs">Genre</Label>
-                              <Input className="h-7 text-xs" value={song.genre} onChange={(e) => updateBatchSong(song.id, { genre: e.target.value })} placeholder="e.g. Worship" />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="space-y-0.5">
-                              <Label className="text-xs">Choir / Group</Label>
-                              <Input className="h-7 text-xs" value={song.choir} onChange={(e) => updateBatchSong(song.id, { choir: e.target.value })} placeholder="Optional" />
-                            </div>
-                            <div className="space-y-0.5">
-                              <Label className="text-xs">Instrumentalist</Label>
-                              <Input className="h-7 text-xs" value={song.instrumentalist} onChange={(e) => updateBatchSong(song.id, { instrumentalist: e.target.value })} placeholder="Optional" />
-                            </div>
-                          </div>
-                          <div className="space-y-0.5">
-                            <Label className="text-xs">Full Description</Label>
-                            <Textarea className="text-xs" value={song.description} onChange={(e) => updateBatchSong(song.id, { description: e.target.value })} placeholder="Full description for the song detail page..." rows={2} />
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="space-y-0.5">
-                              <Label className="text-xs">Featured Week Start</Label>
-                              <Input className="h-7 text-xs" type="date" value={song.featuredWeekStart} onChange={(e) => updateBatchSong(song.id, { featuredWeekStart: e.target.value })} />
-                            </div>
-                            <div className="space-y-0.5">
-                              <Label className="text-xs">Featured Week End</Label>
-                              <Input className="h-7 text-xs" type="date" value={song.featuredWeekEnd} onChange={(e) => updateBatchSong(song.id, { featuredWeekEnd: e.target.value })} />
-                            </div>
-                          </div>
-                          <div className="space-y-0.5">
-                            <Label className="text-xs">Copyright Notice</Label>
-                            <Input className="h-7 text-xs" value={song.copyrightNotice} onChange={(e) => updateBatchSong(song.id, { copyrightNotice: e.target.value })} placeholder="© 2026 SpiritTone Records" />
-                          </div>
-                        </div>
-                        <div className="space-y-0.5">
-                          <Label className="text-xs">Lyrics</Label>
-                          <Textarea className="text-xs" value={song.lyrics} onChange={(e) => updateBatchSong(song.id, { lyrics: e.target.value })} placeholder="[Verse 1]..." rows={3} />
-                        </div>
-                        <div className="space-y-0.5">
-                          <Label className="text-xs">Cover Image <span className="text-muted-foreground">(optional, max 10MB)</span></Label>
-                          <div className="flex items-center gap-2">
-                            {song.coverPreview && <img src={song.coverPreview} alt="Cover" className="w-10 h-10 rounded object-cover border flex-shrink-0" />}
-                            <label className="inline-flex items-center gap-1 text-xs border rounded px-2 py-1 cursor-pointer hover:bg-muted transition-colors">
-                              <Upload className="w-3 h-3" />
-                              {song.coverPreview ? "Change" : "Add Cover"}
-                              <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.webp" onChange={(e) => {
-                                const f = e.target.files?.[0]; e.target.value = "";
-                                if (!f) return;
-                                if (f.size > 10 * 1024 * 1024) { toast({ title: "File too large", description: "Cover must be under 10MB.", variant: "destructive" }); return; }
-                                updateBatchSong(song.id, { coverFile: f, coverPreview: URL.createObjectURL(f) });
-                              }} />
-                            </label>
-                            {song.coverPreview && (
-                              <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" onClick={() => updateBatchSong(song.id, { coverFile: null, coverPreview: null })}>Remove</Button>
-                            )}
-                          </div>
-                        </div>
-                        <div className="space-y-0.5">
-                          <Label className="text-xs">MP4 Video <span className="text-muted-foreground">(optional, max 500MB)</span></Label>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {song.videoFile && <span className="text-xs text-foreground truncate max-w-[140px]">{song.videoFile.name}</span>}
-                            {song.videoUploadStatus === "failed" && song.videoError && <span className="text-xs text-red-600">{song.videoError}</span>}
-                            <label className={`inline-flex items-center gap-1 text-xs border rounded px-2 py-1 cursor-pointer hover:bg-muted transition-colors ${song.videoUploadStatus === "uploading" ? "opacity-60 pointer-events-none" : ""}`}>
-                              <Video className="w-3 h-3" />
-                              {song.videoFile ? "Change MP4" : "Add MP4"}
-                              <input type="file" className="hidden" accept=".mp4,video/mp4" onChange={(e) => {
-                                const f = e.target.files?.[0]; e.target.value = "";
-                                if (!f) return;
-                                if (!f.name.toLowerCase().endsWith(".mp4") && f.type !== "video/mp4") { toast({ title: "Invalid file", description: "Please upload an MP4 video file.", variant: "destructive" }); return; }
-                                if (f.size > 500 * 1024 * 1024) { toast({ title: "File too large", description: "Video must be under 500MB.", variant: "destructive" }); return; }
-                                updateBatchSong(song.id, { videoFile: f, videoDownloadEnabled: true, videoUploadStatus: "none", videoError: null });
-                              }} />
-                            </label>
-                            {song.videoFile && <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" onClick={() => updateBatchSong(song.id, { videoFile: null, videoDownloadEnabled: false, videoUploadStatus: "none", videoError: null })}>Remove</Button>}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-5 pt-1 flex-wrap">
-                          <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-                            <input type="checkbox" checked={song.downloadEnabled} onChange={(e) => updateBatchSong(song.id, { downloadEnabled: e.target.checked })} className="w-3.5 h-3.5" />
-                            Audio Download Enabled
-                          </label>
-                          {song.videoFile && (
-                            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-                              <input type="checkbox" checked={song.videoDownloadEnabled} onChange={(e) => updateBatchSong(song.id, { videoDownloadEnabled: e.target.checked })} className="w-3.5 h-3.5" />
-                              Video Download Enabled
-                            </label>
-                          )}
-                          <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-                            <input type="checkbox" checked={song.isActive} onChange={(e) => updateBatchSong(song.id, { isActive: e.target.checked })} className="w-3.5 h-3.5" />
-                            Active (visible to public)
-                          </label>
-                        </div>
+
                       </div>
                     )}
                   </div>
