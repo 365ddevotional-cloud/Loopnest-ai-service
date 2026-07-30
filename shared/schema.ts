@@ -489,6 +489,7 @@ export const songs = pgTable("songs", {
   instrumentalist: text("instrumentalist"),
   genre: text("genre"),
   language: text("language").default("English"),
+  songType: text("song_type"),
   scriptureReference: text("scripture_reference").notNull(),
   scriptureText: text("scripture_text"),
   lyrics: text("lyrics"),

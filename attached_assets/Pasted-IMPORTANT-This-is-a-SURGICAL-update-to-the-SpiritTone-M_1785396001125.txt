@@ -1,0 +1,394 @@
+IMPORTANT
+
+This is a SURGICAL update to the SpiritTone Music system only.
+
+DO NOT refactor unrelated code.
+DO NOT modify any other modules.
+DO NOT change authentication.
+DO NOT change Church Mode.
+DO NOT change the devotional system.
+DO NOT change the database except where required for these music features.
+DO NOT break existing uploads, existing songs, existing URLs, existing APIs, or existing playback.
+
+Only implement the music management improvements described below.
+
+====================================================
+PART 1 — COMPLETE BATCH UPLOAD
+====================================================
+
+The current Batch Upload still uses the legacy "Add Audio Files" workflow.
+
+Replace it by reusing the existing Upload One Song component.
+
+After selecting multiple audio files, automatically generate one editable card for EACH selected song.
+
+Each song card must expose ALL metadata already available in Upload One Song, including:
+
+• Title
+• Slug
+• Artist
+• Featured Artist
+• Ministry
+• Producer
+• Composer
+• Lyricist
+• Choir / Group
+• Instrumentalist
+• Genre
+• Language
+• Instrumental / Vocal
+• Scripture Reference
+• Scripture Text
+• Release Year
+• Cover Artwork
+• Ministry Logo
+• MP3
+• MP4
+• Lyrics
+• Description
+• Download settings
+• Visibility
+• Collections
+
+The administrator must edit every song independently before clicking Upload All.
+
+====================================================
+PART 2 — DUPLICATE SONG
+====================================================
+
+For every existing song add:
+
+Duplicate Song
+
+This should duplicate all metadata except:
+
+Title
+Language
+Lyrics
+Audio
+MP4
+Cover
+
+Everything else should already be filled.
+
+Also add:
+
+Duplicate + Translation
+
+Duplicate + Instrumental
+
+Duplicate + Remix
+
+====================================================
+PART 3 — MASTER SONG + TRANSLATIONS
+====================================================
+
+Instead of treating translated songs as unrelated songs:
+
+Create a Master Song relationship.
+
+Example
+
+There's A Way Out
+
+    English (Master)
+
+        Spanish
+
+        French
+
+        Igbo
+
+        Hindi
+
+        Mandarin
+
+        Nepali
+
+        Pidgin
+
+        etc.
+
+Public users should be able to switch languages directly from the song page.
+
+====================================================
+PART 4 — LANGUAGE SUPPORT
+====================================================
+
+When uploading a song require Language.
+
+Include all supported languages.
+
+English
+
+Spanish
+
+French
+
+Portuguese
+
+German
+
+Italian
+
+Dutch
+
+Hindi
+
+Punjabi
+
+Nepali
+
+Mandarin Chinese
+
+Japanese
+
+Korean
+
+Arabic
+
+Swahili
+
+Yoruba
+
+Igbo
+
+Hausa
+
+Pidgin English
+
+Store language as metadata.
+
+Allow filtering by language.
+
+====================================================
+PART 5 — SONG TYPE
+====================================================
+
+Add Song Type.
+
+Vocal
+
+Instrumental
+
+Choir
+
+Podcast
+
+Message
+
+Children
+
+Other
+
+Allow filtering.
+
+====================================================
+PART 6 — COLLECTIONS
+====================================================
+
+One song may belong to multiple collections.
+
+Examples
+
+Song of the Week
+
+Morning Worship
+
+Healing
+
+Prayer
+
+Communion
+
+Christmas
+
+Children
+
+Youth
+
+Revival
+
+Spanish Worship
+
+French Worship
+
+Igbo Worship
+
+Hindi Worship
+
+Instrumentals
+
+New Releases
+
+Favorites
+
+Allow administrators to create unlimited collections.
+
+====================================================
+PART 7 — SMART AUTO-FILL
+====================================================
+
+When uploading:
+
+Automatically suggest Title from filename.
+
+Automatically suggest Language where possible.
+
+Automatically preserve repeated metadata.
+
+====================================================
+PART 8 — BULK EDITOR
+====================================================
+
+Allow selecting multiple songs.
+
+Bulk update:
+
+Language
+
+Collection
+
+Genre
+
+Visibility
+
+Download permissions
+
+Producer
+
+Ministry
+
+Release Year
+
+====================================================
+PART 9 — SONG ANALYTICS
+====================================================
+
+For every song display live statistics.
+
+Plays
+
+Unique Listeners
+
+Likes
+
+Shares
+
+Downloads
+
+Comments
+
+Average Listening Time
+
+Completion Rate
+
+Top Countries
+
+Top Devices
+
+Last Played
+
+Also display totals in Admin Dashboard.
+
+====================================================
+PART 10 — SONG MANAGEMENT
+====================================================
+
+Every song should support:
+
+Move into Collection
+
+Remove from Collection
+
+Feature
+
+Archive
+
+Hide
+
+Schedule
+
+Delete
+
+Duplicate
+
+Translate
+
+====================================================
+PART 11 — VERSION HISTORY
+====================================================
+
+Every edit should save a version.
+
+Allow Restore Previous Version.
+
+====================================================
+PART 12 — SEARCH
+====================================================
+
+Allow filtering by:
+
+Language
+
+Collection
+
+Genre
+
+Song Type
+
+Scripture
+
+Artist
+
+Producer
+
+Release Year
+
+Visibility
+
+====================================================
+PART 13 — USER EXPERIENCE
+====================================================
+
+Auto-save while editing.
+
+Upload progress.
+
+Better success messages.
+
+Prevent accidental navigation away while uploads are pending.
+
+====================================================
+PART 14 — TESTING
+====================================================
+
+Before marking complete:
+
+✓ Upload one song
+
+✓ Upload multiple songs
+
+✓ Upload multiple languages
+
+✓ Duplicate a song
+
+✓ Move songs between collections
+
+✓ Add/remove songs from collections
+
+✓ Verify analytics still update
+
+✓ Verify playback still works
+
+✓ Verify old songs remain functional
+
+Only mark complete after all tests pass.
+
+Again:
+
+DO NOT modify anything outside the music system.
+
+DO NOT break existing functionality.
+
+Make only the requested music improvements.

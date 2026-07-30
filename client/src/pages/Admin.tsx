@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2, Upload, Gift, Video, Building2, DollarSign, Menu } from "lucide-react";
 import { useUpload } from "@/hooks/use-upload";
@@ -2976,6 +2977,14 @@ export default function Admin() {
 
 // ── Songs Admin ───────────────────────────────────────────────────────────────
 
+const LANGUAGES = [
+  "English", "Spanish", "French", "Portuguese", "German", "Italian", "Dutch",
+  "Hindi", "Punjabi", "Nepali", "Mandarin Chinese", "Japanese", "Korean",
+  "Arabic", "Swahili", "Yoruba", "Igbo", "Hausa", "Pidgin English",
+];
+
+const SONG_TYPES = ["Vocal", "Instrumental", "Choir", "Podcast", "Message", "Children", "Other"];
+
 interface BatchSong {
   id: string;
   file: File | null; // null for manually-added blank songs
@@ -2991,6 +3000,7 @@ interface BatchSong {
   composer: string;
   lyricist: string;
   language: string;
+  songType: string;
   scriptureReference: string;
   scriptureText: string;
   lyrics: string;
@@ -3099,6 +3109,11 @@ function SongsAdmin() {
   const [showCollectionForm, setShowCollectionForm] = useState(false);
   const [assigningSongsTo, setAssigningSongsTo] = useState<number | null>(null);
   const [viewStatsFor, setViewStatsFor] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterLanguage, setFilterLanguage] = useState("all");
+  const [filterGenre, setFilterGenre] = useState("all");
+  const [filterSongType, setFilterSongType] = useState("all");
+  const [filterVisibility, setFilterVisibility] = useState("all");
 
   const { data: songs = [], isLoading, refetch } = useQuery<Song[]>({
     queryKey: ["/api/songs"],
@@ -3414,6 +3429,46 @@ function SongsAdmin() {
     ? testimonies.filter((t) => t.songId === viewTestimonyFor)
     : testimonies;
 
+  const filteredSongs = songs.filter((s) => {
+    if (searchQuery && !s.title.toLowerCase().includes(searchQuery.toLowerCase()) && !(s.artist ?? "").toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (filterLanguage !== "all" && s.language !== filterLanguage) return false;
+    if (filterGenre !== "all" && s.genre !== filterGenre) return false;
+    if (filterSongType !== "all" && (s as any).songType !== filterSongType) return false;
+    if (filterVisibility === "active" && !s.isActive) return false;
+    if (filterVisibility === "inactive" && s.isActive) return false;
+    return true;
+  });
+
+  const openDuplicate = (song: Song, mode: "copy" | "translation" | "instrumental" | "remix") => {
+    const { id, createdAt, updatedAt, ...rest } = song as any;
+    const base: any = { ...rest };
+    base.audioUrl = null;
+    base.videoUrl = null;
+    base.videoDownloadStatus = "disabled";
+    base.coverImageUrl = null;
+    if (mode === "copy") {
+      base.title = `Copy of ${song.title}`;
+      base.slug = `copy-of-${song.slug}-${Date.now()}`.slice(0, 80);
+      base.language = null;
+      base.lyrics = null;
+    } else if (mode === "translation") {
+      base.title = `${song.title} (Translation)`;
+      base.slug = `${song.slug}-translation-${Date.now()}`.slice(0, 80);
+      base.language = null;
+      base.lyrics = null;
+    } else if (mode === "instrumental") {
+      base.title = `${song.title} (Instrumental)`;
+      base.slug = `${song.slug}-instrumental-${Date.now()}`.slice(0, 80);
+      base.lyrics = null;
+      base.songType = "Instrumental";
+    } else {
+      base.title = `${song.title} (Remix)`;
+      base.slug = `${song.slug}-remix-${Date.now()}`.slice(0, 80);
+    }
+    setEditingSong(base as unknown as Song);
+    setShowForm(true);
+  };
+
   const updateBatchSong = (id: string, updates: Partial<BatchSong>) => {
     setBatchSongs(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
   };
@@ -3423,7 +3478,7 @@ function SongsAdmin() {
     file, title: "", slug: "",
     artist: "", featuredArtist: "", choir: "", instrumentalist: "", genre: "",
     labelName: "SpiritTone Records", producer: "Moses Afolabi",
-    composer: "", lyricist: "", language: "English",
+    composer: "", lyricist: "", language: "English", songType: "",
     scriptureReference: "", scriptureText: "",
     lyrics: "", shortDescription: "", description: "",
     featuredWeekStart: "", featuredWeekEnd: "",
@@ -3494,6 +3549,7 @@ function SongsAdmin() {
         choir: bsong.choir || null, instrumentalist: bsong.instrumentalist || null, genre: bsong.genre || null,
         labelName: bsong.labelName || "SpiritTone Records",
         labelLogoUrl: logoPath,
+        songType: bsong.songType || null,
         producer: bsong.producer || "Moses Afolabi",
         composer: bsong.composer || null, lyricist: bsong.lyricist || null,
         language: bsong.language || "English",
@@ -3755,8 +3811,23 @@ function SongsAdmin() {
                           </div>
                           <div className="space-y-1">
                             <Label className="text-xs">Language</Label>
-                            <Input value={song.language} onChange={(e) => updateBatchSong(song.id, { language: e.target.value })} placeholder="English" />
+                            <Select value={song.language || "English"} onValueChange={(v) => updateBatchSong(song.id, { language: v })}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>{LANGUAGES.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
+                            </Select>
                           </div>
+                        </div>
+
+                        {/* Song Type */}
+                        <div className="space-y-1">
+                          <Label className="text-xs">Song Type</Label>
+                          <Select value={song.songType || ""} onValueChange={(v) => updateBatchSong(song.id, { songType: v })}>
+                            <SelectTrigger><SelectValue placeholder="Select type…" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">— None —</SelectItem>
+                              {SONG_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
                         </div>
 
                         {/* Logo */}
@@ -3988,13 +4059,54 @@ function SongsAdmin() {
           </div>
         </CardHeader>
         <CardContent className="p-6">
+          {/* Filter bar */}
+          <div className="flex flex-wrap gap-2 mb-4 items-center">
+            <div className="relative flex-1 min-w-[160px]">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+              <Input className="pl-7 h-8 text-xs" placeholder="Search songs…" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            </div>
+            <Select value={filterLanguage} onValueChange={setFilterLanguage}>
+              <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue placeholder="All Languages" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Languages</SelectItem>
+                {LANGUAGES.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={filterSongType} onValueChange={setFilterSongType}>
+              <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue placeholder="All Types" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {SONG_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={filterGenre} onValueChange={setFilterGenre}>
+              <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue placeholder="All Genres" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Genres</SelectItem>
+                {Array.from(new Set(songs.map(s => s.genre).filter((g): g is string => Boolean(g)))).map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={filterVisibility} onValueChange={setFilterVisibility}>
+              <SelectTrigger className="w-[110px] h-8 text-xs"><SelectValue placeholder="All Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+            {(searchQuery || filterLanguage !== "all" || filterSongType !== "all" || filterGenre !== "all" || filterVisibility !== "all") && (
+              <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setSearchQuery(""); setFilterLanguage("all"); setFilterSongType("all"); setFilterGenre("all"); setFilterVisibility("all"); }}>
+                <X className="w-3 h-3 mr-1" /> Clear
+              </Button>
+            )}
+          </div>
           {isLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
-          ) : songs.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No songs yet.</p>
+          ) : filteredSongs.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{songs.length === 0 ? "No songs yet." : "No songs match the current filters."}</p>
           ) : (
             <div className="space-y-3">
-              {songs.map((song) => (
+              {filteredSongs.map((song) => (
                 <div
                   key={song.id}
                   className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card"
@@ -4043,6 +4155,12 @@ function SongsAdmin() {
                         {(song as any).videoDownloadStatus === "disabled" ? "Video DL Off" : "Video DL On"}
                       </Badge>
                     )}
+                    {song.language && song.language !== "English" && (
+                      <Badge variant="outline" className="text-xs border-violet-400/50 text-violet-600">{song.language}</Badge>
+                    )}
+                    {(song as any).songType && (
+                      <Badge variant="outline" className="text-xs border-cyan-400/50 text-cyan-600">{(song as any).songType}</Badge>
+                    )}
                     <Badge variant={song.isActive ? "default" : "secondary"} className="text-xs">
                       {song.isActive ? "Active" : "Inactive"}
                     </Badge>
@@ -4066,6 +4184,28 @@ function SongsAdmin() {
                       <BarChart3 className="w-3 h-3 mr-1" />
                       Stats
                     </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="outline" title="Duplicate" data-testid={`button-duplicate-song-${song.id}`}>
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openDuplicate(song, "copy")}>
+                          <Copy className="w-3.5 h-3.5 mr-2" /> Duplicate Song
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => openDuplicate(song, "translation")}>
+                          Duplicate + Translation
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openDuplicate(song, "instrumental")}>
+                          Duplicate + Instrumental
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openDuplicate(song, "remix")}>
+                          Duplicate + Remix
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <Button
                       size="sm"
                       variant="outline"
@@ -4606,11 +4746,23 @@ function SongsAdmin() {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Language</Label>
-                  <Input
-                    value={editingSong.language ?? "English"}
-                    onChange={(e) => setEditingSong({ ...editingSong, language: e.target.value || null })}
-                    placeholder="English"
-                  />
+                  <Select value={editingSong.language ?? "English"} onValueChange={(v) => setEditingSong({ ...editingSong, language: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{LANGUAGES.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Song Type</Label>
+                  <Select value={(editingSong as any).songType ?? ""} onValueChange={(v) => setEditingSong({ ...editingSong, songType: v || null } as any)}>
+                    <SelectTrigger><SelectValue placeholder="Select type…" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">— None —</SelectItem>
+                      {SONG_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
