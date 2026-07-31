@@ -1,0 +1,212 @@
+ANDROID APP — REPLACE THE BLUE X WITH THE OFFICIAL 365 DAILY DEVOTIONAL ICON
+
+This is a narrowly targeted Android icon correction.
+
+DO NOT modify the website design, Church Mode, Family/Group Mode, music system, authentication, notifications, offline mode, admin dashboard, database, payments, devotionals, or any unrelated feature.
+
+Do not rebuild or restructure the application.
+
+CURRENT PROBLEM
+
+The Google Play Store listing already displays the correct official 365 Daily Devotional logo.
+
+However, after installing the Android app:
+
+1. The home-screen launcher icon displays a blue “X.”
+2. The Recent Apps/task-switcher icon also displays the blue “X.”
+3. The correct ministry logo is not being used as the native Android application icon.
+
+This proves that the Android package still contains an old, default, placeholder, generated, or incorrect launcher icon.
+
+The official 365 Daily Devotional logo image is attached to this prompt. Use that exact attached image.
+
+==================================================
+REQUIRED FIX
+==================================================
+
+1. Inspect the Android project and identify every icon resource currently producing the blue “X.”
+
+Check all relevant Android and Capacitor/TWA resources, including where applicable:
+
+- android/app/src/main/res/mipmap-mdpi/
+- android/app/src/main/res/mipmap-hdpi/
+- android/app/src/main/res/mipmap-xhdpi/
+- android/app/src/main/res/mipmap-xxhdpi/
+- android/app/src/main/res/mipmap-xxxhdpi/
+- mipmap-anydpi-v26/
+- drawable/
+- drawable-v24/
+- ic_launcher.xml
+- ic_launcher_round.xml
+- ic_launcher_foreground.xml
+- ic_launcher_background.xml
+- AndroidManifest.xml
+- Capacitor configuration
+- Bubblewrap/TWA configuration
+- any generated launcher-icon resources
+
+2. Replace the incorrect blue-X resources with the attached official 365 Daily Devotional logo.
+
+3. Generate complete Android launcher icon sizes from the attached image.
+
+Create correct legacy icons for all required densities and correct adaptive icons for Android 8 and later.
+
+4. Configure both:
+
+- android:icon
+- android:roundIcon
+
+to use the correct 365 Daily Devotional resources.
+
+5. Ensure the adaptive icon contains:
+
+- a proper foreground layer;
+- an appropriate background layer;
+- safe padding so the logo is not cropped into a circle, squircle, rounded square, or other Android icon mask.
+
+6. Do not stretch, distort, rotate, recolor, blur, or replace the attached ministry logo.
+
+7. Keep the logo centred and clearly visible.
+
+8. Confirm that no remaining Android launcher resource points to:
+
+- the blue X;
+- a placeholder;
+- a default Capacitor icon;
+- a Replit icon;
+- a generic generated icon.
+
+9. Confirm the correct icon appears in all these locations:
+
+- Android home screen
+- app drawer
+- Google Play installation screen where applicable
+- Recent Apps/task switcher
+- Android Settings → Apps
+- notification identity where the full app icon is supported
+
+10. For the small Android notification icon, follow Android requirements:
+
+- use a proper monochrome notification icon if required;
+- do not use the blue X;
+- do not use a full-colour image where Android requires a white silhouette;
+- do not alter notification functionality.
+
+==================================================
+WEB/PWA ICON CONSISTENCY
+==================================================
+
+Without redesigning the website, verify that the web manifest also references the official logo for:
+
+- 192×192
+- 512×512
+- maskable icon
+- standard icon
+
+Do not use external placeholder images.
+
+The Android native launcher resources remain the primary fix. Do not assume that changing only manifest.json will fix the installed Android app.
+
+==================================================
+VERSION AND BUILD
+==================================================
+
+1. Increase the Android versionCode by exactly 1 from the current published/uploaded Android version.
+
+2. Preserve the existing package name exactly.
+
+3. Preserve the existing signing configuration and approved upload key.
+
+4. Do not create a new package.
+
+5. Do not reset, replace, or regenerate the signing key.
+
+6. Build a new release AAB after the icons are corrected.
+
+7. Continue using the existing dedicated AAB download-token system.
+
+Do not alter or reuse ADMIN_PASSWORD for AAB downloads.
+
+Keep:
+
+- ADMIN_PASSWORD for administrator login only;
+- AAB_DOWNLOAD_TOKEN, or the existing dedicated equivalent, for downloading the AAB.
+
+==================================================
+CACHE AND UPDATE BEHAVIOUR
+==================================================
+
+Because Android launchers may cache application icons:
+
+1. Confirm the new icon is genuinely embedded inside the newly generated AAB.
+
+2. Do not report success based only on the web preview.
+
+3. Inspect the built Android resources or generated bundle to verify that the blue-X files are gone.
+
+4. Explain that existing installations may need the newly published update before the corrected icon appears.
+
+5. Do not tell the administrator to uninstall the app as the primary solution. The proper Play Store update must replace the icon.
+
+==================================================
+TESTING
+==================================================
+
+Perform these tests before reporting completion:
+
+1. Inspect the current Android launcher icon configuration and identify the exact source of the blue X.
+
+2. Confirm all density-specific icons use the official logo.
+
+3. Confirm the adaptive foreground and background resources use the official branding.
+
+4. Confirm AndroidManifest.xml points to the corrected icon and round icon.
+
+5. Build the release Android app successfully.
+
+6. Inspect the generated APK/AAB resources and confirm the official logo is packaged.
+
+7. Confirm the blue-X image or reference is no longer used anywhere as the launcher icon.
+
+8. Install a release build in an Android emulator or available Android test environment.
+
+9. Verify the icon in:
+   - home screen;
+   - app drawer;
+   - Recent Apps;
+   - Android Settings application list.
+
+10. Verify the app still opens normally.
+
+11. Verify the package name and signing configuration remain unchanged.
+
+12. Verify no unrelated functionality changed.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Report:
+
+1. The exact source of the blue-X icon.
+2. Every Android icon file or XML resource changed.
+3. The launcher icon and round-icon references used in AndroidManifest.xml.
+4. Confirmation that adaptive and legacy icons were both corrected.
+5. Confirmation that the official attached logo was used.
+6. Confirmation that the blue-X resources are no longer referenced.
+7. The previous and new versionCode.
+8. Confirmation that the package name and signing key were preserved.
+9. Confirmation that ADMIN_PASSWORD was not touched.
+10. Confirmation that the dedicated AAB download token remains separate.
+11. Release-build test results.
+12. Screenshots showing:
+    - Android home-screen icon;
+    - app-drawer icon;
+    - Recent Apps icon;
+    - Android Settings app icon.
+13. The new AAB download location.
+
+Create a checkpoint only after the Android release build and icon verification succeed.
+
+Do not publish automatically.
+Do not modify unrelated files.
