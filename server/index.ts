@@ -5,6 +5,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import path from "path";
 import { runGovernanceMigration } from "./migrate-governance";
+import { runPromisePictureMigration } from "./migrate-promise-picture";
 
 const app = express();
 const httpServer = createServer(app);
@@ -144,6 +145,7 @@ httpServer.listen(
 
     // Run incremental governance migration (idempotent, safe for existing DBs)
     runGovernanceMigration().catch((err) => console.error("[governance-migration] Error:", err));
+    runPromisePictureMigration().catch((err) => console.error("[promise-picture-migration] Error:", err));
 
     import("./seed-devotionals").then(({ seedAllDevotionals }) => {
       import("./storage").then(({ storage }) => {

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import PromiseCard3D, { getRandomThemeIndex } from "./PromiseCard3D";
 import { sharePromiseAsImage } from "@/share/sharePromise";
+import { useUser } from "@/contexts/UserContext";
 
 const STORAGE_KEY = "promise-popup-state";
 const MORNING_HOUR = 8;
@@ -32,6 +33,8 @@ function saveState(state: PopupState) {
 export default function PromisePopup() {
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const { user, emailVerified, getIdToken } = useUser();
+  const isSignedIn = !!user && !!emailVerified;
 
   const { data: promiseData } = useQuery<{
     promise: { id: number; heading: string; text: string; reference: string };
@@ -40,6 +43,26 @@ export default function PromisePopup() {
   }>({
     queryKey: ["/api/promise/current"],
     refetchInterval: 60 * 60 * 1000,
+  });
+
+  // Fetch user profile for picture preference (only when signed in)
+  const { data: userProfile } = useQuery<{
+    profilePictureUrl?: string | null;
+    showPictureOnPromise?: boolean;
+  } | null>({
+    queryKey: ["/api/user/profile", user?.uid],
+    queryFn: async () => {
+      if (!isSignedIn) return null;
+      const token = await getIdToken();
+      if (!token) return null;
+      const r = await fetch("/api/user/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!r.ok) return null;
+      return r.json();
+    },
+    enabled: isSignedIn,
+    staleTime: 5 * 60 * 1000,
   });
 
   useEffect(() => {
@@ -75,6 +98,13 @@ export default function PromisePopup() {
     setDismissed(true);
   };
 
+  // Resolve picture URL: profile picture is stored as object-storage path,
+  // served via /api/user/profile/picture. Only pass it when the user opted in.
+  const showUserPicture = isSignedIn && !!userProfile?.showPictureOnPromise;
+  const userPictureUrl = showUserPicture && userProfile?.profilePictureUrl
+    ? "/api/user/profile/picture"
+    : undefined;
+
   return (
     <div
       data-testid="promise-popup-overlay"
@@ -93,6 +123,8 @@ export default function PromisePopup() {
           themeIndex={getRandomThemeIndex(promise.id)}
           onShare={() => sharePromiseAsImage(promise.heading, promise.text, promise.reference, getRandomThemeIndex(promise.id))}
           onClose={handleClose}
+          showUserPicture={showUserPicture}
+          userPictureUrl={userPictureUrl}
         />
       </div>
     </div>

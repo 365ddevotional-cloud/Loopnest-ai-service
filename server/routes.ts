@@ -5773,7 +5773,7 @@ export async function registerRoutes(
     const uid = (req as any).uid as string;
     try {
       const allowed: Record<string, any> = {};
-      const fields = ["displayName", "country", "profilePictureUrl", "emailConsentMinistry", "emailConsentNotifications"];
+      const fields = ["displayName", "country", "profilePictureUrl", "emailConsentMinistry", "emailConsentNotifications", "showPictureOnPromise"];
       for (const f of fields) {
         if (f in req.body) allowed[f] = req.body[f];
       }

@@ -146,7 +146,7 @@ export default function AccountPage() {
     updateProfileMutation.mutate({ profilePictureUrl: result.objectPath });
   };
 
-  const handleConsentChange = async (field: "emailConsentMinistry" | "emailConsentNotifications", value: boolean) => {
+  const handleConsentChange = async (field: "emailConsentMinistry" | "emailConsentNotifications" | "showPictureOnPromise", value: boolean) => {
     const token = await getIdToken();
     if (!token) return;
     await fetch("/api/user/profile", {
@@ -480,6 +480,35 @@ export default function AccountPage() {
               checked={!!profile?.emailConsentNotifications}
               onCheckedChange={v => handleConsentChange("emailConsentNotifications", v)}
               data-testid="switch-consent-notifications"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Promise Card Preferences */}
+      <Card className="border-primary/15">
+        <CardContent className="pt-6 pb-6 space-y-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Daily Promise Card</p>
+          <p className="text-xs text-muted-foreground">
+            Personalise how the "God's Promise for You" card appears to you. Your picture is never included when you share a promise publicly.
+          </p>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-start gap-3 flex-1">
+              <UserCircle className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium">Show my picture on my daily promise card</p>
+                <p className="text-xs text-muted-foreground">
+                  {profile?.profilePictureUrl
+                    ? "Your profile photo will appear in the card footer (only visible to you)."
+                    : "Upload a profile photo above first, then enable this setting."}
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={!!profile?.showPictureOnPromise}
+              onCheckedChange={v => handleConsentChange("showPictureOnPromise", v)}
+              disabled={!profile?.profilePictureUrl}
+              data-testid="switch-show-picture-on-promise"
             />
           </div>
         </CardContent>

@@ -1,0 +1,256 @@
+TWO SMALL TARGETED IMPROVEMENTS ONLY:
+
+1. ADD IGBO AND CUSTOM LANGUAGE SUPPORT TO SONG UPLOADS.
+2. FIX AND PERSONALIZE THE “GOD’S PROMISE FOR YOU” CARD FOOTER.
+
+STRICT SCOPE
+
+Do not rebuild, redesign, or refactor the music system, song uploader, promise system, user accounts, header, notifications, Church Mode, Family/Group Mode, offline mode, authentication, payments, or unrelated files.
+
+Do not remove or rename any existing language, song field, upload field, database record, API route, promise-card feature, Amen count, Share button, or devotional link.
+
+Inspect only the files directly responsible for:
+- song-language selection and storage;
+- the “God’s Promise for You” card;
+- the existing user-profile picture setting, if one already exists.
+
+Make the minimum necessary changes.
+
+==================================================
+PART A — ADD IGBO AND CUSTOM TO SONG LANGUAGES
+==================================================
+
+CURRENT ISSUE
+
+The song-upload Language dropdown contains many languages, but Igbo is missing.
+
+REQUIRED CHANGES
+
+1. Add “Igbo” as a normal selectable language in every place where a song language can be selected, including:
+
+- Upload One Song
+- Upload Multiple Songs / batch cards
+- Edit Existing Song
+- Duplicate as Translation
+- Song filters in the Admin Dashboard
+- Public song-library language filters
+- Any shared language constant used by these pages
+
+2. Add “Custom / Other Language” as the final option in the language dropdown.
+
+3. When “Custom / Other Language” is selected:
+
+- Show a required text field labelled:
+  “Enter Language Name”
+- Allow the administrator to type a language not already included.
+- Trim unnecessary spaces.
+- Preserve proper capitalization and Unicode characters.
+- Do not accept an empty custom-language value.
+- Do not allow “Custom” itself to be saved as the song’s actual language.
+
+4. Save the typed custom language as the song’s real language value.
+
+Example:
+- Dropdown selection: Custom / Other Language
+- Typed value: Tiv
+- Saved and displayed language: Tiv
+
+5. A saved custom language must work everywhere a normal language works:
+
+- song details;
+- admin song list;
+- public music library;
+- language badge;
+- search and filters;
+- editing;
+- duplication;
+- batch upload;
+- API responses;
+- database storage.
+
+6. Do not create a new song record merely because a language is changed.
+
+7. Keep all existing languages unchanged, including English, Spanish, French, Pidgin English, Hindi, Nepali, Mandarin Chinese, Yoruba, and the other current options.
+
+8. If the language options currently come from more than one duplicated list, consolidate them only if it can be done safely and without refactoring unrelated code. The single-song and batch-upload forms must remain in exact language-list parity.
+
+9. Add any necessary English, Spanish, and French interface translations for:
+
+- Custom / Other Language
+- Enter Language Name
+- Language name is required
+- This language already exists in the list
+
+Do not translate the actual proper language names incorrectly.
+
+==================================================
+PART B — FIX THE PROMISE CARD LOGO
+==================================================
+
+CURRENT ISSUE
+
+At the bottom of the “God’s Promise for You” card, two broken-image placeholders appear around the text:
+
+“Shared from 365 Daily Devotional App”
+
+The left position should show the official 365 Daily Devotional logo.
+
+I am attaching the correct logo image to this prompt.
+
+REQUIRED CHANGES
+
+1. Use the attached official 365 Daily Devotional logo in the left footer position.
+
+2. Display it immediately before:
+
+“Shared from 365 Daily Devotional App”
+
+3. Use a reliable app asset or existing approved upload/storage method.
+
+4. Do not use a temporary external image URL.
+
+5. Make the logo:
+
+- clear;
+- properly proportioned;
+- not stretched;
+- not cropped incorrectly;
+- large enough to recognize;
+- responsive on mobile and desktop.
+
+6. Add a graceful fallback so a broken-image icon never appears if the logo cannot load.
+
+7. Preserve the current promise title, scripture, background, Share button, Amen button, “Go To Today’s Devotional” button, and close button exactly as they work now.
+
+==================================================
+PART C — OPTIONAL USER PICTURE
+==================================================
+
+Use the right footer position on the “God’s Promise for You” card for an optional user picture.
+
+REQUIRED BEHAVIOR
+
+1. When the user is signed in and already has a profile picture, show that profile picture in the right footer position.
+
+2. If the user does not have a profile picture, show a tasteful circular initials avatar or neutral person icon—not a broken-image placeholder.
+
+3. Add an optional setting in the most appropriate existing Account/Profile area:
+
+“Show my picture on my daily promise card”
+
+4. The setting should be OFF by default unless the user deliberately enables it.
+
+5. If the user has no profile-picture upload feature, add a small, targeted profile-photo upload control in the existing Account/Profile page only.
+
+Accepted image types:
+- JPG
+- JPEG
+- PNG
+- WebP
+
+Apply a sensible file-size limit and provide a clear error for unsupported or oversized files.
+
+6. Allow the user to:
+
+- upload or replace the picture;
+- preview it;
+- remove it;
+- turn its appearance on the promise card on or off.
+
+7. Store the picture through the existing user-profile/storage system when available.
+
+Do not store large base64 images directly in React state or localStorage as permanent account data.
+
+8. The user picture must be:
+
+- circular or softly rounded;
+- properly cropped;
+- displayed with object-fit cover;
+- small and elegant;
+- responsive;
+- visually balanced with the official app logo.
+
+9. PRIVACY REQUIREMENT
+
+The personal picture is for the signed-in user’s private in-app promise experience.
+
+When the promise is shared or converted into a downloadable/shareable image:
+
+- exclude the user’s personal picture by default;
+- include only the official 365 Daily Devotional logo and app attribution;
+- only include the personal picture if a separate, explicit user consent setting already exists or is safely added.
+
+Never expose a user’s profile picture publicly without consent.
+
+10. Signed-out users should see:
+
+- the official app logo on the left;
+- a neutral initials/person placeholder on the right, or the right space may be omitted cleanly;
+- no broken-image icon.
+
+==================================================
+LAYOUT
+==================================================
+
+The bottom footer should be balanced approximately like this:
+
+[Official 365 Logo]  Shared from 365 Daily Devotional App  [Optional User Picture]
+
+On narrow mobile screens:
+
+- prevent overlap;
+- allow the center text to wrap neatly;
+- keep both images properly aligned;
+- do not create horizontal scrolling;
+- do not cover any buttons.
+
+==================================================
+TESTING
+==================================================
+
+SONG LANGUAGE TESTS
+
+1. Open Upload One Song and confirm Igbo appears.
+2. Open Upload Multiple Songs and confirm Igbo appears.
+3. Select Igbo, save a song, reopen it, and confirm Igbo remains selected.
+4. Confirm the saved Igbo song appears under the Igbo filter in both admin and public song-library views.
+5. Select Custom / Other Language.
+6. Confirm the custom-language field appears.
+7. Enter “Tiv,” save the song, and confirm “Tiv” is displayed and filterable.
+8. Confirm an empty custom-language value cannot be saved.
+9. Confirm existing songs and existing languages remain unchanged.
+
+PROMISE CARD TESTS
+
+10. Open the app’s first daily “God’s Promise for You” card.
+11. Confirm the official 365 logo appears before the attribution text.
+12. Confirm no broken-image icon appears.
+13. Test a signed-in user with a profile picture and the setting enabled.
+14. Test the same user with the setting disabled.
+15. Test a user without a profile picture.
+16. Test a signed-out user.
+17. Share the promise and confirm the personal picture is excluded by default.
+18. Confirm Share, Amen, Close, and Go To Today’s Devotional still work.
+19. Test on an iPhone-sized viewport, Android-sized viewport, and desktop.
+20. Confirm there is no horizontal overflow or overlapping footer content.
+
+FINAL REPORT
+
+Provide:
+
+- exact files changed;
+- where the official logo is stored;
+- the complete final song-language list;
+- how custom languages are saved;
+- where the user-picture preference is stored;
+- confirmation that personal pictures are excluded from shared cards by default;
+- screenshots showing:
+  - Igbo in the dropdown;
+  - Custom / Other Language with its text field;
+  - the corrected promise footer;
+  - the optional user picture;
+- test results;
+- confirmation that no unrelated files were modified.
+
+Do not merely describe the work.
+Implement it, test it, and create a checkpoint only after successful verification.

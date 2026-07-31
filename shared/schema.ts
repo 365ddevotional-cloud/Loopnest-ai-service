@@ -1343,6 +1343,7 @@ export const userProfiles = pgTable("user_profiles", {
   lastActiveAt: timestamp("last_active_at").defaultNow(),
   emailConsentMinistry: boolean("email_consent_ministry").notNull().default(false),
   emailConsentNotifications: boolean("email_consent_notifications").notNull().default(false),
+  showPictureOnPromise: boolean("show_picture_on_promise").notNull().default(false),
 });
 export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({ createdAt: true, lastActiveAt: true });
 export type UserProfile = typeof userProfiles.$inferSelect;
