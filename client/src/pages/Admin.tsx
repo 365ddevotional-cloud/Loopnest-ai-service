@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2, Upload, Gift, Video, Building2, DollarSign, Menu } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2, Upload, Gift, Video, Building2, DollarSign, Menu, ExternalLink, Youtube } from "lucide-react";
 import { useUpload } from "@/hooks/use-upload";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -2984,6 +2984,19 @@ const LANGUAGES = [
 ];
 const CUSTOM_LANG = "__custom__";
 
+/** Validates that a YouTube URL is from an approved host over HTTPS. Empty string passes (field is optional). */
+function isValidYoutubeUrl(url: string): boolean {
+  if (!url || !url.trim()) return true;
+  try {
+    const u = new URL(url.trim());
+    if (u.protocol !== "https:") return false;
+    const host = u.hostname.toLowerCase();
+    return ["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be"].includes(host);
+  } catch {
+    return false;
+  }
+}
+
 const SONG_TYPES = ["Vocal", "Instrumental", "Choir", "Podcast", "Message", "Children", "Other"];
 
 interface BatchSong {
@@ -3002,6 +3015,7 @@ interface BatchSong {
   lyricist: string;
   language: string;
   customLanguage: string;
+  youtubeUrl: string;
   songType: string;
   scriptureReference: string;
   scriptureText: string;
@@ -3517,7 +3531,7 @@ function SongsAdmin() {
     file, title: "", slug: "",
     artist: "", featuredArtist: "", choir: "", instrumentalist: "", genre: "",
     labelName: "SpiritTone Records", producer: "Moses Afolabi",
-    composer: "", lyricist: "", language: "English", customLanguage: "", songType: "",
+    composer: "", lyricist: "", language: "English", customLanguage: "", youtubeUrl: "", songType: "",
     scriptureReference: "", scriptureText: "",
     lyrics: "", shortDescription: "", description: "",
     featuredWeekStart: "", featuredWeekEnd: "",
@@ -3600,6 +3614,7 @@ function SongsAdmin() {
         audioUrl: audioPath, coverImageUrl: coverPath,
         downloadStatus: bsong.downloadStatus,
         videoUrl: videoPath, videoDownloadStatus: videoPath ? bsong.videoDownloadStatus : "disabled",
+        youtubeUrl: bsong.youtubeUrl.trim() || null,
         isActive: asDraft ? false : bsong.isActive,
         releaseYear: bsong.releaseYear || null,
       });
@@ -3945,6 +3960,21 @@ function SongsAdmin() {
                           <Input value={song.scriptureText} onChange={(e) => updateBatchSong(song.id, { scriptureText: e.target.value })} placeholder="The LORD is my shepherd; I shall not want." />
                         </div>
 
+                        {/* YouTube Link */}
+                        <div className="space-y-1">
+                          <Label className="text-xs">YouTube Video Link <span className="text-muted-foreground">(optional)</span></Label>
+                          <Input
+                            value={song.youtubeUrl}
+                            onChange={(e) => updateBatchSong(song.id, { youtubeUrl: e.target.value })}
+                            placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                            className={song.youtubeUrl && !isValidYoutubeUrl(song.youtubeUrl) ? "border-destructive" : ""}
+                          />
+                          {song.youtubeUrl && !isValidYoutubeUrl(song.youtubeUrl) && (
+                            <p className="text-xs text-destructive">Please enter a valid YouTube link.</p>
+                          )}
+                          <p className="text-[10px] text-muted-foreground">Optional. Add the official YouTube video so listeners can watch it on your channel.</p>
+                        </div>
+
                         {/* Video */}
                         <div className="space-y-2">
                           <Label className="text-xs">Song Video File <span className="text-muted-foreground">(MP4 only, max 500MB — optional)</span></Label>
@@ -4193,43 +4223,55 @@ function SongsAdmin() {
                     </Badge>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button size="sm" variant="outline" className="h-8 w-8 p-0" aria-label="Song actions" data-testid={`button-actions-song-${song.id}`}>
-                          <Menu className="w-3.5 h-3.5" />
+                        <Button size="sm" variant="outline" className="h-9 w-9 p-0 flex-shrink-0 touch-manipulation" aria-label="Song actions" data-testid={`button-actions-song-${song.id}`}>
+                          <Menu className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-52">
+                      <DropdownMenuContent
+                        align="end"
+                        sideOffset={4}
+                        collisionPadding={8}
+                        className="w-56 max-h-[70vh] overflow-y-auto z-50"
+                      >
                         {song.audioUrl && (
                           <DropdownMenuItem asChild>
-                            <a href={song.audioUrl} target="_blank" rel="noopener noreferrer">
-                              <Music className="w-3.5 h-3.5 mr-2" /> Preview Audio
+                            <a href={song.audioUrl} target="_blank" rel="noopener noreferrer" className="min-h-[44px] flex items-center">
+                              <Music className="w-3.5 h-3.5 mr-2 flex-shrink-0" /> Preview Audio
                             </a>
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem onClick={() => openEdit(song)} data-testid={`menu-edit-song-${song.id}`}>
-                          <Edit className="w-3.5 h-3.5 mr-2" /> Edit Song
+                        {(song as any).youtubeUrl && (
+                          <DropdownMenuItem asChild>
+                            <a href={(song as any).youtubeUrl} target="_blank" rel="noopener noreferrer" className="min-h-[44px] flex items-center" data-testid={`menu-youtube-song-${song.id}`}>
+                              <Youtube className="w-3.5 h-3.5 mr-2 flex-shrink-0 text-red-500" /> Watch on YouTube
+                            </a>
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={() => openEdit(song)} className="min-h-[44px]" data-testid={`menu-edit-song-${song.id}`}>
+                          <Edit className="w-3.5 h-3.5 mr-2 flex-shrink-0" /> Edit Song
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setViewStatsFor(viewStatsFor === song.id ? null : song.id)} data-testid={`menu-stats-song-${song.id}`}>
-                          <BarChart3 className="w-3.5 h-3.5 mr-2" /> View Stats
+                        <DropdownMenuItem onClick={() => setViewStatsFor(viewStatsFor === song.id ? null : song.id)} className="min-h-[44px]" data-testid={`menu-stats-song-${song.id}`}>
+                          <BarChart3 className="w-3.5 h-3.5 mr-2 flex-shrink-0" /> View Stats
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setViewTestimonyFor(viewTestimonyFor === song.id ? null : song.id)} data-testid={`menu-testimonies-song-${song.id}`}>
-                          <MessageSquare className="w-3.5 h-3.5 mr-2" /> Testimonies ({testimonies.filter((t) => t.songId === song.id).length})
+                        <DropdownMenuItem onClick={() => setViewTestimonyFor(viewTestimonyFor === song.id ? null : song.id)} className="min-h-[44px]" data-testid={`menu-testimonies-song-${song.id}`}>
+                          <MessageSquare className="w-3.5 h-3.5 mr-2 flex-shrink-0" /> Testimonies ({testimonies.filter((t) => t.songId === song.id).length})
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => openDuplicate(song, "copy")}>
-                          <Copy className="w-3.5 h-3.5 mr-2" /> Duplicate Song
+                        <DropdownMenuItem onClick={() => openDuplicate(song, "copy")} className="min-h-[44px]">
+                          <Copy className="w-3.5 h-3.5 mr-2 flex-shrink-0" /> Duplicate Song
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openDuplicate(song, "translation")}>
+                        <DropdownMenuItem onClick={() => openDuplicate(song, "translation")} className="min-h-[44px]">
                           Duplicate + Translation
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openDuplicate(song, "instrumental")}>
+                        <DropdownMenuItem onClick={() => openDuplicate(song, "instrumental")} className="min-h-[44px]">
                           Duplicate + Instrumental
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openDuplicate(song, "remix")}>
+                        <DropdownMenuItem onClick={() => openDuplicate(song, "remix")} className="min-h-[44px]">
                           Duplicate + Remix
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
+                          className="text-destructive focus:text-destructive min-h-[44px]"
                           onClick={() => {
                             if (confirm(`Delete "${song.title}"? This cannot be undone.`)) {
                               deleteSongMutation.mutate(song.id);
@@ -4237,7 +4279,7 @@ function SongsAdmin() {
                           }}
                           data-testid={`menu-delete-song-${song.id}`}
                         >
-                          <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Song
+                          <Trash2 className="w-3.5 h-3.5 mr-2 flex-shrink-0" /> Delete Song
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -4898,6 +4940,22 @@ function SongsAdmin() {
                     <div className="bg-primary rounded-full h-1.5 transition-all" style={{ width: `${audioUpload.progress ?? 0}%` }} />
                   </div>
                 )}
+              </div>
+
+              {/* YouTube Link */}
+              <div className="space-y-1">
+                <Label className="text-xs">YouTube Video Link <span className="text-muted-foreground">(optional)</span></Label>
+                <Input
+                  value={(editingSong as any).youtubeUrl ?? ""}
+                  onChange={(e) => setEditingSong({ ...editingSong, youtubeUrl: e.target.value || null } as any)}
+                  placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                  className={(editingSong as any).youtubeUrl && !isValidYoutubeUrl((editingSong as any).youtubeUrl) ? "border-destructive" : ""}
+                  data-testid="input-song-youtube-url"
+                />
+                {(editingSong as any).youtubeUrl && !isValidYoutubeUrl((editingSong as any).youtubeUrl) && (
+                  <p className="text-xs text-destructive">Please enter a valid YouTube link.</p>
+                )}
+                <p className="text-[10px] text-muted-foreground">Optional. Add the official YouTube video so listeners can watch it on your channel.</p>
               </div>
 
               <div className="space-y-2">

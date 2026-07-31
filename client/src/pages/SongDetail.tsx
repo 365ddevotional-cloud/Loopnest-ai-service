@@ -748,6 +748,26 @@ export default function SongDetail() {
           Share
         </Button>
 
+        {/* Watch on YouTube */}
+        {(song as any).youtubeUrl && (
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            data-testid="button-watch-youtube"
+          >
+            <a
+              href={(song as any).youtubeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Watch on YouTube
+            </a>
+          </Button>
+        )}
+
         {/* Download buttons */}
         {audioDownloadEnabled && (
           <Button variant="outline" size="sm" onClick={() => { setDownloadType("audio"); setShowDownloadModal(true); }} data-testid="button-download-audio">

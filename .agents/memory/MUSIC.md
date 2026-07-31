@@ -56,3 +56,15 @@ description: What's built, what's pending, key patterns for the music admin in A
 - Bulk editor for multi-song updates (task #10).
 - Archive / schedule / version history (task #11).
 - Part 3 (Master Song public switcher), Part 8 (Bulk Editor), Parts 10+11 (lifecycle).
+
+## youtubeUrl field (added 2026-07-31)
+- DB column: `youtube_url TEXT` on `songs` table (added by migrate-youtube-url.ts, runs at startup).
+- Schema field: `youtubeUrl: text("youtube_url")` — nullable, optional.
+- Validation: `isValidYoutubeUrl()` in Admin.tsx accepts https only from: youtube.com, www.youtube.com, m.youtube.com, music.youtube.com, youtu.be.
+- Admin song row dropdown: "Watch on YouTube" appears only when `song.youtubeUrl` is truthy.
+- SongDetail.tsx: "Watch on YouTube" Button with ExternalLink icon, placed before download buttons, only when `(song as any).youtubeUrl` exists.
+- Song API (POST/PATCH) already accepts any field in InsertSong — no route change needed.
+
+## Mobile action menu fix (2026-07-31)
+- Root cause: DropdownMenuContent had no `collisionPadding`, could overflow narrow screens; items had no minimum touch height.
+- Fix: `collisionPadding={8}`, `max-h-[70vh] overflow-y-auto z-50` on DropdownMenuContent; `min-h-[44px]` on each item; trigger button is `h-9 w-9 touch-manipulation`.

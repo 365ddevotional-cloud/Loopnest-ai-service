@@ -1,0 +1,443 @@
+SONG ADMIN — FIX MOBILE ACTION MENUS AND ADD YOUTUBE VIDEO LINKS
+
+This is a targeted improvement to the existing song-management system.
+
+DO NOT rebuild, redesign, replace, or refactor the music system.
+
+DO NOT modify Church Mode, Family/Group Mode, devotionals, Sunday School, authentication, payments, notifications, offline mode, donations, or unrelated files.
+
+Do not remove any existing song, audio file, MP4 file, artwork, lyrics, metadata, statistics, collections, download controls, or database records.
+
+Inspect only the files directly responsible for:
+
+- Admin Dashboard song rows
+- Song action dropdown menus
+- Upload One Song
+- Upload Multiple Songs / batch uploader
+- Edit Song
+- Song detail/player pages
+- Existing song API, schema, and storage methods
+
+Make the minimum safe changes.
+
+==================================================
+PART A — FIX THE SONG ACTION MENU ON MOBILE
+==================================================
+
+CURRENT ISSUE
+
+On desktop, each song row correctly has a compact burger/actions button.
+
+When the administrator clicks it, a dropdown menu opens with options such as:
+
+- Preview Audio
+- Edit Song
+- View Stats
+- Testimonies
+- Duplicate Song
+- Duplicate + Translation
+- Duplicate + Instrumental
+- Duplicate + Remix
+- Delete Song
+
+However, on some mobile and narrow-screen views, these controls appear outside the card in a long vertical line and extend beyond the page.
+
+This must be corrected.
+
+REQUIRED BEHAVIOR
+
+1. Every song row must display only one compact actions button beside the song.
+
+Use either:
+
+- a three-horizontal-line burger icon;
+- or a three-dot actions icon.
+
+Use the same established actions-menu component already working on desktop.
+
+2. The full list of song actions must remain hidden until the administrator taps or clicks the actions button.
+
+3. This exact behavior must work on:
+
+- Android Chrome
+- iPhone Safari
+- installed PWA/app view
+- tablets
+- desktop Chrome
+- desktop Edge
+- narrow desktop browser windows
+
+4. Do not render a separate mobile version containing exposed action buttons.
+
+There must be one responsive song-row implementation, using one action dropdown across all screen sizes where technically appropriate.
+
+5. The dropdown must:
+
+- open above or below the button depending on available screen space;
+- remain within the visible viewport;
+- never extend horizontally beyond the screen;
+- never create horizontal page scrolling;
+- have a sensible maximum height;
+- become vertically scrollable inside the dropdown when necessary;
+- remain above surrounding cards using correct z-index;
+- not be clipped by a parent container with overflow hidden;
+- close after an action is selected;
+- close when the user taps outside it;
+- close when Escape is pressed on desktop.
+
+6. On mobile, use a touch-friendly width and touch targets of approximately 44px minimum height.
+
+7. The song row itself should continue to show only the most useful summary information:
+
+- thumbnail
+- title
+- artist/ministry
+- scripture or featured date where currently shown
+- language badge
+- song-type badge where available
+- active/inactive status
+- one actions-menu button
+
+8. Preserve every existing action and its current permissions.
+
+9. Destructive actions such as Delete Song must remain visually separated and require the existing confirmation.
+
+10. Fix the mobile behavior both in:
+
+- the normal Song of the Week/admin song list;
+- any collection, archive, search-result, or filtered song list that reuses the song-row component.
+
+Do not fix only one page while leaving duplicate song rows broken elsewhere.
+
+==================================================
+PART B — ADD A YOUTUBE VIDEO LINK TO SONG RECORDS
+==================================================
+
+PURPOSE
+
+The administrator must be able to add the official YouTube link for a song.
+
+Listeners should then be able to choose “Watch on YouTube,” which opens the official video and directs traffic to our YouTube channel.
+
+This must remain separate from the existing MP4 upload.
+
+REQUIRED DATABASE / DATA SUPPORT
+
+1. Add an optional song field with a clear name such as:
+
+youtubeUrl
+
+2. Use the existing migration and schema conventions.
+
+3. The field must be optional and nullable so all existing songs remain valid.
+
+4. Do not overwrite or repurpose the existing:
+
+- video URL;
+- MP4 upload;
+- audio URL;
+- download controls;
+- external-link fields.
+
+5. Existing songs without a YouTube link must continue working exactly as they do now.
+
+==================================================
+PART C — UPLOAD ONE SONG
+==================================================
+
+Add a field to the existing Upload New Song form:
+
+Label:
+“YouTube Video Link”
+
+Placeholder:
+“https://www.youtube.com/watch?v=... or https://youtu.be/...”
+
+Supporting text:
+“Optional. Add the official YouTube video so listeners can watch it on your channel.”
+
+REQUIREMENTS
+
+1. Place it near the existing MP4/video field.
+
+2. Allow standard YouTube formats, including:
+
+- youtube.com/watch?v=
+- youtu.be/
+- youtube.com/shorts/
+- youtube.com/live/
+
+3. Trim leading and trailing spaces.
+
+4. Validate that the value is a valid HTTPS YouTube URL.
+
+5. If invalid, show a clear message:
+
+“Please enter a valid YouTube link.”
+
+6. Do not prevent the song from being saved when the field is blank.
+
+7. Preserve the complete URL, including legitimate video parameters where required.
+
+==================================================
+PART D — UPLOAD MULTIPLE SONGS / BATCH UPLOADER
+==================================================
+
+Add the same optional “YouTube Video Link” field to every expanded batch-song card.
+
+Each song must have its own independent YouTube link.
+
+REQUIRED BEHAVIOR
+
+1. A YouTube URL entered for one song must never be copied accidentally to another song.
+
+2. Save each song’s link with the correct song record.
+
+3. Add validation per card without causing the whole page to crash or become blank.
+
+4. If one batch card has an invalid YouTube URL:
+
+- identify that exact song card;
+- show the validation message inside that card;
+- do not erase data already entered in other cards;
+- do not produce a blank page.
+
+5. “Save All as Drafts” must preserve each YouTube link.
+
+6. “Upload All Songs” must save each YouTube link correctly.
+
+==================================================
+PART E — EDIT EXISTING SONG
+==================================================
+
+Add the same “YouTube Video Link” field to Edit Song.
+
+REQUIRED BEHAVIOR
+
+1. Existing YouTube links must load into the field.
+
+2. The administrator must be able to:
+
+- add a link;
+- replace a link;
+- remove a link;
+- save the updated song.
+
+3. Removing the text and saving must store the field as null or empty according to the current schema convention.
+
+4. Editing this field must not affect:
+
+- audio;
+- MP4;
+- artwork;
+- lyrics;
+- language;
+- statistics;
+- featured dates;
+- active status;
+- collections.
+
+==================================================
+PART F — ADMIN ACTION DROPDOWN
+==================================================
+
+Inside each song’s burger/actions dropdown, add:
+
+“Watch on YouTube”
+
+Use an appropriate YouTube or external-link icon.
+
+REQUIRED BEHAVIOR
+
+1. Show “Watch on YouTube” only when the song has a valid YouTube link.
+
+2. Open the link in a new browser tab/window using safe attributes:
+
+- target="_blank"
+- rel="noopener noreferrer"
+
+3. On installed mobile app/PWA views, use the safest supported external navigation behavior.
+
+4. Do not replace “Preview Audio” or the MP4 options.
+
+5. Keep these actions clearly different:
+
+- Preview Audio
+- Watch Video / Preview MP4, if available
+- Watch on YouTube
+- Download MP4, if enabled
+
+6. If no YouTube link exists, either hide the action entirely or show a disabled “No YouTube Video” item. Prefer hiding it to keep the menu uncluttered.
+
+==================================================
+PART G — PUBLIC SONG PAGE AND MUSIC PLAYER
+==================================================
+
+When a song has a YouTube link, add a visible listener-facing button:
+
+“Watch on YouTube”
+
+REQUIRED BEHAVIOR
+
+1. Place it in an appropriate location near existing video/audio controls.
+
+2. Use official YouTube-style wording, but do not redesign the entire page.
+
+3. Open the official YouTube video in a new tab or the YouTube app when the device supports it.
+
+4. Do not autoplay an embedded YouTube video without user action.
+
+5. Do not replace the existing audio player.
+
+6. Do not replace the existing uploaded MP4.
+
+7. If both MP4 and YouTube exist, show both choices clearly:
+
+- Watch Video
+- Watch on YouTube
+- Download MP4, where enabled
+
+8. If only YouTube exists, show Watch on YouTube.
+
+9. If only MP4 exists, preserve the existing MP4 behavior.
+
+10. If neither exists, do not show an empty video area or broken button.
+
+==================================================
+PART H — OPTIONAL YOUTUBE THUMBNAIL HANDLING
+==================================================
+
+Do not automatically replace the song’s uploaded cover artwork with a YouTube thumbnail.
+
+The uploaded song cover remains the official artwork.
+
+A YouTube thumbnail may only be used as a graceful video preview fallback if:
+
+- no separate video thumbnail exists;
+- it can be derived safely from a valid YouTube video ID;
+- it does not overwrite the official song artwork in storage.
+
+This is optional. Do not add it if it requires broad refactoring.
+
+==================================================
+PART I — SECURITY AND VALIDATION
+==================================================
+
+1. Accept YouTube links only.
+
+2. Reject lookalike or unsafe domains such as:
+
+- youtube.example.com
+- fake-youtube.com
+- non-HTTPS URLs
+
+3. Allow only approved hosts such as:
+
+- youtube.com
+- www.youtube.com
+- m.youtube.com
+- music.youtube.com
+- youtu.be
+
+4. Do not render administrator-entered URLs as raw HTML.
+
+5. Do not introduce iframe embedding unless the existing app already uses a secure YouTube embedding component.
+
+6. Never expose admin authentication details or storage credentials in the client.
+
+==================================================
+PART J — RESPONSIVE TESTING
+==================================================
+
+Test using real responsive viewport sizes, not desktop code review alone.
+
+TEST THESE VIEWPORTS
+
+- iPhone-sized viewport around 390 × 844
+- larger iPhone viewport around 430 × 932
+- Android viewport around 360 × 800
+- Android viewport around 412 × 915
+- tablet viewport
+- desktop viewport
+- narrow desktop window
+
+MOBILE ACTION-MENU TESTS
+
+1. Open the Admin Dashboard Songs section on mobile.
+2. Confirm every song has only one actions button.
+3. Confirm no song actions are permanently exposed vertically.
+4. Tap the first song’s actions button.
+5. Confirm the dropdown stays inside the screen.
+6. Confirm it is scrollable when necessary.
+7. Confirm Preview Audio works.
+8. Confirm Edit Song opens.
+9. Confirm View Stats opens.
+10. Confirm Testimonies opens.
+11. Confirm Duplicate options remain available.
+12. Confirm Delete still requires confirmation.
+13. Confirm tapping outside closes the menu.
+14. Confirm opening another song’s menu closes the previous one.
+15. Confirm no horizontal page scrolling occurs.
+
+YOUTUBE TESTS
+
+16. Add a valid YouTube link in Upload One Song.
+17. Save and reopen the song.
+18. Confirm the link remains stored.
+19. Confirm Watch on YouTube appears in the admin action menu.
+20. Confirm it opens the correct official YouTube video.
+21. Add separate YouTube links to two songs in batch upload.
+22. Confirm each saved song retains its own correct link.
+23. Edit one existing song and add a YouTube link.
+24. Remove the link and confirm the action disappears.
+25. Enter an invalid URL and confirm the form shows a clear validation error.
+26. Confirm existing songs without YouTube links remain unchanged.
+27. Confirm audio playback still works.
+28. Confirm uploaded MP4 playback/download still works.
+29. Confirm the public song page shows Watch on YouTube only when appropriate.
+30. Confirm browser console and server logs show no new errors.
+
+==================================================
+IMPORTANT IMPLEMENTATION RULES
+==================================================
+
+- Do not create another separate song-row system.
+- Reuse the existing desktop burger/actions dropdown.
+- Fix its responsive behavior so mobile uses the same compact system.
+- Do not remove any existing actions.
+- Do not change song ownership, publication status, statistics, language classification, collection membership, or download permissions.
+- Do not modify unrelated files.
+- Do not perform broad code cleanup.
+- Do not change the general app header.
+- Do not create a new music platform or rebuild the player.
+- Do not publish or launch automatically.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Provide:
+
+1. Exact root cause of why mobile showed vertically exposed song actions.
+2. Exact files changed.
+3. Exact responsive component used for the burger/actions menu.
+4. Confirmation that the same action menu now works on mobile and desktop.
+5. Database/schema field added for YouTube links.
+6. Exact approved YouTube URL formats.
+7. Confirmation that Upload One Song supports YouTube links.
+8. Confirmation that Upload Multiple Songs supports a separate YouTube link per song.
+9. Confirmation that Edit Song supports adding, replacing, and removing the link.
+10. Confirmation that the admin action menu contains Watch on YouTube only when a link exists.
+11. Confirmation that the public song page contains Watch on YouTube when appropriate.
+12. Screenshots from:
+    - Android-sized admin song list with closed burger menus;
+    - Android-sized open song action menu;
+    - desktop song action menu;
+    - Upload One Song YouTube field;
+    - batch-song YouTube field;
+    - Edit Song YouTube field;
+    - public Watch on YouTube button.
+13. Test results for all numbered tests.
+14. Confirmation that no unrelated files were modified.
+
+Implement the feature, test it, and create a checkpoint only after successful verification.

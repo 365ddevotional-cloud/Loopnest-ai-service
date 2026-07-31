@@ -505,6 +505,7 @@ export const songs = pgTable("songs", {
   downloadStatus: text("download_status").default("free").notNull(),
   videoUrl: text("video_url"),
   videoDownloadStatus: text("video_download_status").default("disabled").notNull(),
+  youtubeUrl: text("youtube_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
