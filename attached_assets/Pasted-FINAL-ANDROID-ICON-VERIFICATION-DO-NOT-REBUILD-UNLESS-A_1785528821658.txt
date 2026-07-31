@@ -1,0 +1,112 @@
+FINAL ANDROID ICON VERIFICATION — DO NOT REBUILD UNLESS A DEFECT IS FOUND
+
+This is a narrowly scoped verification of the Android icon AAB that was just created.
+
+Do NOT modify the website, database, Church Mode, music system, authentication, admin dashboard, signing key, package name, or any unrelated file.
+
+Do NOT increment versionCode again unless an actual icon defect must be corrected.
+
+CURRENT RELEASE
+
+The newly built Android release reportedly has:
+
+- versionCode 4
+- package name:
+  app.replit.attachment_parser__365ddevotional.twa
+- signed with the existing upload-keystore.jks
+- output file:
+  365-daily-devotional-release.aab
+
+Before this AAB is uploaded to Google Play, verify the following remaining items.
+
+1. AAB DOWNLOAD AUTHENTICATION
+
+Inspect the exact server code protecting:
+
+/admin/download/app-release.aab
+
+Confirm clearly whether it uses:
+
+AAB_DOWNLOAD_TOKEN
+
+or another dedicated AAB-only secret.
+
+It must NOT use, compare against, reuse, overwrite, or depend upon:
+
+ADMIN_PASSWORD
+
+If the endpoint still uses ADMIN_PASSWORD, make only the smallest necessary correction so it uses AAB_DOWNLOAD_TOKEN while leaving administrator login unchanged.
+
+Do not reveal the value of either secret in the report.
+
+2. ADAPTIVE ICON XML REFERENCES
+
+Inspect:
+
+- mipmap-anydpi-v26/ic_launcher.xml
+- mipmap-anydpi-v26/ic_launcher_round.xml
+- every referenced foreground and background resource
+
+Confirm that both adaptive-icon XML files point to:
+
+- the newly generated official-logo foreground resource;
+- the correct #DFD8B8 background resource.
+
+Confirm they do not point to the empty:
+
+drawable-v24/ic_launcher_foreground.xml
+
+unless that file is intentionally unused.
+
+Report the exact XML resource references.
+
+3. INSTALLED RELEASE TEST
+
+Create an installable APK from the already built versionCode 4 AAB using bundletool, or use the existing Android release APK if available.
+
+Install that release build in an available Android emulator or test device.
+
+Verify the official 365 Daily Devotional logo appears in:
+
+- home-screen launcher
+- app drawer
+- Recent Apps/task switcher
+- Android Settings → Apps
+- launch/splash identity where applicable
+
+Confirm that the old blue-X icon does not appear anywhere.
+
+Take screenshots of all available tested locations.
+
+Do not use the website preview as proof of the Android launcher icon.
+
+4. FINAL BUNDLE INSPECTION
+
+Inspect the final versionCode 4 AAB and confirm:
+
+- all five legacy density icons contain the official logo;
+- all adaptive foreground PNGs contain the official logo;
+- round icons contain the official logo;
+- no launcher resource contains or references the blue X;
+- package name is unchanged;
+- signing certificate is unchanged;
+- versionCode remains 4.
+
+5. FINAL REPORT
+
+Report only:
+
+- whether AAB_DOWNLOAD_TOKEN is separate from ADMIN_PASSWORD;
+- the exact resources referenced by ic_launcher.xml and ic_launcher_round.xml;
+- installed Android test results;
+- screenshots from the emulator/test device;
+- confirmation that versionCode remains 4;
+- confirmation that package name and signing key remain unchanged;
+- confirmation that the final AAB is ready for Google Play;
+- the authenticated AAB download route.
+
+If every item already passes, make no code changes and do not create another checkpoint.
+
+If a genuine defect is found, fix only that defect, rebuild versionCode 4 if possible, test again, and create a checkpoint only after successful verification.
+
+Do not publish automatically.

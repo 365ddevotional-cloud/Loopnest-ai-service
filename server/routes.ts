@@ -268,11 +268,11 @@ export async function registerRoutes(
     }
   });
 
-  // Temporary: serve the release AAB for download (admin-only)
+  // Serve the release AAB for download (dedicated AAB token, separate from ADMIN_PASSWORD)
   app.get("/admin/download/app-release.aab", (req, res) => {
-    const adminPassword = process.env.ADMIN_PASSWORD || "";
-    const auth = req.headers["x-admin-password"] || req.query.token;
-    if (!adminPassword || auth !== adminPassword) {
+    const aabToken = process.env.AAB_DOWNLOAD_TOKEN || "";
+    const auth = req.headers["x-aab-token"] || req.query.token;
+    if (!aabToken || auth !== aabToken) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     const aabPath = path.join(process.cwd(), "365-daily-devotional-release.aab");
