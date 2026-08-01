@@ -565,17 +565,27 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const playPrev = useCallback(() => {
+    const audio = audioRef.current;
     const queue = activeQueueRef.current;
     const qi = queueIndexRef.current;
     const s = settingsRef.current;
+
+    // Rule 1: if played > 3 seconds, always restart the current song first
+    if (audio.currentTime > 3) {
+      audio.currentTime = 0;
+      return;
+    }
+
+    // Rule 2: played <= 3 seconds — try to go to previous in queue
     if (queue.length > 0) {
       let prevIndex = qi - 1;
       if (prevIndex < 0) {
-        if (s.repeatMode === "all") prevIndex = queue.length - 1;
-        else {
-          // restart current song
-          const audio = audioRef.current;
-          if (audio.currentTime > 3) { audio.currentTime = 0; return; }
+        if (s.repeatMode === "all") {
+          // Wrap to last song
+          prevIndex = queue.length - 1;
+        } else {
+          // At first song with no wrap — restart from beginning
+          audio.currentTime = 0;
           return;
         }
       }
@@ -584,8 +594,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
       setQueueIndex(prevIndex);
       playSongRef.current(prevSong);
     } else {
-      // restart current song
-      const audio = audioRef.current;
+      // No queue — restart current song
       audio.currentTime = 0;
     }
   }, []);

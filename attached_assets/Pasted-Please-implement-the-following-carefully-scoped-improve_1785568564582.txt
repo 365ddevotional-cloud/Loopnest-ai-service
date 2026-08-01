@@ -1,0 +1,136 @@
+Please implement the following carefully scoped improvements to the existing SpiritTone Music system.
+
+CRITICAL SAFETY RULES
+
+1. Create a checkpoint before making any change.
+2. Extend the existing music player and YouTube integration only.
+3. Do not rebuild, redesign, refactor, rename, remove, or replace unrelated systems.
+4. Do not modify Church Mode, authentication, admin login, Firebase configuration, devotional content, Sunday School, donations, Android packaging, AAB files, package name, signing keys, ADMIN_PASSWORD, or AAB_DOWNLOAD_TOKEN.
+5. Preserve every existing song, audio file, MP4, artwork, lyric, collection, statistic, testimony, favorite, download setting, upload default, playback mode, route, and database record.
+6. Make the smallest compatible changes possible.
+7. Do not publish, deploy, connect a real YouTube account, or upload any video automatically.
+8. Test both desktop and mobile-width layouts before reporting completion.
+
+PART 1 — SECURE THE YOUTUBE OAUTH FLOW
+
+The current YouTube OAuth implementation is missing proper OAuth state/CSRF protection.
+
+Fix this without changing the existing YouTube architecture.
+
+Requirements:
+
+1. Generate a cryptographically secure random OAuth state value on the server before redirecting the administrator to Google.
+2. Store the state temporarily on the server using the project’s existing secure session, database, or server-side storage pattern.
+3. Include the generated state in the Google OAuth authorization URL.
+4. When Google redirects to the OAuth callback, compare the returned state with the stored state.
+5. Reject the callback if:
+   - state is missing;
+   - state does not match;
+   - state has expired;
+   - state has already been used.
+6. Make each state single-use.
+7. Apply a short expiration period, such as 10 minutes.
+8. Do not place secrets, access tokens, refresh tokens, or sensitive session information in URLs, browser storage, logs, or API responses.
+9. Preserve the existing YouTube callback route and connected-channel behavior where possible.
+10. When Google credentials are absent, keep the integration safely disabled and show the existing clear configuration message.
+11. Do not attempt a real OAuth connection during this task because GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET have not yet been configured.
+
+PART 2 — NEXT AND PREVIOUS TRACK CONTROLS
+
+Add compact Previous Track and Next Track buttons to the existing music player.
+
+Place them where appropriate in:
+
+- the full song player;
+- the persistent or mini-player;
+- any existing playback control area that already supports queues.
+
+Behavior:
+
+Previous Track:
+1. If the current song has played for more than approximately 3 seconds, restart the current song from the beginning.
+2. If it has played for less than approximately 3 seconds, move to the previous song in the active queue.
+3. If the current song is the first song:
+   - Repeat All may wrap to the final song;
+   - otherwise remain at the first song.
+4. In Shuffle mode, return to the previously played song using playback history when available.
+
+Next Track:
+1. Move immediately to the next song in the active queue.
+2. Respect the current playback mode:
+   - Normal;
+   - Play All;
+   - Repeat One;
+   - Repeat All;
+   - Shuffle.
+3. When Repeat One is active, manually pressing Next should still move to the next available song rather than replaying the current one.
+4. At the final song:
+   - Repeat All should return to the first song;
+   - Play All and Normal should stop or remain at the final song according to the existing player behavior.
+5. Do not allow two audio elements to play simultaneously.
+
+Use accessible labels and tooltips:
+
+- Previous Track
+- Next Track
+
+Show the controls clearly on desktop and mobile without causing horizontal overflow.
+
+PART 3 — QUEUE POSITION INDICATOR
+
+When an active queue contains more than one song, show a small queue-position label such as:
+
+“Track 3 of 28”
+
+or:
+
+“3 / 28”
+
+Requirements:
+
+1. Display it in the full player.
+2. Display it in the mini-player only where space permits.
+3. Update it immediately when:
+   - the current song changes;
+   - Next or Previous is pressed;
+   - Shuffle changes the queue;
+   - the active filter, language, search result, or collection changes.
+4. Hide it when no queue exists or when there is only one song.
+5. Ensure the number represents the current active queue, not the entire unfiltered music database.
+
+PART 4 — VERIFICATION
+
+Before reporting success, verify:
+
+1. OAuth authorization URLs contain a secure state value.
+2. The callback rejects a missing or incorrect state.
+3. A valid state can only be used once.
+4. Expired state values are rejected.
+5. No tokens or secrets are exposed to the browser or logs.
+6. YouTube remains disabled when Google credentials are absent.
+7. Previous Track restarts the song when playback is beyond approximately 3 seconds.
+8. Previous Track returns to the preceding queued song when near the beginning.
+9. Next Track advances correctly.
+10. Repeat One does not prevent the user from manually skipping.
+11. Repeat All wraps correctly.
+12. Shuffle uses the active randomized queue and playback history.
+13. Play All continues to respect the current language, search, filter, or collection.
+14. The queue-position indicator updates correctly.
+15. Only one audio element plays at a time.
+16. Desktop and mobile-width layouts do not overflow.
+17. Existing songs, metadata, upload defaults, playback modes, and unrelated systems remain unchanged.
+18. No new browser-console, server, or TypeScript errors are introduced in modified files.
+
+FINAL REPORT
+
+Provide a concise report containing:
+
+- exact files changed;
+- how OAuth state is generated, stored, expired, and validated;
+- where Previous and Next controls were added;
+- how queue history and queue position work;
+- desktop and mobile verification;
+- confirmation that no real YouTube connection or upload was attempted;
+- confirmation that unrelated systems were not modified.
+
+Do not publish or deploy automatically.

@@ -347,7 +347,7 @@ export default function SongDetail() {
   const {
     currentSong: playerSong, isPlaying: playerIsPlaying, currentTime, duration, volume,
     isLoading: audioLoading, playSong, togglePlay, seek, setVolume, nextSong, playNext, playPrev,
-    activeQueue, queueIndex, audioElement,
+    activeQueue, queueIndex, audioElement, settings,
   } = useMusicPlayer();
   const isCurrentSong = playerSong?.id === song?.id;
   const isPlaying = isCurrentSong && playerIsPlaying;
@@ -612,14 +612,14 @@ export default function SongDetail() {
 
           {/* Row 1: Prev · Play/Pause · Scrubber · Next */}
           <div className="flex items-center gap-2.5">
-            {/* Skip Prev (queue only) */}
-            {isCurrentSong && activeQueue.length > 0 && (
+            {/* Skip Prev — always shown when song is active; restarts if at beginning or within 3 s */}
+            {isCurrentSong && (
               <button
                 onClick={playPrev}
-                disabled={queueIndex <= 0}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors flex-shrink-0"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary transition-colors flex-shrink-0"
                 data-testid="button-play-prev"
-                aria-label="Previous song"
+                aria-label="Previous track"
+                title={activeQueue.length > 0 && queueIndex > 0 ? "Previous track" : "Restart song"}
               >
                 <SkipBack className="w-4 h-4" />
               </button>
@@ -656,21 +656,28 @@ export default function SongDetail() {
               />
               <div className="flex justify-between text-[10px] text-muted-foreground tabular-nums">
                 <span>{formatTime(displayTime)}</span>
-                {isCurrentSong && activeQueue.length > 0 && (
-                  <span className="text-muted-foreground/50">{queueIndex + 1}/{activeQueue.length}</span>
+                {isCurrentSong && activeQueue.length > 1 && (
+                  <span className="text-muted-foreground/50" title={`Track ${queueIndex + 1} of ${activeQueue.length}`}>
+                    {queueIndex + 1} / {activeQueue.length}
+                  </span>
                 )}
                 <span>{formatTime(displayDuration)}</span>
               </div>
             </div>
 
-            {/* Skip Next */}
+            {/* Skip Next — disabled only at last song when mode won't wrap */}
             {isCurrentSong && (activeQueue.length > 0 || nextSong) && (
               <button
                 onClick={playNext}
-                disabled={activeQueue.length > 0 && queueIndex >= activeQueue.length - 1}
+                disabled={
+                  activeQueue.length > 0 &&
+                  queueIndex >= activeQueue.length - 1 &&
+                  settings.repeatMode !== "all"
+                }
                 className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors flex-shrink-0"
                 data-testid="button-play-next"
-                aria-label="Next song"
+                aria-label="Next track"
+                title="Next track"
               >
                 <SkipForward className="w-4 h-4" />
               </button>

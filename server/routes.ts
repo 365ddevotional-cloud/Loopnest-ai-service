@@ -6,6 +6,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { OAuth2Client } from "google-auth-library";
+import { randomBytes } from "crypto";
 import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification, sendDonationThankYouEmail, sendChurchNameChangeSecurityEmail, sendChurchWelcomeEmail, sendChurchComplianceEmail } from "./sendgrid";
 import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
@@ -2057,6 +2058,18 @@ export async function registerRoutes(
   });
 
   // ── YouTube Publishing (Phase 5) ──────────────────────────────────────────
+
+  // OAuth CSRF state store — server-side only, never sent to browser
+  const ytOAuthStates = new Map<string, { expiresAt: number; used: boolean }>();
+  const YT_STATE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+  // Periodically clean up expired entries
+  setInterval(() => {
+    const now = Date.now();
+    for (const [k, v] of ytOAuthStates) {
+      if (v.expiresAt < now) ytOAuthStates.delete(k);
+    }
+  }, 5 * 60 * 1000);
+
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
   const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
   const YOUTUBE_SCOPES = [
@@ -2095,11 +2108,16 @@ export async function registerRoutes(
       return res.status(503).json({ message: "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set as Replit Secrets." });
     }
     try {
+      // Generate a cryptographically secure CSRF state token
+      const state = randomBytes(32).toString("hex");
+      ytOAuthStates.set(state, { expiresAt: Date.now() + YT_STATE_TTL_MS, used: false });
+
       const client = getYouTubeOAuth2Client();
       const url = client.generateAuthUrl({
         access_type: "offline",
         scope: YOUTUBE_SCOPES,
         prompt: "consent",
+        state, // included in the redirect; validated on return
       });
       res.json({ url });
     } catch {
@@ -2108,13 +2126,32 @@ export async function registerRoutes(
   });
 
   app.get("/api/admin/youtube/callback", async (req, res) => {
-    const { code, error } = req.query as Record<string, string>;
+    const { code, error, state } = req.query as Record<string, string>;
     if (error) {
       return res.redirect(`/admin?youtube_error=${encodeURIComponent(error)}`);
     }
     if (!code) {
       return res.redirect("/admin?youtube_error=no_code");
     }
+
+    // Validate CSRF state
+    if (!state) {
+      return res.redirect("/admin?youtube_error=missing_state");
+    }
+    const storedState = ytOAuthStates.get(state);
+    if (!storedState) {
+      return res.redirect("/admin?youtube_error=invalid_state");
+    }
+    if (storedState.used) {
+      return res.redirect("/admin?youtube_error=state_already_used");
+    }
+    if (storedState.expiresAt < Date.now()) {
+      ytOAuthStates.delete(state);
+      return res.redirect("/admin?youtube_error=state_expired");
+    }
+    // Mark as used immediately (single-use)
+    ytOAuthStates.set(state, { ...storedState, used: true });
+
     try {
       const client = getYouTubeOAuth2Client();
       const { tokens } = await client.getToken(code);

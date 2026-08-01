@@ -17,7 +17,7 @@ export default function MiniPlayer() {
   const {
     currentSong, isPlaying, currentTime, duration, isLoading,
     togglePlay, seek, closePlayer, playNext, playPrev,
-    activeQueue, queueIndex, nextSong,
+    activeQueue, queueIndex, nextSong, settings,
   } = useMusicPlayer();
   const [showSettings, setShowSettings] = useState(false);
 
@@ -28,8 +28,12 @@ export default function MiniPlayer() {
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const hasQueue = activeQueue.length > 0;
-  const canSkipNext = hasQueue ? queueIndex < activeQueue.length - 1 : !!nextSong;
-  const canSkipPrev = hasQueue && queueIndex > 0;
+  // Next: allowed when there IS a next slot, or when RepeatAll wraps
+  const canSkipNext = hasQueue
+    ? queueIndex < activeQueue.length - 1 || settings.repeatMode === "all"
+    : !!nextSong;
+  // Prev: always available — will restart current song if at beginning or played < 3 s
+  const canSkipPrev = true;
 
   return (
     <>
@@ -86,9 +90,9 @@ export default function MiniPlayer() {
             </div>
             <div className="text-xs text-muted-foreground truncate">
               {currentSong.artist ?? currentSong.labelName}
-              {hasQueue && (
+              {activeQueue.length > 1 && (
                 <span className="ml-1.5 text-[10px] text-muted-foreground/60">
-                  {queueIndex + 1}/{activeQueue.length}
+                  {queueIndex + 1} / {activeQueue.length}
                 </span>
               )}
             </div>
@@ -101,17 +105,16 @@ export default function MiniPlayer() {
 
           {/* Controls */}
           <div className="flex items-center gap-0.5 flex-shrink-0">
-            {/* Skip Prev */}
-            {canSkipPrev && (
-              <button
-                onClick={playPrev}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
-                data-testid="mini-player-prev"
-                title="Previous song"
-              >
-                <SkipBack className="w-3.5 h-3.5" />
-              </button>
-            )}
+            {/* Skip Prev — always shown; restarts song if at beginning or played < 3 s */}
+            <button
+              onClick={playPrev}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+              data-testid="mini-player-prev"
+              title={hasQueue && queueIndex > 0 ? "Previous track" : "Restart song"}
+              aria-label="Previous track"
+            >
+              <SkipBack className="w-3.5 h-3.5" />
+            </button>
 
             {/* Play / Pause */}
             <button
@@ -133,7 +136,16 @@ export default function MiniPlayer() {
                 onClick={playNext}
                 className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
                 data-testid="mini-player-next"
-                title={hasQueue ? `Next: ${activeQueue[queueIndex + 1]?.title ?? ""}` : nextSong ? `Play next: ${nextSong.title}` : ""}
+                title={
+                  hasQueue && queueIndex < activeQueue.length - 1
+                    ? `Next: ${activeQueue[queueIndex + 1]?.title ?? ""}`
+                    : hasQueue && settings.repeatMode === "all"
+                    ? `Next: ${activeQueue[0]?.title ?? ""} (wrap)`
+                    : nextSong
+                    ? `Play next: ${nextSong.title}`
+                    : ""
+                }
+                aria-label="Next track"
               >
                 <SkipForward className="w-3.5 h-3.5" />
               </button>
