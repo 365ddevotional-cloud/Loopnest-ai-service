@@ -1,0 +1,93 @@
+Please perform one tightly scoped final verification and correction pass for the SpiritTone Music improvements you just implemented.
+
+CRITICAL RULES
+
+1. Do not rebuild or broadly refactor the music system.
+2. Do not modify Church Mode, authentication, admin login, Firebase settings, Android packaging, AAB files, ADMIN_PASSWORD, AAB_DOWNLOAD_TOKEN, package name, signing keys, devotionals, donations, or unrelated features.
+3. Preserve all songs, audio, MP4 files, artwork, lyrics, metadata, statistics, collections, defaults, routes, and existing working features.
+4. Make only the smallest corrections required.
+5. Create a checkpoint first.
+6. Do not publish or deploy automatically.
+7. Do not perform a real YouTube upload.
+8. Do not create separate competing playback or YouTube systems.
+
+TASK 1 — VERIFY AND FIX PLAYBACK MODE STORAGE
+
+Inspect the new playback-mode implementation and database/configuration changes.
+
+Confirm that:
+
+- Normal, Play All, Repeat One, Repeat All, and Shuffle use the correct accepted values everywhere.
+- No invalid Play All value is being saved to a database enum, schema, validation rule, or API field.
+- Playback mode is meant to remain a user preference in localStorage unless the existing architecture intentionally stores it elsewhere.
+- No TypeScript error, database error, invalid enum value, or server error is caused by Play All.
+- Existing Song Upload Defaults database storage remains separate and unaffected.
+
+Fix only the exact defect found.
+
+TASK 2 — MAKE PLAY ALL CLEARLY IDENTIFIABLE
+
+Keep the existing design, but make the main Music Library “Play All” control visibly distinct and easy to understand.
+
+Requirements:
+
+- Use the existing orange accent.
+- Add a clear “Play All” text label, not only an icon.
+- Keep the button compact and mobile-friendly.
+- Do not redesign the player.
+- Do not make the other playback-mode buttons confusing.
+- Ensure active states for Repeat One, Repeat All, Shuffle, and Normal remain clear.
+- Prevent mobile overflow.
+
+TASK 3 — VERIFY YOUTUBE INTEGRATION READINESS
+
+Do not request or invent secret values.
+
+Inspect the YouTube publishing implementation and report exactly:
+
+- which Replit Secrets are required;
+- the exact OAuth callback URL that must be registered in Google Cloud;
+- whether the Connect YouTube Channel button currently calls the correct server route;
+- whether the OAuth callback validates state;
+- whether tokens remain server-side;
+- whether Post to YouTube remains disabled until a channel is connected and a valid MP4 exists;
+- whether no real upload occurs without explicit confirmation.
+
+Do not claim YouTube publishing is fully working unless OAuth has actually been connected and tested.
+
+If Google credentials are absent, leave the feature safely disabled and show the administrator a clear setup message rather than producing an error or exposing secrets.
+
+FINAL VERIFICATION
+
+Test and report:
+
+1. The app loads without a blank page.
+2. No new TypeScript error exists in the modified music files.
+3. No new browser-console or server error exists.
+4. Play All advances through the current filtered list.
+5. Repeat One repeats the same song.
+6. Repeat All returns to the beginning.
+7. Shuffle does not immediately repeat the same song when multiple songs exist.
+8. Only one audio element plays.
+9. Mobile player does not overflow.
+10. The volume slider still works where the browser permits it.
+11. Song Upload Defaults still prefill Upload One Song and Batch Upload.
+12. Existing songs and metadata remain unchanged.
+13. The YouTube feature is safely disabled until credentials and OAuth connection are completed.
+
+Provide a concise final report containing:
+
+- exact files inspected;
+- exact files changed;
+- exact defect found;
+- exact correction made;
+- TypeScript result;
+- browser/server result;
+- playback tests;
+- mobile verification;
+- required YouTube secret names;
+- exact OAuth callback URL;
+- whether YouTube OAuth was actually tested;
+- confirmation that unrelated systems were not modified.
+
+Do not suggest additional features after completing this verification.

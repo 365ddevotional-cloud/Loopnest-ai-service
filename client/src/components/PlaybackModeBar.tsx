@@ -2,7 +2,7 @@
  * PlaybackModeBar — compact 5-button playback mode selector.
  * Modes: Normal · Repeat One · Play All · Repeat All · Shuffle
  */
-import { Repeat, Repeat1, ListMusic, ListRestart, Shuffle } from "lucide-react";
+import { Repeat, Repeat1, ListMusic, ListOrdered, Shuffle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 
@@ -55,15 +55,14 @@ export default function PlaybackModeBar({ className, size = "md" }: PlaybackMode
 
       {/* Play All */}
       <button
-        title={hasQueue || !queueNeeded ? "Play All — play queue once" : "Play All (use Play All button on Music page to set queue)"}
+        title={hasQueue || !queueNeeded ? "Play All — play queue once, then stop" : "Play All (use Play All button on Music page to set queue)"}
         onClick={() => setMode("play-all")}
         className={cn(btnBase, repeatMode === "play-all"
           ? "bg-primary/10 text-primary"
           : "text-muted-foreground hover:text-foreground hover:bg-muted")}
         aria-pressed={repeatMode === "play-all"}
       >
-        <ListMusic size={iconSz} className="[&>path:last-child]:hidden" />
-        {/* Override with a simple arrow-list icon using Repeat */}
+        <ListOrdered size={iconSz} />
         <span className="sr-only">Play All</span>
       </button>
 
