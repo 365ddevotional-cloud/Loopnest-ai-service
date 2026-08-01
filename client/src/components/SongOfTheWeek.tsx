@@ -462,6 +462,38 @@ export function SongOfTheWeek() {
 
   const hasCover = !!song.coverImageUrl;
 
+  // Download helpers ──────────────────────────────────────────────────────────
+  const audioDownloadEnabled = song.downloadStatus !== "disabled" && !!song.audioUrl;
+  const videoDownloadEnabled = (song as any).videoDownloadStatus !== "disabled" && !!(song as any).videoUrl;
+
+  const triggerAudioDownload = () => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    if (isIOS) {
+      window.open(`/api/songs/${song.id}/download`, "_blank");
+    } else {
+      const a = document.createElement("a");
+      a.href = `/api/songs/${song.id}/download`;
+      a.setAttribute("download", "");
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  };
+
+  const triggerVideoDownload = () => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    if (isIOS) {
+      window.open(`/api/songs/${song.id}/download-video`, "_blank");
+    } else {
+      const a = document.createElement("a");
+      a.href = `/api/songs/${song.id}/download-video`;
+      a.setAttribute("download", "");
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  };
+
   return (
     <>
       <div
@@ -475,16 +507,16 @@ export function SongOfTheWeek() {
           className="relative min-h-[260px] sm:min-h-[300px] flex flex-col items-center justify-center text-center px-4 py-8 cursor-pointer"
           style={{
             background: hasCover
-              ? undefined
+              ? "#0a0602"
               : "linear-gradient(160deg, #fdf5e8 0%, #f0d898 35%, #deb850 65%, #c29820 100%)",
           }}
         >
-          {/* Cover image */}
+          {/* Cover image — object-contain so artwork edges are never cropped */}
           {hasCover && (
             <img
               src={song.coverImageUrl!}
               alt={song.title}
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-contain"
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
             />
           )}
@@ -591,21 +623,21 @@ export function SongOfTheWeek() {
             )}
           </div>
 
-          <p className="text-xs text-muted-foreground" data-testid="text-producer">
+          <p className="text-sm text-muted-foreground" data-testid="text-producer">
             Produced by {song.producer}
           </p>
           {song.composer && song.composer !== song.producer && (
-            <p className="text-xs text-muted-foreground">Composed by {song.composer}</p>
+            <p className="text-sm text-muted-foreground">Composed by {song.composer}</p>
           )}
 
           {/* Scripture */}
           <div className="border-l-2 border-primary/40 pl-3 py-1">
             {song.scriptureText ? (
-              <p className="text-xs italic text-foreground/80 leading-relaxed" data-testid="text-song-scripture">
+              <p className="text-sm italic text-foreground/80 leading-relaxed" data-testid="text-song-scripture">
                 "{song.scriptureText}"
               </p>
             ) : null}
-            <p className="text-xs font-semibold text-primary mt-0.5" data-testid="text-song-scripture-ref">
+            <p className="text-sm font-semibold text-primary mt-0.5" data-testid="text-song-scripture-ref">
               — {song.scriptureReference}
             </p>
           </div>
@@ -729,7 +761,7 @@ export function SongOfTheWeek() {
               onClick={() => setShowLyrics(true)}
               aria-label="Show Lyrics"
               data-testid="button-lyrics"
-              className="flex flex-col items-center gap-1 py-2 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors text-xs text-muted-foreground hover:text-foreground active:scale-95"
+              className="flex flex-col items-center gap-1 py-2 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors text-sm text-muted-foreground hover:text-foreground active:scale-95"
             >
               <FileText className="w-4 h-4" />
               Lyrics
@@ -739,7 +771,7 @@ export function SongOfTheWeek() {
               onClick={toggleFavorite}
               aria-label={isFavorite ? "Unfavorite" : "Favorite"}
               data-testid="button-favorite"
-              className={`flex flex-col items-center gap-1 py-2 rounded-lg border transition-colors text-xs active:scale-95 ${
+              className={`flex flex-col items-center gap-1 py-2 rounded-lg border transition-colors text-sm active:scale-95 ${
                 isFavorite
                   ? "border-rose-300 bg-rose-50 dark:bg-rose-950/30 text-rose-500"
                   : "border-border/50 bg-card hover:bg-muted/50 text-muted-foreground hover:text-foreground"
@@ -753,7 +785,7 @@ export function SongOfTheWeek() {
               onClick={handleShare}
               aria-label="Share"
               data-testid="button-share-song"
-              className="flex flex-col items-center gap-1 py-2 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors text-xs text-muted-foreground hover:text-foreground active:scale-95"
+              className="flex flex-col items-center gap-1 py-2 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors text-sm text-muted-foreground hover:text-foreground active:scale-95"
             >
               <Share2 className="w-4 h-4" />
               Share
@@ -763,7 +795,7 @@ export function SongOfTheWeek() {
               onClick={() => setShowTestimony(true)}
               aria-label="Share Testimony"
               data-testid="button-testimony"
-              className="flex flex-col items-center gap-1 py-2 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors text-xs text-muted-foreground hover:text-foreground active:scale-95"
+              className="flex flex-col items-center gap-1 py-2 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors text-sm text-muted-foreground hover:text-foreground active:scale-95"
             >
               <MessageCircle className="w-4 h-4" />
               Testimony
@@ -771,31 +803,68 @@ export function SongOfTheWeek() {
           </div>
 
           {/* ── Action Buttons Row 2 ── */}
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => setShowSupport(true)}
-              aria-label="Support the Ministry"
-              data-testid="button-support"
-              className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-amber-300/60 bg-amber-50 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors text-xs text-amber-700 dark:text-amber-400 font-medium active:scale-95"
-            >
-              <HandHeart className="w-4 h-4" />
-              Support the Ministry
-            </button>
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setShowSupport(true)}
+                aria-label="Support the Ministry"
+                data-testid="button-support"
+                className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-amber-300/60 bg-amber-50 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors text-sm text-amber-700 dark:text-amber-400 font-medium active:scale-95"
+              >
+                <HandHeart className="w-4 h-4" />
+                Support the Ministry
+              </button>
 
-            <button
-              aria-label="Download — Coming Soon"
-              data-testid="button-download"
-              disabled
-              className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-border/40 bg-muted/30 text-xs text-muted-foreground/60 cursor-not-allowed"
-            >
-              <Download className="w-4 h-4" />
-              Download — Coming Soon
-            </button>
+              {audioDownloadEnabled ? (
+                <button
+                  onClick={triggerAudioDownload}
+                  aria-label="Download Audio"
+                  data-testid="button-download-audio"
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors text-sm text-muted-foreground hover:text-foreground font-medium active:scale-95"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Audio
+                </button>
+              ) : videoDownloadEnabled ? (
+                <button
+                  onClick={triggerVideoDownload}
+                  aria-label="Download Video (MP4)"
+                  data-testid="button-download-video"
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors text-sm text-muted-foreground hover:text-foreground font-medium active:scale-95"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Video (MP4)
+                </button>
+              ) : (
+                <button
+                  aria-label="Download Unavailable"
+                  data-testid="button-download-unavailable"
+                  disabled
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-border/40 bg-muted/30 text-sm text-muted-foreground/50 cursor-not-allowed"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Unavailable
+                </button>
+              )}
+            </div>
+
+            {/* Extra row when both audio and video are available */}
+            {audioDownloadEnabled && videoDownloadEnabled && (
+              <button
+                onClick={triggerVideoDownload}
+                aria-label="Download Video (MP4)"
+                data-testid="button-download-video"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors text-sm text-muted-foreground hover:text-foreground font-medium active:scale-95"
+              >
+                <Download className="w-4 h-4" />
+                Download Video (MP4)
+              </button>
+            )}
           </div>
 
           {/* Copyright */}
           {song.copyrightNotice && (
-            <p className="text-[10px] text-muted-foreground/60 text-center pt-1" data-testid="text-copyright">
+            <p className="text-xs text-muted-foreground/60 text-center pt-1" data-testid="text-copyright">
               {song.copyrightNotice}
             </p>
           )}

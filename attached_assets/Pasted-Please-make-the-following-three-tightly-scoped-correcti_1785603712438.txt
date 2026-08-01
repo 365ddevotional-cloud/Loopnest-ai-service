@@ -1,0 +1,106 @@
+Please make the following three tightly scoped corrections to the existing SpiritTone Music song pages in the 365 Daily Devotional app.
+
+CRITICAL SAFETY RULES
+
+1. Update only the existing public music/song display components and the existing download-status display involved in these three corrections.
+2. Do not rebuild, redesign, refactor, rename, remove, or replace the music system.
+3. Do not modify Church Mode, authentication, admin login, Firebase, devotional content, Sunday School, donations, Android packaging, AAB files, ADMIN_PASSWORD, AAB_DOWNLOAD_TOKEN, package name, signing key, YouTube integration, song-upload defaults, playback logic, statistics, collections, favorites, testimonies, or unrelated database fields.
+4. Preserve every existing song, audio file, MP4 file, thumbnail, lyric, description, credit, scripture, download permission, route, and mobile/desktop feature.
+5. Make the smallest compatible changes possible.
+6. Create a checkpoint before editing.
+7. Do not publish or deploy automatically.
+8. Test in both desktop and mobile-width preview before reporting completion.
+
+CORRECTION 1 — INCREASE THE MUSIC-PAGE FONT SIZES
+
+The text on the public song detail page and music section is currently too small and difficult to read, especially on mobile.
+
+Increase the readable font sizes for the existing song-page content, including where applicable:
+
+- artist or label information;
+- scripture text and scripture reference;
+- song description;
+- credits labels and values;
+- lyrics;
+- buttons and button labels;
+- playback-mode labels;
+- “Up next” text;
+- timestamps and supporting player text;
+- footer text that belongs specifically to the song page;
+- any other song metadata that is currently unusually tiny.
+
+Requirements:
+
+- Keep the current design, colors, spacing style, and dark music theme.
+- Do not make headings excessively large.
+- Use responsive font sizing so mobile text remains comfortably readable without causing horizontal overflow.
+- Use an appropriate minimum body-text size, approximately 16px on mobile where practical.
+- Secondary metadata should generally not fall below approximately 14px.
+- Buttons and controls must remain large enough to tap comfortably.
+- Do not enlarge unrelated website pages.
+
+CORRECTION 2 — REMOVE “DOWNLOAD — COMING SOON”
+
+The song download feature is already available.
+
+Find every public music/song location that still displays:
+
+“Download — Coming Soon”
+
+or similar outdated wording.
+
+Replace it with the correct active download wording and behavior.
+
+Requirements:
+
+- When audio download is enabled, show the existing working “Download Audio” action.
+- When MP4/video download is enabled, show the existing working “Download Video (MP4)” action.
+- If only one download type is enabled, show only the available option.
+- If a song’s downloads are genuinely disabled by its existing admin settings, retain the appropriate disabled or unavailable state.
+- Do not globally enable downloads for songs whose current settings disable them.
+- Do not alter existing files, URLs, permissions, counters, or download logic merely to change the label.
+- Confirm that no public song page still incorrectly says “Coming Soon” when an active download is available.
+
+CORRECTION 3 — FIT THE COMPLETE THUMBNAIL WITHOUT CROPPING
+
+The song artwork is currently being cropped because the image container uses a cover-style fit. Important words near the edges of artwork, including parts of the title “THERE’S A WAY OUT,” are being cut off.
+
+Update the public song artwork display so that the complete uploaded image is visible inside its designated area.
+
+Requirements:
+
+- Use a contain-style image fit rather than cropping important content.
+- Preserve the image’s original aspect ratio.
+- Center the artwork horizontally and vertically.
+- Do not stretch, distort, squash, or zoom the image.
+- Add a suitable background behind any empty space created by the aspect-ratio difference, using the existing music-page colors or a subtle blurred/background treatment only if it is lightweight and safe.
+- Keep rounded corners and the current professional appearance.
+- Apply this correction consistently on desktop, iPhone-width, Android-width, and other mobile layouts.
+- Check the Song of the Week artwork and individual song detail artwork.
+- Do not change or regenerate the uploaded source images.
+- Do not alter thumbnails in unrelated app sections unless they use the exact same song-artwork component and require the same safe correction.
+
+VERIFICATION
+
+Before reporting completion, test and confirm:
+
+1. Song-page body text is clearly readable on a mobile-width screen.
+2. Larger fonts do not cause horizontal overflow, clipped buttons, or broken layouts.
+3. Active songs no longer display the incorrect “Download — Coming Soon” wording.
+4. Existing audio downloads still work.
+5. Existing MP4 downloads still work where enabled.
+6. Disabled download settings remain respected.
+7. The complete “There’s A Way Out” artwork is visible without cutting off its title or edge content.
+8. Other portrait, square, and landscape song artwork remains proportional and undistorted.
+9. Desktop and mobile layouts both remain clean.
+10. No new browser-console, server, or TypeScript errors are introduced.
+11. No unrelated system or file is modified.
+
+Provide a concise final report containing:
+
+- exact files changed;
+- the previous and new responsive font-size approach;
+- every outdated “Coming Soon” location corrected;
+- the image-fit rule changed;
+- desktop and mobile verification results;
+- confirmation that unrelated systems were untouched.

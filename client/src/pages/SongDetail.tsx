@@ -506,15 +506,16 @@ export default function SongDetail() {
         style={{
           minHeight: "300px",
           background: hasCover
-            ? undefined
+            ? "#0a0602"
             : "linear-gradient(145deg, #120400 0%, #3b1000 22%, #7c3200 48%, #c07c0a 76%, #d9a818 100%)",
         }}
       >
+        {/* Cover image — object-contain so artwork edges are never cropped */}
         {hasCover && (
           <img
             src={song.coverImageUrl!}
             alt={song.title}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-contain"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
         )}
@@ -582,7 +583,7 @@ export default function SongDetail() {
           {song.labelName && (
             <div
               style={{
-                fontSize: "clamp(0.57rem, 1.8vw, 0.72rem)",
+                fontSize: "clamp(0.72rem, 2.2vw, 0.88rem)",
                 letterSpacing: "0.30em",
                 textTransform: "uppercase",
                 color: hasCover ? "rgba(255,255,255,0.65)" : "rgba(225,185,85,0.72)",
@@ -725,11 +726,11 @@ export default function SongDetail() {
                   className="flex-1 max-w-[120px] accent-primary"
                   data-testid="input-song-volume"
                 />
-                <span className="text-[10px] text-muted-foreground/60 tabular-nums w-7 flex-shrink-0">
+                <span className="text-xs text-muted-foreground/60 tabular-nums w-7 flex-shrink-0">
                   {Math.round(displayVolume * 100)}%
                 </span>
                 {isAndroidDevice && (
-                  <span className="text-[10px] text-muted-foreground/50 hidden sm:block">
+                  <span className="text-xs text-muted-foreground/50 hidden sm:block">
                     Volume buttons also work
                   </span>
                 )}
@@ -742,7 +743,7 @@ export default function SongDetail() {
             <PlaybackModeBar size="sm" />
             <button
               onClick={() => setShowMusicSettings(true)}
-              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
               data-testid="button-open-music-settings"
             >
               <Settings2 className="w-3 h-3" />
@@ -752,7 +753,7 @@ export default function SongDetail() {
 
           {/* Up next — queue or recommendations */}
           {isCurrentSong && activeQueue.length > 0 && queueIndex < activeQueue.length - 1 && (
-            <div className="flex items-center justify-between px-0.5 text-[11px] text-muted-foreground border-t border-border/20 pt-2">
+            <div className="flex items-center justify-between px-0.5 text-xs text-muted-foreground border-t border-border/20 pt-2">
               <span>Up next: <span className="font-medium text-foreground">{activeQueue[queueIndex + 1]?.title}</span></span>
               <button onClick={playNext} className="text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors">
                 <SkipForward className="w-3.5 h-3.5" /> Skip
@@ -761,12 +762,12 @@ export default function SongDetail() {
           )}
           {isCurrentSong && activeQueue.length === 0 && nextSong && (
             <div className="flex items-center justify-between px-0.5 pt-1 border-t border-border/30">
-              <div className="text-[11px] text-muted-foreground">
+              <div className="text-xs text-muted-foreground">
                 Up next: <span className="font-medium text-foreground">{nextSong.title}</span>
               </div>
               <button
                 onClick={playNext}
-                className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 font-medium transition-colors"
+                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium transition-colors"
                 data-testid="button-play-next-rec"
               >
                 <SkipForward className="w-3.5 h-3.5" />
@@ -784,10 +785,10 @@ export default function SongDetail() {
         <div className="rounded-xl border border-amber-200/50 dark:border-amber-800/30 bg-amber-50/60 dark:bg-amber-950/20 p-4 space-y-1" data-testid="section-scripture">
           <div className="flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-primary" />
-            <span className="font-semibold text-sm text-primary">{song.scriptureReference}</span>
+            <span className="font-semibold text-base text-primary">{song.scriptureReference}</span>
           </div>
           {song.scriptureText && (
-            <p className="text-sm text-foreground/80 italic pl-6">"{song.scriptureText}"</p>
+            <p className="text-base text-foreground/80 italic pl-6">"{song.scriptureText}"</p>
           )}
         </div>
       )}
@@ -962,12 +963,12 @@ export default function SongDetail() {
 
       {/* Description */}
       {song.description && (
-        <p className="text-sm text-foreground/75 leading-relaxed">{song.description}</p>
+        <p className="text-base text-foreground/75 leading-relaxed">{song.description}</p>
       )}
 
       {/* Copyright */}
       {song.copyrightNotice && (
-        <p className="text-[10px] text-muted-foreground/60 text-center pt-2">{song.copyrightNotice}</p>
+        <p className="text-xs text-muted-foreground/60 text-center pt-2">{song.copyrightNotice}</p>
       )}
 
       {/* Support Modal */}
