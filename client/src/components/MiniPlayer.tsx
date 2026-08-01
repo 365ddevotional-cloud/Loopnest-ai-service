@@ -1,8 +1,9 @@
 import { useLocation } from "wouter";
-import { Play, Pause, X, ChevronUp, Music2, SkipForward, Settings2 } from "lucide-react";
+import { Play, Pause, X, Music2, SkipForward, SkipBack, Settings2 } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import { useState } from "react";
 import MusicSettings from "@/components/MusicSettings";
+import PlaybackModeBar from "@/components/PlaybackModeBar";
 
 function formatTime(sec: number) {
   if (!isFinite(sec) || sec < 0) return "0:00";
@@ -15,7 +16,8 @@ export default function MiniPlayer() {
   const [location, setLocation] = useLocation();
   const {
     currentSong, isPlaying, currentTime, duration, isLoading,
-    togglePlay, seek, closePlayer, playNext, nextSong,
+    togglePlay, seek, closePlayer, playNext, playPrev,
+    activeQueue, queueIndex, nextSong,
   } = useMusicPlayer();
   const [showSettings, setShowSettings] = useState(false);
 
@@ -25,6 +27,9 @@ export default function MiniPlayer() {
   if (location === `/music/${currentSong.slug}`) return null;
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const hasQueue = activeQueue.length > 0;
+  const canSkipNext = hasQueue ? queueIndex < activeQueue.length - 1 : !!nextSong;
+  const canSkipPrev = hasQueue && queueIndex > 0;
 
   return (
     <>
@@ -70,7 +75,7 @@ export default function MiniPlayer() {
             )}
           </button>
 
-          {/* Title + Artist */}
+          {/* Title + Artist + queue position */}
           <button
             className="flex-1 min-w-0 text-left"
             onClick={() => setLocation(`/music/${currentSong.slug}`)}
@@ -81,16 +86,33 @@ export default function MiniPlayer() {
             </div>
             <div className="text-xs text-muted-foreground truncate">
               {currentSong.artist ?? currentSong.labelName}
+              {hasQueue && (
+                <span className="ml-1.5 text-[10px] text-muted-foreground/60">
+                  {queueIndex + 1}/{activeQueue.length}
+                </span>
+              )}
             </div>
           </button>
 
           {/* Time */}
-          <span className="text-[10px] text-muted-foreground/70 flex-shrink-0 tabular-nums">
+          <span className="text-[10px] text-muted-foreground/70 flex-shrink-0 tabular-nums hidden sm:block">
             {formatTime(currentTime)}{duration > 0 ? ` / ${formatTime(duration)}` : ""}
           </span>
 
           {/* Controls */}
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            {/* Skip Prev */}
+            {canSkipPrev && (
+              <button
+                onClick={playPrev}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                data-testid="mini-player-prev"
+                title="Previous song"
+              >
+                <SkipBack className="w-3.5 h-3.5" />
+              </button>
+            )}
+
             {/* Play / Pause */}
             <button
               onClick={togglePlay}
@@ -105,15 +127,15 @@ export default function MiniPlayer() {
               )}
             </button>
 
-            {/* Play Next (if available) */}
-            {nextSong && (
+            {/* Skip Next */}
+            {canSkipNext && (
               <button
                 onClick={playNext}
                 className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
                 data-testid="mini-player-next"
-                title={`Play next: ${nextSong.title}`}
+                title={hasQueue ? `Next: ${activeQueue[queueIndex + 1]?.title ?? ""}` : nextSong ? `Play next: ${nextSong.title}` : ""}
               >
-                <SkipForward className="w-4 h-4" />
+                <SkipForward className="w-3.5 h-3.5" />
               </button>
             )}
 
@@ -124,7 +146,7 @@ export default function MiniPlayer() {
               data-testid="mini-player-settings"
               title="Music settings"
             >
-              <Settings2 className="w-4 h-4" />
+              <Settings2 className="w-3.5 h-3.5" />
             </button>
 
             {/* Close */}
@@ -134,10 +156,20 @@ export default function MiniPlayer() {
               data-testid="mini-player-close"
               aria-label="Close player"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
+
+        {/* Playback mode bar (second row — compact, shown when queue exists) */}
+        {hasQueue && (
+          <div className="flex items-center justify-between px-4 pb-2 border-t border-border/20 pt-1.5">
+            <span className="text-[10px] text-muted-foreground/60">
+              Queue: {activeQueue.length} songs
+            </span>
+            <PlaybackModeBar size="sm" />
+          </div>
+        )}
       </div>
 
       <MusicSettings open={showSettings} onClose={() => setShowSettings(false)} />

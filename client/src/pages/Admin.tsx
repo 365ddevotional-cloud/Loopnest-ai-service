@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2, Upload, Gift, Video, Building2, DollarSign, Menu, ExternalLink, Youtube } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2, Upload, Gift, Video, Building2, DollarSign, Menu, ExternalLink, Youtube, Settings2, Check } from "lucide-react";
 import { useUpload } from "@/hooks/use-upload";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -3143,6 +3143,119 @@ function SongsAdmin() {
   const [batchMode, setBatchMode] = useState(false);
   const [batchSongs, setBatchSongs] = useState<BatchSong[]>([]);
   const [batchUploading, setBatchUploading] = useState(false);
+
+  // Phase 2: Upload Defaults
+  const [showDefaults, setShowDefaults] = useState(false);
+  const [uploadDefaults, setUploadDefaults] = useState<Record<string, any>>({});
+  const [savingDefaults, setSavingDefaults] = useState(false);
+
+  const { data: savedDefaults } = useQuery<Record<string, any>>({
+    queryKey: ["/api/admin/song-upload-defaults"],
+    queryFn: async () => {
+      const r = await fetch("/api/admin/song-upload-defaults", {
+        headers: { "x-admin-password": (window as any).__adminPwd ?? "" },
+      });
+      if (!r.ok) return {};
+      return r.json();
+    },
+  });
+
+  useEffect(() => {
+    if (savedDefaults) setUploadDefaults(savedDefaults);
+  }, [savedDefaults]);
+
+  const saveUploadDefaults = async () => {
+    setSavingDefaults(true);
+    try {
+      const r = await fetch("/api/admin/song-upload-defaults", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": (window as any).__adminPwd ?? "",
+        },
+        body: JSON.stringify(uploadDefaults),
+      });
+      if (r.ok) {
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/song-upload-defaults"] });
+        toast({ title: "Upload defaults saved" });
+      } else {
+        toast({ title: "Error saving defaults", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error saving defaults", variant: "destructive" });
+    } finally {
+      setSavingDefaults(false);
+    }
+  };
+
+  // Phase 5: YouTube Publishing
+  const [showYouTube, setShowYouTube] = useState(false);
+  const [ytUploadSongId, setYtUploadSongId] = useState<number | null>(null);
+  const [ytUploadTitle, setYtUploadTitle] = useState("");
+  const [ytUploadDesc, setYtUploadDesc] = useState("");
+  const [ytPrivacy, setYtPrivacy] = useState<"private" | "unlisted" | "public">("private");
+  const [ytUploading, setYtUploading] = useState(false);
+  const [ytUploadStatuses, setYtUploadStatuses] = useState<Record<number, string>>({});
+
+  const { data: ytStatus } = useQuery<{ connected: boolean; channelName?: string; channelThumbnailUrl?: string }>({
+    queryKey: ["/api/admin/youtube/status"],
+    queryFn: async () => {
+      const r = await fetch("/api/admin/youtube/status", {
+        headers: { "x-admin-password": (window as any).__adminPwd ?? "" },
+      });
+      if (!r.ok) return { connected: false };
+      return r.json();
+    },
+    enabled: showYouTube,
+  });
+
+  const connectYouTube = async () => {
+    const r = await fetch("/api/admin/youtube/auth-url", {
+      headers: { "x-admin-password": (window as any).__adminPwd ?? "" },
+    });
+    if (r.ok) {
+      const { url } = await r.json();
+      window.open(url, "_blank");
+    } else {
+      const { message } = await r.json();
+      toast({ title: "YouTube connect error", description: message, variant: "destructive" });
+    }
+  };
+
+  const disconnectYouTube = async () => {
+    if (!confirm("Disconnect YouTube channel? You will need to re-authorize to publish again.")) return;
+    await fetch("/api/admin/youtube/disconnect", {
+      method: "DELETE",
+      headers: { "x-admin-password": (window as any).__adminPwd ?? "" },
+    });
+    queryClient.invalidateQueries({ queryKey: ["/api/admin/youtube/status"] });
+    toast({ title: "YouTube disconnected" });
+  };
+
+  const handleYtUpload = async () => {
+    if (!ytUploadSongId) return;
+    setYtUploading(true);
+    try {
+      const r = await fetch(`/api/admin/youtube/upload/${ytUploadSongId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": (window as any).__adminPwd ?? "",
+        },
+        body: JSON.stringify({ title: ytUploadTitle, description: ytUploadDesc, privacyStatus: ytPrivacy }),
+      });
+      const data = await r.json();
+      if (r.ok) {
+        toast({ title: "YouTube upload queued", description: "Upload is running in the background. Check status in a few minutes." });
+        setYtUploadStatuses(prev => ({ ...prev, [ytUploadSongId]: "pending" }));
+        setYtUploadSongId(null);
+      } else {
+        toast({ title: "Upload error", description: data.message, variant: "destructive" });
+      }
+    } finally {
+      setYtUploading(false);
+    }
+  };
   const [editingCollection, setEditingCollection] = useState<Partial<SongCollection> | null>(null);
   const [showCollectionForm, setShowCollectionForm] = useState(false);
   const [assigningSongsTo, setAssigningSongsTo] = useState<number | null>(null);
@@ -3415,36 +3528,37 @@ function SongsAdmin() {
   };
 
   const openNew = () => {
+    const d = uploadDefaults ?? {};
     setEditingSong({
       id: 0,
       title: "",
       slug: "",
-      artist: null,
-      featuredArtist: null,
-      labelName: "SpiritTone Records",
-      labelLogoUrl: null,
-      producer: "Moses Afolabi",
-      composer: null,
-      lyricist: null,
-      choir: null,
-      instrumentalist: null,
-      genre: null,
-      language: "English",
-      scriptureReference: "",
+      artist: d.artist ?? null,
+      featuredArtist: d.featuredArtist ?? null,
+      labelName: d.labelName ?? "SpiritTone Records",
+      labelLogoUrl: d.labelLogoUrl ?? null,
+      producer: d.producer ?? "Moses Afolabi",
+      composer: d.composer ?? null,
+      lyricist: d.lyricist ?? null,
+      choir: d.choir ?? null,
+      instrumentalist: d.instrumentalist ?? null,
+      genre: d.genre ?? null,
+      language: d.language ?? "English",
+      scriptureReference: d.scriptureReference ?? "",
       scriptureText: null,
       lyrics: null,
       audioUrl: null,
       coverImageUrl: null,
-      shortDescription: null,
-      description: null,
-      isActive: true,
+      shortDescription: d.shortDescription ?? null,
+      description: d.description ?? null,
+      isActive: d.isActive !== undefined ? Boolean(d.isActive) : true,
       featuredWeekStart: null,
       featuredWeekEnd: null,
-      releaseYear: new Date().getFullYear(),
-      copyrightNotice: `© ${new Date().getFullYear()} SpiritTone Records. All rights reserved.`,
-      downloadStatus: "free",
+      releaseYear: d.releaseYear ?? new Date().getFullYear(),
+      copyrightNotice: d.copyrightNotice ?? `© ${new Date().getFullYear()} SpiritTone Records. All rights reserved.`,
+      downloadStatus: d.downloadStatus ?? "free",
       videoUrl: null,
-      videoDownloadStatus: "disabled",
+      videoDownloadStatus: d.videoDownloadStatus ?? "disabled",
       createdAt: null,
       updatedAt: null,
     } as unknown as Song);
@@ -3526,25 +3640,43 @@ function SongsAdmin() {
     setBatchSongs(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
   };
 
-  const makeBatchSong = (file: File | null, overrides: Partial<BatchSong> = {}): BatchSong => ({
-    id: `batch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    file, title: "", slug: "",
-    artist: "", featuredArtist: "", choir: "", instrumentalist: "", genre: "",
-    labelName: "SpiritTone Records", producer: "Moses Afolabi",
-    composer: "", lyricist: "", language: "English", customLanguage: "", youtubeUrl: "", songType: "",
-    scriptureReference: "", scriptureText: "",
-    lyrics: "", shortDescription: "", description: "",
-    featuredWeekStart: "", featuredWeekEnd: "",
-    copyrightNotice: `© ${new Date().getFullYear()} SpiritTone Records. All rights reserved.`,
-    releaseYear: new Date().getFullYear(),
-    labelLogoFile: null, labelLogoPreview: null,
-    coverFile: null, coverPreview: null,
-    videoFile: null, videoUploadStatus: "none" as const, videoError: null,
-    downloadStatus: "free" as const, videoDownloadStatus: "disabled" as const,
-    isActive: true, collectionIds: [],
-    status: "waiting", error: null, expanded: true,
-    ...overrides,
-  });
+  const makeBatchSong = (file: File | null, overrides: Partial<BatchSong> = {}): BatchSong => {
+    const d = uploadDefaults ?? {};
+    return {
+      id: `batch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      file, title: "", slug: "",
+      artist: d.artist ?? "",
+      featuredArtist: d.featuredArtist ?? "",
+      choir: d.choir ?? "",
+      instrumentalist: d.instrumentalist ?? "",
+      genre: d.genre ?? "",
+      labelName: d.labelName ?? "SpiritTone Records",
+      producer: d.producer ?? "Moses Afolabi",
+      composer: d.composer ?? "",
+      lyricist: d.lyricist ?? "",
+      language: d.language ?? "English",
+      customLanguage: "",
+      youtubeUrl: "",
+      songType: d.songType ?? "",
+      scriptureReference: d.scriptureReference ?? "",
+      scriptureText: "",
+      lyrics: "",
+      shortDescription: d.shortDescription ?? "",
+      description: d.description ?? "",
+      featuredWeekStart: "", featuredWeekEnd: "",
+      copyrightNotice: d.copyrightNotice ?? `© ${new Date().getFullYear()} SpiritTone Records. All rights reserved.`,
+      releaseYear: d.releaseYear ?? new Date().getFullYear(),
+      labelLogoFile: null, labelLogoPreview: null,
+      coverFile: null, coverPreview: null,
+      videoFile: null, videoUploadStatus: "none" as const, videoError: null,
+      downloadStatus: (d.downloadStatus as "free" | "disabled") ?? "free",
+      videoDownloadStatus: (d.videoDownloadStatus as "free" | "disabled") ?? "disabled",
+      isActive: d.isActive !== undefined ? Boolean(d.isActive) : true,
+      collectionIds: [],
+      status: "waiting", error: null, expanded: true,
+      ...overrides,
+    };
+  };
 
   const handleBatchFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -4120,6 +4252,219 @@ function SongsAdmin() {
         </Card>
       )}
 
+      {/* Upload Defaults (Phase 2) */}
+      <Card className="border-primary/10">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="font-serif text-lg text-primary flex items-center gap-2">
+              <Settings2 className="w-4 h-4" />
+              Song Upload Defaults
+            </CardTitle>
+            <Button size="sm" variant="ghost" onClick={() => setShowDefaults(v => !v)} className="text-xs">
+              {showDefaults ? "Hide" : "Edit Defaults"}
+            </Button>
+          </div>
+          {!showDefaults && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Pre-fill values applied to every new song upload and batch upload. Click "Edit Defaults" to change them.
+            </p>
+          )}
+        </CardHeader>
+        {showDefaults && (
+          <CardContent className="pt-0">
+            <p className="text-xs text-muted-foreground mb-4">
+              These values are pre-filled when you open "Upload One Song" or add a song in batch mode. You can always override them per song.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {([
+                ["labelName", "Label Name"],
+                ["artist", "Artist"],
+                ["featuredArtist", "Featured Artist"],
+                ["producer", "Producer"],
+                ["composer", "Composer"],
+                ["lyricist", "Lyricist"],
+                ["choir", "Choir"],
+                ["instrumentalist", "Instrumentalist"],
+                ["genre", "Genre"],
+                ["language", "Language"],
+                ["songType", "Song Type"],
+                ["scriptureReference", "Scripture Reference"],
+                ["copyrightNotice", "Copyright Notice"],
+              ] as [string, string][]).map(([key, label]) => (
+                <div key={key} className="space-y-1">
+                  <Label className="text-xs">{label}</Label>
+                  <Input
+                    className="h-8 text-xs"
+                    value={uploadDefaults[key] ?? ""}
+                    onChange={e => setUploadDefaults(prev => ({ ...prev, [key]: e.target.value }))}
+                    placeholder={`Default ${label.toLowerCase()}…`}
+                  />
+                </div>
+              ))}
+              <div className="space-y-1">
+                <Label className="text-xs">Release Year</Label>
+                <Input
+                  type="number"
+                  className="h-8 text-xs"
+                  value={uploadDefaults.releaseYear ?? ""}
+                  onChange={e => setUploadDefaults(prev => ({ ...prev, releaseYear: Number(e.target.value) }))}
+                  placeholder={String(new Date().getFullYear())}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Download Status</Label>
+                <select
+                  className="w-full h-8 text-xs px-2 rounded-md border border-border bg-background"
+                  value={uploadDefaults.downloadStatus ?? "free"}
+                  onChange={e => setUploadDefaults(prev => ({ ...prev, downloadStatus: e.target.value }))}
+                >
+                  <option value="free">Free</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+              </div>
+              <div className="sm:col-span-2 space-y-1">
+                <Label className="text-xs">Short Description (default)</Label>
+                <Textarea
+                  rows={2}
+                  className="text-xs resize-none"
+                  value={uploadDefaults.shortDescription ?? ""}
+                  onChange={e => setUploadDefaults(prev => ({ ...prev, shortDescription: e.target.value }))}
+                  placeholder="Default short description…"
+                />
+              </div>
+              <div className="sm:col-span-2 space-y-1">
+                <Label className="text-xs">YouTube Description Footer</Label>
+                <Textarea
+                  rows={2}
+                  className="text-xs resize-none"
+                  value={uploadDefaults.youtubeDescriptionFooter ?? ""}
+                  onChange={e => setUploadDefaults(prev => ({ ...prev, youtubeDescriptionFooter: e.target.value }))}
+                  placeholder="Text to append to every YouTube description…"
+                />
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Button size="sm" onClick={saveUploadDefaults} disabled={savingDefaults}>
+                {savingDefaults ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Check className="w-4 h-4 mr-1.5" />}
+                Save Defaults
+              </Button>
+            </div>
+          </CardContent>
+        )}
+      </Card>
+
+      {/* YouTube Publishing (Phase 5) */}
+      <Card className="border-primary/10">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="font-serif text-lg text-primary flex items-center gap-2">
+              <Youtube className="w-4 h-4 text-red-500" />
+              YouTube Publishing
+            </CardTitle>
+            <Button size="sm" variant="ghost" onClick={() => setShowYouTube(v => !v)} className="text-xs">
+              {showYouTube ? "Hide" : "Manage"}
+            </Button>
+          </div>
+          {!showYouTube && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Connect your YouTube channel to publish song videos directly from the admin. Click "Manage" to set up.
+            </p>
+          )}
+        </CardHeader>
+        {showYouTube && (
+          <CardContent className="pt-0 space-y-4">
+            {ytStatus?.connected ? (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200/60 dark:border-green-800/30">
+                {ytStatus.channelThumbnailUrl && (
+                  <img src={ytStatus.channelThumbnailUrl} alt="" className="w-8 h-8 rounded-full flex-shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-green-800 dark:text-green-300">Connected: {ytStatus.channelName}</p>
+                  <p className="text-xs text-green-700/70 dark:text-green-400/70">Use "Post to YouTube" in the song menu to publish videos.</p>
+                </div>
+                <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50 flex-shrink-0 text-xs" onClick={disconnectYouTube}>
+                  Disconnect
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Connect a YouTube channel to enable publishing song videos. This requires{" "}
+                  <code className="text-xs bg-muted px-1 rounded">GOOGLE_CLIENT_ID</code> and{" "}
+                  <code className="text-xs bg-muted px-1 rounded">GOOGLE_CLIENT_SECRET</code> to be set as Replit Secrets.
+                </p>
+                <Button size="sm" className="gap-1.5" onClick={connectYouTube}>
+                  <Youtube className="w-4 h-4 text-red-400" />
+                  Connect YouTube Channel
+                </Button>
+              </div>
+            )}
+
+            {/* YouTube Upload Modal */}
+            {ytUploadSongId !== null && (
+              <Dialog open onOpenChange={() => setYtUploadSongId(null)}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="font-serif text-primary flex items-center gap-2">
+                      <Youtube className="w-5 h-5 text-red-500" />
+                      Post to YouTube
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-1">
+                    <p className="text-sm text-muted-foreground">
+                      Song: <strong>{songs.find(s => s.id === ytUploadSongId)?.title ?? ytUploadSongId}</strong>
+                    </p>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Video Title (max 100 chars)</Label>
+                      <Input
+                        value={ytUploadTitle}
+                        onChange={e => setYtUploadTitle(e.target.value.slice(0, 100))}
+                        placeholder={songs.find(s => s.id === ytUploadSongId)?.title ?? "Video title"}
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Description</Label>
+                      <Textarea
+                        value={ytUploadDesc}
+                        onChange={e => setYtUploadDesc(e.target.value)}
+                        rows={4}
+                        placeholder="Video description…"
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Privacy</Label>
+                      <select
+                        className="w-full h-9 text-sm px-2 rounded-md border border-border bg-background"
+                        value={ytPrivacy}
+                        onChange={e => setYtPrivacy(e.target.value as any)}
+                      >
+                        <option value="private">Private (only you can see)</option>
+                        <option value="unlisted">Unlisted (link only)</option>
+                        <option value="public">Public</option>
+                      </select>
+                    </div>
+                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 rounded-lg p-3">
+                      <p className="text-xs text-amber-800 dark:text-amber-300">
+                        The video file from storage will be uploaded to YouTube. This may take several minutes for large files. You can close this dialog and check status later.
+                      </p>
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button size="sm" variant="outline" onClick={() => setYtUploadSongId(null)}>Cancel</Button>
+                      <Button size="sm" onClick={handleYtUpload} disabled={ytUploading} className="gap-1.5">
+                        {ytUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Youtube className="w-4 h-4" />}
+                        Publish to YouTube
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+          </CardContent>
+        )}
+      </Card>
+
       {/* Songs List */}
       <Card className="border-primary/10 shadow-lg shadow-primary/5">
         <CardHeader className="bg-muted/30 border-b border-border">
@@ -4245,6 +4590,22 @@ function SongsAdmin() {
                             <a href={(song as any).youtubeUrl} target="_blank" rel="noopener noreferrer" className="min-h-[44px] flex items-center" data-testid={`menu-youtube-song-${song.id}`}>
                               <Youtube className="w-3.5 h-3.5 mr-2 flex-shrink-0 text-red-500" /> Watch on YouTube
                             </a>
+                          </DropdownMenuItem>
+                        )}
+                        {(song as any).videoUrl && ytStatus?.connected && (
+                          <DropdownMenuItem
+                            className="min-h-[44px]"
+                            onClick={() => {
+                              setYtUploadSongId(song.id);
+                              setYtUploadTitle(song.title);
+                              setYtUploadDesc(`${song.title} — ${song.scriptureReference}\n\n${song.shortDescription ?? ""}\n\n${song.labelName}`);
+                              setYtPrivacy("private");
+                              setShowYouTube(true);
+                            }}
+                            data-testid={`menu-post-youtube-${song.id}`}
+                          >
+                            <Youtube className="w-3.5 h-3.5 mr-2 flex-shrink-0 text-red-500" />
+                            {ytUploadStatuses[song.id] === "pending" ? "Uploading to YouTube…" : "Post to YouTube"}
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem onClick={() => openEdit(song)} className="min-h-[44px]" data-testid={`menu-edit-song-${song.id}`}>

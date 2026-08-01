@@ -1,67 +1,86 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
-import { Music2, Play, ExternalLink, Loader2, Clock, RotateCcw, Sparkles } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import {
+  Music2, Play, ExternalLink, Loader2, Clock, RotateCcw, Sparkles,
+  Search, ListMusic, X, ChevronDown,
+} from "lucide-react";
 import type { Song, SongCollection } from "@shared/schema";
 import { useMusicPlayer, type RecentlyPlayedEntry } from "@/contexts/MusicPlayerContext";
+import { useState, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
-function SongCard({ song, isFeatured }: { song: Song; isFeatured?: boolean }) {
+const CUSTOM_LANG = "__custom__";
+
+function SongCard({
+  song,
+  isFeatured,
+  onPlay,
+}: {
+  song: Song;
+  isFeatured?: boolean;
+  onPlay?: (song: Song) => void;
+}) {
+  const [, setLocation] = useLocation();
   return (
-    <Link href={`/music/${song.slug}`}>
+    <div
+      className={`group flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md active:scale-[0.99] ${
+        isFeatured
+          ? "border-amber-300/60 bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-amber-950/20 dark:to-amber-900/10 dark:border-amber-800/40"
+          : "border-border/50 bg-card hover:border-primary/20"
+      }`}
+      data-testid={`card-song-library-${song.id}`}
+      onClick={() => {
+        if (onPlay) onPlay(song);
+        setLocation(`/music/${song.slug}`);
+      }}
+    >
       <div
-        className={`group flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md active:scale-[0.99] ${
-          isFeatured
-            ? "border-amber-300/60 bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-amber-950/20 dark:to-amber-900/10 dark:border-amber-800/40"
-            : "border-border/50 bg-card hover:border-primary/20"
-        }`}
-        data-testid={`card-song-library-${song.id}`}
+        className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden flex items-center justify-center"
+        style={{ background: "linear-gradient(135deg, #f0d080 0%, #c89820 100%)" }}
       >
-        <div
-          className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden flex items-center justify-center"
-          style={{ background: "linear-gradient(135deg, #f0d080 0%, #c89820 100%)" }}
-        >
-          {song.coverImageUrl ? (
-            <img
-              src={song.coverImageUrl}
-              alt={song.title}
-              className="w-full h-full object-cover"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-            />
-          ) : (
-            <Music2 className="w-8 h-8 text-amber-900" />
-          )}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          {isFeatured && (
-            <div className="text-[9px] uppercase font-bold tracking-widest text-amber-600 dark:text-amber-400 mb-0.5">
-              🎵 Song of the Week
-            </div>
-          )}
-          <h3 className="font-serif font-bold text-base text-foreground group-hover:text-primary transition-colors leading-tight truncate">
-            {song.title}
-          </h3>
-          {song.artist && (
-            <p className="text-xs text-muted-foreground truncate">{song.artist}</p>
-          )}
-          <p className="text-xs text-muted-foreground truncate">
-            {song.labelName} · {song.scriptureReference}
-          </p>
-          {song.shortDescription && (
-            <p className="text-xs text-foreground/70 mt-1 line-clamp-2">{song.shortDescription}</p>
-          )}
-        </div>
-
-        <div className="flex-shrink-0 flex flex-col items-end gap-2">
-          {song.audioUrl && (
-            <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
-              <Play className="w-3 h-3" />
-              <span>Play</span>
-            </div>
-          )}
-          <ExternalLink className="w-4 h-4 text-muted-foreground/50 group-hover:text-primary/60 transition-colors" />
-        </div>
+        {song.coverImageUrl ? (
+          <img
+            src={song.coverImageUrl}
+            alt={song.title}
+            className="w-full h-full object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          />
+        ) : (
+          <Music2 className="w-8 h-8 text-amber-900" />
+        )}
       </div>
-    </Link>
+
+      <div className="flex-1 min-w-0">
+        {isFeatured && (
+          <div className="text-[9px] uppercase font-bold tracking-widest text-amber-600 dark:text-amber-400 mb-0.5">
+            🎵 Song of the Week
+          </div>
+        )}
+        <h3 className="font-serif font-bold text-base text-foreground group-hover:text-primary transition-colors leading-tight truncate">
+          {song.title}
+        </h3>
+        {song.artist && (
+          <p className="text-xs text-muted-foreground truncate">{song.artist}</p>
+        )}
+        <p className="text-xs text-muted-foreground truncate">
+          {song.labelName} · {song.scriptureReference}
+        </p>
+        {song.shortDescription && (
+          <p className="text-xs text-foreground/70 mt-1 line-clamp-2">{song.shortDescription}</p>
+        )}
+      </div>
+
+      <div className="flex-shrink-0 flex flex-col items-end gap-2">
+        {song.audioUrl && (
+          <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
+            <Play className="w-3 h-3" />
+            <span>Play</span>
+          </div>
+        )}
+        <ExternalLink className="w-4 h-4 text-muted-foreground/50 group-hover:text-primary/60 transition-colors" />
+      </div>
+    </div>
   );
 }
 
@@ -136,7 +155,14 @@ export default function Music() {
     queryKey: ["/api/songs/collections"],
   });
 
-  const { continueListening, recentlyPlayed, recommendations } = useMusicPlayer();
+  const { continueListening, recentlyPlayed, recommendations, settings, setQueue, playSong } = useMusicPlayer();
+
+  // Filter state
+  const [search, setSearch] = useState("");
+  const [filterLanguage, setFilterLanguage] = useState("all");
+  const [filterGenre, setFilterGenre] = useState("all");
+  const [filterType, setFilterType] = useState("all");
+  const [showFilters, setShowFilters] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
   const featured = songs.find(
@@ -146,6 +172,60 @@ export default function Music() {
       s.featuredWeekStart <= today &&
       s.featuredWeekEnd >= today,
   );
+
+  // Build unique filter options from songs
+  const languages = useMemo(() => {
+    const langs = [...new Set(songs.map(s => s.language).filter(Boolean))] as string[];
+    return langs.sort();
+  }, [songs]);
+
+  const genres = useMemo(() => {
+    const gs = [...new Set(songs.map(s => s.genre).filter(Boolean))] as string[];
+    return gs.sort();
+  }, [songs]);
+
+  const songTypes = useMemo(() => {
+    const ts = [...new Set(songs.map(s => (s as any).songType).filter(Boolean))] as string[];
+    return ts.sort();
+  }, [songs]);
+
+  // Filtered songs
+  const filteredSongs = useMemo(() => {
+    return songs.filter(s => {
+      if (search && !s.title.toLowerCase().includes(search.toLowerCase()) &&
+          !(s.artist ?? "").toLowerCase().includes(search.toLowerCase())) return false;
+      if (filterLanguage !== "all" && s.language !== filterLanguage) return false;
+      if (filterGenre !== "all" && s.genre !== filterGenre) return false;
+      if (filterType !== "all" && (s as any).songType !== filterType) return false;
+      return true;
+    });
+  }, [songs, search, filterLanguage, filterGenre, filterType]);
+
+  const hasActiveFilters = search || filterLanguage !== "all" || filterGenre !== "all" || filterType !== "all";
+
+  const clearFilters = () => {
+    setSearch("");
+    setFilterLanguage("all");
+    setFilterGenre("all");
+    setFilterType("all");
+  };
+
+  // Play All: set the queue to filteredSongs and play the first
+  const handlePlayAll = () => {
+    const playable = filteredSongs.filter(s => s.audioUrl && s.isActive);
+    if (playable.length === 0) return;
+    setQueue(playable, 0);
+    playSong(playable[0]);
+  };
+
+  // When user clicks a song card in the library: set queue to filtered list starting at that song
+  const handleSongClick = (song: Song) => {
+    const playable = filteredSongs.filter(s => s.audioUrl && s.isActive);
+    const idx = playable.findIndex(s => s.id === song.id);
+    if (idx >= 0 && (settings.repeatMode === "play-all" || settings.repeatMode === "all")) {
+      setQueue(playable, idx);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -194,7 +274,7 @@ export default function Music() {
             <span className="w-2 h-2 rounded-full bg-amber-500 inline-block animate-pulse" />
             Song of the Week
           </h2>
-          <SongCard song={featured} isFeatured />
+          <SongCard song={featured} isFeatured onPlay={handleSongClick} />
         </div>
       )}
 
@@ -207,7 +287,7 @@ export default function Music() {
           </h2>
           <div className="space-y-3">
             {recommendations.map((song) => (
-              <SongCard key={song.id} song={song} />
+              <SongCard key={song.id} song={song} onPlay={handleSongClick} />
             ))}
           </div>
         </div>
@@ -246,10 +326,26 @@ export default function Music() {
                   {col.description && <p className="text-xs text-muted-foreground truncate">{col.description}</p>}
                 </div>
                 {col.releaseDate && <span className="text-xs text-muted-foreground flex-shrink-0">{col.releaseDate}</span>}
+                {/* Play all in collection */}
+                {col.songs && col.songs.filter(s => s.audioUrl && s.isActive).length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs gap-1 text-amber-600"
+                    onClick={() => {
+                      const playable = col.songs!.filter(s => s.audioUrl && s.isActive);
+                      setQueue(playable, 0);
+                      playSong(playable[0]);
+                    }}
+                  >
+                    <Play className="w-3 h-3" />
+                    Play All
+                  </Button>
+                )}
               </div>
               {col.songs && col.songs.length > 0 && (
                 <div className="p-2 space-y-1">
-                  {col.songs.map(song => <SongCard key={song.id} song={song} />)}
+                  {col.songs.map(song => <SongCard key={song.id} song={song} onPlay={handleSongClick} />)}
                 </div>
               )}
             </div>
@@ -259,23 +355,156 @@ export default function Music() {
 
       {/* Music Library */}
       <div className="space-y-3">
-        <h2 className="font-serif text-lg font-semibold text-foreground">
-          Music Library
-          {songs.length > 0 && (
-            <span className="ml-2 text-sm font-normal text-muted-foreground">
-              ({songs.length} {songs.length === 1 ? "song" : "songs"})
-            </span>
+        {/* Library header */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <h2 className="font-serif text-lg font-semibold text-foreground flex-1 min-w-0">
+            Music Library
+            {filteredSongs.length > 0 && (
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({filteredSongs.length}{hasActiveFilters && songs.length !== filteredSongs.length ? ` of ${songs.length}` : ""}{" "}
+                {filteredSongs.length === 1 ? "song" : "songs"})
+              </span>
+            )}
+          </h2>
+
+          {/* Play All button */}
+          {filteredSongs.filter(s => s.audioUrl && s.isActive).length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 px-3 gap-1.5 text-xs font-medium border-primary/30 text-primary hover:bg-primary/5 flex-shrink-0"
+              onClick={handlePlayAll}
+              data-testid="button-play-all"
+            >
+              <ListMusic className="w-3.5 h-3.5" />
+              Play All
+            </Button>
           )}
-        </h2>
-        {songs.length === 0 ? (
+
+          {/* Filter toggle */}
+          <Button
+            size="sm"
+            variant={showFilters || hasActiveFilters ? "secondary" : "ghost"}
+            className="h-8 px-2.5 gap-1 text-xs flex-shrink-0"
+            onClick={() => setShowFilters(v => !v)}
+            data-testid="button-toggle-filters"
+          >
+            <Search className="w-3.5 h-3.5" />
+            Filter
+            {hasActiveFilters && (
+              <span className="ml-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] flex items-center justify-center font-bold">
+                !
+              </span>
+            )}
+          </Button>
+        </div>
+
+        {/* Filter controls */}
+        {showFilters && (
+          <div className="rounded-xl border border-border/50 bg-muted/20 p-3 space-y-3">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search songs or artists…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-8 h-8 text-sm"
+                data-testid="input-song-search"
+              />
+              {search && (
+                <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                  <X className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex gap-2 flex-wrap">
+              {/* Language filter */}
+              {languages.length > 1 && (
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs text-muted-foreground whitespace-nowrap">Language:</label>
+                  <select
+                    value={filterLanguage}
+                    onChange={e => setFilterLanguage(e.target.value)}
+                    className="text-xs h-7 px-2 rounded-md border border-border bg-background"
+                    data-testid="select-filter-language"
+                  >
+                    <option value="all">All</option>
+                    {languages.map(l => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                </div>
+              )}
+
+              {/* Genre filter */}
+              {genres.length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs text-muted-foreground whitespace-nowrap">Genre:</label>
+                  <select
+                    value={filterGenre}
+                    onChange={e => setFilterGenre(e.target.value)}
+                    className="text-xs h-7 px-2 rounded-md border border-border bg-background"
+                    data-testid="select-filter-genre"
+                  >
+                    <option value="all">All</option>
+                    {genres.map(g => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </div>
+              )}
+
+              {/* Song Type filter */}
+              {songTypes.length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs text-muted-foreground whitespace-nowrap">Type:</label>
+                  <select
+                    value={filterType}
+                    onChange={e => setFilterType(e.target.value)}
+                    className="text-xs h-7 px-2 rounded-md border border-border bg-background"
+                    data-testid="select-filter-type"
+                  >
+                    <option value="all">All</option>
+                    {songTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+              )}
+
+              {/* Clear filters */}
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="text-xs text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1"
+                >
+                  <X className="w-3 h-3" />
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {filteredSongs.length === 0 ? (
           <div className="text-center py-16 space-y-3">
             <Music2 className="w-12 h-12 text-muted-foreground/40 mx-auto" />
-            <p className="text-muted-foreground">No songs available yet. Check back soon.</p>
+            {hasActiveFilters ? (
+              <>
+                <p className="text-muted-foreground">No songs match your filters.</p>
+                <button onClick={clearFilters} className="text-primary text-sm hover:underline">
+                  Clear filters
+                </button>
+              </>
+            ) : (
+              <p className="text-muted-foreground">No songs available yet. Check back soon.</p>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
-            {songs.map((song) => (
-              <SongCard key={song.id} song={song} isFeatured={song.id === featured?.id} />
+            {filteredSongs.map((song) => (
+              <SongCard
+                key={song.id}
+                song={song}
+                isFeatured={song.id === featured?.id}
+                onPlay={handleSongClick}
+              />
             ))}
           </div>
         )}

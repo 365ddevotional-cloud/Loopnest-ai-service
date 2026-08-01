@@ -1577,3 +1577,66 @@ export const groupAnnouncements = pgTable("group_announcements", {
 export const insertGroupAnnouncementSchema = createInsertSchema(groupAnnouncements).omit({ id: true, createdAt: true });
 export type GroupAnnouncement = typeof groupAnnouncements.$inferSelect;
 export type InsertGroupAnnouncement = z.infer<typeof insertGroupAnnouncementSchema>;
+
+// ── Song Upload Defaults ─────────────────────────────────────────────────────
+// Admin-configurable prefill values for Upload One Song and Batch Upload forms.
+// One row ever (id = 1); created on first save.
+export const songUploadDefaults = pgTable("song_upload_defaults", {
+  id: serial("id").primaryKey(),
+  labelName: text("label_name"),
+  artist: text("artist"),
+  featuredArtist: text("featured_artist"),
+  producer: text("producer"),
+  composer: text("composer"),
+  lyricist: text("lyricist"),
+  choir: text("choir"),
+  instrumentalist: text("instrumentalist"),
+  genre: text("genre"),
+  language: text("language"),
+  songType: text("song_type"),
+  releaseYear: integer("release_year"),
+  copyrightNotice: text("copyright_notice"),
+  labelLogoUrl: text("label_logo_url"),
+  scriptureReference: text("scripture_reference"),
+  shortDescription: text("short_description"),
+  description: text("description"),
+  downloadStatus: text("download_status"),
+  videoDownloadStatus: text("video_download_status"),
+  isActive: boolean("is_active"),
+  youtubeChannelUrl: text("youtube_channel_url"),
+  youtubeDescriptionFooter: text("youtube_description_footer"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+export type SongUploadDefaults = typeof songUploadDefaults.$inferSelect;
+
+// ── YouTube Connection ───────────────────────────────────────────────────────
+// Server-side only: OAuth tokens + channel identity.
+// Tokens are NEVER sent to the browser.
+export const youtubeConnection = pgTable("youtube_connection", {
+  id: serial("id").primaryKey(),
+  channelId: text("channel_id"),
+  channelName: text("channel_name"),
+  channelThumbnailUrl: text("channel_thumbnail_url"),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  tokenExpiry: timestamp("token_expiry"),
+  scope: text("scope"),
+  connectedAt: timestamp("connected_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+export type YoutubeConnection = typeof youtubeConnection.$inferSelect;
+
+// ── YouTube Song Uploads ─────────────────────────────────────────────────────
+// Records each song's YouTube publishing state.
+export const youtubeSongUploads = pgTable("youtube_song_uploads", {
+  id: serial("id").primaryKey(),
+  songId: integer("song_id").notNull().references(() => songs.id, { onDelete: "cascade" }),
+  youtubeVideoId: text("youtube_video_id"),
+  youtubeVideoUrl: text("youtube_video_url"),
+  youtubeTitle: text("youtube_title"),
+  privacyStatus: text("privacy_status").default("private"),
+  processingStatus: text("processing_status").default("pending"),
+  uploadedAt: timestamp("uploaded_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+export type YoutubeSongUpload = typeof youtubeSongUploads.$inferSelect;

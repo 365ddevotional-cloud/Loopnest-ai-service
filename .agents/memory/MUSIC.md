@@ -1,70 +1,50 @@
 ---
-name: SpiritTone Music system — admin features
-description: What's built, what's pending, key patterns for the music admin in Admin.tsx
+name: SpiritTone Music admin features
+description: What's built vs pending for the SpiritTone music player, admin tools, and YouTube publishing
 ---
 
-# SpiritTone Music Admin — current state
+## Built and shipped
 
-## What is built (as of 2026-07-30)
+### Phase 1 — Playback Modes + Queue
+- `repeatMode` extended to `"none" | "one" | "play-all" | "all"` (DB stores plain text, backward-compatible)
+- `activeQueue`, `queueIndex`, `setQueue`, `clearQueue`, `playPrev`, `audioElement` added to MusicPlayerContext
+- Shuffle pins the start song, then shuffles the rest
+- `onEnded` advances queue for play-all / loops for all
+- Volume saved/restored from `spirittone-volume` in localStorage; `onInput` + `onChange` for mobile
 
-### Batch Upload (SongsAdmin, Admin.tsx)
-- `BatchSong` interface has ALL fields matching the single-song Dialog (including `labelLogoFile/Preview`, `downloadStatus`, `videoDownloadStatus`, `collectionIds`, `songType`).
-- `makeBatchSong()` factory function creates a new blank/file-based BatchSong with correct defaults.
-- Each batch card expands to show the complete single-song form in the same field order.
-- `processOneBatchSong(bsong, asDraft)` uploads audio, logo, cover, video then POSTs to /api/songs, then assigns collections.
+### Phase 2 — Song Upload Defaults
+- `song_upload_defaults` table (id=1 singleton upsert) in schema + migration
+- `GET /api/admin/song-upload-defaults` + `PUT /api/admin/song-upload-defaults` routes
+- Admin.tsx SongsAdmin: state/query/save wired; `makeBatchSong` + `openNew` prefill from defaults
+- "Song Upload Defaults" collapsible card shown above the song list
 
-### Song Type (Part 5)
-- `song_type TEXT` column added to `songs` DB table (migration: `scripts/migrate-songtype.mjs`).
-- `songType: text("song_type")` in `shared/schema.ts`.
-- `SONG_TYPES` constant at module level in Admin.tsx: `["Vocal","Instrumental","Choir","Podcast","Message","Children","Other"]`.
-- Select dropdown in single-song Dialog and batch card form (after Genre+Language row).
+### Phase 3 — Music Visualizer
+- `MusicVisualizer.tsx` — Web Audio API canvas, 16 bars ~48px tall, WeakMap guard (one MediaElementAudioSourceNode per element), `prefers-reduced-motion` aware
+- `audioElement` exposed from context; visualizer shown in SongDetail when song is active
 
-### Language Support (Part 4)
-- `LANGUAGES` constant at module level in Admin.tsx (19 languages from English to Pidgin English).
-- Language field is now a `<Select>` in both the single-song Dialog and batch card form (was free-text Input).
+### Phase 4 — Mobile Volume + 3-row SongDetail layout
+- Volume input uses `onInput` + `onChange`; iOS and Android detected separately
+- SongDetail restructured: scrubber row → volume row → PlaybackModeBar row
+- `SkipBack`/`SkipForward` queue-aware buttons added
 
-### Search & Filtering (Part 12)
-- Filter state in SongsAdmin: `searchQuery`, `filterLanguage`, `filterGenre`, `filterSongType`, `filterVisibility`.
-- `filteredSongs` computed const (not state) derived from `songs` after filters.
-- Filter bar rendered in CardContent above the song list.
-- Song rows show language badge (non-English only) and songType badge.
+### Phase 5 — YouTube Publishing
+- `youtube_connection` + `youtube_song_uploads` tables in schema + migration
+- 8 server routes added: status, auth-url, callback (OAuth2), disconnect, upload (resumable, background), upload-status
+- Uses `google-auth-library` `OAuth2Client`; tokens stored server-side only
+- Admin.tsx SongsAdmin: "YouTube Publishing" card; connect/disconnect; Upload modal per-song; "Post to YouTube" in song dropdown (shown only when song has videoUrl AND channel is connected)
+- Requires `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` Replit Secrets to be set before YouTube connect works
 
-### Duplicate Song (Part 2)
-- `openDuplicate(song, mode)` function in SongsAdmin.
-- Modes: `"copy"` | `"translation"` | `"instrumental"` | `"remix"`.
-- All modes clear: audioUrl, videoUrl, videoDownloadStatus, coverImageUrl.
-- copy/translation also clear: language, lyrics.
-- instrumental also clears lyrics, sets songType = "Instrumental".
-- Opens the Edit Dialog pre-filled so admin can complete and save.
-- Duplicate dropdown (DropdownMenu) added to each song row before the Edit button.
+### Components + helpers shipped
+- `PlaybackModeBar.tsx` — 5-button compact mode selector (Normal/Repeat One/Play All/Repeat All/Shuffle), `sm`/`md` size
+- `MusicVisualizer.tsx` — Web Audio API canvas visualizer
+- Music.tsx — language/genre/type/search filters + "Play All" per-collection + global Play All
+- MiniPlayer.tsx — queue position indicator, prev/next with queue awareness, PlaybackModeBar when queue active
 
-### Collections (Part 6)
-- `song_collections` + `song_collection_items` tables.
-- Full CRUD in admin. Collections section below the songs list.
-- Batch cards show checkbox list for collection assignment.
+## Pending / not yet done
+- `upsertUserMusicSettings` storage type still uses old `"none"|"one"|"all"` — needs `"play-all"` added (non-breaking at runtime)
+- `PlaybackModeBar` "Play All" button uses `<ListMusic>` with a CSS class that doesn't exist — should swap to `<ListOrdered>` or `<ListChecks>`
+- YouTube Secrets (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) not yet requested from user
+- Master-song linking, bulk editor, archive/schedule/versions still pending (separate tasks)
 
-### Song Analytics (Part 9)
-- `song_engagement_events` table (play, like, share, download events with 30-min session dedup for plays).
-- Stats button on each song row opens an analytics card.
-
-## Constants (module-level in Admin.tsx, before BatchSong interface)
-- `LANGUAGES` — array of 19 language strings.
-- `SONG_TYPES` — array of 7 type strings.
-
-## Not yet built (proposed as tasks #9, #10, #11)
-- Master Song / language-version linking (task #9).
-- Bulk editor for multi-song updates (task #10).
-- Archive / schedule / version history (task #11).
-- Part 3 (Master Song public switcher), Part 8 (Bulk Editor), Parts 10+11 (lifecycle).
-
-## youtubeUrl field (added 2026-07-31)
-- DB column: `youtube_url TEXT` on `songs` table (added by migrate-youtube-url.ts, runs at startup).
-- Schema field: `youtubeUrl: text("youtube_url")` — nullable, optional.
-- Validation: `isValidYoutubeUrl()` in Admin.tsx accepts https only from: youtube.com, www.youtube.com, m.youtube.com, music.youtube.com, youtu.be.
-- Admin song row dropdown: "Watch on YouTube" appears only when `song.youtubeUrl` is truthy.
-- SongDetail.tsx: "Watch on YouTube" Button with ExternalLink icon, placed before download buttons, only when `(song as any).youtubeUrl` exists.
-- Song API (POST/PATCH) already accepts any field in InsertSong — no route change needed.
-
-## Mobile action menu fix (2026-07-31)
-- Root cause: DropdownMenuContent had no `collisionPadding`, could overflow narrow screens; items had no minimum touch height.
-- Fix: `collisionPadding={8}`, `max-h-[70vh] overflow-y-auto z-50` on DropdownMenuContent; `min-h-[44px]` on each item; trigger button is `h-9 w-9 touch-manipulation`.
+**Why:** WeakMap guard is critical — calling `createMediaElementSource` twice on the same `<audio>` throws a DOMException that silently breaks audio across all future plays in the session.
+**How to apply:** Any component that needs a Web Audio node from the player audio element must go through the WeakMap in MusicVisualizer or through the same guard pattern.

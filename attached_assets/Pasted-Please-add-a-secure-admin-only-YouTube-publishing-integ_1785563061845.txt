@@ -1,0 +1,158 @@
+Please add a secure, admin-only YouTube publishing integration to the existing SpiritTone song administration system.
+
+CRITICAL SAFETY RULES
+
+1. This is a separate, tightly scoped feature.
+2. Do not rebuild or refactor the existing music system.
+3. Do not modify Church Mode, authentication, admin login, ADMIN_PASSWORD, AAB_DOWNLOAD_TOKEN, Android packaging, package name, signing keys, or unrelated app features.
+4. Preserve all existing songs, MP4 files, metadata, playback controls, downloads, links, and statistics.
+5. Create a checkpoint before changing anything.
+6. Do not publish a real video during development without explicit administrator action.
+7. Do not expose Google client secrets, OAuth refresh tokens, or access tokens to browser code, logs, API responses, URLs, or public source files.
+8. Do not publish or deploy automatically.
+
+GOAL
+
+Allow the authorized administrator to connect the official YouTube channel and publish an existing song MP4 directly from the song administration interface.
+
+IMPLEMENTATION REQUIREMENTS
+
+1. Use the official YouTube Data API v3 and OAuth 2.0.
+2. Use the minimum required upload scope:
+   https://www.googleapis.com/auth/youtube.upload
+3. Perform OAuth authorization and token refresh securely on the server.
+4. Store YouTube credentials and tokens using Replit Secrets or an encrypted server-side credential store.
+5. Never store YouTube access or refresh tokens in localStorage.
+6. Provide an admin-only Songs setting called:
+   “Connect YouTube Channel”
+7. After authorization, display only safe channel information:
+   - connected channel name;
+   - channel thumbnail if available;
+   - connected status;
+   - Disconnect/Reconnect button.
+8. Add a YouTube section to:
+   - Upload One Song;
+   - Batch Upload song cards;
+   - Edit Song.
+
+Fields:
+
+- YouTube title
+- YouTube description
+- YouTube tags
+- Playlist selection, if available
+- Privacy: Private, Unlisted, or Public
+- Made for kids: Yes/No
+- Scheduled publication date/time, where supported
+- YouTube category
+- Thumbnail source: use song cover or upload a different thumbnail
+
+Prefill YouTube fields from the song’s existing metadata and saved Song Upload Defaults, but keep every field editable.
+
+PUBLISH BUTTON
+
+Add an admin-only button:
+
+“Post to YouTube”
+
+Only enable it when:
+
+- a valid MP4 exists;
+- YouTube is connected;
+- a title is present;
+- the administrator has selected the required privacy and audience settings.
+
+Before publishing, show a confirmation dialog containing:
+
+- song title;
+- channel name;
+- privacy;
+- made-for-kids selection;
+- MP4 filename;
+- thumbnail;
+- estimated action.
+
+Require a second confirmation:
+“Publish to YouTube”
+
+UPLOAD BEHAVIOR
+
+1. Upload the song’s existing MP4 through the server.
+2. Use resumable upload if supported by the chosen official Google library.
+3. Show states:
+   - Preparing
+   - Uploading with percentage
+   - Processing on YouTube
+   - Published
+   - Failed
+4. Prevent duplicate submissions while one upload is active.
+5. After success, save:
+   - YouTube video ID;
+   - canonical YouTube URL;
+   - upload date;
+   - privacy status;
+   - processing status.
+6. Display “Watch on YouTube” in:
+   - the admin song menu;
+   - the public song page, when the video is publicly viewable or unlisted and sharing is allowed.
+7. Never automatically publish the same song twice.
+8. If a YouTube video ID already exists, replace the Post button with:
+   - Watch on YouTube
+   - Update YouTube Metadata
+   - Disconnect Link
+9. Do not delete a YouTube video when a song is deleted from the app without a separate explicit confirmation.
+
+AUDIT AND ERROR HANDLING
+
+Record an admin audit entry for:
+
+- connection;
+- disconnection;
+- upload started;
+- upload completed;
+- upload failed;
+- metadata updated.
+
+Provide clear errors without revealing credentials.
+
+Handle:
+
+- expired OAuth authorization;
+- missing MP4;
+- upload quota reached;
+- network interruption;
+- invalid title or metadata;
+- duplicate click;
+- YouTube processing delay;
+- API project restricted to private uploads.
+
+IMPORTANT RELEASE SAFETY
+
+Until the Google API project is verified or audited, default all API uploads to Private and clearly inform the administrator that YouTube may enforce private visibility.
+
+Do not claim that public publishing works until it has been verified with the connected project and channel.
+
+TESTING
+
+Use a safe private upload test only after explicit administrator confirmation.
+
+Before reporting completion, verify:
+
+- OAuth callback works;
+- tokens remain server-side;
+- MP4 validation works;
+- duplicate upload is prevented;
+- progress and failure states work;
+- successful video ID and URL are stored;
+- Watch on YouTube opens the correct video;
+- mobile and desktop admin layouts remain usable;
+- no unrelated feature was altered.
+
+At the end, report:
+
+- exact files changed;
+- secrets that the administrator must add, naming them but never revealing values;
+- OAuth redirect URL to register in Google Cloud;
+- database changes;
+- whether a real private upload was tested;
+- any Google verification or audit limitation that remains.

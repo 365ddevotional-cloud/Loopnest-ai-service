@@ -7,6 +7,8 @@ import path from "path";
 import { runGovernanceMigration } from "./migrate-governance";
 import { runPromisePictureMigration } from "./migrate-promise-picture";
 import { runYoutubeUrlMigration } from "./migrate-youtube-url";
+import { runUploadDefaultsMigration } from "./migrate-upload-defaults";
+import { runYoutubePublishingMigration } from "./migrate-youtube-publishing";
 
 const app = express();
 const httpServer = createServer(app);
@@ -148,6 +150,8 @@ httpServer.listen(
     runGovernanceMigration().catch((err) => console.error("[governance-migration] Error:", err));
     runPromisePictureMigration().catch((err) => console.error("[promise-picture-migration] Error:", err));
     runYoutubeUrlMigration().catch((err) => console.error("[youtube-url-migration] Error:", err));
+    runUploadDefaultsMigration().catch((err) => console.error("[upload-defaults-migration] Error:", err));
+    runYoutubePublishingMigration().catch((err) => console.error("[youtube-publishing-migration] Error:", err));
 
     import("./seed-devotionals").then(({ seedAllDevotionals }) => {
       import("./storage").then(({ storage }) => {

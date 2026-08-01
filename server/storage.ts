@@ -208,6 +208,12 @@ import {
   type InsertGroupDevotionalReaction,
   type GroupAnnouncement,
   type InsertGroupAnnouncement,
+  songUploadDefaults,
+  youtubeConnection,
+  youtubeSongUploads,
+  type SongUploadDefaults,
+  type YoutubeConnection,
+  type YoutubeSongUpload,
 } from "@shared/schema";
 import { eq, desc, asc, and, isNull, or, ilike, lte, notInArray, inArray, sql, gte, count, countDistinct } from "drizzle-orm";
 
@@ -381,6 +387,18 @@ export interface IStorage {
   upsertPlaybackPosition(uid: string, songId: number, lastPosition: number, durationSecs: number, progressPercent: number): Promise<void>;
   getUserMusicSettings(uid: string): Promise<UserMusicSettings | null>;
   upsertUserMusicSettings(uid: string, settings: Partial<Pick<UserMusicSettings, "autoplayNext" | "rememberPosition" | "defaultSpeed" | "repeatMode" | "shuffle">>): Promise<UserMusicSettings>;
+
+  // Song Collections
+  // Song Upload Defaults
+  getSongUploadDefaults(): Promise<SongUploadDefaults | null>;
+  saveSongUploadDefaults(data: Partial<SongUploadDefaults>): Promise<SongUploadDefaults>;
+
+  // YouTube Connection
+  getYoutubeConnection(): Promise<YoutubeConnection | null>;
+  saveYoutubeConnection(data: Partial<YoutubeConnection>): Promise<YoutubeConnection>;
+  clearYoutubeConnection(): Promise<void>;
+  createOrUpdateYoutubeSongUpload(songId: number, data: Partial<YoutubeSongUpload>): Promise<YoutubeSongUpload>;
+  getYoutubeSongUpload(songId: number): Promise<YoutubeSongUpload | null>;
 
   // Song Collections
   getSongCollections(): Promise<SongCollection[]>;
@@ -3403,6 +3421,83 @@ export class DatabaseStorage implements IStorage {
       recentApprovals:  Number((recentApprovalsRes.rows[0] as any)?.c ?? 0),
       recentSuspensions:Number((recentSuspensionsRes.rows[0] as any)?.c ?? 0),
     };
+  }
+
+  // ── Song Upload Defaults ──────────────────────────────────────────────────
+
+  async getSongUploadDefaults(): Promise<SongUploadDefaults | null> {
+    const [row] = await db.select().from(songUploadDefaults).where(eq(songUploadDefaults.id, 1));
+    return row ?? null;
+  }
+
+  async saveSongUploadDefaults(data: Partial<SongUploadDefaults>): Promise<SongUploadDefaults> {
+    const existing = await this.getSongUploadDefaults();
+    if (existing) {
+      const [updated] = await db
+        .update(songUploadDefaults)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(songUploadDefaults.id, 1))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(songUploadDefaults)
+        .values({ ...data, id: 1 } as any)
+        .returning();
+      return created;
+    }
+  }
+
+  // ── YouTube Connection ────────────────────────────────────────────────────
+
+  async getYoutubeConnection(): Promise<YoutubeConnection | null> {
+    const [row] = await db.select().from(youtubeConnection).where(eq(youtubeConnection.id, 1));
+    return row ?? null;
+  }
+
+  async saveYoutubeConnection(data: Partial<YoutubeConnection>): Promise<YoutubeConnection> {
+    const existing = await this.getYoutubeConnection();
+    if (existing) {
+      const [updated] = await db
+        .update(youtubeConnection)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(youtubeConnection.id, 1))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(youtubeConnection)
+        .values({ ...data, id: 1 } as any)
+        .returning();
+      return created;
+    }
+  }
+
+  async clearYoutubeConnection(): Promise<void> {
+    await db.delete(youtubeConnection).where(eq(youtubeConnection.id, 1));
+  }
+
+  async createOrUpdateYoutubeSongUpload(songId: number, data: Partial<YoutubeSongUpload>): Promise<YoutubeSongUpload> {
+    const existing = await this.getYoutubeSongUpload(songId);
+    if (existing) {
+      const [updated] = await db
+        .update(youtubeSongUploads)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(youtubeSongUploads.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(youtubeSongUploads)
+        .values({ songId, ...data } as any)
+        .returning();
+      return created;
+    }
+  }
+
+  async getYoutubeSongUpload(songId: number): Promise<YoutubeSongUpload | null> {
+    const [row] = await db.select().from(youtubeSongUploads).where(eq(youtubeSongUploads.songId, songId));
+    return row ?? null;
   }
 }
 

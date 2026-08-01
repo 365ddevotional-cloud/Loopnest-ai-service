@@ -1,0 +1,641 @@
+IMPLEMENTATION TITLE:
+SpiritTone Music Player, Upload Defaults, Mobile Audio Controls, and Secure YouTube Publishing
+
+Please implement the following carefully scoped improvements to the EXISTING SpiritTone Music system in the 365 Daily Devotional app.
+
+==================================================
+CRITICAL SAFETY AND COST-CONTROL RULES
+==================================================
+
+1. Update and extend the existing music implementation only.
+2. Do not rebuild, redesign, broadly refactor, rename, remove, or replace unrelated features.
+3. Do not modify:
+   - Church Mode
+   - authentication
+   - user account creation
+   - password reset
+   - admin login
+   - devotional content
+   - Sunday School
+   - donation systems
+   - Firebase configuration
+   - Android packaging
+   - AAB generation
+   - AAB download authentication
+   - ADMIN_PASSWORD
+   - AAB_DOWNLOAD_TOKEN
+   - package name
+   - signing key
+   - unrelated database tables or routes
+4. Preserve all existing:
+   - songs
+   - metadata
+   - uploaded audio
+   - MP4 files
+   - artwork
+   - logos
+   - lyrics
+   - language classification
+   - song types
+   - YouTube links
+   - collections
+   - statistics
+   - play counts
+   - likes/favorites
+   - sharing
+   - testimonies
+   - downloads
+   - filters
+   - responsive layouts
+   - current URLs and routes
+5. Make the smallest compatible changes possible.
+6. Inspect the current music player, MusicPlayerContext, upload forms, batch uploader, database schema, storage methods, routes, and song pages before editing.
+7. Extend the existing shared audio element and player state. Do not create a second competing music player.
+8. Do not permit multiple audio elements to play simultaneously.
+9. Create a checkpoint before making changes.
+10. Work in controlled phases, but complete this as one task.
+11. Do not repeatedly restart or launch the app unnecessarily.
+12. Do not publish or deploy automatically.
+13. Do not upload a real YouTube video without a separate explicit administrator confirmation.
+14. Test desktop and mobile-width behavior before reporting success.
+15. If a requirement cannot safely be completed, report the exact limitation instead of inventing success.
+
+==================================================
+PHASE 1 — MUSIC PLAYBACK MODES
+==================================================
+
+Add these playback modes to the existing shared music player.
+
+1. NORMAL PLAYBACK
+
+- Play the selected song normally.
+- Stop when it finishes unless the existing queue already specifies a next song.
+- Clearly show that no repeat mode is active.
+
+2. REPEAT ONE
+
+- Continuously repeat the currently playing song.
+- Use the existing audio element’s loop behavior where appropriate.
+- Show a clearly highlighted Repeat One state.
+
+3. PLAY ALL
+
+- Starting with the selected song, automatically continue through every song in the CURRENT ACTIVE LIST.
+- The active list means the songs currently visible through the selected:
+  - language
+  - collection
+  - search result
+  - genre
+  - song type
+  - active filter
+  - full music library
+- Stop after the final song.
+
+Examples:
+
+- If Spanish is selected, play all currently visible Spanish songs.
+- If a collection is open, play all songs in that collection.
+- If search results are displayed, play only those results.
+- If no filter is active, use the complete active music library.
+
+4. REPEAT ALL
+
+- Play every song in the current active list.
+- After the final song finishes, return to the first song and continue.
+
+5. SHUFFLE
+
+- Randomize playback within the current active list.
+- Avoid immediately replaying the same song when more than one song exists.
+- Shuffle may work together with Play All or Repeat All only if that is safe within the current player architecture.
+- Do not create contradictory or confusing mode states.
+
+PLAYBACK-MODE USER INTERFACE
+
+Add a compact playback-mode control to:
+
+- the full song player;
+- the persistent or mini-player where space permits;
+- the main Music Library page.
+
+Include accessible labels or tooltips:
+
+- Normal Playback
+- Play All
+- Repeat One
+- Repeat All
+- Shuffle
+
+Use familiar playback icons where appropriate.
+
+Show the active mode clearly with the existing orange SpiritTone accent.
+
+Add a prominent “Play All” button near the top of the Music Library.
+
+Persist the chosen playback mode in localStorage so it remains selected after refresh. An account must not be required.
+
+Playback-mode changes must not:
+
+- restart the song unnecessarily;
+- increase the play count;
+- open another audio stream;
+- lose the current playback position;
+- break the existing queue or recently played behavior.
+
+==================================================
+PHASE 2 — SONG UPLOAD DEFAULTS
+==================================================
+
+Create an admin-only section named:
+
+“Song Upload Defaults”
+
+Place it inside the existing Songs administration area or existing Songs settings area.
+
+Do not create an unrelated second administration system.
+
+ALLOW THE ADMINISTRATOR TO SAVE DEFAULTS FOR:
+
+- Ministry / Label Name
+- Artist / Vocalist
+- Featured Artist
+- Producer
+- Composer
+- Lyricist
+- Choir / Group
+- Instrumentalist
+- Genre
+- Default Language
+- Default Song Type
+- Release Year
+- Copyright Notice
+- SpiritTone Records logo
+- Default scripture reference, if desired
+- Default short description
+- Default full description
+- Default audio-download setting
+- Default video-download setting
+- Default publishing status
+- Default YouTube channel URL
+- Default YouTube description footer, if useful
+- Any other repeatedly entered metadata field that already exists in both Upload One Song and Batch Upload
+
+BEHAVIOR
+
+1. When “Upload One Song” opens, prefill the saved defaults.
+2. When “Add Blank Song” is used in Batch Upload, prefill the same defaults.
+3. When one or multiple audio files are selected for Batch Upload, prefill every generated song card with the saved defaults.
+4. Every prefilled field must remain editable for the individual song.
+5. Editing a song must not change the saved defaults.
+6. Updating defaults must not overwrite existing songs.
+7. Existing songs must remain unchanged unless individually edited.
+8. Provide these buttons:
+   - Save Defaults
+   - Reset to Current Ministry Defaults
+   - Clear Optional Defaults
+9. Show a preview of the saved default logo.
+10. Allow the logo to be replaced or removed for an individual song without changing the saved default.
+11. Use the project’s existing upload/storage mechanism.
+12. Store only the resulting image URL, not large image data.
+13. Do not store image base64 data in localStorage or ordinary database text fields.
+14. Store defaults securely using the existing admin configuration and database patterns.
+15. Do not hard-code ministry information directly into React components.
+
+==================================================
+PHASE 3 — ENLARGED MUSIC VISUALIZER
+==================================================
+
+The existing animated music-wave indicator near the volume control is too small.
+
+Improve it so that it is:
+
+- substantially wider;
+- taller;
+- easy to see;
+- responsive on desktop, Android, and iPhone;
+- visually consistent with the existing dark SpiritTone design.
+
+TARGET APPEARANCE
+
+- Approximately 12–20 animated bars, or an equivalent smooth waveform.
+- Desktop width approximately 140–220px.
+- Mobile width should use available space without overflow.
+- Height approximately 35–55px.
+- Use the existing orange accent.
+- The visualizer must not cover the volume slider or other controls.
+
+BEHAVIOR
+
+- Respond visibly while audio plays.
+- Pause when playback pauses.
+- Stop and reset when playback ends.
+- Do not animate when no song is playing.
+- Respect `prefers-reduced-motion`.
+- With reduced motion enabled, show a static waveform or very gentle animation.
+- Avoid excessive CPU and battery use.
+
+IMPLEMENTATION SAFETY
+
+First inspect whether a Web Audio API analyser already exists.
+
+If an analyser already exists, extend it rather than creating another one.
+
+If no real analyser exists, implement carefully using:
+
+- one AudioContext;
+- one MediaElementAudioSourceNode connected to the existing shared audio element;
+- one AnalyserNode;
+- requestAnimationFrame;
+- safe cleanup.
+
+CRITICAL:
+
+- Never create more than one MediaElementAudioSourceNode for the same audio element.
+- Do not create a new AudioContext every time the song changes.
+- Resume AudioContext only after valid user interaction when required.
+- Do not interrupt normal playback.
+- Do not interfere with playback modes, progress control, statistics, favorites, lyrics, sharing, testimony, or downloads.
+- If Web Audio causes a browser-specific playback problem, preserve normal audio and use a lightweight visual fallback.
+
+==================================================
+PHASE 4 — MOBILE VOLUME CONTROL
+==================================================
+
+The custom volume slider currently works on desktop but not reliably on mobile.
+
+Audit the complete volume-control path, including:
+
+- slider event handlers;
+- range input implementation;
+- pointer events;
+- touch events;
+- React state;
+- shared audio-element reference;
+- HTMLMediaElement.volume;
+- HTMLMediaElement.muted;
+- volumechange events;
+- CSS overlays;
+- pointer-events;
+- touch-action;
+- mobile-specific player code;
+- any visualizer canvas intercepting touches.
+
+IMPLEMENTATION REQUIREMENTS
+
+1. Use a mobile-friendly accessible range input or equivalent slider.
+2. Support:
+   - touch
+   - pointer
+   - mouse
+   - keyboard
+3. Use `onInput` for immediate updates while dragging.
+4. Retain `onChange` as a compatibility fallback where useful.
+5. Normalize slider values to 0–1 before assigning `audio.volume`.
+6. Keep the displayed slider synchronized with the actual audio element.
+7. Listen for `volumechange`.
+8. Make the touch target at least 44px high on mobile.
+9. Ensure no invisible overlay, waveform canvas, or container blocks slider interaction.
+10. Apply `touch-action` only where necessary without blocking page scrolling elsewhere.
+11. Add or preserve a functional mute/unmute control.
+12. Moving the slider above zero should clear the muted state.
+13. Moving the slider to zero should visually show muted state.
+14. Save the preferred volume in localStorage where permitted.
+15. Restore the saved volume after refresh and when a new song begins.
+16. Do not restart playback when volume changes.
+17. Do not increase the play count when volume changes.
+
+MOBILE-BROWSER FALLBACK
+
+Do not assume every mobile browser permits programmatic media-volume control.
+
+After the user moves the slider:
+
+- attempt to set the volume;
+- read back the actual value;
+- observe whether a volumechange event occurred;
+- do not rely only on browser-name detection.
+
+If the mobile browser does not permit webpage-controlled volume:
+
+- do not leave a slider that falsely appears to work;
+- show a short message:
+  “Use your phone’s volume buttons to adjust sound.”
+- keep mute/unmute where supported;
+- do not repeatedly show alerts;
+- do not describe this as an app failure.
+
+PLAYER LAYOUT
+
+On small screens organize controls cleanly:
+
+Row 1:
+- Play/Pause
+- progress bar
+- elapsed time
+- total time
+
+Row 2:
+- Mute
+- volume slider
+- enlarged waveform
+
+Row 3 where needed:
+- Normal
+- Play All
+- Repeat One
+- Repeat All
+- Shuffle
+
+On very narrow screens, the waveform may appear below the volume slider.
+
+Do not allow:
+
+- horizontal page scrolling;
+- overlapping controls;
+- tiny touch targets;
+- waveform covering the slider;
+- controls extending outside the player card;
+- excessive empty space.
+
+==================================================
+PHASE 5 — SECURE YOUTUBE PUBLISHING
+==================================================
+
+Add a secure, admin-only YouTube publishing integration to the existing SpiritTone song administration system.
+
+This feature must use:
+
+- official YouTube Data API v3;
+- official OAuth 2.0 authorization;
+- minimum required upload scope:
+  https://www.googleapis.com/auth/youtube.upload
+
+SECURITY REQUIREMENTS
+
+1. OAuth authorization and token refresh must happen server-side.
+2. Never expose:
+   - Google client secret
+   - refresh token
+   - access token
+   - OAuth credentials
+   in browser code, URLs, logs, API responses, or public files.
+3. Never store YouTube access or refresh tokens in localStorage.
+4. Use Replit Secrets or an encrypted server-side credential store.
+5. Preserve the existing admin authentication system.
+6. Do not replace ADMIN_PASSWORD or use it as a Google token.
+7. Do not modify AAB_DOWNLOAD_TOKEN.
+8. YouTube routes must require existing admin authorization.
+9. Use state validation and appropriate OAuth protection.
+10. Do not upload any real video during development without explicit administrator confirmation.
+
+CONNECT YOUTUBE CHANNEL
+
+Add an admin-only Songs setting named:
+
+“Connect YouTube Channel”
+
+After successful authorization display only safe information:
+
+- connected channel name;
+- channel thumbnail when available;
+- connected status;
+- Disconnect button;
+- Reconnect button.
+
+Do not display any access token, refresh token, secret, or sensitive credential.
+
+YOUTUBE FIELDS
+
+Add a YouTube section to:
+
+- Upload One Song
+- every Batch Upload song card
+- Edit Song
+
+Fields:
+
+- YouTube title
+- YouTube description
+- YouTube tags
+- Playlist selection, where available
+- Privacy:
+  - Private
+  - Unlisted
+  - Public
+- Made for kids:
+  - Yes
+  - No
+- Scheduled publication date/time where supported
+- YouTube category
+- Thumbnail source:
+  - Use song cover
+  - Upload a different thumbnail
+
+Prefill these fields from:
+
+- the song’s existing metadata;
+- Song Upload Defaults;
+- existing YouTube URL or channel defaults where appropriate.
+
+Every field must remain editable.
+
+POST BUTTON
+
+Add an admin-only button:
+
+“Post to YouTube”
+
+Enable it only when:
+
+- a valid MP4 exists;
+- YouTube is connected;
+- a title exists;
+- privacy is selected;
+- made-for-kids selection is completed;
+- all other required metadata is present.
+
+Before publishing, show a confirmation dialog containing:
+
+- song title;
+- channel name;
+- selected privacy;
+- made-for-kids selection;
+- MP4 filename;
+- selected thumbnail;
+- a clear explanation that the video will be uploaded.
+
+Require a second explicit confirmation button:
+
+“Publish to YouTube”
+
+Do not treat merely opening the confirmation dialog as approval.
+
+UPLOAD BEHAVIOR
+
+1. Upload the song’s existing MP4 through the server.
+2. Use resumable upload through an official Google-supported library where possible.
+3. Show states:
+   - Preparing
+   - Uploading with percentage
+   - Processing on YouTube
+   - Published
+   - Failed
+4. Prevent duplicate clicks and duplicate submissions while uploading.
+5. After success save:
+   - YouTube video ID
+   - canonical YouTube URL
+   - upload date
+   - privacy status
+   - YouTube processing status
+6. Display “Watch on YouTube” in:
+   - the admin song action menu;
+   - the public song page when the video may be viewed or shared.
+7. Never automatically publish the same song twice.
+8. If a YouTube video ID already exists, replace “Post to YouTube” with:
+   - Watch on YouTube
+   - Update YouTube Metadata
+   - Disconnect Link
+9. Disconnecting the app link must not delete the YouTube video.
+10. Deleting a song from the app must not delete its YouTube video without a separate explicit confirmation.
+11. Preserve the existing manually entered YouTube-link field and behavior.
+12. Do not remove existing “Watch on YouTube” links.
+
+AUDIT RECORDS
+
+Record admin audit entries for:
+
+- YouTube connection;
+- disconnection;
+- upload started;
+- upload completed;
+- upload failed;
+- metadata updated.
+
+ERROR HANDLING
+
+Provide helpful errors without exposing credentials.
+
+Handle:
+
+- expired OAuth authorization;
+- missing MP4;
+- unsupported or invalid MP4;
+- upload quota reached;
+- network interruption;
+- invalid title or metadata;
+- duplicate submission;
+- YouTube processing delay;
+- API project restricted to private uploads;
+- missing OAuth secrets;
+- revoked access.
+
+RELEASE SAFETY
+
+Until the Google API project and public-upload permission have been properly verified:
+
+- default all uploads to Private;
+- clearly tell the administrator that YouTube may enforce Private visibility;
+- do not claim public publishing has been verified;
+- do not perform a real upload without explicit administrator confirmation.
+
+==================================================
+PHASE 6 — FULL VERIFICATION
+==================================================
+
+Before reporting completion, verify the following.
+
+PLAYBACK
+
+1. Play All advances to the next visible song.
+2. Play All stops after the final song.
+3. Repeat One repeats the same song.
+4. Repeat All returns to the first song.
+5. Shuffle changes the order.
+6. Shuffle avoids an immediate duplicate where multiple songs exist.
+7. Current language, filter, search, genre, and collection are respected.
+8. Refresh restores the selected playback mode.
+9. Only one audio element plays.
+10. Existing play-count rules remain intact.
+
+UPLOAD DEFAULTS
+
+11. Upload One Song receives saved defaults.
+12. Add Blank Song receives saved defaults.
+13. Multiple selected audio files each receive saved defaults.
+14. All generated fields remain editable.
+15. Changing one song does not change the defaults.
+16. Changing defaults does not overwrite existing songs.
+17. Default logo displays correctly and can be replaced per song.
+
+VISUALIZER
+
+18. The waveform is visibly larger.
+19. It animates during playback.
+20. It pauses when the song pauses.
+21. It resets when the song ends.
+22. It does not block controls.
+23. It respects reduced-motion settings.
+24. Only one AudioContext and source connection are used.
+
+VOLUME
+
+25. Desktop dragging changes actual audio volume.
+26. Android-width interaction works where supported.
+27. iPhone-width behavior is tested as far as the environment allows.
+28. Unsupported mobile volume control displays the physical-volume-button instruction.
+29. Mute and unmute work.
+30. Saved volume restores correctly.
+31. Volume changes do not restart the song.
+32. Progress and volume sliders do not interfere with each other.
+
+YOUTUBE
+
+33. OAuth callback route works.
+34. OAuth state is validated.
+35. Tokens remain server-side.
+36. Missing MP4 prevents publishing.
+37. Duplicate publishing is prevented.
+38. Progress and failure states work.
+39. Successful video ID and URL can be stored.
+40. Watch on YouTube opens the stored video.
+41. Existing manually entered YouTube URLs still work.
+42. No real upload is performed without explicit confirmation.
+43. Clearly report whether an actual private upload was tested.
+44. Clearly report any Google API verification, quota, or privacy limitation.
+
+GENERAL
+
+45. Desktop layout remains usable.
+46. Mobile-width layout does not overflow.
+47. Existing song action burger menus still work.
+48. Lyrics, favorites, sharing, testimony, statistics, collections, downloads, language filtering, and song editing remain intact.
+49. No unrelated database data is changed.
+50. No new browser-console, React, AudioContext, database, server, or route errors are introduced.
+
+==================================================
+FINAL REPORT REQUIRED
+==================================================
+
+Provide a concise but complete final report containing:
+
+1. Exact files changed.
+2. Exact database/configuration changes.
+3. Any migration executed.
+4. Playback modes implemented and tested.
+5. Upload-default fields implemented.
+6. Visualizer changes.
+7. Desktop volume result.
+8. Android/mobile volume result.
+9. iPhone/iOS fallback result.
+10. YouTube integration status.
+11. Names of required Replit Secrets, but never their values.
+12. Exact OAuth redirect URL to register in Google Cloud.
+13. Whether a real private YouTube upload was tested.
+14. Any remaining Google verification, quota, or privacy limitations.
+15. Confirmation that existing songs and metadata were preserved.
+16. Confirmation that unrelated systems were not changed.
+17. Confirmation that the app was not automatically published or deployed.
+
+Do not report success based only on code inspection.
+
+Where live authentication or real-device testing is unavailable, mark that item honestly as “not fully tested” and explain the exact reason.

@@ -4,13 +4,15 @@ import type { Song } from "@shared/schema";
 
 const LOCAL_HISTORY_KEY = "spirittone-playback-history";
 const LOCAL_SETTINGS_KEY = "spirittone-music-settings";
+const LOCAL_VOLUME_KEY = "spirittone-volume";
 const HISTORY_LIMIT = 20;
 
 export interface MusicSettings {
   autoplayNext: boolean;
   rememberPosition: boolean;
   defaultSpeed: number;
-  repeatMode: "none" | "one" | "all";
+  /** "none"=Normal, "one"=Repeat One, "play-all"=Play All, "all"=Repeat All */
+  repeatMode: "none" | "one" | "play-all" | "all";
   shuffle: boolean;
 }
 
@@ -27,6 +29,15 @@ export interface RecentlyPlayedEntry {
   lastPlayedAt: string;
 }
 
+function shuffleArr<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 interface MusicPlayerContextType {
   currentSong: Song | null;
   isPlaying: boolean;
@@ -40,6 +51,13 @@ interface MusicPlayerContextType {
   recommendations: Song[];
   nextSong: Song | null;
   continueListening: RecentlyPlayedEntry[];
+  // Queue (Phase 1)
+  activeQueue: Song[];
+  queueIndex: number;
+  setQueue: (songs: Song[], startAt?: number) => void;
+  clearQueue: () => void;
+  // Exposed audio element (Phase 3 – visualizer)
+  audioElement: HTMLAudioElement | null;
   playSong: (song: Song) => void;
   togglePlay: () => void;
   seek: (time: number) => void;
@@ -47,6 +65,7 @@ interface MusicPlayerContextType {
   setPlaybackRate: (rate: number) => void;
   closePlayer: () => void;
   playNext: () => void;
+  playPrev: () => void;
   updateSettings: (partial: Partial<MusicSettings>) => void;
 }
 
@@ -87,8 +106,10 @@ const MusicPlayerContext = createContext<MusicPlayerContextType>({
   currentSong: null, isPlaying: false, currentTime: 0, duration: 0, volume: 1,
   playbackRate: 1, isLoading: false, settings: DEFAULT_SETTINGS,
   recentlyPlayed: [], recommendations: [], nextSong: null, continueListening: [],
+  activeQueue: [], queueIndex: -1, audioElement: null,
+  setQueue: () => {}, clearQueue: () => {},
   playSong: () => {}, togglePlay: () => {}, seek: () => {}, setVolume: () => {},
-  setPlaybackRate: () => {}, closePlayer: () => {}, playNext: () => {}, updateSettings: () => {},
+  setPlaybackRate: () => {}, closePlayer: () => {}, playNext: () => {}, playPrev: () => {}, updateSettings: () => {},
 });
 
 export function MusicPlayerProvider({ children }: { children: ReactNode }) {
@@ -100,12 +121,24 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolumeState] = useState(1);
+  const [volume, setVolumeState] = useState(() => {
+    const saved = parseFloat(localStorage.getItem(LOCAL_VOLUME_KEY) ?? "1");
+    return isNaN(saved) ? 1 : Math.max(0, Math.min(1, saved));
+  });
   const [playbackRate, setPlaybackRateState] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [settings, setSettings] = useState<MusicSettings>(() =>
-    readLocal<MusicSettings>(LOCAL_SETTINGS_KEY, DEFAULT_SETTINGS)
-  );
+  const [settings, setSettings] = useState<MusicSettings>(() => {
+    const saved = readLocal<MusicSettings>(LOCAL_SETTINGS_KEY, DEFAULT_SETTINGS);
+    // Migrate legacy "all" from old "repeat-all" semantics; just keep as-is
+    return { ...DEFAULT_SETTINGS, ...saved };
+  });
+
+  // Queue state (Phase 1)
+  const [activeQueue, setActiveQueue] = useState<Song[]>([]);
+  const [queueIndex, setQueueIndex] = useState(-1);
+  const activeQueueRef = useRef<Song[]>([]);
+  const queueIndexRef = useRef(-1);
+
   const [recentlyPlayed, setRecentlyPlayed] = useState<RecentlyPlayedEntry[]>(() =>
     readLocal<RecentlyPlayedEntry[]>(LOCAL_HISTORY_KEY, [])
   );
@@ -131,6 +164,23 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     let id = sessionStorage.getItem(key);
     if (!id) { id = Math.random().toString(36).slice(2) + Date.now().toString(36); sessionStorage.setItem(key, id); }
     sessionIdRef.current = id;
+  }, []);
+
+  // Apply saved volume to audio element on mount
+  useEffect(() => {
+    audioRef.current.volume = volume;
+  }, []);
+
+  // Sync volume state when audio element volume changes externally (e.g. Android media controls)
+  useEffect(() => {
+    const audio = audioRef.current;
+    const onVolumeChange = () => {
+      const v = audio.volume;
+      setVolumeState(v);
+      localStorage.setItem(LOCAL_VOLUME_KEY, String(v));
+    };
+    audio.addEventListener("volumechange", onVolumeChange);
+    return () => audio.removeEventListener("volumechange", onVolumeChange);
   }, []);
 
   // Fetch all songs for recommendations (lazy, on first play)
@@ -178,7 +228,6 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
             lastPlayedAt: r.lastPlayedAt ?? new Date().toISOString(),
           }));
           setRecentlyPlayed(prev => {
-            // Merge: DB entries fill in slots not in local
             const localIds = new Set(prev.map(p => p.songId));
             const merged = [...prev, ...entries.filter(e => !localIds.has(e.songId))]
               .sort((a, b) => new Date(b.lastPlayedAt).getTime() - new Date(a.lastPlayedAt).getTime())
@@ -240,7 +289,6 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     const audio = audioRef.current;
     const onTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
-      // 10-second continuous play counting (skip if seeking/jumping)
       const song = currentSongRef.current;
       if (song && audio.currentTime > 0) {
         const track = playTrackRef.current;
@@ -248,7 +296,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
           playTrackRef.current = { songId: song.id, lastTime: audio.currentTime, accumulated: 0 };
         } else if (track.lastTime >= 0) {
           const delta = audio.currentTime - track.lastTime;
-          if (delta > 0 && delta < 3) { // small positive delta = normal playback
+          if (delta > 0 && delta < 3) {
             playTrackRef.current.accumulated = track.accumulated + delta;
             if (playTrackRef.current.accumulated >= 10 && !playCountedRef.current.has(song.id)) {
               playCountedRef.current.add(song.id);
@@ -280,12 +328,39 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
       setIsPlaying(false);
       const song = currentSongRef.current;
       if (song) savePositionRef.current(song, audio.duration || 0, audio.duration || 0);
+
       const s = settingsRef.current;
+
+      // Repeat One: loop current song
       if (s.repeatMode === "one") {
         audio.currentTime = 0;
         audio.play().catch(() => {});
-      } else if (s.autoplayNext) {
-        // Play next via ref to avoid stale closure
+        return;
+      }
+
+      // Queue-based advancement (Play All / Repeat All)
+      const queue = activeQueueRef.current;
+      const qi = queueIndexRef.current;
+
+      if (queue.length > 0 && (s.repeatMode === "play-all" || s.repeatMode === "all")) {
+        let nextIndex = qi + 1;
+        if (nextIndex >= queue.length) {
+          if (s.repeatMode === "all") {
+            nextIndex = 0; // loop queue
+          } else {
+            // play-all: reached end, stop
+            return;
+          }
+        }
+        const nextSong = queue[nextIndex];
+        queueIndexRef.current = nextIndex;
+        setQueueIndex(nextIndex);
+        setTimeout(() => playSongRef.current(nextSong), 400);
+        return;
+      }
+
+      // Legacy autoplay via recommendations
+      if (s.autoplayNext) {
         setTimeout(() => {
           const recs = (window as any).__musicRecs as Song[] | undefined;
           if (recs && recs.length > 0) playSongRef.current(recs[0]);
@@ -341,6 +416,35 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     recentlyPlayed.filter(r => r.progressPercent >= 5 && r.progressPercent < 90),
   [recentlyPlayed]);
 
+  // ── Queue management (Phase 1) ──────────────────────────────────────────────
+
+  const setQueue = useCallback((songs: Song[], startAt: number = 0) => {
+    const s = settingsRef.current;
+    let ordered: Song[];
+    let qi: number;
+    if (s.shuffle) {
+      // Keep the song at startAt first, shuffle the rest
+      const startSong = songs[startAt];
+      const rest = songs.filter((_, i) => i !== startAt);
+      ordered = startSong ? [startSong, ...shuffleArr(rest)] : shuffleArr(songs);
+      qi = 0;
+    } else {
+      ordered = [...songs];
+      qi = Math.max(0, Math.min(startAt, songs.length - 1));
+    }
+    activeQueueRef.current = ordered;
+    queueIndexRef.current = qi;
+    setActiveQueue(ordered);
+    setQueueIndex(qi);
+  }, []);
+
+  const clearQueue = useCallback(() => {
+    activeQueueRef.current = [];
+    queueIndexRef.current = -1;
+    setActiveQueue([]);
+    setQueueIndex(-1);
+  }, []);
+
   const playSong = useCallback((song: Song) => {
     fetchAllSongs();
     const audio = audioRef.current;
@@ -355,7 +459,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     audio.pause();
     audio.src = `/api/songs/${song.id}/audio`;
     audio.playbackRate = settingsRef.current.defaultSpeed;
-    audio.volume = volume;
+    audio.volume = audioRef.current.volume;
 
     // Find saved position
     const saved = recentlyPlayedRef.current.find(r => r.songId === song.id);
@@ -391,7 +495,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
       recentlyPlayedRef.current = updated;
       return updated;
     });
-  }, [fetchAllSongs, volume]);
+  }, [fetchAllSongs]);
 
   // Keep playSongRef in sync
   useEffect(() => { playSongRef.current = playSong; }, [playSong]);
@@ -412,8 +516,10 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setVolume = useCallback((vol: number) => {
-    audioRef.current.volume = vol;
-    setVolumeState(vol);
+    const v = Math.max(0, Math.min(1, vol));
+    audioRef.current.volume = v;
+    setVolumeState(v);
+    localStorage.setItem(LOCAL_VOLUME_KEY, String(v));
   }, []);
 
   const setPlaybackRate = useCallback((rate: number) => {
@@ -434,11 +540,54 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
-  }, []);
+    clearQueue();
+  }, [clearQueue]);
 
   const playNext = useCallback(() => {
+    const queue = activeQueueRef.current;
+    const qi = queueIndexRef.current;
+    const s = settingsRef.current;
+    if (queue.length > 0) {
+      let nextIndex = qi + 1;
+      if (nextIndex >= queue.length) {
+        if (s.repeatMode === "all") nextIndex = 0;
+        else return;
+      }
+      const nextSong = queue[nextIndex];
+      queueIndexRef.current = nextIndex;
+      setQueueIndex(nextIndex);
+      playSongRef.current(nextSong);
+      return;
+    }
+    // Legacy: use recommendations
     const recs = (window as any).__musicRecs as Song[] | undefined;
     if (recs && recs.length > 0) playSongRef.current(recs[0]);
+  }, []);
+
+  const playPrev = useCallback(() => {
+    const queue = activeQueueRef.current;
+    const qi = queueIndexRef.current;
+    const s = settingsRef.current;
+    if (queue.length > 0) {
+      let prevIndex = qi - 1;
+      if (prevIndex < 0) {
+        if (s.repeatMode === "all") prevIndex = queue.length - 1;
+        else {
+          // restart current song
+          const audio = audioRef.current;
+          if (audio.currentTime > 3) { audio.currentTime = 0; return; }
+          return;
+        }
+      }
+      const prevSong = queue[prevIndex];
+      queueIndexRef.current = prevIndex;
+      setQueueIndex(prevIndex);
+      playSongRef.current(prevSong);
+    } else {
+      // restart current song
+      const audio = audioRef.current;
+      audio.currentTime = 0;
+    }
   }, []);
 
   const updateSettings = useCallback((partial: Partial<MusicSettings>) => {
@@ -449,6 +598,22 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
       if (partial.defaultSpeed !== undefined) {
         audioRef.current.playbackRate = partial.defaultSpeed;
         setPlaybackRateState(partial.defaultSpeed);
+      }
+      // If shuffle changed and queue is active, re-shuffle the queue
+      if (partial.shuffle !== undefined && activeQueueRef.current.length > 0) {
+        const queue = activeQueueRef.current;
+        const qi = queueIndexRef.current;
+        const currentQ = queue[qi];
+        if (partial.shuffle) {
+          const others = queue.filter((_, i) => i !== qi);
+          const newQueue = currentQ ? [currentQ, ...shuffleArr(others)] : shuffleArr(queue);
+          activeQueueRef.current = newQueue;
+          queueIndexRef.current = 0;
+          setActiveQueue(newQueue);
+          setQueueIndex(0);
+        } else {
+          // Un-shuffle: restore original order (we don't have original, so just leave as-is)
+        }
       }
       // Sync to DB
       if (isSignedIn) {
@@ -469,8 +634,10 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     <MusicPlayerContext.Provider value={{
       currentSong, isPlaying, currentTime, duration, volume, playbackRate, isLoading,
       settings, recentlyPlayed, recommendations, nextSong, continueListening,
+      activeQueue, queueIndex, audioElement: audioRef.current,
+      setQueue, clearQueue,
       playSong, togglePlay, seek, setVolume, setPlaybackRate,
-      closePlayer, playNext, updateSettings,
+      closePlayer, playNext, playPrev, updateSettings,
     }}>
       {children}
     </MusicPlayerContext.Provider>

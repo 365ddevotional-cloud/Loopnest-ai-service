@@ -2038,6 +2038,267 @@ export async function registerRoutes(
 
   // ── End Songs ─────────────────────────────────────────────────────────────
 
+  // ── Song Upload Defaults (Phase 2) ────────────────────────────────────────
+  app.get("/api/admin/song-upload-defaults", requireAdmin, async (_req, res) => {
+    try {
+      res.json(await storage.getSongUploadDefaults() ?? {});
+    } catch {
+      res.status(500).json({ message: "Could not fetch upload defaults" });
+    }
+  });
+
+  app.put("/api/admin/song-upload-defaults", requireAdmin, async (req, res) => {
+    try {
+      const data = req.body ?? {};
+      res.json(await storage.saveSongUploadDefaults(data));
+    } catch {
+      res.status(500).json({ message: "Could not save upload defaults" });
+    }
+  });
+
+  // ── YouTube Publishing (Phase 5) ──────────────────────────────────────────
+  const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+  const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+  const YOUTUBE_SCOPES = [
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube.readonly",
+  ];
+
+  function getYouTubeOAuth2Client() {
+    const devDomain = process.env.REPLIT_DEV_DOMAIN ?? "localhost:5000";
+    const redirectUri = `https://${devDomain}/api/admin/youtube/callback`;
+    return new OAuth2Client({
+      clientId: GOOGLE_CLIENT_ID,
+      clientSecret: GOOGLE_CLIENT_SECRET,
+      redirectUri,
+    });
+  }
+
+  app.get("/api/admin/youtube/status", requireAdmin, async (_req, res) => {
+    try {
+      const conn = await storage.getYoutubeConnection();
+      if (!conn || !conn.channelId) return res.json({ connected: false });
+      res.json({
+        connected: true,
+        channelId: conn.channelId,
+        channelName: conn.channelName,
+        channelThumbnailUrl: conn.channelThumbnailUrl,
+        connectedAt: conn.connectedAt,
+      });
+    } catch {
+      res.status(500).json({ message: "Could not fetch YouTube status" });
+    }
+  });
+
+  app.get("/api/admin/youtube/auth-url", requireAdmin, (_req, res) => {
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+      return res.status(503).json({ message: "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set as Replit Secrets." });
+    }
+    try {
+      const client = getYouTubeOAuth2Client();
+      const url = client.generateAuthUrl({
+        access_type: "offline",
+        scope: YOUTUBE_SCOPES,
+        prompt: "consent",
+      });
+      res.json({ url });
+    } catch {
+      res.status(500).json({ message: "Could not generate auth URL" });
+    }
+  });
+
+  app.get("/api/admin/youtube/callback", async (req, res) => {
+    const { code, error } = req.query as Record<string, string>;
+    if (error) {
+      return res.redirect(`/admin?youtube_error=${encodeURIComponent(error)}`);
+    }
+    if (!code) {
+      return res.redirect("/admin?youtube_error=no_code");
+    }
+    try {
+      const client = getYouTubeOAuth2Client();
+      const { tokens } = await client.getToken(code);
+      client.setCredentials(tokens);
+
+      // Fetch channel info
+      const channelRes = await fetch(
+        "https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true",
+        { headers: { Authorization: `Bearer ${tokens.access_token}` } }
+      );
+      const channelJson: any = await channelRes.json();
+      const ch = channelJson.items?.[0];
+      const channelId = ch?.id ?? null;
+      const channelName = ch?.snippet?.title ?? null;
+      const channelThumbnailUrl = ch?.snippet?.thumbnails?.default?.url ?? null;
+
+      await storage.saveYoutubeConnection({
+        channelId,
+        channelName,
+        channelThumbnailUrl,
+        accessToken: tokens.access_token ?? null,
+        refreshToken: tokens.refresh_token ?? null,
+        tokenExpiry: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+        scope: YOUTUBE_SCOPES.join(" "),
+      });
+
+      res.redirect("/admin?youtube_connected=1");
+    } catch (err: any) {
+      const msg = err?.message ?? "OAuth error";
+      res.redirect(`/admin?youtube_error=${encodeURIComponent(msg)}`);
+    }
+  });
+
+  app.delete("/api/admin/youtube/disconnect", requireAdmin, async (_req, res) => {
+    try {
+      await storage.clearYoutubeConnection();
+      res.json({ success: true });
+    } catch {
+      res.status(500).json({ message: "Could not disconnect" });
+    }
+  });
+
+  app.get("/api/admin/youtube/upload-status/:songId", requireAdmin, async (req, res) => {
+    const songId = Number(req.params.songId);
+    if (isNaN(songId)) return res.status(400).json({ message: "Invalid song ID" });
+    try {
+      const upload = await storage.getYoutubeSongUpload(songId);
+      res.json(upload ?? { processingStatus: "not_uploaded" });
+    } catch {
+      res.status(500).json({ message: "Could not fetch upload status" });
+    }
+  });
+
+  app.post("/api/admin/youtube/upload/:songId", requireAdmin, async (req, res) => {
+    const songId = Number(req.params.songId);
+    if (isNaN(songId)) return res.status(400).json({ message: "Invalid song ID" });
+
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+      return res.status(503).json({ message: "YouTube credentials not configured. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET as Replit Secrets." });
+    }
+
+    try {
+      const conn = await storage.getYoutubeConnection();
+      if (!conn || !conn.accessToken) {
+        return res.status(401).json({ message: "YouTube channel not connected. Connect via Admin → Songs → YouTube Publishing." });
+      }
+
+      const song = await storage.getSong(songId);
+      if (!song) return res.status(404).json({ message: "Song not found" });
+
+      const videoUrl = (song as any).videoUrl;
+      if (!videoUrl) return res.status(400).json({ message: "This song has no video file. Upload a video first." });
+
+      const { title, description, privacyStatus = "private" } = req.body ?? {};
+      const videoTitle = (title ?? song.title).slice(0, 100);
+      const videoDescription = description ?? `${song.title} — ${song.scriptureReference}\n\n${song.shortDescription ?? ""}\n\n${song.labelName}`;
+
+      // Mark as pending
+      await storage.createOrUpdateYoutubeSongUpload(songId, {
+        processingStatus: "pending",
+        youtubeTitle: videoTitle,
+        privacyStatus,
+      });
+
+      // Respond immediately; upload runs in background
+      res.json({ message: "Upload queued", processingStatus: "pending" });
+
+      // Background: refresh token if needed, then initiate resumable upload
+      setImmediate(async () => {
+        try {
+          const client = getYouTubeOAuth2Client();
+          client.setCredentials({
+            access_token: conn.accessToken,
+            refresh_token: conn.refreshToken,
+          });
+
+          // Refresh access token
+          const { credentials } = await client.refreshAccessToken();
+          const accessToken = credentials.access_token ?? conn.accessToken!;
+
+          // Update stored token
+          await storage.saveYoutubeConnection({
+            accessToken: credentials.access_token ?? conn.accessToken,
+            tokenExpiry: credentials.expiry_date ? new Date(credentials.expiry_date) : undefined,
+          });
+
+          // Step 1: Initiate resumable upload session
+          const metadata = {
+            snippet: {
+              title: videoTitle,
+              description: videoDescription,
+              categoryId: "29", // Nonprofits & Activism
+            },
+            status: { privacyStatus },
+          };
+
+          const initRes = await fetch(
+            "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json; charset=UTF-8",
+                "X-Upload-Content-Type": "video/*",
+              },
+              body: JSON.stringify(metadata),
+            }
+          );
+
+          if (!initRes.ok) {
+            const errText = await initRes.text();
+            throw new Error(`YouTube initiate upload failed: ${initRes.status} ${errText}`);
+          }
+
+          const uploadUrl = initRes.headers.get("location");
+          if (!uploadUrl) throw new Error("No upload URL returned from YouTube");
+
+          // Step 2: Download the video from storage
+          const videoRes = await fetch(videoUrl);
+          if (!videoRes.ok) throw new Error(`Could not download video: ${videoRes.status}`);
+          const videoBuffer = Buffer.from(await videoRes.arrayBuffer());
+          const contentLength = videoBuffer.length;
+
+          // Step 3: Upload video bytes
+          const uploadRes = await fetch(uploadUrl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "video/*",
+              "Content-Length": String(contentLength),
+            },
+            body: videoBuffer,
+          });
+
+          if (!uploadRes.ok && uploadRes.status !== 201) {
+            const errText = await uploadRes.text();
+            throw new Error(`YouTube upload failed: ${uploadRes.status} ${errText}`);
+          }
+
+          const videoData: any = await uploadRes.json();
+          const youtubeVideoId = videoData.id;
+          const youtubeVideoUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
+
+          await storage.createOrUpdateYoutubeSongUpload(songId, {
+            youtubeVideoId,
+            youtubeVideoUrl,
+            youtubeTitle: videoTitle,
+            privacyStatus,
+            processingStatus: "uploaded",
+          });
+
+          // Also update the song's youtubeUrl field
+          await storage.updateSong(songId, { youtubeUrl: youtubeVideoUrl });
+        } catch (err: any) {
+          console.error("[youtube-upload] Error:", err?.message ?? err);
+          await storage.createOrUpdateYoutubeSongUpload(songId, {
+            processingStatus: "failed",
+          }).catch(() => {});
+        }
+      });
+    } catch (err: any) {
+      res.status(500).json({ message: err?.message ?? "Upload failed" });
+    }
+  });
+
   // Quick Prayer ("Pray With Someone Now")
   app.post("/api/quick-prayer", async (req, res) => {
     try {

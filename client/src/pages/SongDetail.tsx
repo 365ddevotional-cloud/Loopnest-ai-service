@@ -5,7 +5,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Play, Pause, Volume2, VolumeX, Download, Share2,
   Heart, ChevronLeft, Music2, BookOpen, Loader2, ExternalLink,
-  Gift, X, AlertCircle, BookMarked, SkipForward, Settings2,
+  Gift, X, AlertCircle, BookMarked, SkipForward, SkipBack, Settings2,
   Copy, Check, Calendar, Send, CheckCircle2, RefreshCw,
 } from "lucide-react";
 import { SiPaypal, SiCashapp, SiVenmo } from "react-icons/si";
@@ -15,6 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import MusicSettings from "@/components/MusicSettings";
+import PlaybackModeBar from "@/components/PlaybackModeBar";
+import MusicVisualizer from "@/components/MusicVisualizer";
 import type { Song } from "@shared/schema";
 import { ConfirmationModal } from "./Donate";
 import {
@@ -344,7 +346,8 @@ export default function SongDetail() {
 
   const {
     currentSong: playerSong, isPlaying: playerIsPlaying, currentTime, duration, volume,
-    isLoading: audioLoading, playSong, togglePlay, seek, setVolume, nextSong, playNext,
+    isLoading: audioLoading, playSong, togglePlay, seek, setVolume, nextSong, playNext, playPrev,
+    activeQueue, queueIndex, audioElement,
   } = useMusicPlayer();
   const isCurrentSong = playerSong?.id === song?.id;
   const isPlaying = isCurrentSong && playerIsPlaying;
@@ -353,8 +356,10 @@ export default function SongDetail() {
   const displayVolume = isCurrentSong ? volume : 1;
   const displayLoading = isCurrentSong && audioLoading;
 
-  // iOS Safari does not allow programmatic media-volume control
-  const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+  // Platform detection for volume control
+  const ua = navigator.userAgent;
+  const isIOSDevice = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+  const isAndroidDevice = /Android/i.test(ua);
 
   // Remember last non-zero volume for mute/unmute toggle
   const prevVolumeRef = useRef<number>(1);
@@ -593,7 +598,34 @@ export default function SongDetail() {
       {/* Audio player */}
       {song.audioUrl && (
         <div className="rounded-xl border border-border/40 bg-card p-4 space-y-3" data-testid="section-audio-player">
-          <div className="flex items-center gap-3">
+
+          {/* Visualizer — shown only when this song is active (Phase 3) */}
+          {isCurrentSong && (
+            <MusicVisualizer
+              audioElement={audioElement}
+              isPlaying={isPlaying}
+              barCount={16}
+              height={48}
+              className="mx-auto block"
+            />
+          )}
+
+          {/* Row 1: Prev · Play/Pause · Scrubber · Next */}
+          <div className="flex items-center gap-2.5">
+            {/* Skip Prev (queue only) */}
+            {isCurrentSong && activeQueue.length > 0 && (
+              <button
+                onClick={playPrev}
+                disabled={queueIndex <= 0}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors flex-shrink-0"
+                data-testid="button-play-prev"
+                aria-label="Previous song"
+              >
+                <SkipBack className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* Play / Pause */}
             <button
               onClick={handlePlayPause}
               className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 hover:bg-primary/90 transition-colors"
@@ -608,28 +640,51 @@ export default function SongDetail() {
                 <Play className="w-4 h-4 text-white ml-0.5" />
               )}
             </button>
-            <div className="flex-1 space-y-1">
+
+            {/* Scrubber + timestamps */}
+            <div className="flex-1 space-y-1 min-w-0">
               <input
                 type="range"
                 min={0}
                 max={displayDuration || 100}
                 value={displayTime}
                 onChange={(e) => isCurrentSong && seek(Number(e.target.value))}
+                onInput={(e) => isCurrentSong && seek(Number((e.target as HTMLInputElement).value))}
                 className="w-full h-1.5 accent-primary cursor-pointer"
+                style={{ touchAction: "pan-y" }}
                 data-testid="input-song-scrubber"
               />
-              <div className="flex justify-between text-[10px] text-muted-foreground">
+              <div className="flex justify-between text-[10px] text-muted-foreground tabular-nums">
                 <span>{formatTime(displayTime)}</span>
+                {isCurrentSong && activeQueue.length > 0 && (
+                  <span className="text-muted-foreground/50">{queueIndex + 1}/{activeQueue.length}</span>
+                )}
                 <span>{formatTime(displayDuration)}</span>
               </div>
             </div>
+
+            {/* Skip Next */}
+            {isCurrentSong && (activeQueue.length > 0 || nextSong) && (
+              <button
+                onClick={playNext}
+                disabled={activeQueue.length > 0 && queueIndex >= activeQueue.length - 1}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors flex-shrink-0"
+                data-testid="button-play-next"
+                aria-label="Next song"
+              >
+                <SkipForward className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Row 2: Volume */}
+          <div className="flex items-center gap-2 px-0.5">
             {isIOSDevice ? (
-              /* iOS Safari cannot control media volume programmatically */
-              <p className="text-[10px] text-muted-foreground text-right leading-tight max-w-[80px] flex-shrink-0">
-                Use iPhone volume buttons
+              <p className="text-[11px] text-muted-foreground italic">
+                Use iPhone volume buttons to adjust volume.
               </p>
             ) : (
-              <div className="flex items-center gap-1 flex-shrink-0">
+              <>
                 <button
                   onClick={handleMuteToggle}
                   aria-label={displayVolume === 0 ? "Unmute" : "Mute"}
@@ -645,8 +700,13 @@ export default function SongDetail() {
                   type="range"
                   min={0}
                   max={1}
-                  step={0.05}
+                  step={0.02}
                   value={displayVolume}
+                  onInput={(e) => {
+                    const v = Number((e.target as HTMLInputElement).value);
+                    if (v > 0) prevVolumeRef.current = v;
+                    setVolume(v);
+                  }}
                   onChange={(e) => {
                     const v = Number(e.target.value);
                     if (v > 0) prevVolumeRef.current = v;
@@ -654,40 +714,25 @@ export default function SongDetail() {
                   }}
                   aria-label="Volume"
                   aria-valuetext={`${Math.round(displayVolume * 100)}%`}
-                  style={{
-                    // Tall hit-box (44 px) for comfortable mobile touch;
-                    // the track visually stays thin via accent-primary + browser defaults
-                    height: "44px",
-                    // Prevent page scroll while dragging the slider horizontally
-                    touchAction: "none",
-                    cursor: "pointer",
-                  }}
-                  className="w-16 accent-primary"
+                  style={{ height: "44px", touchAction: "pan-y", cursor: "pointer" }}
+                  className="flex-1 max-w-[120px] accent-primary"
                   data-testid="input-song-volume"
                 />
-              </div>
+                <span className="text-[10px] text-muted-foreground/60 tabular-nums w-7 flex-shrink-0">
+                  {Math.round(displayVolume * 100)}%
+                </span>
+                {isAndroidDevice && (
+                  <span className="text-[10px] text-muted-foreground/50 hidden sm:block">
+                    Volume buttons also work
+                  </span>
+                )}
+              </>
             )}
           </div>
 
-          {/* Play Next suggestion */}
-          {isCurrentSong && nextSong && (
-            <div className="flex items-center justify-between px-1 pt-1 border-t border-border/30">
-              <div className="text-[11px] text-muted-foreground">
-                Up next: <span className="font-medium text-foreground">{nextSong.title}</span>
-              </div>
-              <button
-                onClick={playNext}
-                className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 font-medium transition-colors"
-                data-testid="button-play-next"
-              >
-                <SkipForward className="w-3.5 h-3.5" />
-                Play
-              </button>
-            </div>
-          )}
-
-          {/* Settings shortcut */}
-          <div className="flex justify-end px-1">
+          {/* Row 3: Playback mode bar + Settings */}
+          <div className="flex items-center justify-between px-0.5 pt-1 border-t border-border/20">
+            <PlaybackModeBar size="sm" />
             <button
               onClick={() => setShowMusicSettings(true)}
               className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
@@ -697,6 +742,31 @@ export default function SongDetail() {
               Settings
             </button>
           </div>
+
+          {/* Up next — queue or recommendations */}
+          {isCurrentSong && activeQueue.length > 0 && queueIndex < activeQueue.length - 1 && (
+            <div className="flex items-center justify-between px-0.5 text-[11px] text-muted-foreground border-t border-border/20 pt-2">
+              <span>Up next: <span className="font-medium text-foreground">{activeQueue[queueIndex + 1]?.title}</span></span>
+              <button onClick={playNext} className="text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors">
+                <SkipForward className="w-3.5 h-3.5" /> Skip
+              </button>
+            </div>
+          )}
+          {isCurrentSong && activeQueue.length === 0 && nextSong && (
+            <div className="flex items-center justify-between px-0.5 pt-1 border-t border-border/30">
+              <div className="text-[11px] text-muted-foreground">
+                Up next: <span className="font-medium text-foreground">{nextSong.title}</span>
+              </div>
+              <button
+                onClick={playNext}
+                className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 font-medium transition-colors"
+                data-testid="button-play-next-rec"
+              >
+                <SkipForward className="w-3.5 h-3.5" />
+                Play
+              </button>
+            </div>
+          )}
         </div>
       )}
 
