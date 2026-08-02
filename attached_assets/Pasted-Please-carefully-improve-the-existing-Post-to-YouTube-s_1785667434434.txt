@@ -1,0 +1,237 @@
+Please carefully improve the existing “Post to YouTube” system in the 365 Daily Devotional SpiritTone song administration area.
+
+IMPORTANT SAFETY RULES
+
+1. Extend the existing YouTube publishing feature only.
+2. Do not rebuild or refactor the music system.
+3. Do not modify Church Mode, authentication, admin login, devotional content, donations, Android packaging, AAB generation, ADMIN_PASSWORD, AAB_DOWNLOAD_TOKEN, Google OAuth credentials, package name, signing keys, existing songs, audio files, MP4 files, statistics, testimonies, collections, or unrelated systems.
+4. Preserve the working YouTube OAuth connection.
+5. Create a checkpoint before making changes.
+6. Do not publish or upload any real video while implementing or testing.
+7. Do not deploy automatically.
+8. Make the smallest compatible changes possible.
+
+GOAL
+
+Expand the existing “Post to YouTube” dialog so the administrator can schedule videos, provide or select a thumbnail, answer YouTube’s important publishing questions, and reuse saved editable defaults for future uploads.
+
+PART A — YOUTUBE PUBLISHING DEFAULTS
+
+Inside the existing Admin → Songs → YouTube Publishing section, add an admin-only settings area named:
+
+“YouTube Publishing Defaults”
+
+Allow the administrator to save editable default values for:
+
+- Default privacy
+- Default made-for-kids answer
+- Default synthetic or altered-content answer
+- Default video category
+- Default language
+- Default license
+- Allow embedding
+- Show public statistics
+- Notify subscribers, when supported
+- Default tags
+- Default description footer
+- Default playlist
+- Default thumbnail choice
+- Default scheduling timezone
+- Default scheduling behavior
+- Any other repeated YouTube field already supported by the existing integration
+
+Use these initial ministry defaults:
+
+- Privacy: Private
+- Made for kids: No
+- Contains realistic altered or synthetic content: No
+- Category: Music
+- Language: English
+- License: Standard YouTube License
+- Allow embedding: Yes
+- Public statistics visible: Yes
+- Notify subscribers: Yes, where supported
+- Default thumbnail: Use the song’s existing cover artwork
+- Scheduling timezone: America/Chicago
+- Scheduling behavior: Publish immediately unless Schedule is selected
+
+All saved defaults must remain editable.
+
+Saving defaults must not change previously uploaded YouTube videos or existing song records.
+
+Store these defaults using the project’s existing server-side database/configuration pattern. Do not store them only in localStorage.
+
+PART B — EXPANDED POST TO YOUTUBE FORM
+
+Update the existing “Post to YouTube” dialog to include:
+
+1. Video title
+2. Description
+3. Tags
+4. Privacy:
+   - Private
+   - Unlisted
+   - Public
+5. Publishing choice:
+   - Publish immediately
+   - Schedule for later
+6. Scheduled publication date
+7. Scheduled publication time
+8. Timezone
+9. Made for kids:
+   - No, it is not made for kids
+   - Yes, it is made for kids
+10. Contains realistic altered or synthetic content:
+   - No
+   - Yes
+11. YouTube category
+12. Video language
+13. License:
+   - Standard YouTube License
+   - Creative Commons, where supported
+14. Allow embedding
+15. Show public statistics
+16. Notify subscribers, where supported
+17. Playlist selection, if available
+18. Thumbnail source:
+   - Use song cover
+   - Use existing YouTube/default thumbnail
+   - Upload a different thumbnail
+19. Custom thumbnail preview
+20. Remove or replace selected thumbnail
+
+Every field populated from defaults must remain editable for that particular upload.
+
+PART C — SCHEDULING
+
+When “Schedule for later” is selected:
+
+1. Require a future date and time.
+2. Display the administrator’s timezone clearly.
+3. Convert the selected time correctly to the ISO 8601 value required by YouTube.
+4. Upload the video with privacy set to Private.
+5. Set YouTube’s scheduled publishAt value.
+6. Inform the administrator:
+
+   “YouTube requires scheduled videos to be uploaded as Private until the scheduled publication time.”
+
+7. Reject past dates.
+8. Display the final scheduled local date, time, and timezone in the confirmation dialog.
+9. Save the schedule in the song’s YouTube publishing record.
+10. Display:
+   - Scheduled
+   - Scheduled date/time
+   - Processing
+   - Published
+   - Failed
+
+Do not claim the video will become Public if YouTube’s API project restrictions prevent public publishing.
+
+PART D — THUMBNAILS
+
+1. If the song already has cover artwork, preselect it as the YouTube thumbnail.
+2. Show a preview before publishing.
+3. Allow the administrator to upload another JPEG or PNG thumbnail.
+4. Validate the file before upload.
+5. Maximum thumbnail file size: 2 MB.
+6. Do not store image data directly in localStorage or database text fields.
+7. Use the existing object-storage/upload mechanism and store only the URL.
+8. After the YouTube video upload succeeds and returns a video ID, upload the chosen custom thumbnail using the official YouTube thumbnails.set API.
+9. If the custom-thumbnail upload fails, do not mark the entire video upload as failed. Save the successful video and show a separate thumbnail warning.
+10. Do not crop the thumbnail. Fit the full image into a 16:9 YouTube thumbnail canvas while preserving its aspect ratio.
+11. Recommend 1280 × 720 in the interface.
+
+PART E — DESCRIPTION AND DISCOVERY DEFAULTS
+
+Prefill the title, description, and tags from the existing song information.
+
+Create an editable default description footer similar to:
+
+Listen to more SpiritTone worship music and access daily devotionals at:
+https://365dailydevotional.com/
+
+Produced by SpiritTone Records
+Producer: Moses Afolabi
+
+Subscribe for more Christian worship, gospel music, Bible teachings, prayers, and daily encouragement.
+
+Add relevant metadata from the song when available:
+
+- Song title
+- Artist
+- Ministry or label
+- Producer
+- Composer
+- Lyricist
+- Genre
+- Language
+- Scripture reference
+- Release year
+
+Generate suggested tags from the song metadata, but keep them editable.
+
+Suggested tags should be relevant and not misleading. Do not promise or claim that tags, descriptions, or settings will make a video viral.
+
+PART F — CONFIRMATION
+
+Before the actual upload, show a final confirmation screen containing:
+
+- Channel name
+- Song title
+- Video title
+- MP4 filename
+- Privacy
+- Immediate or scheduled publishing
+- Scheduled date, time, and timezone
+- Made-for-kids answer
+- Synthetic-content answer
+- Category
+- Playlist
+- Thumbnail preview
+- Description preview
+- Tags
+- API visibility warning, when applicable
+
+Require a final button:
+
+“Confirm and Publish to YouTube”
+
+Prevent double-clicking or duplicate uploads.
+
+PART G — EXISTING PROJECT LIMITATION
+
+Display this notice in the publishing form:
+
+“This Google API project has not completed YouTube API verification. YouTube may restrict API uploads to Private visibility until the project passes its required audit.”
+
+Do not block the upload because of this notice.
+
+PART H — TESTING
+
+Before reporting completion, verify without publishing a real video:
+
+1. Saved defaults load into the Post to YouTube form.
+2. Made for kids defaults to No.
+3. Synthetic content defaults to No.
+4. Existing song artwork appears as the thumbnail.
+5. A replacement thumbnail can be selected and previewed.
+6. Schedule mode requires a future date.
+7. Scheduled uploads are submitted as Private with publishAt.
+8. Immediate publishing omits publishAt.
+9. Fields remain editable per video.
+10. Existing songs remain unchanged.
+11. Existing YouTube connection remains connected.
+12. Mobile and desktop layouts do not overflow.
+13. No credentials or tokens appear in browser code, URLs, logs, or API responses.
+14. No unrelated feature is changed.
+
+At the end, provide a concise report containing:
+
+- exact files changed;
+- database/configuration changes;
+- defaults implemented;
+- scheduling implementation;
+- thumbnail implementation;
+- YouTube fields supported;
+- whether any real video was uploaded;
+- remaining YouTube verification or API limitations.

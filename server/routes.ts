@@ -2102,6 +2102,52 @@ export async function registerRoutes(
     }
   });
 
+  // YouTube Publishing Defaults
+  app.get("/api/admin/youtube/defaults", requireAdmin, async (_req, res) => {
+    try {
+      const row = await storage.getSongUploadDefaults();
+      if (!row) return res.json({});
+      // Return only YouTube-specific defaults
+      res.json({
+        ytPrivacy: row.ytPrivacy ?? "private",
+        ytMadeForKids: row.ytMadeForKids ?? false,
+        ytSyntheticContent: row.ytSyntheticContent ?? false,
+        ytCategoryId: row.ytCategoryId ?? "10",
+        ytLanguage: row.ytLanguage ?? "en",
+        ytLicense: row.ytLicense ?? "youtube",
+        ytAllowEmbedding: row.ytAllowEmbedding ?? true,
+        ytPublicStats: row.ytPublicStats ?? true,
+        ytNotifySubscribers: row.ytNotifySubscribers ?? true,
+        ytDefaultTags: row.ytDefaultTags ?? "",
+        ytDescriptionFooter: row.ytDescriptionFooter ?? "",
+        ytThumbnailChoice: row.ytThumbnailChoice ?? "song_cover",
+        ytSchedulingTimezone: row.ytSchedulingTimezone ?? "America/Chicago",
+        ytSchedulingBehavior: row.ytSchedulingBehavior ?? "immediate",
+      });
+    } catch {
+      res.status(500).json({ message: "Could not fetch YouTube defaults" });
+    }
+  });
+
+  app.put("/api/admin/youtube/defaults", requireAdmin, async (req, res) => {
+    try {
+      const allowed = [
+        "ytPrivacy", "ytMadeForKids", "ytSyntheticContent", "ytCategoryId",
+        "ytLanguage", "ytLicense", "ytAllowEmbedding", "ytPublicStats",
+        "ytNotifySubscribers", "ytDefaultTags", "ytDescriptionFooter",
+        "ytThumbnailChoice", "ytSchedulingTimezone", "ytSchedulingBehavior",
+      ] as const;
+      const data: Record<string, any> = {};
+      for (const k of allowed) {
+        if (k in (req.body ?? {})) data[k] = req.body[k];
+      }
+      const updated = await storage.saveSongUploadDefaults(data);
+      res.json({ success: true, updated });
+    } catch {
+      res.status(500).json({ message: "Could not save YouTube defaults" });
+    }
+  });
+
   app.get("/api/admin/youtube/auth-url", requireAdmin, (_req, res) => {
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
       return res.status(503).json({ message: "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set as Replit Secrets." });
@@ -2224,19 +2270,47 @@ export async function registerRoutes(
       const videoUrl = (song as any).videoUrl;
       if (!videoUrl) return res.status(400).json({ message: "This song has no video file. Upload a video first." });
 
-      const { title, description, privacyStatus = "private" } = req.body ?? {};
+      const {
+        title,
+        description,
+        privacyStatus: rawPrivacy = "private",
+        tags = [],
+        categoryId = "10",
+        language = "en",
+        license = "youtube",
+        allowEmbedding = true,
+        publicStats = true,
+        notifySubscribers = true,
+        madeForKids = false,
+        syntheticContent = false,
+        scheduledAt,
+        thumbnailUrl,
+      } = req.body ?? {};
       const videoTitle = (title ?? song.title).slice(0, 100);
       const videoDescription = description ?? `${song.title} — ${song.scriptureReference}\n\n${song.shortDescription ?? ""}\n\n${song.labelName}`;
+      // Scheduled videos must be uploaded as Private
+      const privacyStatus = scheduledAt ? "private" : rawPrivacy;
+      const scheduledAtDate = scheduledAt ? new Date(scheduledAt) : null;
 
-      // Mark as pending
+      // Mark as pending with all metadata
       await storage.createOrUpdateYoutubeSongUpload(songId, {
-        processingStatus: "pending",
+        processingStatus: scheduledAt ? "scheduled" : "pending",
         youtubeTitle: videoTitle,
         privacyStatus,
+        scheduledAt: scheduledAtDate ?? undefined,
+        thumbnailUrl: thumbnailUrl ?? null,
+        madeForKids,
+        syntheticContent,
+        categoryId,
+        tags: Array.isArray(tags) ? tags.join(",") : tags,
+        license,
+        allowEmbedding,
+        publicStats,
+        notifySubscribers,
       });
 
       // Respond immediately; upload runs in background
-      res.json({ message: "Upload queued", processingStatus: "pending" });
+      res.json({ message: "Upload queued", processingStatus: scheduledAt ? "scheduled" : "pending" });
 
       // Background: refresh token if needed, then initiate resumable upload
       setImmediate(async () => {
@@ -2257,18 +2331,35 @@ export async function registerRoutes(
             tokenExpiry: credentials.expiry_date ? new Date(credentials.expiry_date) : undefined,
           });
 
+          // Build YouTube status object
+          const ytStatus: Record<string, any> = {
+            privacyStatus,
+            selfDeclaredMadeForKids: Boolean(madeForKids),
+            embeddable: Boolean(allowEmbedding),
+            publicStatsViewable: Boolean(publicStats),
+            license: license === "creativeCommon" ? "creativeCommon" : "youtube",
+          };
+          if (scheduledAtDate) {
+            ytStatus.publishAt = scheduledAtDate.toISOString();
+          }
+
           // Step 1: Initiate resumable upload session
-          const metadata = {
+          const tagList = Array.isArray(tags) ? tags : String(tags ?? "").split(",").map((t: string) => t.trim()).filter(Boolean);
+          const metadata: Record<string, any> = {
             snippet: {
               title: videoTitle,
               description: videoDescription,
-              categoryId: "29", // Nonprofits & Activism
+              categoryId: categoryId ?? "10",
+              tags: tagList.slice(0, 30),
+              defaultLanguage: language ?? "en",
+              defaultAudioLanguage: language ?? "en",
             },
-            status: { privacyStatus },
+            status: ytStatus,
           };
 
+          const notifyParam = notifySubscribers ? "true" : "false";
           const initRes = await fetch(
-            "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
+            `https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status&notifySubscribers=${notifyParam}`,
             {
               method: "POST",
               headers: {
@@ -2318,11 +2409,40 @@ export async function registerRoutes(
             youtubeVideoUrl,
             youtubeTitle: videoTitle,
             privacyStatus,
-            processingStatus: "uploaded",
+            processingStatus: scheduledAt ? "scheduled" : "uploaded",
           });
 
           // Also update the song's youtubeUrl field
           await storage.updateSong(songId, { youtubeUrl: youtubeVideoUrl });
+
+          // Step 4 (optional): Upload custom thumbnail if provided
+          if (thumbnailUrl) {
+            try {
+              const thumbRes = await fetch(thumbnailUrl);
+              if (thumbRes.ok) {
+                const thumbBuffer = Buffer.from(await thumbRes.arrayBuffer());
+                const ispng = thumbnailUrl.toLowerCase().includes(".png");
+                const contentType = ispng ? "image/png" : "image/jpeg";
+                const thumbUploadRes = await fetch(
+                  `https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${youtubeVideoId}&uploadType=media`,
+                  {
+                    method: "POST",
+                    headers: {
+                      Authorization: `Bearer ${accessToken}`,
+                      "Content-Type": contentType,
+                    },
+                    body: thumbBuffer,
+                  }
+                );
+                await storage.createOrUpdateYoutubeSongUpload(songId, {
+                  thumbnailStatus: thumbUploadRes.ok ? "success" : "failed",
+                }).catch(() => {});
+              }
+            } catch (thumbErr: any) {
+              console.error("[youtube-upload] Thumbnail upload error (non-fatal):", thumbErr?.message);
+              await storage.createOrUpdateYoutubeSongUpload(songId, { thumbnailStatus: "failed" }).catch(() => {});
+            }
+          }
         } catch (err: any) {
           console.error("[youtube-upload] Error:", err?.message ?? err);
           await storage.createOrUpdateYoutubeSongUpload(songId, {

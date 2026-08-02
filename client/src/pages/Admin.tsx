@@ -3196,6 +3196,29 @@ function SongsAdmin() {
   const [ytPrivacy, setYtPrivacy] = useState<"private" | "unlisted" | "public">("private");
   const [ytUploading, setYtUploading] = useState(false);
   const [ytUploadStatuses, setYtUploadStatuses] = useState<Record<number, string>>({});
+  // Expanded YouTube dialog fields
+  const [ytMadeForKids, setYtMadeForKids] = useState(false);
+  const [ytSyntheticContent, setYtSyntheticContent] = useState(false);
+  const [ytCategoryId, setYtCategoryId] = useState("10");
+  const [ytVideoLanguage, setYtVideoLanguage] = useState("en");
+  const [ytLicense, setYtLicense] = useState("youtube");
+  const [ytAllowEmbedding, setYtAllowEmbedding] = useState(true);
+  const [ytPublicStats, setYtPublicStats] = useState(true);
+  const [ytNotifySubscribers, setYtNotifySubscribers] = useState(true);
+  const [ytTags, setYtTags] = useState("");
+  const [ytScheduleMode, setYtScheduleMode] = useState<"immediate" | "schedule">("immediate");
+  const [ytScheduleDate, setYtScheduleDate] = useState("");
+  const [ytScheduleTime, setYtScheduleTime] = useState("09:00");
+  const [ytScheduleTimezone, setYtScheduleTimezone] = useState("America/Chicago");
+  const [ytThumbnailChoice, setYtThumbnailChoice] = useState<"song_cover" | "upload">("song_cover");
+  const [ytCustomThumbnailPreview, setYtCustomThumbnailPreview] = useState("");
+  const [ytCustomThumbnailUrl, setYtCustomThumbnailUrl] = useState("");
+  const [ytThumbnailUploading, setYtThumbnailUploading] = useState(false);
+  const [ytDialogStep, setYtDialogStep] = useState<"form" | "confirm">("form");
+  // YouTube Defaults settings panel
+  const [showYtDefaults, setShowYtDefaults] = useState(false);
+  const [ytDefaultsForm, setYtDefaultsForm] = useState<Record<string, any>>({});
+  const [ytDefaultsSaving, setYtDefaultsSaving] = useState(false);
 
   const { data: ytStatus } = useQuery<{ connected: boolean; channelName?: string; channelThumbnailUrl?: string }>({
     queryKey: ["/api/admin/youtube/status"],
@@ -3209,6 +3232,39 @@ function SongsAdmin() {
     staleTime: 30_000,
     refetchOnWindowFocus: true,
   });
+
+  const { data: ytDefaults } = useQuery<Record<string, any>>({
+    queryKey: ["/api/admin/youtube/defaults"],
+    queryFn: async () => {
+      const r = await fetch("/api/admin/youtube/defaults", {
+        headers: { "x-admin-password": (window as any).__adminPwd ?? "" },
+      });
+      if (!r.ok) return {};
+      return r.json();
+    },
+    staleTime: 60_000,
+  });
+
+  // Sync defaults panel form when loaded
+  useEffect(() => {
+    if (ytDefaults && Object.keys(ytDefaults).length > 0) {
+      setYtDefaultsForm(prev => Object.keys(prev).length > 0 ? prev : {
+        ytPrivacy: ytDefaults.ytPrivacy ?? "private",
+        ytMadeForKids: ytDefaults.ytMadeForKids ?? false,
+        ytSyntheticContent: ytDefaults.ytSyntheticContent ?? false,
+        ytCategoryId: ytDefaults.ytCategoryId ?? "10",
+        ytLanguage: ytDefaults.ytLanguage ?? "en",
+        ytLicense: ytDefaults.ytLicense ?? "youtube",
+        ytAllowEmbedding: ytDefaults.ytAllowEmbedding ?? true,
+        ytPublicStats: ytDefaults.ytPublicStats ?? true,
+        ytNotifySubscribers: ytDefaults.ytNotifySubscribers ?? true,
+        ytDefaultTags: ytDefaults.ytDefaultTags ?? "",
+        ytDescriptionFooter: ytDefaults.ytDescriptionFooter ?? YT_DEFAULT_FOOTER,
+        ytThumbnailChoice: ytDefaults.ytThumbnailChoice ?? "song_cover",
+        ytSchedulingTimezone: ytDefaults.ytSchedulingTimezone ?? "America/Chicago",
+      });
+    }
+  }, [ytDefaults]);
 
   // Detect return from Google OAuth callback and refresh status
   useEffect(() => {
@@ -3228,6 +3284,65 @@ function SongsAdmin() {
       window.history.replaceState({}, "", url.toString());
     }
   }, []);
+
+  const YT_DEFAULT_FOOTER = `Listen to more SpiritTone worship music and access daily devotionals at:\nhttps://365dailydevotional.com/\n\nProduced by SpiritTone Records\nProducer: Moses Afolabi\n\nSubscribe for more Christian worship, gospel music, Bible teachings, prayers, and daily encouragement.`;
+
+  const buildYtDescription = (song: any, footer?: string | null): string => {
+    const lines: string[] = [];
+    lines.push(`${song.title}${song.scriptureReference ? ` — ${song.scriptureReference}` : ""}`);
+    lines.push("");
+    if (song.shortDescription) { lines.push(song.shortDescription); lines.push(""); }
+    const meta: string[] = [];
+    if (song.artist) meta.push(`Artist: ${song.artist}`);
+    if (song.producer) meta.push(`Producer: ${song.producer}`);
+    if (song.composer) meta.push(`Composer: ${song.composer}`);
+    if (song.lyricist) meta.push(`Lyricist: ${song.lyricist}`);
+    if (song.genre) meta.push(`Genre: ${song.genre}`);
+    if (song.language) meta.push(`Language: ${song.language}`);
+    if (song.labelName) meta.push(`Label: ${song.labelName}`);
+    if ((song as any).releaseYear) meta.push(`Year: ${(song as any).releaseYear}`);
+    if (meta.length > 0) { lines.push(...meta); lines.push(""); }
+    lines.push(footer ?? YT_DEFAULT_FOOTER);
+    return lines.join("\n");
+  };
+
+  const buildYtTags = (song: any, defaultTags?: string | null): string => {
+    const seen = new Set<string>();
+    const tags: string[] = [];
+    const add = (t: string) => { const v = t.trim(); if (v && !seen.has(v.toLowerCase())) { seen.add(v.toLowerCase()); tags.push(v); } };
+    if (song.title) add(song.title);
+    if (song.artist) add(song.artist);
+    if (song.genre) song.genre.split(/,\s*/).forEach((g: string) => add(g));
+    add("gospel music"); add("Christian worship"); add("SpiritTone"); add("365 Daily Devotional");
+    if (song.language && song.language !== "English") add(`${song.language} gospel`);
+    if (defaultTags) defaultTags.split(",").map((t: string) => t.trim()).filter(Boolean).forEach(add);
+    return tags.join(", ");
+  };
+
+  const openYtDialog = (song: any) => {
+    const defs = ytDefaults ?? {};
+    setYtUploadSongId(song.id);
+    setYtUploadTitle(song.title ?? "");
+    setYtUploadDesc(buildYtDescription(song, defs.ytDescriptionFooter || null));
+    setYtPrivacy(defs.ytPrivacy ?? "private");
+    setYtMadeForKids(defs.ytMadeForKids ?? false);
+    setYtSyntheticContent(defs.ytSyntheticContent ?? false);
+    setYtCategoryId(defs.ytCategoryId ?? "10");
+    setYtVideoLanguage(defs.ytLanguage ?? "en");
+    setYtLicense(defs.ytLicense ?? "youtube");
+    setYtAllowEmbedding(defs.ytAllowEmbedding ?? true);
+    setYtPublicStats(defs.ytPublicStats ?? true);
+    setYtNotifySubscribers(defs.ytNotifySubscribers ?? true);
+    setYtTags(buildYtTags(song, defs.ytDefaultTags || null));
+    setYtScheduleMode("immediate");
+    setYtScheduleDate("");
+    setYtScheduleTime("09:00");
+    setYtScheduleTimezone(defs.ytSchedulingTimezone ?? "America/Chicago");
+    setYtThumbnailChoice(defs.ytThumbnailChoice ?? "song_cover");
+    setYtCustomThumbnailPreview("");
+    setYtCustomThumbnailUrl("");
+    setYtDialogStep("form");
+  };
 
   const connectYouTube = async () => {
     const r = await fetch("/api/admin/youtube/auth-url", {
@@ -3254,19 +3369,61 @@ function SongsAdmin() {
 
   const handleYtUpload = async () => {
     if (!ytUploadSongId) return;
+    if (ytScheduleMode === "schedule") {
+      if (!ytScheduleDate || !ytScheduleTime) {
+        toast({ title: "Schedule required", description: "Please select a date and time.", variant: "destructive" });
+        return;
+      }
+      if (new Date(`${ytScheduleDate}T${ytScheduleTime}`).getTime() <= Date.now()) {
+        toast({ title: "Past date", description: "Scheduled time must be in the future.", variant: "destructive" });
+        return;
+      }
+    }
+    if (ytThumbnailChoice === "upload" && !ytCustomThumbnailUrl) {
+      toast({ title: "Thumbnail uploading", description: "Wait for the thumbnail to finish uploading.", variant: "destructive" });
+      return;
+    }
     setYtUploading(true);
     try {
+      const effectivePrivacy = ytScheduleMode === "schedule" ? "private" : ytPrivacy;
+      const scheduledAt = ytScheduleMode === "schedule" && ytScheduleDate && ytScheduleTime
+        ? new Date(`${ytScheduleDate}T${ytScheduleTime}`).toISOString()
+        : undefined;
+      const uploadSong = songs.find(s => s.id === ytUploadSongId) as any;
+      const thumbnailUrl = ytThumbnailChoice === "upload"
+        ? ytCustomThumbnailUrl
+        : ytThumbnailChoice === "song_cover"
+          ? uploadSong?.coverImageUrl ?? ""
+          : "";
       const r = await fetch(`/api/admin/youtube/upload/${ytUploadSongId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-admin-password": (window as any).__adminPwd ?? "",
         },
-        body: JSON.stringify({ title: ytUploadTitle, description: ytUploadDesc, privacyStatus: ytPrivacy }),
+        body: JSON.stringify({
+          title: ytUploadTitle,
+          description: ytUploadDesc,
+          privacyStatus: effectivePrivacy,
+          tags: ytTags.split(",").map(t => t.trim()).filter(Boolean),
+          categoryId: ytCategoryId,
+          language: ytVideoLanguage,
+          license: ytLicense,
+          allowEmbedding: ytAllowEmbedding,
+          publicStats: ytPublicStats,
+          notifySubscribers: ytNotifySubscribers,
+          madeForKids: ytMadeForKids,
+          syntheticContent: ytSyntheticContent,
+          scheduledAt,
+          thumbnailUrl: thumbnailUrl || undefined,
+        }),
       });
       const data = await r.json();
       if (r.ok) {
-        toast({ title: "YouTube upload queued", description: "Upload is running in the background. Check status in a few minutes." });
+        const desc = ytScheduleMode === "schedule"
+          ? `Scheduled for ${ytScheduleDate} at ${ytScheduleTime} (${ytScheduleTimezone}). Video will be uploaded as Private until then.`
+          : "Upload is running in the background. Check status in a few minutes.";
+        toast({ title: "YouTube upload queued", description: desc });
         setYtUploadStatuses(prev => ({ ...prev, [ytUploadSongId]: "pending" }));
         setYtUploadSongId(null);
       } else {
@@ -3274,6 +3431,56 @@ function SongsAdmin() {
       }
     } finally {
       setYtUploading(false);
+    }
+  };
+
+  const handleYtThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    if (!file.type.match(/^image\/(jpeg|png)$/)) {
+      toast({ title: "Invalid file type", description: "Thumbnail must be JPEG or PNG.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Thumbnail must be under 2 MB.", variant: "destructive" });
+      return;
+    }
+    const previewUrl = URL.createObjectURL(file);
+    setYtCustomThumbnailPreview(previewUrl);
+    setYtThumbnailUploading(true);
+    const result = await ytThumbnailUpload.uploadFile(file);
+    setYtThumbnailUploading(false);
+    if (result) {
+      setYtCustomThumbnailUrl(result.objectPath);
+      toast({ title: "Thumbnail ready" });
+    } else {
+      setYtCustomThumbnailUrl("");
+      setYtCustomThumbnailPreview("");
+      toast({ title: "Thumbnail upload failed", variant: "destructive" });
+    }
+  };
+
+  const saveYtDefaults = async () => {
+    setYtDefaultsSaving(true);
+    try {
+      const r = await fetch("/api/admin/youtube/defaults", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": (window as any).__adminPwd ?? "",
+        },
+        body: JSON.stringify(ytDefaultsForm),
+      });
+      if (r.ok) {
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/youtube/defaults"] });
+        toast({ title: "YouTube defaults saved" });
+      } else {
+        const d = await r.json();
+        toast({ title: "Save failed", description: d.message, variant: "destructive" });
+      }
+    } finally {
+      setYtDefaultsSaving(false);
     }
   };
   const [editingCollection, setEditingCollection] = useState<Partial<SongCollection> | null>(null);
@@ -3416,6 +3623,7 @@ function SongsAdmin() {
   const videoUpload = useUpload();
   const coverUpload = useUpload();
   const logoUpload = useUpload();
+  const ytThumbnailUpload = useUpload();
 
   const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -4420,67 +4628,394 @@ function SongsAdmin() {
               </div>
             )}
 
-            {/* YouTube Upload Modal */}
-            {ytUploadSongId !== null && (
-              <Dialog open onOpenChange={() => setYtUploadSongId(null)}>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle className="font-serif text-primary flex items-center gap-2">
-                      <Youtube className="w-5 h-5 text-red-500" />
-                      Post to YouTube
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 py-1">
-                    <p className="text-sm text-muted-foreground">
-                      Song: <strong>{songs.find(s => s.id === ytUploadSongId)?.title ?? ytUploadSongId}</strong>
-                    </p>
+            {/* YouTube Publishing Defaults */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!showYtDefaults && Object.keys(ytDefaultsForm).length === 0) {
+                    const defs = ytDefaults ?? {};
+                    setYtDefaultsForm({
+                      ytPrivacy: defs.ytPrivacy ?? "private",
+                      ytMadeForKids: defs.ytMadeForKids ?? false,
+                      ytSyntheticContent: defs.ytSyntheticContent ?? false,
+                      ytCategoryId: defs.ytCategoryId ?? "10",
+                      ytLanguage: defs.ytLanguage ?? "en",
+                      ytLicense: defs.ytLicense ?? "youtube",
+                      ytAllowEmbedding: defs.ytAllowEmbedding ?? true,
+                      ytPublicStats: defs.ytPublicStats ?? true,
+                      ytNotifySubscribers: defs.ytNotifySubscribers ?? true,
+                      ytDefaultTags: defs.ytDefaultTags ?? "",
+                      ytDescriptionFooter: defs.ytDescriptionFooter || YT_DEFAULT_FOOTER,
+                      ytThumbnailChoice: defs.ytThumbnailChoice ?? "song_cover",
+                      ytSchedulingTimezone: defs.ytSchedulingTimezone ?? "America/Chicago",
+                    });
+                  }
+                  setShowYtDefaults(v => !v);
+                }}
+                className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium hover:bg-muted/50 transition-colors"
+              >
+                <span className="flex items-center gap-1.5"><Settings2 className="w-3.5 h-3.5" /> YouTube Publishing Defaults</span>
+                <span className="text-muted-foreground">{showYtDefaults ? "Hide" : "Edit"}</span>
+              </button>
+              {showYtDefaults && (
+                <div className="border-t border-border p-3 space-y-3 bg-muted/20">
+                  <p className="text-xs text-muted-foreground">These defaults pre-fill the Post to YouTube form. You can always override them per-upload.</p>
+                  <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
-                      <Label className="text-xs">Video Title (max 100 chars)</Label>
-                      <Input
-                        value={ytUploadTitle}
-                        onChange={e => setYtUploadTitle(e.target.value.slice(0, 100))}
-                        placeholder={songs.find(s => s.id === ytUploadSongId)?.title ?? "Video title"}
-                        className="text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Description</Label>
-                      <Textarea
-                        value={ytUploadDesc}
-                        onChange={e => setYtUploadDesc(e.target.value)}
-                        rows={4}
-                        placeholder="Video description…"
-                        className="text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Privacy</Label>
-                      <select
-                        className="w-full h-9 text-sm px-2 rounded-md border border-border bg-background"
-                        value={ytPrivacy}
-                        onChange={e => setYtPrivacy(e.target.value as any)}
-                      >
-                        <option value="private">Private (only you can see)</option>
-                        <option value="unlisted">Unlisted (link only)</option>
+                      <Label className="text-xs">Default privacy</Label>
+                      <select className="w-full h-8 text-xs px-2 rounded border border-border bg-background" value={ytDefaultsForm.ytPrivacy ?? "private"} onChange={e => setYtDefaultsForm(p => ({ ...p, ytPrivacy: e.target.value }))}>
+                        <option value="private">Private</option>
+                        <option value="unlisted">Unlisted</option>
                         <option value="public">Public</option>
                       </select>
                     </div>
-                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 rounded-lg p-3">
-                      <p className="text-xs text-amber-800 dark:text-amber-300">
-                        The video file from storage will be uploaded to YouTube. This may take several minutes for large files. You can close this dialog and check status later.
-                      </p>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Default category</Label>
+                      <select className="w-full h-8 text-xs px-2 rounded border border-border bg-background" value={ytDefaultsForm.ytCategoryId ?? "10"} onChange={e => setYtDefaultsForm(p => ({ ...p, ytCategoryId: e.target.value }))}>
+                        <option value="10">Music</option>
+                        <option value="27">Education</option>
+                        <option value="22">People & Blogs</option>
+                        <option value="29">Nonprofits & Activism</option>
+                      </select>
                     </div>
-                    <div className="flex gap-2 justify-end">
-                      <Button size="sm" variant="outline" onClick={() => setYtUploadSongId(null)}>Cancel</Button>
-                      <Button size="sm" onClick={handleYtUpload} disabled={ytUploading} className="gap-1.5">
-                        {ytUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Youtube className="w-4 h-4" />}
-                        Publish to YouTube
-                      </Button>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Made for kids (default)</Label>
+                      <select className="w-full h-8 text-xs px-2 rounded border border-border bg-background" value={ytDefaultsForm.ytMadeForKids ? "yes" : "no"} onChange={e => setYtDefaultsForm(p => ({ ...p, ytMadeForKids: e.target.value === "yes" }))}>
+                        <option value="no">No, not made for kids</option>
+                        <option value="yes">Yes, made for kids</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Synthetic/altered content (default)</Label>
+                      <select className="w-full h-8 text-xs px-2 rounded border border-border bg-background" value={ytDefaultsForm.ytSyntheticContent ? "yes" : "no"} onChange={e => setYtDefaultsForm(p => ({ ...p, ytSyntheticContent: e.target.value === "yes" }))}>
+                        <option value="no">No</option>
+                        <option value="yes">Yes</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Default language</Label>
+                      <select className="w-full h-8 text-xs px-2 rounded border border-border bg-background" value={ytDefaultsForm.ytLanguage ?? "en"} onChange={e => setYtDefaultsForm(p => ({ ...p, ytLanguage: e.target.value }))}>
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="yo">Yoruba</option>
+                        <option value="ig">Igbo</option>
+                        <option value="ha">Hausa</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Default license</Label>
+                      <select className="w-full h-8 text-xs px-2 rounded border border-border bg-background" value={ytDefaultsForm.ytLicense ?? "youtube"} onChange={e => setYtDefaultsForm(p => ({ ...p, ytLicense: e.target.value }))}>
+                        <option value="youtube">Standard YouTube License</option>
+                        <option value="creativeCommon">Creative Commons</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Default thumbnail</Label>
+                      <select className="w-full h-8 text-xs px-2 rounded border border-border bg-background" value={ytDefaultsForm.ytThumbnailChoice ?? "song_cover"} onChange={e => setYtDefaultsForm(p => ({ ...p, ytThumbnailChoice: e.target.value }))}>
+                        <option value="song_cover">Use song's cover art</option>
+                        <option value="upload">Upload a custom thumbnail</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Default scheduling timezone</Label>
+                      <select className="w-full h-8 text-xs px-2 rounded border border-border bg-background" value={ytDefaultsForm.ytSchedulingTimezone ?? "America/Chicago"} onChange={e => setYtDefaultsForm(p => ({ ...p, ytSchedulingTimezone: e.target.value }))}>
+                        <option value="America/Chicago">Chicago (CT)</option>
+                        <option value="America/New_York">New York (ET)</option>
+                        <option value="America/Los_Angeles">Los Angeles (PT)</option>
+                        <option value="America/Denver">Denver (MT)</option>
+                        <option value="Europe/London">London (GMT)</option>
+                        <option value="Africa/Lagos">Lagos (WAT)</option>
+                        <option value="UTC">UTC</option>
+                      </select>
                     </div>
                   </div>
-                </DialogContent>
-              </Dialog>
-            )}
+                  <div className="space-y-1.5">
+                    {[
+                      { key: "ytAllowEmbedding", label: "Allow embedding by default" },
+                      { key: "ytPublicStats", label: "Show public statistics by default" },
+                      { key: "ytNotifySubscribers", label: "Notify subscribers by default" },
+                    ].map(({ key, label }) => (
+                      <label key={key} className="flex items-center gap-2 cursor-pointer select-none text-xs">
+                        <input type="checkbox" checked={ytDefaultsForm[key] ?? true} onChange={e => setYtDefaultsForm(p => ({ ...p, [key]: e.target.checked }))} className="rounded" />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Default tags <span className="text-muted-foreground">(comma-separated)</span></Label>
+                    <Textarea value={ytDefaultsForm.ytDefaultTags ?? ""} onChange={e => setYtDefaultsForm(p => ({ ...p, ytDefaultTags: e.target.value }))} rows={2} className="text-xs" placeholder="gospel music, Christian worship…" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Default description footer</Label>
+                    <Textarea value={ytDefaultsForm.ytDescriptionFooter ?? ""} onChange={e => setYtDefaultsForm(p => ({ ...p, ytDescriptionFooter: e.target.value }))} rows={4} className="text-xs" placeholder={YT_DEFAULT_FOOTER} />
+                  </div>
+                  <div className="flex justify-end">
+                    <Button size="sm" onClick={saveYtDefaults} disabled={ytDefaultsSaving} className="text-xs gap-1.5">
+                      {ytDefaultsSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                      Save Defaults
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* YouTube Upload Modal */}
+            {ytUploadSongId !== null && (() => {
+              const uploadSong = songs.find(s => s.id === ytUploadSongId) as any;
+              const thumbnailPreviewUrl = ytThumbnailChoice === "song_cover"
+                ? uploadSong?.coverImageUrl ?? ""
+                : ytThumbnailChoice === "upload" ? ytCustomThumbnailPreview : "";
+              const YT_CATEGORIES = [
+                { id: "10", label: "Music" },
+                { id: "27", label: "Education" },
+                { id: "22", label: "People & Blogs" },
+                { id: "29", label: "Nonprofits & Activism" },
+              ];
+              return (
+                <Dialog open onOpenChange={() => setYtUploadSongId(null)}>
+                  <DialogContent className="max-w-2xl max-h-[88vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="font-serif text-primary flex items-center gap-2">
+                        <Youtube className="w-5 h-5 text-red-500" />
+                        {ytDialogStep === "confirm" ? "Confirm & Publish to YouTube" : "Post to YouTube"}
+                      </DialogTitle>
+                    </DialogHeader>
+
+                    {ytDialogStep === "form" ? (
+                      <div className="space-y-5 py-1">
+                        {/* API notice */}
+                        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 rounded-lg p-3">
+                          <p className="text-xs font-medium text-amber-800 dark:text-amber-300">⚠ API Verification Notice</p>
+                          <p className="text-xs text-amber-700/80 dark:text-amber-400/70 mt-0.5">This Google API project has not completed YouTube API verification. YouTube may restrict API uploads to Private visibility until the project passes its required audit.</p>
+                        </div>
+
+                        <p className="text-sm text-muted-foreground">Song: <strong>{uploadSong?.title ?? ytUploadSongId}</strong>{uploadSong?.videoUrl ? <span className="ml-2 text-xs text-green-600">✓ MP4 ready</span> : null}</p>
+
+                        {/* Basic info */}
+                        <div className="space-y-3">
+                          <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Basic Info</h4>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Video Title <span className="text-muted-foreground">(max 100 chars)</span></Label>
+                            <Input value={ytUploadTitle} onChange={e => setYtUploadTitle(e.target.value.slice(0, 100))} className="text-sm" />
+                            <p className="text-[10px] text-muted-foreground text-right">{ytUploadTitle.length}/100</p>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Description</Label>
+                            <Textarea value={ytUploadDesc} onChange={e => setYtUploadDesc(e.target.value)} rows={5} className="text-sm" />
+                          </div>
+                        </div>
+
+                        {/* Discovery */}
+                        <div className="space-y-3">
+                          <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Discovery</h4>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Tags <span className="text-muted-foreground">(comma-separated, max 30)</span></Label>
+                            <Textarea value={ytTags} onChange={e => setYtTags(e.target.value)} rows={2} className="text-sm" placeholder="gospel music, Christian worship, SpiritTone…" />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Category</Label>
+                              <select className="w-full h-9 text-sm px-2 rounded-md border border-border bg-background" value={ytCategoryId} onChange={e => setYtCategoryId(e.target.value)}>
+                                {YT_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Language</Label>
+                              <select className="w-full h-9 text-sm px-2 rounded-md border border-border bg-background" value={ytVideoLanguage} onChange={e => setYtVideoLanguage(e.target.value)}>
+                                <option value="en">English</option>
+                                <option value="es">Spanish</option>
+                                <option value="fr">French</option>
+                                <option value="pt">Portuguese</option>
+                                <option value="yo">Yoruba</option>
+                                <option value="ig">Igbo</option>
+                                <option value="ha">Hausa</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Privacy & Publishing */}
+                        <div className="space-y-3">
+                          <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Privacy & Publishing</h4>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Privacy</Label>
+                              <select className="w-full h-9 text-sm px-2 rounded-md border border-border bg-background" value={ytPrivacy} onChange={e => setYtPrivacy(e.target.value as any)} disabled={ytScheduleMode === "schedule"}>
+                                <option value="private">Private</option>
+                                <option value="unlisted">Unlisted</option>
+                                <option value="public">Public</option>
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Publishing</Label>
+                              <select className="w-full h-9 text-sm px-2 rounded-md border border-border bg-background" value={ytScheduleMode} onChange={e => setYtScheduleMode(e.target.value as any)}>
+                                <option value="immediate">Publish immediately</option>
+                                <option value="schedule">Schedule for later</option>
+                              </select>
+                            </div>
+                          </div>
+                          {ytScheduleMode === "schedule" && (
+                            <>
+                              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200/60 rounded-lg p-2.5">
+                                <p className="text-xs text-blue-800 dark:text-blue-300">YouTube requires scheduled videos to be uploaded as Private until the scheduled publication time.</p>
+                              </div>
+                              <div className="grid grid-cols-3 gap-2">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Date</Label>
+                                  <Input type="date" value={ytScheduleDate} min={new Date(Date.now() + 60000).toISOString().split("T")[0]} onChange={e => setYtScheduleDate(e.target.value)} className="text-sm" />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Time</Label>
+                                  <Input type="time" value={ytScheduleTime} onChange={e => setYtScheduleTime(e.target.value)} className="text-sm" />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Timezone</Label>
+                                  <select className="w-full h-9 text-sm px-2 rounded-md border border-border bg-background" value={ytScheduleTimezone} onChange={e => setYtScheduleTimezone(e.target.value)}>
+                                    <option value="America/Chicago">Chicago (CT)</option>
+                                    <option value="America/New_York">New York (ET)</option>
+                                    <option value="America/Los_Angeles">Los Angeles (PT)</option>
+                                    <option value="America/Denver">Denver (MT)</option>
+                                    <option value="Europe/London">London (GMT)</option>
+                                    <option value="Africa/Lagos">Lagos (WAT)</option>
+                                    <option value="UTC">UTC</option>
+                                  </select>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Policies */}
+                        <div className="space-y-3">
+                          <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Policies</h4>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Made for kids?</Label>
+                              <select className="w-full h-9 text-sm px-2 rounded-md border border-border bg-background" value={ytMadeForKids ? "yes" : "no"} onChange={e => setYtMadeForKids(e.target.value === "yes")}>
+                                <option value="no">No, not made for kids</option>
+                                <option value="yes">Yes, made for kids</option>
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Realistic synthetic or altered content?</Label>
+                              <select className="w-full h-9 text-sm px-2 rounded-md border border-border bg-background" value={ytSyntheticContent ? "yes" : "no"} onChange={e => setYtSyntheticContent(e.target.value === "yes")}>
+                                <option value="no">No</option>
+                                <option value="yes">Yes</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">License</Label>
+                            <select className="w-full h-9 text-sm px-2 rounded-md border border-border bg-background" value={ytLicense} onChange={e => setYtLicense(e.target.value)}>
+                              <option value="youtube">Standard YouTube License</option>
+                              <option value="creativeCommon">Creative Commons (CC BY)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Options */}
+                        <div className="space-y-2">
+                          <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Options</h4>
+                          {([ { label: "Allow embedding", value: ytAllowEmbedding, set: setYtAllowEmbedding }, { label: "Show public statistics", value: ytPublicStats, set: setYtPublicStats }, { label: "Notify subscribers (where supported)", value: ytNotifySubscribers, set: setYtNotifySubscribers }, ] as const).map(({ label, value, set }) => (
+                            <label key={label} className="flex items-center gap-2 cursor-pointer select-none">
+                              <input type="checkbox" checked={value} onChange={e => (set as any)(e.target.checked)} className="rounded" />
+                              <span className="text-sm">{label}</span>
+                            </label>
+                          ))}
+                        </div>
+
+                        {/* Thumbnail */}
+                        <div className="space-y-2">
+                          <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Thumbnail</h4>
+                          <p className="text-xs text-muted-foreground">Recommended: 1280 × 720 px, JPEG or PNG, max 2 MB. Will be set on YouTube after upload.</p>
+                          <div className="flex gap-2">
+                            {(["song_cover", "upload"] as const).map(choice => (
+                              <button key={choice} type="button" onClick={() => setYtThumbnailChoice(choice)} className={`px-3 py-1.5 text-xs rounded-md border transition-colors ${ytThumbnailChoice === choice ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}>
+                                {choice === "song_cover" ? "Song cover art" : "Upload thumbnail"}
+                              </button>
+                            ))}
+                          </div>
+                          {thumbnailPreviewUrl ? (
+                            <div className="relative w-48 aspect-video bg-black rounded overflow-hidden">
+                              <img src={thumbnailPreviewUrl} alt="Thumbnail preview" className="w-full h-full object-contain" />
+                              {ytThumbnailChoice === "upload" && (
+                                <button type="button" onClick={() => { setYtCustomThumbnailPreview(""); setYtCustomThumbnailUrl(""); }} className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 text-[10px] flex items-center justify-center hover:bg-black/80">✕</button>
+                              )}
+                            </div>
+                          ) : ytThumbnailChoice === "song_cover" ? (
+                            <p className="text-xs text-muted-foreground italic">This song has no cover art. Add cover art in the song editor or upload a thumbnail.</p>
+                          ) : null}
+                          {ytThumbnailChoice === "upload" && (
+                            <label className={`inline-flex items-center gap-1.5 text-xs border rounded-md px-3 py-1.5 cursor-pointer hover:bg-muted transition-colors ${ytThumbnailUploading ? "opacity-60 pointer-events-none" : ""}`}>
+                              <Upload className="w-3 h-3" />
+                              {ytThumbnailUploading ? "Uploading…" : ytCustomThumbnailUrl ? "Replace thumbnail" : "Choose JPEG or PNG"}
+                              <input type="file" className="hidden" accept=".jpg,.jpeg,.png" disabled={ytThumbnailUploading} onChange={handleYtThumbnailUpload} />
+                            </label>
+                          )}
+                        </div>
+
+                        <div className="flex gap-2 justify-end pt-1 border-t border-border">
+                          <Button size="sm" variant="outline" onClick={() => setYtUploadSongId(null)}>Cancel</Button>
+                          <Button size="sm" onClick={() => setYtDialogStep("confirm")} className="gap-1.5">
+                            Review & Confirm →
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4 py-1">
+                        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 rounded-lg p-3">
+                          <p className="text-xs text-amber-800 dark:text-amber-300">⚠ This Google API project has not completed YouTube API verification. YouTube may restrict API uploads to Private visibility until the project passes its required audit.</p>
+                        </div>
+                        <div className="space-y-1.5 text-sm border border-border rounded-lg p-3 bg-muted/20">
+                          {[
+                            ["Channel", ytStatus?.channelName ?? "—"],
+                            ["Song", uploadSong?.title ?? String(ytUploadSongId)],
+                            ["Video title", ytUploadTitle],
+                            ["Privacy", ytScheduleMode === "schedule" ? "Private (until scheduled time)" : ytPrivacy],
+                            ...(ytScheduleMode === "schedule" && ytScheduleDate ? [["Scheduled", `${ytScheduleDate} at ${ytScheduleTime} (${ytScheduleTimezone})`]] : []),
+                            ["Category", ({"10":"Music","27":"Education","22":"People & Blogs","29":"Nonprofits & Activism"} as Record<string,string>)[ytCategoryId] ?? ytCategoryId],
+                            ["Made for kids", ytMadeForKids ? "Yes" : "No"],
+                            ["Synthetic content", ytSyntheticContent ? "Yes" : "No"],
+                            ["License", ytLicense === "creativeCommon" ? "Creative Commons" : "Standard YouTube License"],
+                          ].map(([k, v]) => (
+                            <div key={k} className="grid grid-cols-[130px_1fr] gap-1 items-start">
+                              <span className="text-xs text-muted-foreground">{k}</span>
+                              <span className="text-xs font-medium break-words">{v}</span>
+                            </div>
+                          ))}
+                          {ytTags && (
+                            <div className="grid grid-cols-[130px_1fr] gap-1 items-start">
+                              <span className="text-xs text-muted-foreground">Tags</span>
+                              <span className="text-xs break-words">{ytTags.split(",").slice(0,8).join(", ")}{ytTags.split(",").length>8?` +${ytTags.split(",").length-8} more`:""}</span>
+                            </div>
+                          )}
+                        </div>
+                        {thumbnailPreviewUrl && (
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Thumbnail</p>
+                            <div className="w-40 aspect-video bg-black rounded overflow-hidden"><img src={thumbnailPreviewUrl} alt="Thumbnail" className="w-full h-full object-contain" /></div>
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Description preview</p>
+                          <p className="text-xs font-mono bg-muted/50 rounded p-2 max-h-28 overflow-y-auto whitespace-pre-wrap">{ytUploadDesc.slice(0,400)}{ytUploadDesc.length>400?"…":""}</p>
+                        </div>
+                        <div className="flex gap-2 justify-end pt-1 border-t border-border">
+                          <Button size="sm" variant="outline" onClick={() => setYtDialogStep("form")}>← Back</Button>
+                          <Button size="sm" onClick={handleYtUpload} disabled={ytUploading} className="gap-1.5 bg-red-600 hover:bg-red-700 text-white">
+                            {ytUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Youtube className="w-4 h-4" />}
+                            Confirm and Publish to YouTube
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
+              );
+            })()}
           </CardContent>
         )}
       </Card>
@@ -4615,13 +5150,7 @@ function SongsAdmin() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="min-h-[44px]"
-                              onClick={() => {
-                                setYtUploadSongId(song.id);
-                                setYtUploadTitle(song.title);
-                                setYtUploadDesc(`${song.title} — ${song.scriptureReference}\n\n${song.shortDescription ?? ""}\n\n${song.labelName}`);
-                                setYtPrivacy("private");
-                                setShowYouTube(true);
-                              }}
+                              onClick={() => { openYtDialog(song); setShowYouTube(true); }}
                               data-testid={`menu-update-youtube-${song.id}`}
                             >
                               <Youtube className="w-3.5 h-3.5 mr-2 flex-shrink-0 text-red-500" /> Update YouTube Metadata
@@ -4631,13 +5160,7 @@ function SongsAdmin() {
                           (song as any).videoUrl ? (
                             <DropdownMenuItem
                               className="min-h-[44px]"
-                              onClick={() => {
-                                setYtUploadSongId(song.id);
-                                setYtUploadTitle(song.title);
-                                setYtUploadDesc(`${song.title} — ${song.scriptureReference}\n\n${song.shortDescription ?? ""}\n\n${song.labelName}`);
-                                setYtPrivacy("private");
-                                setShowYouTube(true);
-                              }}
+                              onClick={() => { openYtDialog(song); setShowYouTube(true); }}
                               data-testid={`menu-post-youtube-${song.id}`}
                             >
                               <Youtube className="w-3.5 h-3.5 mr-2 flex-shrink-0 text-red-500" />

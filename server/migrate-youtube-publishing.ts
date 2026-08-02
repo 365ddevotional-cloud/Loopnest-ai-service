@@ -28,6 +28,17 @@ export async function runYoutubePublishingMigration() {
         uploaded_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
+      ALTER TABLE youtube_song_uploads ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMP;
+      ALTER TABLE youtube_song_uploads ADD COLUMN IF NOT EXISTS thumbnail_url TEXT;
+      ALTER TABLE youtube_song_uploads ADD COLUMN IF NOT EXISTS thumbnail_status TEXT;
+      ALTER TABLE youtube_song_uploads ADD COLUMN IF NOT EXISTS made_for_kids BOOLEAN;
+      ALTER TABLE youtube_song_uploads ADD COLUMN IF NOT EXISTS synthetic_content BOOLEAN;
+      ALTER TABLE youtube_song_uploads ADD COLUMN IF NOT EXISTS category_id TEXT;
+      ALTER TABLE youtube_song_uploads ADD COLUMN IF NOT EXISTS tags TEXT;
+      ALTER TABLE youtube_song_uploads ADD COLUMN IF NOT EXISTS license TEXT;
+      ALTER TABLE youtube_song_uploads ADD COLUMN IF NOT EXISTS allow_embedding BOOLEAN;
+      ALTER TABLE youtube_song_uploads ADD COLUMN IF NOT EXISTS public_stats BOOLEAN;
+      ALTER TABLE youtube_song_uploads ADD COLUMN IF NOT EXISTS notify_subscribers BOOLEAN;
     `);
     console.log("[migrate] youtube_connection + youtube_song_uploads tables ready");
   } finally {
