@@ -3206,8 +3206,28 @@ function SongsAdmin() {
       if (!r.ok) return { connected: false };
       return r.json();
     },
-    enabled: showYouTube,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
+
+  // Detect return from Google OAuth callback and refresh status
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("youtube_connected") === "1") {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/youtube/status"] });
+      toast({ title: "YouTube connected!", description: "Your channel has been authorized. Use \"Post to YouTube\" in the song menu to publish videos." });
+      const url = new URL(window.location.href);
+      url.searchParams.delete("youtube_connected");
+      window.history.replaceState({}, "", url.toString());
+    }
+    const ytError = params.get("youtube_error");
+    if (ytError) {
+      toast({ title: "YouTube connection error", description: ytError.replace(/_/g, " "), variant: "destructive" });
+      const url = new URL(window.location.href);
+      url.searchParams.delete("youtube_error");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, []);
 
   const connectYouTube = async () => {
     const r = await fetch("/api/admin/youtube/auth-url", {
@@ -4585,27 +4605,52 @@ function SongsAdmin() {
                             </a>
                           </DropdownMenuItem>
                         )}
-                        {(song as any).youtubeUrl && (
-                          <DropdownMenuItem asChild>
-                            <a href={(song as any).youtubeUrl} target="_blank" rel="noopener noreferrer" className="min-h-[44px] flex items-center" data-testid={`menu-youtube-song-${song.id}`}>
-                              <Youtube className="w-3.5 h-3.5 mr-2 flex-shrink-0 text-red-500" /> Watch on YouTube
-                            </a>
-                          </DropdownMenuItem>
-                        )}
-                        {(song as any).videoUrl && ytStatus?.connected && (
-                          <DropdownMenuItem
-                            className="min-h-[44px]"
-                            onClick={() => {
-                              setYtUploadSongId(song.id);
-                              setYtUploadTitle(song.title);
-                              setYtUploadDesc(`${song.title} — ${song.scriptureReference}\n\n${song.shortDescription ?? ""}\n\n${song.labelName}`);
-                              setYtPrivacy("private");
-                              setShowYouTube(true);
-                            }}
-                            data-testid={`menu-post-youtube-${song.id}`}
-                          >
-                            <Youtube className="w-3.5 h-3.5 mr-2 flex-shrink-0 text-red-500" />
-                            {ytUploadStatuses[song.id] === "pending" ? "Uploading to YouTube…" : "Post to YouTube"}
+                        {/* ── YouTube actions ── */}
+                        {(song as any).youtubeUrl ? (
+                          <>
+                            <DropdownMenuItem asChild>
+                              <a href={(song as any).youtubeUrl} target="_blank" rel="noopener noreferrer" className="min-h-[44px] flex items-center" data-testid={`menu-youtube-song-${song.id}`}>
+                                <Youtube className="w-3.5 h-3.5 mr-2 flex-shrink-0 text-red-500" /> Watch on YouTube
+                              </a>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="min-h-[44px]"
+                              onClick={() => {
+                                setYtUploadSongId(song.id);
+                                setYtUploadTitle(song.title);
+                                setYtUploadDesc(`${song.title} — ${song.scriptureReference}\n\n${song.shortDescription ?? ""}\n\n${song.labelName}`);
+                                setYtPrivacy("private");
+                                setShowYouTube(true);
+                              }}
+                              data-testid={`menu-update-youtube-${song.id}`}
+                            >
+                              <Youtube className="w-3.5 h-3.5 mr-2 flex-shrink-0 text-red-500" /> Update YouTube Metadata
+                            </DropdownMenuItem>
+                          </>
+                        ) : ytStatus?.connected ? (
+                          (song as any).videoUrl ? (
+                            <DropdownMenuItem
+                              className="min-h-[44px]"
+                              onClick={() => {
+                                setYtUploadSongId(song.id);
+                                setYtUploadTitle(song.title);
+                                setYtUploadDesc(`${song.title} — ${song.scriptureReference}\n\n${song.shortDescription ?? ""}\n\n${song.labelName}`);
+                                setYtPrivacy("private");
+                                setShowYouTube(true);
+                              }}
+                              data-testid={`menu-post-youtube-${song.id}`}
+                            >
+                              <Youtube className="w-3.5 h-3.5 mr-2 flex-shrink-0 text-red-500" />
+                              {ytUploadStatuses[song.id] === "pending" ? "Uploading to YouTube…" : "Post to YouTube"}
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem disabled className="min-h-[44px] opacity-50 cursor-not-allowed" data-testid={`menu-yt-no-mp4-${song.id}`}>
+                              <Youtube className="w-3.5 h-3.5 mr-2 flex-shrink-0 text-muted-foreground" /> MP4 required for YouTube
+                            </DropdownMenuItem>
+                          )
+                        ) : (
+                          <DropdownMenuItem disabled className="min-h-[44px] opacity-50 cursor-not-allowed" data-testid={`menu-yt-not-connected-${song.id}`}>
+                            <Youtube className="w-3.5 h-3.5 mr-2 flex-shrink-0 text-muted-foreground" /> Connect YouTube first
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem onClick={() => openEdit(song)} className="min-h-[44px]" data-testid={`menu-edit-song-${song.id}`}>

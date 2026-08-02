@@ -1,0 +1,37 @@
+Please inspect and fix only the existing SpiritTone YouTube publishing button visibility.
+
+CURRENT PROBLEM
+
+Google OAuth authorization completed successfully and returned to the Admin Dashboard, but the song action menu still does not show “Post to YouTube” for songs that already have an uploaded MP4/video.
+
+TASK
+
+1. Verify that the completed OAuth callback actually saved the YouTube connection and refresh token in the existing server-side database/storage.
+2. Verify that GET /api/admin/youtube/status returns connected: true and safe channel information after authorization.
+3. Verify that the Admin Songs page refreshes or refetches YouTube connection status after returning from the OAuth callback.
+4. In the existing three-line action menu for each song, show an admin-only “Post to YouTube” option when:
+   - YouTube is connected;
+   - the song has a valid existing MP4/video URL or stored video file;
+   - the song does not already have a YouTube video ID.
+5. If the song does not have an MP4, show a disabled item saying:
+   “MP4 required for YouTube”
+   instead of silently hiding the feature.
+6. If YouTube is not connected, show a disabled item saying:
+   “Connect YouTube first”
+   instead of silently hiding the feature.
+7. If a YouTube video ID already exists, show:
+   - Watch on YouTube
+   - Update YouTube Metadata
+   and do not show Post to YouTube.
+8. Make sure the action is visible on mobile and desktop and does not overflow the menu.
+9. Do not upload or publish any real video while fixing this.
+10. Do not modify Church Mode, authentication, admin login, songs, audio files, MP4 files, metadata, Android packaging, ADMIN_PASSWORD, AAB_DOWNLOAD_TOKEN, or unrelated systems.
+11. Create a checkpoint first and do not deploy automatically.
+
+After fixing, report:
+- whether the YouTube connection was successfully stored;
+- the connected channel name;
+- why the button was missing;
+- exact files changed;
+- one song that now shows “Post to YouTube”;
+- whether that song has a valid MP4.
