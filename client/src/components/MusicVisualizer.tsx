@@ -62,6 +62,8 @@ export default function MusicVisualizer({
         analyser.connect(ctx.destination);
         entry = { ctx, analyser, source };
         nodeMap.set(audioElement, entry);
+        // Expose ctx on the element so MusicPlayerContext can resume it after visibility changes
+        (audioElement as any)._audioCtx = ctx;
       } catch (e) {
         // Web Audio not available (e.g. very old browser / SSR)
         return;

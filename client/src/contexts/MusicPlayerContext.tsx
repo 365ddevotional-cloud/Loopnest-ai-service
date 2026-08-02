@@ -154,6 +154,9 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => { recentlyPlayedRef.current = recentlyPlayed; }, [recentlyPlayed]);
   const dbSyncRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playSongRef = useRef<(song: Song) => void>(() => {});
+  const playNextRef = useRef<() => void>(() => {});
+  const playPrevRef = useRef<() => void>(() => {});
+  const closePlayerRef = useRef<() => void>(() => {});
 
   // Play counting: track 10 continuous seconds of playback per session per song
   const sessionIdRef = useRef<string>("");
@@ -599,6 +602,11 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Keep action refs in sync so Media Session handlers never go stale
+  useEffect(() => { closePlayerRef.current = closePlayer; }, [closePlayer]);
+  useEffect(() => { playNextRef.current = playNext; }, [playNext]);
+  useEffect(() => { playPrevRef.current = playPrev; }, [playPrev]);
+
   const updateSettings = useCallback((partial: Partial<MusicSettings>) => {
     setSettings(prev => {
       const updated = { ...prev, ...partial };
@@ -638,6 +646,106 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
       return updated;
     });
   }, [isSignedIn, getIdToken]);
+
+  // ── Resume Web Audio AudioContext after page returns to foreground ──────────
+  // When MusicVisualizer is mounted it routes the audio element through an
+  // AudioContext (stored as _audioCtx on the element).  Browsers may suspend
+  // that context during tab switches or screen locks.  We resume it here so
+  // playback continues when the user returns to the app.
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) return;
+      const ctx = (audioRef.current as any)._audioCtx as AudioContext | undefined;
+      if (ctx?.state === "suspended") ctx.resume().catch(() => {});
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
+  // ── Media Session API ─────────────────────────────────────────────────────
+  // Publish song metadata and register transport actions so the lock screen,
+  // Control Center, notification shade, and Bluetooth controls work.
+
+  useEffect(() => {
+    if (!("mediaSession" in navigator)) return;
+
+    if (!currentSong) {
+      navigator.mediaSession.metadata = null;
+      navigator.mediaSession.playbackState = "none";
+      return;
+    }
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentSong.title,
+      artist: currentSong.artist ?? currentSong.labelName ?? "",
+      album: currentSong.labelName ?? "SpiritTone Records",
+      artwork: currentSong.coverImageUrl
+        ? [
+            { src: currentSong.coverImageUrl, sizes: "512x512", type: "image/jpeg" },
+            { src: currentSong.coverImageUrl, sizes: "256x256", type: "image/jpeg" },
+          ]
+        : [],
+    });
+
+    const audio = audioRef.current;
+
+    navigator.mediaSession.setActionHandler("play", () => {
+      audio.play().catch(() => {});
+    });
+    navigator.mediaSession.setActionHandler("pause", () => {
+      audio.pause();
+    });
+    navigator.mediaSession.setActionHandler("previoustrack", () => {
+      playPrevRef.current();
+    });
+    navigator.mediaSession.setActionHandler("nexttrack", () => {
+      playNextRef.current();
+    });
+    navigator.mediaSession.setActionHandler("seekbackward", (details) => {
+      const by = details.seekOffset ?? 10;
+      audio.currentTime = Math.max(0, audio.currentTime - by);
+    });
+    navigator.mediaSession.setActionHandler("seekforward", (details) => {
+      const by = details.seekOffset ?? 10;
+      audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + by);
+    });
+    try {
+      navigator.mediaSession.setActionHandler("seekto", (details) => {
+        if (details.seekTime != null) audio.currentTime = details.seekTime;
+      });
+    } catch {}
+    try {
+      navigator.mediaSession.setActionHandler("stop", () => {
+        closePlayerRef.current();
+      });
+    } catch {}
+
+    return () => {
+      if (!("mediaSession" in navigator)) return;
+      (["play", "pause", "previoustrack", "nexttrack", "seekbackward", "seekforward"] as MediaSessionAction[])
+        .forEach((a) => { try { navigator.mediaSession.setActionHandler(a, null); } catch {} });
+      try { navigator.mediaSession.setActionHandler("seekto", null); } catch {}
+      try { navigator.mediaSession.setActionHandler("stop", null); } catch {}
+    };
+  }, [currentSong]);
+
+  // Sync playback state (playing / paused / none)
+  useEffect(() => {
+    if (!("mediaSession" in navigator)) return;
+    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+  }, [isPlaying, currentSong]);
+
+  // Sync scrubber position so lock-screen progress bar stays accurate
+  useEffect(() => {
+    if (!("mediaSession" in navigator) || !currentSong || duration <= 0) return;
+    try {
+      navigator.mediaSession.setPositionState({
+        duration,
+        playbackRate,
+        position: Math.min(currentTime, duration),
+      });
+    } catch {}
+  }, [currentTime, duration, playbackRate, currentSong]);
 
   return (
     <MusicPlayerContext.Provider value={{

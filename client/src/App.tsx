@@ -306,7 +306,6 @@ function AppContent() {
         <WalkthroughModal />
         <FloatingFeedbackButton />
         <AudioMiniPlayer />
-        <MiniPlayer />
         <OfflineStatusBanner />
       </div>
       <MenuTransitionOverlay isVisible={isTransitioning} onComplete={completeTransition} />
@@ -328,6 +327,9 @@ function App() {
                   <MenuTransitionProvider>
                     <TooltipProvider>
                       <AppContent />
+                      {/* MiniPlayer rendered here (above all route branches) so it
+                          persists across normal, church-mode, and group-mode routes */}
+                      <MiniPlayer />
                     </TooltipProvider>
                   </MenuTransitionProvider>
                 </FontSizeProvider>

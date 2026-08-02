@@ -1,0 +1,235 @@
+Please carefully improve the existing SpiritTone music player so music does not stop when users navigate inside the 365 Daily Devotional app, and add the safest available background-playback support.
+
+CRITICAL SAFETY RULES
+
+1. Update only the existing SpiritTone music playback system and Android media packaging where strictly required.
+2. Do not rebuild, replace, or create a second music player.
+3. Do not modify Church Mode, authentication, admin login, devotionals, prayer requests, donations, YouTube publishing, song uploads, song metadata, Firebase settings, database records, ADMIN_PASSWORD, AAB_DOWNLOAD_TOKEN, package name, signing key, or unrelated systems.
+4. Preserve all existing songs, queues, filters, playback modes, favorites, downloads, lyrics, visualizer, volume controls, and routes.
+5. Create a checkpoint before making changes.
+6. Make the smallest compatible changes possible.
+7. Do not deploy, publish, or generate a new AAB automatically.
+8. Test desktop, mobile-width browser, installed PWA, and the existing Android wrapper where available.
+
+PRIMARY PROBLEM
+
+When a user starts a song and navigates from the Music area to another feature inside the app, the song stops.
+
+PART A — UNINTERRUPTED PLAYBACK INSIDE THE APP
+
+1. Inspect the current React routing and MusicPlayerContext implementation.
+2. Ensure there is only one shared HTMLAudioElement for the entire application.
+3. Mount the MusicPlayerProvider and shared audio element above the application router so route changes do not unmount or recreate them.
+4. Do not place the audio element inside Music, SongDetail, MiniPlayer, or any page-specific component.
+5. Navigating between:
+   - Music
+   - Daily Devotional
+   - Prayer
+   - Church Mode
+   - Library
+   - Account
+   - other existing app pages
+
+   must not stop, restart, or reset the currently playing song.
+
+6. Preserve during navigation:
+   - current song
+   - current playback position
+   - play/pause state
+   - active queue
+   - queue position
+   - Repeat One
+   - Play All
+   - Repeat All
+   - Shuffle
+   - volume
+   - artwork and metadata
+
+7. Do not create multiple audio elements or allow two songs to play simultaneously.
+8. Do not restart playback merely because a component rerenders.
+9. Do not reset the audio source when the same song remains selected.
+10. Handle route transitions without an audible gap.
+
+PART B — PERSISTENT MINI-PLAYER INSIDE THE APP
+
+Add or improve the existing persistent MiniPlayer so it remains visible when music is active, paused, or temporarily buffering.
+
+The MiniPlayer should:
+
+- remain available across normal app pages;
+- show artwork, song title, artist, play/pause, previous, and next;
+- provide a close or dismiss control;
+- allow the user to reopen the full player;
+- be compact and mobile-friendly;
+- never cover important buttons, navigation, forms, chat controls, or page content;
+- respect iPhone safe areas and Android navigation bars;
+- be collapsible to a very small bar;
+- remember whether the user collapsed it;
+- not appear when no song has been selected.
+
+When the user dismisses the MiniPlayer, ask whether to:
+
+- Hide player but keep music playing
+- Stop music
+
+Do not stop music merely because the visual player was hidden.
+
+PART C — WEB AND PWA BACKGROUND PLAYBACK
+
+Improve standards-based background media behavior for supported browsers and installed PWAs.
+
+1. Use a normal HTMLAudioElement as the source of playback.
+2. Implement the Media Session API where supported.
+3. Publish metadata for the current song:
+   - title
+   - artist
+   - album or SpiritTone Records
+   - artwork in suitable sizes
+4. Register media actions where supported:
+   - play
+   - pause
+   - previous track
+   - next track
+   - seek backward
+   - seek forward
+   - seek to position
+   - stop
+5. Keep Media Session playback state and position state synchronized.
+6. Update metadata immediately when the song changes.
+7. Clear the Media Session when playback is stopped and the queue is closed.
+8. Gracefully fall back when Media Session is unavailable.
+9. Do not use fake silent audio, repeated timers, hidden video, or battery-draining workarounds to prevent browser suspension.
+10. Allow background playback only after the user has intentionally started music.
+
+TEST IN SUPPORTED BROWSERS:
+
+- switch to another browser tab;
+- return to the app;
+- lock the screen;
+- use lock-screen or Control Center controls;
+- open another non-audio app;
+- use Bluetooth/headset play and pause controls.
+
+Clearly report any browser or iOS restrictions instead of claiming guaranteed behavior.
+
+PART D — ANDROID APP BACKGROUND AUDIO
+
+Inspect how the current Android AAB/TWA wrapper is built.
+
+If the current Android wrapper can safely support native media playback without changing the package name or signing key, implement proper Android background audio using the existing project structure.
+
+Requirements:
+
+1. Use the current recommended Android Media3/MediaSession architecture or the existing equivalent already present in the project.
+2. Use a media playback foreground service.
+3. Show a MediaStyle playback notification while audio is playing in the background.
+4. Include:
+   - song title
+   - artist
+   - artwork
+   - previous
+   - play/pause
+   - next
+   - stop
+5. Continue playback when:
+   - the app goes to the background;
+   - the screen locks;
+   - the user opens Maps or another non-audio app;
+   - the activity is recreated.
+6. Handle audio focus correctly:
+   - pause or duck for phone calls, navigation instructions, voice assistants, and competing audio;
+   - resume appropriately only where allowed and expected.
+7. Support Bluetooth, vehicle, headset, notification, and lock-screen controls.
+8. Stop the foreground service and remove its notification when playback is fully stopped.
+9. Do not request “display over other apps” permission.
+10. Do not implement a system-alert overlay.
+11. Do not add intrusive floating windows over other apps.
+12. Preserve the current Android package name, signing configuration, target API, and trusted web activity/deep-link behavior.
+
+If this cannot safely be added to the current TWA architecture without a larger native conversion, do not force it. Report exactly what is possible now and provide a minimal staged plan.
+
+PART E — IPHONE AND IPAD BEHAVIOR
+
+For the current website or installed PWA:
+
+1. Use HTMLAudioElement and Media Session support where Safari permits.
+2. Ensure navigation within the app does not stop playback.
+3. Provide lock-screen and Control Center metadata and controls where supported.
+4. Do not claim guaranteed continuous playback if iOS suspends the web app.
+
+If a native iOS wrapper is added in the future, note that reliable background playback will require:
+
+- AVAudioSession category set for playback;
+- Audio, AirPlay, and Picture in Picture background capability;
+- Now Playing metadata and remote command handling.
+
+Do not create or modify an iOS native project in this task unless one already exists.
+
+PART F — FLOATING PLAYER DECISION
+
+Do not create an unrestricted floating overlay over other apps.
+
+For audio-only playback, use:
+
+- persistent MiniPlayer inside the 365 app;
+- Android notification controls;
+- iPhone Control Center and lock-screen controls;
+- Bluetooth and headset controls.
+
+Picture-in-Picture may be used only for actual video playback where the operating system officially supports it. Do not use a blank or fake video merely to obtain a floating audio window.
+
+PART G — INTERRUPTION AND RECOVERY
+
+Handle these cases safely:
+
+- incoming phone call;
+- Siri or Google Assistant;
+- Maps navigation instruction;
+- alarm;
+- another music app starts;
+- headphones unplugged;
+- Bluetooth disconnects;
+- network interruption;
+- page temporarily hidden;
+- app returns from background;
+- expired audio URL;
+- browser refresh or process recreation.
+
+Do not automatically blast audio after an interruption if the operating system or user has paused it.
+
+PART H — VERIFICATION
+
+Before reporting completion, test:
+
+1. Start a song, navigate to Daily Devotional, and confirm it continues.
+2. Navigate through at least five existing routes without restarting the song.
+3. Confirm the playback position remains accurate.
+4. Confirm only one audio element exists.
+5. Confirm the MiniPlayer remains available and does not obstruct content.
+6. Hide the MiniPlayer while keeping music playing.
+7. Stop music from the MiniPlayer.
+8. Confirm Play All, Repeat One, Repeat All, and Shuffle still work.
+9. Confirm Media Session metadata changes with the song.
+10. Confirm browser lock-screen controls where supported.
+11. Confirm Android notification controls where implemented.
+12. Confirm phone/audio interruptions are handled correctly.
+13. Confirm no new console, server, or build errors.
+14. Confirm unrelated systems remain unchanged.
+15. Test mobile widths, including iPhone safe areas.
+16. Do not claim background playback passed on a platform unless it was actually tested there.
+
+FINAL REPORT
+
+Provide:
+
+- root cause of playback stopping during internal navigation;
+- exact files changed;
+- where the single audio element is mounted;
+- MiniPlayer behavior implemented;
+- Media Session actions implemented;
+- browser/PWA background-playback test results;
+- Android native background-playback status;
+- iPhone limitations;
+- whether a future native wrapper change is required;
+- confirmation that no real deployment or AAB generation occurred;
+- confirmation that unrelated systems were untouched.
