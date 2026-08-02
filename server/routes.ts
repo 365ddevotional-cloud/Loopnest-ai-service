@@ -2078,8 +2078,7 @@ export async function registerRoutes(
   ];
 
   function getYouTubeOAuth2Client() {
-    const devDomain = process.env.REPLIT_DEV_DOMAIN ?? "localhost:5000";
-    const redirectUri = `https://${devDomain}/api/admin/youtube/callback`;
+    const redirectUri = "https://365dailydevotional.com/api/admin/youtube/callback";
     return new OAuth2Client({
       clientId: GOOGLE_CLIENT_ID,
       clientSecret: GOOGLE_CLIENT_SECRET,
