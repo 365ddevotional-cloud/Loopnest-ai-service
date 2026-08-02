@@ -1,5 +1,6 @@
-const CACHE_NAME = '365dd-v8';
+const CACHE_NAME = '365dd-v9';
 const API_CACHE_NAME = '365dd-api-v5';
+const MUSIC_CACHE_NAME = 'spirittone-music-v1';
 
 const STATIC_ASSETS = [
   '/',
@@ -28,6 +29,20 @@ function isSensitiveApiPath(pathname) {
   return SENSITIVE_API_PATTERNS.some((pattern) => pattern.test(pathname));
 }
 
+// Song cover images and label logos live under /objects/
+function isMusicThumbnail(url) {
+  return url.pathname.startsWith('/objects/');
+}
+
+// Music library endpoints that benefit from stale-while-revalidate
+function isMusicApiPath(url) {
+  return (
+    url.pathname === '/api/songs/library' ||
+    url.pathname === '/api/songs/collections' ||
+    url.pathname === '/api/songs/featured'
+  );
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
@@ -40,7 +55,13 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys.map((key) => {
-          if (key !== CACHE_NAME && key !== API_CACHE_NAME) return caches.delete(key);
+          // Always keep the current three caches
+          if (key === CACHE_NAME || key === API_CACHE_NAME || key === MUSIC_CACHE_NAME) return;
+          // Delete previous spirittone-music-* versions (future upgrades)
+          if (key.startsWith('spirittone-music-')) return caches.delete(key);
+          // Delete old 365dd-* versions
+          if (key.startsWith('365dd-')) return caches.delete(key);
+          // Leave any other unrelated caches alone
         })
       )
     )
@@ -49,7 +70,7 @@ self.addEventListener('activate', (event) => {
 });
 
 function isStaticAsset(url) {
-  return url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|ico|woff2?|ttf|eot)$/);
+  return url.pathname.match(/\.(js|css|woff2?|ttf|eot|ico|svg)$/);
 }
 
 function isApiRequest(url) {
@@ -61,9 +82,68 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
+  // ── Song thumbnails / cover images: stale-while-revalidate ──────────────
+  // Use spirittone-music-v1 cache. Return cached copy immediately;
+  // fetch fresh copy in the background. Never replace cache with an error.
+  if (isMusicThumbnail(url)) {
+    event.respondWith(
+      caches.open(MUSIC_CACHE_NAME).then((cache) => {
+        return cache.match(event.request).then((cached) => {
+          const fetchAndCache = fetch(event.request).then((response) => {
+            if (response.ok) {
+              cache.put(event.request, response.clone());
+            }
+            return response;
+          });
+          if (cached) {
+            // Return cached immediately; refresh cache quietly in background
+            event.waitUntil(fetchAndCache.catch(() => {}));
+            return cached;
+          }
+          // Nothing cached yet — wait for network; fall back to empty on error
+          return fetchAndCache.catch(
+            () => cached || new Response('', { status: 503 })
+          );
+        });
+      })
+    );
+    return;
+  }
+
+  // ── Music library API: stale-while-revalidate ────────────────────────────
+  // Respond from API cache immediately so the page loads without a spinner;
+  // update the cache quietly in the background.
+  if (isMusicApiPath(url)) {
+    event.respondWith(
+      caches.open(API_CACHE_NAME).then((cache) => {
+        return cache.match(event.request).then((cached) => {
+          const fetchAndCache = fetch(event.request).then((response) => {
+            if (response.ok) {
+              cache.put(event.request, response.clone());
+            }
+            return response;
+          });
+          if (cached) {
+            event.waitUntil(fetchAndCache.catch(() => {}));
+            return cached;
+          }
+          return fetchAndCache.catch(
+            () =>
+              new Response('[]', {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+              })
+          );
+        });
+      })
+    );
+    return;
+  }
+
+  // ── Other API requests: network-first with cache fallback ─────────────────
   if (isApiRequest(url)) {
     if (isSensitiveApiPath(url.pathname)) {
-      return;
+      return; // Never cache sensitive endpoints
     }
 
     event.respondWith(
@@ -101,6 +181,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // ── Static JS/CSS/fonts: network-first, cache on success ─────────────────
   if (isStaticAsset(url)) {
     event.respondWith(
       fetch(event.request).then((response) => {
@@ -119,6 +200,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // ── Navigation requests ──────────────────────────────────────────────────
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
@@ -138,6 +220,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // ── Everything else ──────────────────────────────────────────────────────
   event.respondWith(
     fetch(event.request)
       .then((response) => {

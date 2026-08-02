@@ -6,9 +6,13 @@ import {
 } from "lucide-react";
 import type { Song, SongCollection } from "@shared/schema";
 import { useMusicPlayer, type RecentlyPlayedEntry } from "@/contexts/MusicPlayerContext";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  getMusicLibrary, saveMusicLibrary,
+  getMusicCollections, saveMusicCollections,
+} from "@/lib/offlineDb";
 
 const CUSTOM_LANG = "__custom__";
 
@@ -22,6 +26,9 @@ function SongCard({
   onPlay?: (song: Song) => void;
 }) {
   const [, setLocation] = useLocation();
+  // Track whether this thumbnail has failed so we never retry it
+  const [imgBroken, setImgBroken] = useState(false);
+
   return (
     <div
       className={`group flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md active:scale-[0.99] ${
@@ -39,12 +46,14 @@ function SongCard({
         className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden flex items-center justify-center"
         style={{ background: "linear-gradient(135deg, #f0d080 0%, #c89820 100%)" }}
       >
-        {song.coverImageUrl ? (
+        {song.coverImageUrl && !imgBroken ? (
           <img
             src={song.coverImageUrl}
             alt={song.title}
             className="w-full h-full object-cover"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            loading="lazy"
+            decoding="async"
+            onError={() => setImgBroken(true)}
           />
         ) : (
           <Music2 className="w-8 h-8 text-amber-900" />
@@ -85,6 +94,8 @@ function SongCard({
 }
 
 function RecentCard({ entry, isContinue }: { entry: RecentlyPlayedEntry; isContinue?: boolean }) {
+  const [imgBroken, setImgBroken] = useState(false);
+
   const timeAgo = (() => {
     const diff = Date.now() - new Date(entry.lastPlayedAt).getTime();
     const mins = Math.floor(diff / 60000);
@@ -105,12 +116,14 @@ function RecentCard({ entry, isContinue }: { entry: RecentlyPlayedEntry; isConti
           className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center"
           style={{ background: "linear-gradient(135deg, #f0d080 0%, #c89820 100%)" }}
         >
-          {entry.coverImageUrl ? (
+          {entry.coverImageUrl && !imgBroken ? (
             <img
               src={entry.coverImageUrl}
               alt={entry.title}
               className="w-full h-full object-cover"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              loading="lazy"
+              decoding="async"
+              onError={() => setImgBroken(true)}
             />
           ) : (
             <Music2 className="w-6 h-6 text-amber-900" />
@@ -147,13 +160,44 @@ function RecentCard({ entry, isContinue }: { entry: RecentlyPlayedEntry; isConti
 }
 
 export default function Music() {
-  const { data: songs = [], isLoading } = useQuery<Song[]>({
+  // ── IndexedDB cache: load last-known good data so the page is never blank ──
+  const [cachedSongs, setCachedSongs] = useState<Song[]>([]);
+  const [cachedCollections, setCachedCollections] = useState<(SongCollection & { songs?: Song[] })[]>([]);
+
+  useEffect(() => {
+    getMusicLibrary().then((data) => {
+      if (data.length) setCachedSongs(data as Song[]);
+    }).catch(() => {});
+    getMusicCollections().then((data) => {
+      if (data.length) setCachedCollections(data as (SongCollection & { songs?: Song[] })[]);
+    }).catch(() => {});
+  }, []);
+
+  // ── Network queries (stale-while-revalidate via service worker) ────────────
+  const { data: fetchedSongs, isLoading: songsLoading } = useQuery<Song[]>({
     queryKey: ["/api/songs/library"],
   });
 
-  const { data: collections = [] } = useQuery<(SongCollection & { songs?: Song[] })[]>({
+  const { data: fetchedCollections } = useQuery<(SongCollection & { songs?: Song[] })[]>({
     queryKey: ["/api/songs/collections"],
   });
+
+  // Merge: prefer fresh network data; fall back to IndexedDB cache
+  const songs: Song[] = fetchedSongs ?? cachedSongs;
+  const collections: (SongCollection & { songs?: Song[] })[] = fetchedCollections ?? cachedCollections;
+
+  // ── Persist successful network responses to IndexedDB ─────────────────────
+  useEffect(() => {
+    if (fetchedSongs && fetchedSongs.length) {
+      saveMusicLibrary(fetchedSongs).catch(() => {});
+    }
+  }, [fetchedSongs]);
+
+  useEffect(() => {
+    if (fetchedCollections && fetchedCollections.length) {
+      saveMusicCollections(fetchedCollections).catch(() => {});
+    }
+  }, [fetchedCollections]);
 
   const { continueListening, recentlyPlayed, recommendations, settings, setQueue, playSong } = useMusicPlayer();
 
@@ -227,7 +271,9 @@ export default function Music() {
     }
   };
 
-  if (isLoading) {
+  // Show a spinner only when the network is still loading AND we have no cached
+  // data at all (first-ever visit, nothing in SW cache or IndexedDB)
+  if (songsLoading && songs.length === 0) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -319,7 +365,13 @@ export default function Music() {
             <div key={col.id} className="rounded-xl border border-border/50 bg-card overflow-hidden">
               <div className="flex items-center gap-3 p-3 border-b border-border/30">
                 {col.coverImageUrl && (
-                  <img src={col.coverImageUrl} alt={col.title} className="w-10 h-10 rounded object-cover flex-shrink-0" />
+                  <img
+                    src={col.coverImageUrl}
+                    alt={col.title}
+                    className="w-10 h-10 rounded object-cover flex-shrink-0"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm text-foreground">{col.title}</p>

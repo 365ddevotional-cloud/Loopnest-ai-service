@@ -1,0 +1,82 @@
+Please improve the existing SpiritTone Music page so previously loaded song thumbnails and music-list data can appear quickly and remain available offline.
+
+IMPORTANT:
+- Do not redesign the page.
+- Do not refactor unrelated files.
+- Do not change the audio player, admin dashboard, song database structure, navigation, or existing song-upload system.
+- Make only the minimum changes required for offline caching and faster thumbnail loading.
+- Preserve all current functionality and styling.
+
+REQUIREMENTS:
+
+1. SERVICE WORKER OFFLINE CACHE
+Add or update the existing service worker to cache:
+- The SpiritTone Music page shell.
+- CSS, JavaScript, fonts, logos, and essential icons.
+- Song thumbnail images after they are successfully loaded.
+- Any locally hosted poster or cover-image files used by the music library.
+
+2. THUMBNAIL CACHING STRATEGY
+Use a stale-while-revalidate strategy for song thumbnails:
+- Show the cached thumbnail immediately when available.
+- Check for an updated thumbnail quietly in the background.
+- Replace the cached copy only when a newer successful response is received.
+- Never replace a valid cached image with an error response.
+
+3. MUSIC-LIST OFFLINE DATA
+Cache the most recently successful music-library response using IndexedDB or another reliable browser-side storage system.
+When the user is offline:
+- Show the last successfully loaded song list.
+- Show the cached title, artist, description, release information, and thumbnail.
+- Do not show an empty page merely because the network is unavailable.
+
+4. LAZY LOADING
+Add:
+loading="lazy"
+decoding="async"
+
+to song thumbnail images where appropriate.
+
+Use an IntersectionObserver if needed so thumbnails farther down the page are loaded only when the user scrolls near them.
+
+5. IMAGE PLACEHOLDER
+If a song thumbnail has never loaded or is unavailable:
+- Keep the existing professional placeholder.
+- Do not repeatedly request a broken thumbnail on every render.
+- When the network returns, retry the image once and cache it after success.
+
+6. CACHE VERSIONING
+Use a clear cache version such as:
+spirittone-music-v1
+
+When future versions are deployed:
+- Delete only old SpiritTone music cache versions.
+- Do not delete unrelated app caches.
+
+7. REFRESH BEHAVIOR
+When the page is reopened:
+- Display cached thumbnails and music data immediately.
+- Then refresh quietly in the background when internet is available.
+- Avoid forcing the user to wait for all thumbnails before displaying the page.
+
+8. STORAGE SAFETY
+- Do not cache private admin pages.
+- Do not cache passwords, authentication tokens, donation information, or sensitive user data.
+- Cache only public music-page assets and public song information.
+
+9. TESTING
+After implementing, verify:
+- Open the SpiritTone Music page online and allow thumbnails to load.
+- Close and reopen the page: cached thumbnails should appear much faster.
+- Turn off internet or use browser offline mode.
+- Reload the page: previously viewed songs and thumbnails should still appear.
+- Restore internet: the page should quietly update without breaking playback.
+
+10. REPORT
+After finishing, tell me:
+- Which files were changed.
+- What caching strategy was used.
+- How I can test offline mode on an iPhone.
+- Whether the website already had a service worker and whether it was updated or newly created.
+
+Do not launch or deploy automatically. Stop after making and explaining the changes so I can review them first.

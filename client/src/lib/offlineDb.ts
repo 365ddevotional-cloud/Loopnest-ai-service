@@ -1,5 +1,5 @@
 const DB_NAME = "devotionalOfflineDB";
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 const STORE_DEVOTIONALS = "devotionals";
 const STORE_SUNDAY_LESSONS = "sundayLessons";
@@ -7,6 +7,8 @@ const STORE_BIBLE_KJV = "bibleKJV";
 const STORE_METADATA = "metadata";
 const STORE_DOWNLOADS = "userDownloads";
 const STORE_SS_DOWNLOADS = "ssDownloads";
+const STORE_MUSIC_LIBRARY = "musicLibrary";
+const STORE_MUSIC_COLLECTIONS = "musicCollections";
 
 let dbInstance: IDBDatabase | null = null;
 
@@ -61,6 +63,15 @@ function openDB(): Promise<IDBDatabase> {
           const ssStore = db.createObjectStore(STORE_SS_DOWNLOADS, { keyPath: "id" });
           ssStore.createIndex("byUid", "firebaseUid", { unique: false });
           ssStore.createIndex("byYear", "year", { unique: false });
+        }
+      }
+
+      if (oldVersion < 5) {
+        if (!db.objectStoreNames.contains(STORE_MUSIC_LIBRARY)) {
+          db.createObjectStore(STORE_MUSIC_LIBRARY, { keyPath: "key" });
+        }
+        if (!db.objectStoreNames.contains(STORE_MUSIC_COLLECTIONS)) {
+          db.createObjectStore(STORE_MUSIC_COLLECTIONS, { keyPath: "key" });
         }
       }
     };
@@ -373,4 +384,26 @@ export async function clearAllSSDownloads(firebaseUid: string | null): Promise<v
   } else {
     await txDeleteByIndex(STORE_SS_DOWNLOADS, "byUid", firebaseUid);
   }
+}
+
+// ── SpiritTone Music Library offline cache ───────────────────────────────────
+
+export async function saveMusicLibrary(songs: any[]): Promise<void> {
+  if (!songs.length) return;
+  await txPut(STORE_MUSIC_LIBRARY, [{ key: "songs", data: songs, updatedAt: Date.now() }]);
+}
+
+export async function getMusicLibrary(): Promise<any[]> {
+  const row = await txGet<{ key: string; data: any[] }>(STORE_MUSIC_LIBRARY, "songs");
+  return row?.data ?? [];
+}
+
+export async function saveMusicCollections(collections: any[]): Promise<void> {
+  if (!collections.length) return;
+  await txPut(STORE_MUSIC_COLLECTIONS, [{ key: "collections", data: collections, updatedAt: Date.now() }]);
+}
+
+export async function getMusicCollections(): Promise<any[]> {
+  const row = await txGet<{ key: string; data: any[] }>(STORE_MUSIC_COLLECTIONS, "collections");
+  return row?.data ?? [];
 }
