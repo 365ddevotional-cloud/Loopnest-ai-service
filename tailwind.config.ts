@@ -104,12 +104,18 @@ export default {
           from: { opacity: "1", transform: "translateX(0)   scale(1)" },
           to:   { opacity: "0", transform: "translateX(8px) scale(0.92)" },
         },
+        "chip-pulse": {
+          "0%":   { transform: "scale(1)",    filter: "brightness(1)" },
+          "35%":  { transform: "scale(1.07)", filter: "brightness(1.35)" },
+          "100%": { transform: "scale(1)",    filter: "brightness(1)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "chip-enter": "chip-enter 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards",
         "chip-exit":  "chip-exit  0.2s ease-in forwards",
+        "chip-pulse": "chip-pulse 0.35s ease-out forwards",
       },
     },
   },

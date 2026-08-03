@@ -151,19 +151,33 @@ export function Header() {
     if (location.startsWith("/admin")) return "administration";
     return "daily-faith";
   });
-  // Animate the now-playing chip on enter/exit
+  // Animate the now-playing chip on enter/exit/song-change
   const [displaySong, setDisplaySong] = useState(currentSong);
-  const [chipAnim, setChipAnim] = useState<"entering" | "idle" | "exiting">("idle");
+  const [chipAnim, setChipAnim] = useState<"entering" | "idle" | "exiting" | "pulsing">("idle");
   const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevSongIdRef = useRef<number | null>(currentSong?.id ?? null);
 
   useEffect(() => {
     if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
     if (currentSong) {
+      const prevId = prevSongIdRef.current;
+      prevSongIdRef.current = currentSong.id;
       setDisplaySong(currentSong);
-      setChipAnim("entering");
-      const t = setTimeout(() => setChipAnim("idle"), 350);
-      return () => clearTimeout(t);
+      if (prevId !== null && prevId !== currentSong.id) {
+        // Song changed mid-playlist — pulse the chip
+        setChipAnim("idle"); // reset first so re-triggering works
+        requestAnimationFrame(() => {
+          setChipAnim("pulsing");
+          exitTimerRef.current = setTimeout(() => setChipAnim("idle"), 370);
+        });
+      } else {
+        // Chip entering for the first time
+        setChipAnim("entering");
+        const t = setTimeout(() => setChipAnim("idle"), 350);
+        return () => clearTimeout(t);
+      }
     } else {
+      prevSongIdRef.current = null;
       setChipAnim("exiting");
       exitTimerRef.current = setTimeout(() => {
         setDisplaySong(null);
@@ -174,7 +188,8 @@ export function Header() {
 
   const chipAnimClass =
     chipAnim === "entering" ? "animate-chip-enter" :
-    chipAnim === "exiting"  ? "animate-chip-exit"  : "";
+    chipAnim === "exiting"  ? "animate-chip-exit"  :
+    chipAnim === "pulsing"  ? "animate-chip-pulse" : "";
 
   const { triggerTransition } = useMenuTransition();
   const { t } = useI18n();
