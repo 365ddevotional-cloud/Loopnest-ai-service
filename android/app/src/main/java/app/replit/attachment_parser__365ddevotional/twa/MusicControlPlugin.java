@@ -105,6 +105,44 @@ public class MusicControlPlugin extends Plugin {
     }
 
     /**
+     * Returns the current POST_NOTIFICATIONS permission status so the web
+     * layer can decide whether to show the "open Settings" banner.
+     *
+     * Response: { granted: boolean, permanentlyDenied: boolean }
+     *
+     * permanentlyDenied is true when the permission is NOT granted AND
+     * shouldShowRequestPermissionRationale() returns false — meaning the
+     * user has already tapped Deny twice and the system will no longer
+     * show the prompt.  (On API < 33 this is always false.)
+     */
+    @PluginMethod
+    public void checkNotificationPermission(PluginCall call) {
+        JSObject result = new JSObject();
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            // Notifications always allowed on older Android
+            result.put("granted", true);
+            result.put("permanentlyDenied", false);
+            call.resolve(result);
+            return;
+        }
+
+        boolean granted = ContextCompat.checkSelfPermission(getContext(),
+                Manifest.permission.POST_NOTIFICATIONS)
+                == PackageManager.PERMISSION_GRANTED;
+
+        boolean canShowRationale = ActivityCompat.shouldShowRequestPermissionRationale(
+                getActivity(), Manifest.permission.POST_NOTIFICATIONS);
+
+        // Permanently denied = not granted AND the system will not show the prompt again
+        boolean permanentlyDenied = !granted && !canShowRationale;
+
+        result.put("granted", granted);
+        result.put("permanentlyDenied", permanentlyDenied);
+        call.resolve(result);
+    }
+
+    /**
      * Open the system notification settings screen for this app.
      * Called from JS when the user taps "Go to Settings" in the in-app banner.
      * On Android 8+ this targets the per-app notification channel page directly.

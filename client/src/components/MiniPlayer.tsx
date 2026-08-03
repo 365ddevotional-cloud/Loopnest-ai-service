@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import {
   Play, Pause, X, Music2, SkipForward, SkipBack, Settings2,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, BellOff,
 } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import { useState, useEffect, useRef } from "react";
@@ -36,6 +36,11 @@ export default function MiniPlayer() {
   const [dismissed, setDismissed] = useState(
     () => localStorage.getItem(DISMISSED_KEY) === "1"
   );
+
+  // Notification permission banner (Android 13+ permanent denial)
+  const [notifPermDenied, setNotifPermDenied] = useState(false);
+  const [notifBannerDismissed, setNotifBannerDismissed] = useState(false);
+  const notifCheckDoneRef = useRef(false);
 
   // Persist collapsed state
   useEffect(() => {
@@ -76,6 +81,39 @@ export default function MiniPlayer() {
     window.addEventListener("miniplayer-restore", handler);
     return () => window.removeEventListener("miniplayer-restore", handler);
   }, []);
+
+  // Check Android notification permission once when music starts playing.
+  // If permanently denied show the banner so the user can open Settings.
+  useEffect(() => {
+    if (!isPlaying || notifCheckDoneRef.current) return;
+    const cap = (window as any).Capacitor;
+    if (!cap?.isNativePlatform?.() || cap.getPlatform?.() !== "android") return;
+
+    notifCheckDoneRef.current = true;
+    (async () => {
+      try {
+        const { registerPlugin } = await import("@capacitor/core");
+        const plugin = registerPlugin<any>("MusicControl");
+        const result = await plugin.checkNotificationPermission();
+        if (result?.permanentlyDenied) {
+          setNotifPermDenied(true);
+        }
+      } catch {
+        // Plugin unavailable — skip silently
+      }
+    })();
+  }, [isPlaying]);
+
+  // Opens the Android app notification settings screen via native plugin
+  const openNotificationSettings = async () => {
+    try {
+      const { registerPlugin } = await import("@capacitor/core");
+      const plugin = registerPlugin<any>("MusicControl");
+      await plugin.openNotificationSettings();
+    } catch {
+      // Not on Android — no-op
+    }
+  };
 
   if (!currentSong) return null;
 
@@ -145,6 +183,28 @@ export default function MiniPlayer() {
     closePlayer();
   };
 
+  // Banner shown when Android notifications are permanently denied
+  const notifBanner = notifPermDenied && !notifBannerDismissed && isPlaying ? (
+    <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/15 border-b border-amber-500/30">
+      <BellOff className="w-3.5 h-3.5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+      <button
+        onClick={openNotificationSettings}
+        className="flex-1 text-left text-xs text-amber-700 dark:text-amber-300 font-medium leading-tight"
+        data-testid="notif-blocked-banner"
+      >
+        Notifications blocked — tap to enable in Settings
+      </button>
+      <button
+        onClick={() => setNotifBannerDismissed(true)}
+        className="flex-shrink-0 text-amber-600/70 hover:text-amber-700 dark:text-amber-400/70 dark:hover:text-amber-300 transition-colors p-0.5"
+        aria-label="Dismiss notification banner"
+        data-testid="notif-blocked-dismiss"
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </div>
+  ) : null;
+
   // ── Collapsed state — thin strip ──────────────────────────────────────────
   if (collapsed) {
     return (
@@ -154,6 +214,7 @@ export default function MiniPlayer() {
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           data-testid="mini-player-collapsed"
         >
+          {notifBanner}
           <div className="flex items-center gap-2 px-3 py-2">
             {/* Artwork */}
             <button
@@ -233,6 +294,8 @@ export default function MiniPlayer() {
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         data-testid="mini-player"
       >
+        {notifBanner}
+
         {/* Seek bar (thin strip at very top) */}
         <div
           className="h-1 w-full bg-border/30 cursor-pointer relative"
