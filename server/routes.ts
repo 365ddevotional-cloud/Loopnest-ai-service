@@ -4706,6 +4706,21 @@ export async function registerRoutes(
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 
+  // GET /api/churches/:id/audit-logs — church owner / admin / lead_pastor
+  app.get("/api/churches/:id/audit-logs", async (req, res) => {
+    const uid = await getUid(req, res); if (!uid) return;
+    try {
+      const churchId = Number(req.params.id);
+      const m = await storage.getChurchMember(churchId, uid);
+      if (!m || !["owner", "administrator", "lead_pastor"].includes(m.role)) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      const limit = Math.min(Number(req.query.limit ?? 100), 200);
+      const logs = await storage.getChurchAuditLogs(churchId, limit);
+      res.json(logs);
+    } catch { res.status(500).json({ message: "Server error" }); }
+  });
+
   // ── Admin: Church Deletion Requests ──────────────────────────────────────────
   app.get("/api/admin/church-deletion-requests", async (req, res) => {
     if (!req.session.isAdmin) return res.status(403).json({ message: "Forbidden" });

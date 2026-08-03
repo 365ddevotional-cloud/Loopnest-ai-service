@@ -779,6 +779,12 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
           plugin.addListener("next",  () => { playNextRef.current(); }),
           plugin.addListener("prev",  () => { playPrevRef.current(); }),
           plugin.addListener("stop",  () => { closePlayerRef.current(); }),
+          // Task #31: native plugin fires this when POST_NOTIFICATIONS is
+          // permanently denied (user tapped Play but OS suppressed the dialog).
+          // Re-dispatch as a DOM event so useNotificationPermission can react.
+          plugin.addListener("notificationPermissionPermanentlyDenied", () => {
+            window.dispatchEvent(new CustomEvent("notification-permission-denied"));
+          }),
         ]);
       } catch {
         // Plugin unavailable in dev browser — silently skip

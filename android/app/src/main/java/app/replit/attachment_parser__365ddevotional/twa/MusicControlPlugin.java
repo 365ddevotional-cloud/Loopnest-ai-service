@@ -3,7 +3,9 @@ package app.replit.attachment_parser__365ddevotional.twa;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
+import android.provider.Settings;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -102,6 +104,20 @@ public class MusicControlPlugin extends Plugin {
         call.resolve();
     }
 
+    /**
+     * Open the system notification settings screen for this app.
+     * Called from JS when the user taps "Go to Settings" in the in-app banner.
+     * On Android 8+ this targets the per-app notification channel page directly.
+     */
+    @PluginMethod
+    public void openNotificationSettings(PluginCall call) {
+        Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+        intent.putExtra(Settings.EXTRA_APP_PACKAGE, getContext().getPackageName());
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        getContext().startActivity(intent);
+        call.resolve();
+    }
+
     // ── Callbacks from MediaPlaybackService (notification/session button taps) ─
 
     /** User tapped Play in the notification → tell JS to resume audio */
@@ -131,20 +147,32 @@ public class MusicControlPlugin extends Plugin {
 
     private void startService(Intent intent) {
         // Android 13+ (API 33) requires POST_NOTIFICATIONS to be granted at
-        // runtime before the MediaStyle notification is visible. Request it
-        // the first time the service is started (i.e. when the user taps Play).
-        // If the user denies, audio still plays — only the notification is hidden.
+        // runtime before the MediaStyle notification is visible.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(getContext(),
+            boolean granted = ContextCompat.checkSelfPermission(getContext(),
                     Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(
-                    getActivity(),
-                    new String[]{ Manifest.permission.POST_NOTIFICATIONS },
-                    MainActivity.RC_POST_NOTIFICATIONS
-                );
-                // Continue starting the service; the notification will appear
-                // automatically if the user grants permission in the dialog.
+                    == PackageManager.PERMISSION_GRANTED;
+
+            if (!granted) {
+                boolean canAsk = ActivityCompat.shouldShowRequestPermissionRationale(
+                        getActivity(), Manifest.permission.POST_NOTIFICATIONS);
+
+                if (canAsk) {
+                    // Denied once (without "Don't ask again") — ask again.
+                    ActivityCompat.requestPermissions(
+                        getActivity(),
+                        new String[]{ Manifest.permission.POST_NOTIFICATIONS },
+                        MainActivity.RC_POST_NOTIFICATIONS
+                    );
+                } else {
+                    // Permanently denied (or first launch before MainActivity asked).
+                    // MainActivity always requests on launch, so by the time the user
+                    // taps Play this reliably means "Don't ask again" was checked.
+                    // Fire a JS event so the web layer can surface a Settings banner.
+                    notifyListeners("notificationPermissionPermanentlyDenied", new JSObject());
+                }
+                // Either way, continue starting the service — audio plays fine,
+                // only the notification is hidden until the user re-enables it.
             }
         }
 

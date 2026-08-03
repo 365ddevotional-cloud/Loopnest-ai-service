@@ -573,6 +573,7 @@ export interface IStorage {
 
   // Audit log
   createAuditLog(data: { churchId?: number; departmentId?: number; action: string; previousValue?: string; newValue?: string; actorUid: string; actorRole?: string }): Promise<void>;
+  getChurchAuditLogs(churchId: number, limit?: number): Promise<typeof auditLogs.$inferSelect[]>;
 
   // Church deletion requests
   createDeletionRequest(data: { churchId: number; ownerUid: string; ownerEmail: string; ownerName?: string; reason: string; explanation?: string }): Promise<ChurchDeletionRequest>;
@@ -2823,6 +2824,13 @@ export class DatabaseStorage implements IStorage {
       actorUid: data.actorUid,
       actorRole: data.actorRole ?? null,
     });
+  }
+
+  async getChurchAuditLogs(churchId: number, limit = 100): Promise<typeof auditLogs.$inferSelect[]> {
+    return db.select().from(auditLogs)
+      .where(eq(auditLogs.churchId, churchId))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(limit);
   }
 
   // ── Church Deletion Requests ─────────────────────────────────────────────────

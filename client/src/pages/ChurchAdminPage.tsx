@@ -317,7 +317,7 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
 const ADMIN_ROLES = ["owner", "lead_pastor", "administrator", "associate_pastor"];
 const PROD_URL = "https://365dailydevotional.com";
 
-type AdminTab = "settings" | "branding" | "invitations" | "sermons" | "announcements" | "members" | "prayer" | "giving" | "reports" | "insights" | "departments" | "website" | "governance";
+type AdminTab = "settings" | "branding" | "invitations" | "sermons" | "announcements" | "members" | "prayer" | "giving" | "reports" | "insights" | "departments" | "website" | "governance" | "audit-logs";
 
 const roleColors: Record<string, string> = {
   owner: "bg-amber-100 text-amber-800 border-amber-300",
@@ -562,6 +562,17 @@ export default function ChurchAdminPage() {
       return r.ok ? r.json() : null;
     },
     enabled: !!church?.id && activeTab === "reports",
+  });
+
+  // Audit logs (Task 4) — loaded lazily when the tab is open
+  const { data: auditLogEntries = [], isLoading: auditLogsLoading } = useQuery<any[]>({
+    queryKey: ["/api/churches", church?.id, "audit-logs"],
+    queryFn: async () => {
+      const token = await getIdToken(); if (!token || !church?.id) return [];
+      const r = await fetch(`/api/churches/${church.id}/audit-logs?limit=100`, { headers: { Authorization: `Bearer ${token}` } });
+      return r.ok ? r.json() : [];
+    },
+    enabled: !!church?.id && activeTab === "audit-logs",
   });
 
   // Platform announcements feed for this church owner
@@ -1038,6 +1049,7 @@ export default function ChurchAdminPage() {
     { key: "website", label: t("cm_websiteSettings"), icon: Globe },
     { key: "reports", label: t("cm_reports"), icon: BarChart3 },
     { key: "insights", label: t("cm_insightsTab"), icon: BarChart3 },
+    { key: "audit-logs", label: t("cm_auditLogsTab"), icon: ShieldCheck },
     { key: "governance", label: t("cm_governanceTab"), icon: ShieldCheck },
   ];
 
@@ -1236,6 +1248,12 @@ export default function ChurchAdminPage() {
                   <Input type="url" value={formVal("websiteUrl") as string} onChange={e => setForm(f => ({ ...f, websiteUrl: e.target.value || null }))} /></div>
                 <Button
                   onClick={() => {
+                    // Task #5: validate name before any further action so the
+                    // user never has to enter their password just to see an error.
+                    if (form.name !== undefined && !form.name.trim()) {
+                      toast({ title: t("cm_error"), description: t("cm_churchNameRequired"), variant: "destructive" });
+                      return;
+                    }
                     const nameChanging = form.name !== undefined && form.name !== church?.name;
                     if (nameChanging) { setShowReauthDialog(true); return; }
                     saveSettings.mutate();
@@ -2775,6 +2793,56 @@ export default function ChurchAdminPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Audit Logs Tab (Task 4) */}
+      {activeTab === "audit-logs" && church && (
+        <div className="space-y-4">
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#7a7570" }}>{t("cm_auditLogsTab")}</p>
+          <p className="text-xs" style={{ color: "#9a9080" }}>{t("cm_auditLogsDesc")}</p>
+          {auditLogsLoading ? (
+            <div className="flex items-center gap-2 text-muted-foreground py-6">
+              <Loader2 className="w-4 h-4 animate-spin" /><span className="text-sm">{t("cm_loading")}</span>
+            </div>
+          ) : !auditLogEntries.length ? (
+            <p className="text-sm text-center py-10" style={{ color: "#7a7570" }}>{t("cm_noAuditLogs")}</p>
+          ) : (
+            <div className="space-y-2">
+              {auditLogEntries.map((entry: any) => (
+                <Card key={entry.id} className="border-0 shadow-sm" style={{ backgroundColor: "#fff" }}>
+                  <CardContent className="px-4 py-3 flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                      style={{ backgroundColor: "#1a274412" }}>
+                      <ShieldCheck className="w-4 h-4" style={{ color: "#1a2744" }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium" style={{ color: "#1a2744" }}>
+                          {entry.action.replace(/_/g, " ")}
+                        </span>
+                        {entry.actorRole && (
+                          <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                            {entry.actorRole.replace(/_/g, " ")}
+                          </span>
+                        )}
+                      </div>
+                      {(entry.previousValue || entry.newValue) && (
+                        <p className="text-xs mt-0.5" style={{ color: "#7a7570" }}>
+                          {entry.previousValue && <>{t("cm_auditFrom")}: <span className="font-medium">{entry.previousValue}</span></>}
+                          {entry.previousValue && entry.newValue && " → "}
+                          {entry.newValue && <>{entry.previousValue ? "" : `${t("cm_auditValue")}: `}<span className="font-medium">{entry.newValue}</span></>}
+                        </p>
+                      )}
+                      <p className="text-xs mt-1" style={{ color: "#a09890" }}>
+                        {entry.createdAt ? new Date(entry.createdAt).toLocaleString() : ""}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Governance Tab */}
       {activeTab === "governance" && church && (

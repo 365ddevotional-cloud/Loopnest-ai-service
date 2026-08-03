@@ -30,14 +30,17 @@ import {
   Calendar,
   KeyRound,
   Bell,
+  BellOff,
   Globe,
   CheckCircle2,
   HandHeart,
   ChevronRight,
+  ExternalLink,
 } from "lucide-react";
 import type { Church, ChurchMember, ChurchRole, UserProfile } from "@shared/schema";
 import { CHURCH_ROLE_LABELS } from "@shared/schema";
 import { useUpload } from "@/hooks/use-upload";
+import { useNotificationPermission } from "@/hooks/use-notification-permission";
 
 type Membership = ChurchMember & { church: Church };
 
@@ -55,6 +58,10 @@ export default function AccountPage() {
   const { user, emailVerified, getIdToken, signUserOut, resetPassword } = useUser();
   const { toast } = useToast();
   const isSignedIn = !!user && !!emailVerified;
+
+  // Tasks #26 / #30 / #31 — notification permission state
+  const { permission: notifPermission, openSettings: openNotifSettings } = useNotificationPermission();
+  const isAndroid = typeof window !== "undefined" && (window as any).Capacitor?.getPlatform?.() === "android";
 
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
@@ -482,6 +489,41 @@ export default function AccountPage() {
               data-testid="switch-consent-notifications"
             />
           </div>
+
+          {/* Tasks #26 / #30 / #31 — Music notification permission banner.
+              Shown when OS-level notifications are blocked (Android or browser).
+              Auto-disappears when user returns from Settings (Task 30).
+              Triggered by permanent-denial native event (Task 31). */}
+          {notifPermission === "denied" && (
+            <div
+              className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3"
+              data-testid="notif-permission-banner"
+            >
+              <BellOff className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-amber-800">
+                  Music notifications are blocked
+                </p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  {isAndroid
+                    ? "Tap below to open notification settings and re-enable them for 365 Daily Devotional."
+                    : "To re-enable notifications, open your browser or device settings and allow notifications for this site."}
+                </p>
+                {isAndroid && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-2 h-7 text-xs border-amber-300 text-amber-800 hover:bg-amber-100"
+                    onClick={() => openNotifSettings()}
+                    data-testid="button-open-notif-settings"
+                  >
+                    <ExternalLink className="w-3 h-3 mr-1.5" />
+                    Open notification settings
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
