@@ -140,6 +140,8 @@ export function Header() {
   const { isAdmin, logout } = useAuth();
   const { user: appUser, emailVerified: appEmailVerified, signUserOut } = useUser();
   const { currentSong, isPlaying, miniPlayerDismissed } = useMusicPlayer();
+  // Hide the chip when already on the detail page of the currently playing song
+  const isOnCurrentSongPage = !!currentSong && location === `/music/${currentSong.slug}`;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openGroup, setOpenGroup] = useState<string | null>(() => {
     // Auto-open the group containing the current route
@@ -377,7 +379,7 @@ export function Header() {
             </button>
           )}
           {/* Now-playing chip — desktop */}
-          {displaySong && (
+          {displaySong && !isOnCurrentSongPage && (
             <button
               onClick={() => {
                 if (miniPlayerDismissed) {
@@ -434,7 +436,7 @@ export function Header() {
         </nav>
 
         {/* Now-playing chip — mobile */}
-        {displaySong && (
+        {displaySong && !isOnCurrentSongPage && (
           <button
             onClick={() => {
               if (miniPlayerDismissed) {
