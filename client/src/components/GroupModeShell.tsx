@@ -113,7 +113,7 @@ export default function GroupModeShell({ group, myMember, children }: GroupModeS
                   <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                 )}
               </span>
-              <span className="truncate max-w-[70px] sm:max-w-none block">{currentSong.title}</span>
+              <span className="truncate max-w-[56px] sm:max-w-none block">{currentSong.title}</span>
             </button>
           )}
           <button

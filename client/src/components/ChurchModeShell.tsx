@@ -272,7 +272,7 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
                     />
                   )}
                 </span>
-                <span className="truncate max-w-[70px] sm:max-w-none block">{currentSong.title}</span>
+                <span className="truncate max-w-[56px] sm:max-w-none block">{currentSong.title}</span>
               </button>
             )}
             {navItems.length > 0 && (
