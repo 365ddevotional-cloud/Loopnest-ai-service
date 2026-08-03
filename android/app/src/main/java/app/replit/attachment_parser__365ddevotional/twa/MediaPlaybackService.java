@@ -23,6 +23,9 @@ import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.media.app.NotificationCompat.MediaStyle;
 
+import android.os.Handler;
+import android.os.Looper;
+
 import java.io.InputStream;
 import java.net.URL;
 
@@ -135,17 +138,7 @@ public class MediaPlaybackService extends Service {
         // Refresh artwork in background if it changed
         if (artworkChanged && currentArtworkUrl != null && !currentArtworkUrl.isEmpty()) {
             final String url = currentArtworkUrl;
-            new Thread(() -> {
-                try {
-                    InputStream stream = new URL(url).openStream();
-                    Bitmap bmp = BitmapFactory.decodeStream(stream);
-                    stream.close();
-                    if (url.equals(currentArtworkUrl)) {
-                        currentArtworkBitmap = bmp;
-                        updateNotificationInPlace();
-                    }
-                } catch (Exception ignored) {}
-            }).start();
+            new Thread(() -> fetchArtwork(url, /* isRetry= */ false)).start();
         } else if (artworkChanged) {
             currentArtworkBitmap = null;
         }
@@ -373,6 +366,30 @@ public class MediaPlaybackService extends Service {
             .setActions(actions)
             .setState(state, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1.0f)
             .build());
+    }
+
+    /**
+     * Downloads artwork for {@code url} on the calling thread.
+     * On failure, schedules one retry after 3 seconds if this is not already a
+     * retry; otherwise leaves the fallback icon in place with no further attempts.
+     */
+    private void fetchArtwork(String url, boolean isRetry) {
+        try {
+            InputStream stream = new URL(url).openStream();
+            Bitmap bmp = BitmapFactory.decodeStream(stream);
+            stream.close();
+            if (url.equals(currentArtworkUrl)) {
+                currentArtworkBitmap = bmp;
+                updateNotificationInPlace();
+            }
+        } catch (Exception ignored) {
+            if (!isRetry) {
+                new Handler(Looper.getMainLooper()).postDelayed(() ->
+                    new Thread(() -> fetchArtwork(url, /* isRetry= */ true)).start(),
+                    3000);
+            }
+            // If retry also fails, fallback icon remains — no further attempts.
+        }
     }
 
     /**
