@@ -50,6 +50,27 @@ export default function MiniPlayer() {
 
   if (!currentSong) return null;
 
+  // When dismissed: show a small floating pill so the user can restore the player
+  if (dismissed) {
+    return (
+      <button
+        onClick={() => setDismissed(false)}
+        className="fixed bottom-4 right-4 z-50 flex items-center gap-1.5 px-3 py-2 rounded-full bg-background/95 border border-border/60 shadow-xl backdrop-blur-md text-primary hover:bg-accent transition-colors"
+        style={{ marginBottom: "env(safe-area-inset-bottom)" }}
+        aria-label="Restore music player"
+        data-testid="miniplayer-restore-pill"
+      >
+        <span className="relative flex h-2.5 w-2.5">
+          {isPlaying && (
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
+          )}
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
+        </span>
+        <Music2 className="w-4 h-4" />
+      </button>
+    );
+  }
+
   // Hide on the SongDetail page for the currently playing song
   // (the full player is already visible there)
   if (location === `/music/${currentSong.slug}`) return null;
