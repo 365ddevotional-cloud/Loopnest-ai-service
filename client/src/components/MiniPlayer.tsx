@@ -8,7 +8,8 @@ import { useState, useEffect, useRef } from "react";
 import MusicSettings from "@/components/MusicSettings";
 import PlaybackModeBar from "@/components/PlaybackModeBar";
 
-const COLLAPSED_KEY = "miniplayer-collapsed";
+const COLLAPSED_KEY  = "miniplayer-collapsed";
+const DISMISSED_KEY  = "miniplayer-dismissed";
 
 function formatTime(sec: number) {
   if (!isFinite(sec) || sec < 0) return "0:00";
@@ -30,13 +31,34 @@ export default function MiniPlayer() {
     () => localStorage.getItem(COLLAPSED_KEY) === "1"
   );
   const [showDismissDialog, setShowDismissDialog] = useState(false);
-  // "dismissed" means the user chose "hide player, keep playing"
-  const [dismissed, setDismissed] = useState(false);
+  // "dismissed" means the user chose "hide player, keep playing".
+  // Persisted to localStorage (Task 24) so it survives a page reload.
+  const [dismissed, setDismissed] = useState(
+    () => localStorage.getItem(DISMISSED_KEY) === "1"
+  );
 
   // Persist collapsed state
   useEffect(() => {
     localStorage.setItem(COLLAPSED_KEY, collapsed ? "1" : "0");
   }, [collapsed]);
+
+  // Persist dismissed state across page reloads (Task 24).
+  useEffect(() => {
+    if (dismissed) {
+      localStorage.setItem(DISMISSED_KEY, "1");
+    } else {
+      localStorage.removeItem(DISMISSED_KEY);
+    }
+  }, [dismissed]);
+
+  // Task 28: when the user explicitly stops music (currentSong → null via
+  // closePlayer), clear dismissed so the bar is visible for the next song.
+  useEffect(() => {
+    if (!currentSong) {
+      setDismissed(false);
+      localStorage.removeItem(DISMISSED_KEY);
+    }
+  }, [currentSong]);
 
   // Auto-restore when a new song starts after dismissal
   const prevSongIdRef = useRef<number | null>(null);
@@ -49,27 +71,6 @@ export default function MiniPlayer() {
   }, [currentSong?.id, dismissed]);
 
   if (!currentSong) return null;
-
-  // When dismissed: show a small floating pill so the user can restore the player
-  if (dismissed) {
-    return (
-      <button
-        onClick={() => setDismissed(false)}
-        className="fixed bottom-4 right-4 z-50 flex items-center gap-1.5 px-3 py-2 rounded-full bg-background/95 border border-border/60 shadow-xl backdrop-blur-md text-primary hover:bg-accent transition-colors"
-        style={{ marginBottom: "env(safe-area-inset-bottom)" }}
-        aria-label="Restore music player"
-        data-testid="miniplayer-restore-pill"
-      >
-        <span className="relative flex h-2.5 w-2.5">
-          {isPlaying && (
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
-          )}
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
-        </span>
-        <Music2 className="w-4 h-4" />
-      </button>
-    );
-  }
 
   // Hide on the SongDetail page for the currently playing song
   // (the full player is already visible there)
