@@ -8,6 +8,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { getCurrentLang } from "@/utils/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
+import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 
 interface ChurchModeShellProps {
   church: Church | null;
@@ -118,6 +119,7 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
   const [menuOpen, setMenuOpen] = useState(false);
   const { getIdToken, user, emailVerified } = useUser();
   const isSignedIn = !!user && !!emailVerified;
+  const { currentSong } = useMusicPlayer();
 
   const slug = church?.slug;
   const isAdmin = ADMIN_ROLES.includes(currentRole ?? "");
@@ -330,7 +332,7 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
         )}
       </header>
 
-      <main className="relative flex-grow max-w-5xl mx-auto w-full px-4 py-6 sm:py-8" style={{ zIndex: 10 }}>
+      <main className={`relative flex-grow max-w-5xl mx-auto w-full px-4 pt-6 sm:pt-8 ${currentSong ? "pb-28 sm:pb-32" : "pb-6 sm:pb-8"}`} style={{ zIndex: 10 }}>
         {children}
       </main>
 

@@ -4,6 +4,7 @@ import { Home, HandHeart, MessageSquare, BookOpen, Megaphone, Users, ChevronLeft
 import { useUser } from "@/contexts/UserContext";
 import type { Group, GroupMember } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 
 interface GroupModeShellProps {
   group: Group;
@@ -39,6 +40,7 @@ export default function GroupModeShell({ group, myMember, children }: GroupModeS
   const [copied, setCopied] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const { toast } = useToast();
+  const { currentSong } = useMusicPlayer();
 
   const id = group.id;
   const role = myMember?.role ?? "member";
@@ -149,7 +151,7 @@ export default function GroupModeShell({ group, myMember, children }: GroupModeS
       </header>
 
       {/* Content */}
-      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-5">
+      <main className={`flex-1 max-w-2xl w-full mx-auto px-4 pt-5 ${currentSong ? "pb-28 sm:pb-32" : "pb-5"}`}>
         {children}
       </main>
 
