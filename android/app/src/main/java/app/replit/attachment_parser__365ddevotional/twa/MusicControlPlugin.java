@@ -141,7 +141,7 @@ public class MusicControlPlugin extends Plugin {
                 ActivityCompat.requestPermissions(
                     getActivity(),
                     new String[]{ Manifest.permission.POST_NOTIFICATIONS },
-                    /* requestCode */ 9001
+                    MainActivity.RC_POST_NOTIFICATIONS
                 );
                 // Continue starting the service; the notification will appear
                 // automatically if the user grants permission in the dialog.
