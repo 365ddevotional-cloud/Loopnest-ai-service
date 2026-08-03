@@ -1,7 +1,12 @@
 package app.replit.attachment_parser__365ddevotional.twa;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Build;
+
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -125,6 +130,24 @@ public class MusicControlPlugin extends Plugin {
     }
 
     private void startService(Intent intent) {
+        // Android 13+ (API 33) requires POST_NOTIFICATIONS to be granted at
+        // runtime before the MediaStyle notification is visible. Request it
+        // the first time the service is started (i.e. when the user taps Play).
+        // If the user denies, audio still plays — only the notification is hidden.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(getContext(),
+                    Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                    getActivity(),
+                    new String[]{ Manifest.permission.POST_NOTIFICATIONS },
+                    /* requestCode */ 9001
+                );
+                // Continue starting the service; the notification will appear
+                // automatically if the user grants permission in the dialog.
+            }
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             getContext().startForegroundService(intent);
         } else {

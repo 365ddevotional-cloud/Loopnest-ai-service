@@ -748,69 +748,94 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
   }, [currentTime, duration, playbackRate, currentSong]);
 
   // ── Capacitor Android: native foreground service + MediaStyle notification ──
-  // When running inside the Android Capacitor wrapper this effect bridges the
-  // web audio state to the native MusicControlPlugin / MediaPlaybackService.
-  // On every other platform this block is a no-op (the guard returns early).
+  // When running inside the Android Capacitor wrapper this bridges the web
+  // audio state to MusicControlPlugin / MediaPlaybackService.
+  // On every other platform the Capacitor guard returns early (complete no-op).
+
+  // Shared plugin ref — set once on mount, reused by the state-sync effect so
+  // we only pay the dynamic-import cost once for the lifetime of the provider.
+  const nativeMusicControlRef = useRef<any>(null);
 
   useEffect(() => {
-    // Only activate inside the Capacitor Android shell
     const cap = (window as any).Capacitor;
     if (!cap?.isNativePlatform?.() || cap.getPlatform?.() !== "android") return;
 
-    let MusicControl: any = null;
-    let listenHandles: Array<{ remove: () => void }> = [];
     let active = true;
+    let listenHandles: Array<{ remove: () => void }> = [];
 
     (async () => {
       try {
         const { registerPlugin } = await import("@capacitor/core");
         if (!active) return;
-        MusicControl = registerPlugin("MusicControl");
 
-        // Relay native notification/session button taps back to the audio element
+        const plugin = registerPlugin<any>("MusicControl");
+        nativeMusicControlRef.current = plugin;
+
+        // Relay notification / hardware button taps → audio element
         const audio = audioRef.current;
         listenHandles = await Promise.all([
-          MusicControl.addListener("play",  () => { audio.play().catch(() => {}); }),
-          MusicControl.addListener("pause", () => { audio.pause(); }),
-          MusicControl.addListener("next",  () => { playNextRef.current(); }),
-          MusicControl.addListener("prev",  () => { playPrevRef.current(); }),
-          MusicControl.addListener("stop",  () => { closePlayerRef.current(); }),
+          plugin.addListener("play",  () => { audio.play().catch(() => {}); }),
+          plugin.addListener("pause", () => { audio.pause(); }),
+          plugin.addListener("next",  () => { playNextRef.current(); }),
+          plugin.addListener("prev",  () => { playPrevRef.current(); }),
+          plugin.addListener("stop",  () => { closePlayerRef.current(); }),
         ]);
       } catch {
-        // Plugin not available (dev web browser) — ignore
+        // Plugin unavailable in dev browser — silently skip
       }
     })();
 
     return () => {
       active = false;
+      nativeMusicControlRef.current = null;
       listenHandles.forEach(h => { try { h.remove(); } catch {} });
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // register once on mount
 
-  // Push song metadata + initial play state to the foreground service
+  // Track which song was last sent so we can avoid a full metadata push
+  // (including background artwork reload) on a plain play/pause toggle.
+  const nativePrevSongIdRef = useRef<number | null>(null);
+
   useEffect(() => {
     const cap = (window as any).Capacitor;
     if (!cap?.isNativePlatform?.() || cap.getPlatform?.() !== "android") return;
 
     (async () => {
       try {
-        const { registerPlugin } = await import("@capacitor/core");
-        const MusicControl = registerPlugin<any>("MusicControl");
+        // Prefer the already-loaded instance; fall back to a fresh registerPlugin
+        // for the rare case this effect fires before the mount effect resolves.
+        let plugin = nativeMusicControlRef.current;
+        if (!plugin) {
+          const { registerPlugin } = await import("@capacitor/core");
+          plugin = registerPlugin<any>("MusicControl");
+        }
 
         if (!currentSong) {
-          // Song closed — stop the foreground service and dismiss the notification
-          await MusicControl.stop();
-        } else {
-          // New song or play-state change — start/update the foreground service
-          await MusicControl.updateMetadata({
+          // Player closed — stop the foreground service + dismiss notification
+          await plugin.stop();
+          nativePrevSongIdRef.current = null;
+          return;
+        }
+
+        const songChanged = currentSong.id !== nativePrevSongIdRef.current;
+        nativePrevSongIdRef.current = currentSong.id;
+
+        if (songChanged) {
+          // New track — full update (starts the service, downloads artwork)
+          await plugin.updateMetadata({
             title:      currentSong.title,
             artist:     currentSong.artist ?? currentSong.labelName ?? "",
             artworkUrl: currentSong.coverImageUrl ?? "",
             isPlaying,
           });
+        } else {
+          // Same track, play/pause toggled — cheap in-place notification update
+          await plugin.setPlaybackState({ isPlaying });
         }
-      } catch {}
+      } catch {
+        // Plugin unavailable in dev browser — silently skip
+      }
     })();
   }, [currentSong, isPlaying]);
 

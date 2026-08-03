@@ -53,6 +53,16 @@ Capacitor CLI v8 requires Node.js ≥ 22. Project upgraded to nodejs-22 module.
 
 **Why:** Capacitor CLI 7 was already in package.json but required upgrade to 8 to match @capacitor/core and @capacitor/android 8.x.
 
+## Background playback architecture
+- `MediaPlaybackService.java` — foreground service (type: mediaPlayback), MediaSessionCompat, audio focus, MediaStyle notification, background artwork loading
+- `MusicControlPlugin.java` — Capacitor bridge; exposes `updateMetadata`, `setPlaybackState`, `stop`; fires `play/pause/next/prev/stop` JS events from notification taps
+- `MainActivity.java` — registers `MusicControlPlugin` before bridge init
+- Web side (`MusicPlayerContext.tsx`): Capacitor guard ensures complete no-op outside Android; effect 1 (mount-only) registers listeners; effect 2 `[currentSong, isPlaying]` calls `updateMetadata` on song change, `setPlaybackState` on play/pause only
+- Android 13+ `POST_NOTIFICATIONS` is requested at runtime in `MusicControlPlugin.startService()` before the first `startForegroundService` call
+- Test plan: `docs/android-background-playback-test-plan.md`
+
+**Why**: Foreground service keeps the app process alive when backgrounded so the WebView's HTMLAudioElement keeps playing; without it Android kills the process after ~1 min.
+
 ## Re-generating the AAB
 1. `npm run build` (build web app)
 2. `npx cap sync android` (copy assets)
