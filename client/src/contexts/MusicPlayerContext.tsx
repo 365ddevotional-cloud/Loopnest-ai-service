@@ -58,6 +58,9 @@ interface MusicPlayerContextType {
   clearQueue: () => void;
   // Exposed audio element (Phase 3 – visualizer)
   audioElement: HTMLAudioElement | null;
+  /** True when the user chose "hide player, keep playing" — mini-player bar is not visible. */
+  miniPlayerDismissed: boolean;
+  setMiniPlayerDismissed: (dismissed: boolean) => void;
   playSong: (song: Song) => void;
   togglePlay: () => void;
   seek: (time: number) => void;
@@ -107,6 +110,7 @@ const MusicPlayerContext = createContext<MusicPlayerContextType>({
   playbackRate: 1, isLoading: false, settings: DEFAULT_SETTINGS,
   recentlyPlayed: [], recommendations: [], nextSong: null, continueListening: [],
   activeQueue: [], queueIndex: -1, audioElement: null,
+  miniPlayerDismissed: false, setMiniPlayerDismissed: () => {},
   setQueue: () => {}, clearQueue: () => {},
   playSong: () => {}, togglePlay: () => {}, seek: () => {}, setVolume: () => {},
   setPlaybackRate: () => {}, closePlayer: () => {}, playNext: () => {}, playPrev: () => {}, updateSettings: () => {},
@@ -132,6 +136,46 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     // Migrate legacy "all" from old "repeat-all" semantics; just keep as-is
     return { ...DEFAULT_SETTINGS, ...saved };
   });
+
+  // Mini-player dismissed state (lifted from MiniPlayer so Header can read it)
+  const DISMISSED_KEY = "miniplayer-dismissed";
+  const [miniPlayerDismissed, setMiniPlayerDismissedState] = useState(
+    () => localStorage.getItem(DISMISSED_KEY) === "1"
+  );
+
+  const setMiniPlayerDismissed = useCallback((dismissed: boolean) => {
+    setMiniPlayerDismissedState(dismissed);
+    if (dismissed) {
+      localStorage.setItem(DISMISSED_KEY, "1");
+    } else {
+      localStorage.removeItem(DISMISSED_KEY);
+    }
+  }, []);
+
+  // Clear dismissed when music stops entirely
+  useEffect(() => {
+    if (!currentSong) {
+      setMiniPlayerDismissedState(false);
+      localStorage.removeItem(DISMISSED_KEY);
+    }
+  }, [currentSong]);
+
+  // Auto-restore when a new song starts after dismissal
+  const prevSongIdForDismissRef = useRef<number | null>(null);
+  useEffect(() => {
+    const id = currentSong?.id ?? null;
+    if (id !== null && id !== prevSongIdForDismissRef.current) {
+      prevSongIdForDismissRef.current = id;
+      if (miniPlayerDismissed) setMiniPlayerDismissed(false);
+    }
+  }, [currentSong?.id, miniPlayerDismissed, setMiniPlayerDismissed]);
+
+  // Listen for restore events dispatched by shell "now playing" chips
+  useEffect(() => {
+    const handler = () => setMiniPlayerDismissed(false);
+    window.addEventListener("miniplayer-restore", handler);
+    return () => window.removeEventListener("miniplayer-restore", handler);
+  }, [setMiniPlayerDismissed]);
 
   // Queue state (Phase 1)
   const [activeQueue, setActiveQueue] = useState<Song[]>([]);
@@ -850,6 +894,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
       currentSong, isPlaying, currentTime, duration, volume, playbackRate, isLoading,
       settings, recentlyPlayed, recommendations, nextSong, continueListening,
       activeQueue, queueIndex, audioElement: audioRef.current,
+      miniPlayerDismissed, setMiniPlayerDismissed,
       setQueue, clearQueue,
       playSong, togglePlay, seek, setVolume, setPlaybackRate,
       closePlayer, playNext, playPrev, updateSettings,

@@ -139,7 +139,7 @@ export function Header() {
   const [location, setLocation] = useLocation();
   const { isAdmin, logout } = useAuth();
   const { user: appUser, emailVerified: appEmailVerified, signUserOut } = useUser();
-  const { currentSong, isPlaying } = useMusicPlayer();
+  const { currentSong, isPlaying, miniPlayerDismissed } = useMusicPlayer();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openGroup, setOpenGroup] = useState<string | null>(() => {
     // Auto-open the group containing the current route
@@ -365,8 +365,14 @@ export function Header() {
           {displaySong && (
             <button
               onClick={() => {
-                localStorage.removeItem("miniplayer-dismissed");
-                window.dispatchEvent(new CustomEvent("miniplayer-restore"));
+                if (miniPlayerDismissed) {
+                  // Mini-player is hidden — restore it
+                  localStorage.removeItem("miniplayer-dismissed");
+                  window.dispatchEvent(new CustomEvent("miniplayer-restore"));
+                } else {
+                  // Mini-player is already visible — draw attention to it
+                  window.dispatchEvent(new CustomEvent("miniplayer-highlight"));
+                }
               }}
               className={cn(
                 "flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-colors text-xs font-medium max-w-[180px]",
@@ -412,12 +418,18 @@ export function Header() {
           )}
         </nav>
 
-        {/* Now-playing chip — mobile (absolute, left of hamburger) */}
+        {/* Now-playing chip — mobile */}
         {displaySong && (
           <button
             onClick={() => {
-              localStorage.removeItem("miniplayer-dismissed");
-              window.dispatchEvent(new CustomEvent("miniplayer-restore"));
+              if (miniPlayerDismissed) {
+                // Mini-player is hidden — restore it
+                localStorage.removeItem("miniplayer-dismissed");
+                window.dispatchEvent(new CustomEvent("miniplayer-restore"));
+              } else {
+                // Mini-player is already visible — draw attention to it
+                window.dispatchEvent(new CustomEvent("miniplayer-highlight"));
+              }
             }}
             className={cn(
               "lg:hidden absolute right-16 flex items-center gap-1.5 px-2 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-colors text-xs font-medium max-w-[110px]",

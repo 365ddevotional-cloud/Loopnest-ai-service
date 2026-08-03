@@ -5,11 +5,11 @@ import {
 } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import { useState, useEffect, useRef } from "react";
+import { cn } from "@/lib/utils";
 import MusicSettings from "@/components/MusicSettings";
 import PlaybackModeBar from "@/components/PlaybackModeBar";
 
-const COLLAPSED_KEY  = "miniplayer-collapsed";
-const DISMISSED_KEY = "miniplayer-dismissed";
+const COLLAPSED_KEY = "miniplayer-collapsed";
 
 function formatTime(sec: number) {
   if (!isFinite(sec) || sec < 0) return "0:00";
@@ -31,11 +31,8 @@ export default function MiniPlayer() {
     () => localStorage.getItem(COLLAPSED_KEY) === "1"
   );
   const [showDismissDialog, setShowDismissDialog] = useState(false);
-  // "dismissed" means the user chose "hide player, keep playing".
-  // Persisted to localStorage (Task 24) so it survives a page reload.
-  const [dismissed, setDismissed] = useState(
-    () => localStorage.getItem(DISMISSED_KEY) === "1"
-  );
+  // "dismissed" is now lifted to MusicPlayerContext so Header can read it.
+  const { miniPlayerDismissed: dismissed, setMiniPlayerDismissed: setDismissed } = useMusicPlayer();
 
   // Notification permission banner (Android 13+ permanent denial)
   const [notifPermDenied, setNotifPermDenied] = useState(false);
@@ -47,39 +44,18 @@ export default function MiniPlayer() {
     localStorage.setItem(COLLAPSED_KEY, collapsed ? "1" : "0");
   }, [collapsed]);
 
-  // Persist dismissed state across page reloads (Task 24).
-  useEffect(() => {
-    if (dismissed) {
-      localStorage.setItem(DISMISSED_KEY, "1");
-    } else {
-      localStorage.removeItem(DISMISSED_KEY);
-    }
-  }, [dismissed]);
+  // Note: dismissed state persistence, auto-restore, and restore-event listener
+  // are now handled centrally in MusicPlayerContext.
 
-  // Task 28: when the user explicitly stops music (currentSong → null via
-  // closePlayer), clear dismissed so the bar is visible for the next song.
+  // Highlight the player briefly when the header chip is tapped while it's visible
+  const [highlighted, setHighlighted] = useState(false);
   useEffect(() => {
-    if (!currentSong) {
-      setDismissed(false);
-      localStorage.removeItem(DISMISSED_KEY);
-    }
-  }, [currentSong]);
-
-  // Auto-restore when a new song starts after dismissal
-  const prevSongIdRef = useRef<number | null>(null);
-  useEffect(() => {
-    const id = currentSong?.id ?? null;
-    if (id !== null && id !== prevSongIdRef.current) {
-      prevSongIdRef.current = id;
-      if (dismissed) setDismissed(false);
-    }
-  }, [currentSong?.id, dismissed]);
-
-  // Listen for restore events dispatched by shell "now playing" chips
-  useEffect(() => {
-    const handler = () => setDismissed(false);
-    window.addEventListener("miniplayer-restore", handler);
-    return () => window.removeEventListener("miniplayer-restore", handler);
+    const handler = () => {
+      setHighlighted(true);
+      setTimeout(() => setHighlighted(false), 600);
+    };
+    window.addEventListener("miniplayer-highlight", handler);
+    return () => window.removeEventListener("miniplayer-highlight", handler);
   }, []);
 
   // Check Android notification permission once when music starts playing.
@@ -210,7 +186,10 @@ export default function MiniPlayer() {
     return (
       <>
         <div
-          className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/40 bg-background/95 backdrop-blur-md shadow-xl"
+          className={cn(
+            "fixed bottom-0 left-0 right-0 z-50 border-t border-border/40 bg-background/95 backdrop-blur-md shadow-xl transition-[border-color] duration-150",
+            highlighted && "border-primary/70"
+          )}
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           data-testid="mini-player-collapsed"
         >
@@ -290,7 +269,10 @@ export default function MiniPlayer() {
   return (
     <>
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/60 bg-background/95 backdrop-blur-md shadow-2xl"
+        className={cn(
+          "fixed bottom-0 left-0 right-0 z-50 border-t border-border/60 bg-background/95 backdrop-blur-md shadow-2xl transition-[border-color] duration-150",
+          highlighted && "border-primary/70"
+        )}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         data-testid="mini-player"
       >
