@@ -49,3 +49,7 @@ PAYPAL_DONATION_LINK = "https://www.paypal.com/donate/?hosted_button_id=Y9PAZK36
 CASHTAG = "$365dailydevotional"
 VITE_PAYPAL_DONATION_LINK = "https://www.paypal.com/donate/?hosted_button_id=Y9PAZK36FKT8L"
 VITE_CASHTAG = "$365dailydevotional"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 120000
