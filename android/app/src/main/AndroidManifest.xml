@@ -26,6 +26,16 @@
 
         </activity>
 
+        <!--
+            Foreground service that keeps audio alive when the app is backgrounded.
+            foregroundServiceType="mediaPlayback" tells Android this is a media
+            playback service (required on API 29+ to allow background audio).
+        -->
+        <service
+            android:name=".MediaPlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -37,7 +47,26 @@
         </provider>
     </application>
 
-    <!-- Permissions -->
+    <!-- Core network permission -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Keep CPU + audio alive while music plays in the background -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Required to start a foreground service (API 28+) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <!--
+        Required on API 34+ for foreground services that play audio.
+        On older APIs this declaration is silently ignored.
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+    <!--
+        Show the MediaStyle notification on API 33+ (Android 13).
+        The runtime permission dialog is shown automatically by the OS when
+        the foreground service first calls startForeground().
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
 </manifest>

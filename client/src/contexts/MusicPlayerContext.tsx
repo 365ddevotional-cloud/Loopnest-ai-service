@@ -747,6 +747,73 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, [currentTime, duration, playbackRate, currentSong]);
 
+  // ── Capacitor Android: native foreground service + MediaStyle notification ──
+  // When running inside the Android Capacitor wrapper this effect bridges the
+  // web audio state to the native MusicControlPlugin / MediaPlaybackService.
+  // On every other platform this block is a no-op (the guard returns early).
+
+  useEffect(() => {
+    // Only activate inside the Capacitor Android shell
+    const cap = (window as any).Capacitor;
+    if (!cap?.isNativePlatform?.() || cap.getPlatform?.() !== "android") return;
+
+    let MusicControl: any = null;
+    let listenHandles: Array<{ remove: () => void }> = [];
+    let active = true;
+
+    (async () => {
+      try {
+        const { registerPlugin } = await import("@capacitor/core");
+        if (!active) return;
+        MusicControl = registerPlugin("MusicControl");
+
+        // Relay native notification/session button taps back to the audio element
+        const audio = audioRef.current;
+        listenHandles = await Promise.all([
+          MusicControl.addListener("play",  () => { audio.play().catch(() => {}); }),
+          MusicControl.addListener("pause", () => { audio.pause(); }),
+          MusicControl.addListener("next",  () => { playNextRef.current(); }),
+          MusicControl.addListener("prev",  () => { playPrevRef.current(); }),
+          MusicControl.addListener("stop",  () => { closePlayerRef.current(); }),
+        ]);
+      } catch {
+        // Plugin not available (dev web browser) — ignore
+      }
+    })();
+
+    return () => {
+      active = false;
+      listenHandles.forEach(h => { try { h.remove(); } catch {} });
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // register once on mount
+
+  // Push song metadata + initial play state to the foreground service
+  useEffect(() => {
+    const cap = (window as any).Capacitor;
+    if (!cap?.isNativePlatform?.() || cap.getPlatform?.() !== "android") return;
+
+    (async () => {
+      try {
+        const { registerPlugin } = await import("@capacitor/core");
+        const MusicControl = registerPlugin<any>("MusicControl");
+
+        if (!currentSong) {
+          // Song closed — stop the foreground service and dismiss the notification
+          await MusicControl.stop();
+        } else {
+          // New song or play-state change — start/update the foreground service
+          await MusicControl.updateMetadata({
+            title:      currentSong.title,
+            artist:     currentSong.artist ?? currentSong.labelName ?? "",
+            artworkUrl: currentSong.coverImageUrl ?? "",
+            isPlaying,
+          });
+        }
+      } catch {}
+    })();
+  }, [currentSong, isPlaying]);
+
   return (
     <MusicPlayerContext.Provider value={{
       currentSong, isPlaying, currentTime, duration, volume, playbackRate, isLoading,
