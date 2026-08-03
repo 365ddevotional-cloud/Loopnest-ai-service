@@ -9,7 +9,7 @@ import MusicSettings from "@/components/MusicSettings";
 import PlaybackModeBar from "@/components/PlaybackModeBar";
 
 const COLLAPSED_KEY  = "miniplayer-collapsed";
-const DISMISSED_KEY  = "miniplayer-dismissed";
+const DISMISSED_KEY = "miniplayer-dismissed";
 
 function formatTime(sec: number) {
   if (!isFinite(sec) || sec < 0) return "0:00";
