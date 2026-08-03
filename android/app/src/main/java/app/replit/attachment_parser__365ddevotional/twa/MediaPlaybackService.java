@@ -58,6 +58,7 @@ public class MediaPlaybackService extends Service {
     private String  currentArtworkUrl = null;
     private boolean currentIsPlaying  = false;
     private Bitmap  currentArtworkBitmap = null;
+    private Bitmap  fallbackBitmap       = null; // lazy-loaded app icon
 
     // ── Notification button broadcast receiver ─────────────────────────────────
 
@@ -296,9 +297,7 @@ public class MediaPlaybackService extends Service {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setDeleteIntent(makePendingBroadcast(ACTION_STOP, 99));
 
-        if (currentArtworkBitmap != null) {
-            builder.setLargeIcon(currentArtworkBitmap);
-        }
+        builder.setLargeIcon(getEffectiveArtwork());
 
         // Action 0: Previous
         builder.addAction(new NotificationCompat.Action(
@@ -356,9 +355,7 @@ public class MediaPlaybackService extends Service {
             .putString(MediaMetadataCompat.METADATA_KEY_TITLE, currentTitle)
             .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, currentArtist)
             .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, "365 Daily Devotional");
-        if (currentArtworkBitmap != null) {
-            metaBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, currentArtworkBitmap);
-        }
+        metaBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, getEffectiveArtwork());
         mediaSession.setMetadata(metaBuilder.build());
 
         // Playback state
@@ -376,6 +373,18 @@ public class MediaPlaybackService extends Service {
             .setActions(actions)
             .setState(state, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1.0f)
             .build());
+    }
+
+    /**
+     * Returns the current song artwork bitmap, or the app launcher icon as a
+     * fallback so Bluetooth / car-display integrations never see a blank image.
+     */
+    private Bitmap getEffectiveArtwork() {
+        if (currentArtworkBitmap != null) return currentArtworkBitmap;
+        if (fallbackBitmap == null) {
+            fallbackBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
+        }
+        return fallbackBitmap;
     }
 
     // ── Called by MusicControlPlugin.stop() ──────────────────────────────────
