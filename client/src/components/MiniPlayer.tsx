@@ -70,6 +70,13 @@ export default function MiniPlayer() {
     }
   }, [currentSong?.id, dismissed]);
 
+  // Listen for restore events dispatched by shell "now playing" chips
+  useEffect(() => {
+    const handler = () => setDismissed(false);
+    window.addEventListener("miniplayer-restore", handler);
+    return () => window.removeEventListener("miniplayer-restore", handler);
+  }, []);
+
   if (!currentSong) return null;
 
   // Hide on the SongDetail page for the currently playing song

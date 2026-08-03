@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import type { Church } from "@shared/schema";
 import { CHURCH_ROLE_LABELS, type ChurchRole } from "@shared/schema";
-import { Home, Mic2, Megaphone, Users, Heart, Shield, Settings, ChevronRight, HandCoins, MessageSquare, UserCircle, Building2, Globe, Check, Menu, X, CalendarDays, ClipboardList, LayoutDashboard, BookText } from "lucide-react";
+import { Home, Mic2, Megaphone, Users, Heart, Shield, Settings, ChevronRight, HandCoins, MessageSquare, UserCircle, Building2, Globe, Check, Menu, X, CalendarDays, ClipboardList, LayoutDashboard, BookText, Music2 } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
 import { getCurrentLang } from "@/utils/i18n";
 import { useQuery } from "@tanstack/react-query";
@@ -119,7 +119,7 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
   const [menuOpen, setMenuOpen] = useState(false);
   const { getIdToken, user, emailVerified } = useUser();
   const isSignedIn = !!user && !!emailVerified;
-  const { currentSong } = useMusicPlayer();
+  const { currentSong, isPlaying } = useMusicPlayer();
 
   const slug = church?.slug;
   const isAdmin = ADMIN_ROLES.includes(currentRole ?? "");
@@ -246,6 +246,35 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Now-playing indicator */}
+            {currentSong && (
+              <button
+                onClick={() => {
+                  localStorage.removeItem("miniplayer-dismissed");
+                  window.dispatchEvent(new CustomEvent("miniplayer-restore"));
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all max-w-[140px] sm:max-w-[200px] flex-shrink-0"
+                style={{
+                  backgroundColor: `${headerAccent}22`,
+                  color: headerAccent,
+                  border: `1px solid ${headerAccent}44`,
+                }}
+                aria-label={`Now playing: ${currentSong.title}`}
+                data-testid="church-shell-now-playing"
+                title={`Now playing: ${currentSong.title}`}
+              >
+                <span className="relative flex-shrink-0 w-3 h-3">
+                  <Music2 className="w-3 h-3" />
+                  {isPlaying && (
+                    <span
+                      className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full animate-pulse"
+                      style={{ backgroundColor: headerAccent }}
+                    />
+                  )}
+                </span>
+                <span className="truncate hidden sm:block">{currentSong.title}</span>
+              </button>
+            )}
             {navItems.length > 0 && (
               <button
                 onClick={() => setMenuOpen(o => !o)}

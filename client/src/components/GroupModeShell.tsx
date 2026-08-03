@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
-import { Home, HandHeart, MessageSquare, BookOpen, Megaphone, Users, ChevronLeft, Menu, X, Copy, Check, LogOut, Settings, Link2 } from "lucide-react";
+import { Home, HandHeart, MessageSquare, BookOpen, Megaphone, Users, ChevronLeft, Menu, X, Copy, Check, LogOut, Settings, Link2, Music2 } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import type { Group, GroupMember } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -40,7 +40,7 @@ export default function GroupModeShell({ group, myMember, children }: GroupModeS
   const [copied, setCopied] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const { toast } = useToast();
-  const { currentSong } = useMusicPlayer();
+  const { currentSong, isPlaying } = useMusicPlayer();
 
   const id = group.id;
   const role = myMember?.role ?? "member";
@@ -95,6 +95,27 @@ export default function GroupModeShell({ group, myMember, children }: GroupModeS
             <h1 className="font-semibold text-foreground text-sm truncate leading-tight">{group.name}</h1>
             <p className="text-xs text-muted-foreground capitalize">{role}</p>
           </div>
+          {/* Now-playing indicator */}
+          {currentSong && (
+            <button
+              onClick={() => {
+                localStorage.removeItem("miniplayer-dismissed");
+                window.dispatchEvent(new CustomEvent("miniplayer-restore"));
+              }}
+              className="flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-all max-w-[100px] sm:max-w-[160px] flex-shrink-0 bg-primary/10 text-primary border border-primary/20 hover:bg-primary/15"
+              aria-label={`Now playing: ${currentSong.title}`}
+              data-testid="group-shell-now-playing"
+              title={`Now playing: ${currentSong.title}`}
+            >
+              <span className="relative flex-shrink-0 w-3 h-3 flex items-center justify-center">
+                <Music2 className="w-3 h-3" />
+                {isPlaying && (
+                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                )}
+              </span>
+              <span className="truncate hidden sm:block">{currentSong.title}</span>
+            </button>
+          )}
           <button
             onClick={() => setMenuOpen(v => !v)}
             className="p-2 rounded-lg hover:bg-muted/60 transition-colors"
