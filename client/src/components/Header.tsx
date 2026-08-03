@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff, Book, GraduationCap, Star, HandHeart, Sparkles, Inbox, Music2, Library, UserCircle, Building2, ChevronDown } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
@@ -151,6 +151,31 @@ export function Header() {
     if (location.startsWith("/admin")) return "administration";
     return "daily-faith";
   });
+  // Animate the now-playing chip on enter/exit
+  const [displaySong, setDisplaySong] = useState(currentSong);
+  const [chipAnim, setChipAnim] = useState<"entering" | "idle" | "exiting">("idle");
+  const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+    if (currentSong) {
+      setDisplaySong(currentSong);
+      setChipAnim("entering");
+      const t = setTimeout(() => setChipAnim("idle"), 350);
+      return () => clearTimeout(t);
+    } else {
+      setChipAnim("exiting");
+      exitTimerRef.current = setTimeout(() => {
+        setDisplaySong(null);
+        setChipAnim("idle");
+      }, 220);
+    }
+  }, [currentSong]);
+
+  const chipAnimClass =
+    chipAnim === "entering" ? "animate-chip-enter" :
+    chipAnim === "exiting"  ? "animate-chip-exit"  : "";
+
   const { triggerTransition } = useMenuTransition();
   const { t } = useI18n();
   const { 
@@ -337,16 +362,19 @@ export function Header() {
             </button>
           )}
           {/* Now-playing chip — desktop */}
-          {currentSong && (
+          {displaySong && (
             <button
               onClick={() => {
                 localStorage.removeItem("miniplayer-dismissed");
                 window.dispatchEvent(new CustomEvent("miniplayer-restore"));
               }}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-colors text-xs font-medium max-w-[180px]"
-              aria-label={`Now playing: ${currentSong.title}`}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-colors text-xs font-medium max-w-[180px]",
+                chipAnimClass
+              )}
+              aria-label={`Now playing: ${displaySong.title}`}
               data-testid="header-now-playing"
-              title={`Now playing: ${currentSong.title}`}
+              title={`Now playing: ${displaySong.title}`}
             >
               <span className="relative flex-shrink-0 w-3 h-3">
                 <Music2 className="w-3 h-3" />
@@ -354,7 +382,7 @@ export function Header() {
                   <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                 )}
               </span>
-              <span className="truncate">{currentSong.title}</span>
+              <span className="truncate">{displaySong.title}</span>
             </button>
           )}
           <TranslationSelector />
@@ -385,16 +413,19 @@ export function Header() {
         </nav>
 
         {/* Now-playing chip — mobile (absolute, left of hamburger) */}
-        {currentSong && (
+        {displaySong && (
           <button
             onClick={() => {
               localStorage.removeItem("miniplayer-dismissed");
               window.dispatchEvent(new CustomEvent("miniplayer-restore"));
             }}
-            className="lg:hidden absolute right-16 flex items-center gap-1.5 px-2 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-colors text-xs font-medium max-w-[110px]"
-            aria-label={`Now playing: ${currentSong.title}`}
+            className={cn(
+              "lg:hidden absolute right-16 flex items-center gap-1.5 px-2 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-colors text-xs font-medium max-w-[110px]",
+              chipAnimClass
+            )}
+            aria-label={`Now playing: ${displaySong.title}`}
             data-testid="header-now-playing-mobile"
-            title={`Now playing: ${currentSong.title}`}
+            title={`Now playing: ${displaySong.title}`}
           >
             <span className="relative flex-shrink-0 w-3 h-3">
               <Music2 className="w-3 h-3" />
@@ -402,7 +433,7 @@ export function Header() {
                 <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               )}
             </span>
-            <span className="truncate">{currentSong.title}</span>
+            <span className="truncate">{displaySong.title}</span>
           </button>
         )}
 

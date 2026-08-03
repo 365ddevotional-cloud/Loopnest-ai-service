@@ -96,10 +96,20 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "chip-enter": {
+          from: { opacity: "0", transform: "translateX(8px) scale(0.92)" },
+          to:   { opacity: "1", transform: "translateX(0)   scale(1)" },
+        },
+        "chip-exit": {
+          from: { opacity: "1", transform: "translateX(0)   scale(1)" },
+          to:   { opacity: "0", transform: "translateX(8px) scale(0.92)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "chip-enter": "chip-enter 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards",
+        "chip-exit":  "chip-exit  0.2s ease-in forwards",
       },
     },
   },
