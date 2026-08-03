@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff, Book, GraduationCap, Star, HandHeart, Sparkles, Inbox, Music2, Library, UserCircle, Building2, ChevronDown } from "lucide-react";
+import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import { GameConsoleIcon } from "@/interactive/GameConsoleIcon";
 import { SiYoutube } from "react-icons/si";
 import { cn } from "@/lib/utils";
@@ -138,6 +139,7 @@ export function Header() {
   const [location, setLocation] = useLocation();
   const { isAdmin, logout } = useAuth();
   const { user: appUser, emailVerified: appEmailVerified, signUserOut } = useUser();
+  const { currentSong, isPlaying } = useMusicPlayer();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openGroup, setOpenGroup] = useState<string | null>(() => {
     // Auto-open the group containing the current route
@@ -334,6 +336,27 @@ export function Header() {
               {t("logout")}
             </button>
           )}
+          {/* Now-playing chip — desktop */}
+          {currentSong && (
+            <button
+              onClick={() => {
+                localStorage.removeItem("miniplayer-dismissed");
+                window.dispatchEvent(new CustomEvent("miniplayer-restore"));
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-colors text-xs font-medium max-w-[180px]"
+              aria-label={`Now playing: ${currentSong.title}`}
+              data-testid="header-now-playing"
+              title={`Now playing: ${currentSong.title}`}
+            >
+              <span className="relative flex-shrink-0 w-3 h-3">
+                <Music2 className="w-3 h-3" />
+                {isPlaying && (
+                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                )}
+              </span>
+              <span className="truncate">{currentSong.title}</span>
+            </button>
+          )}
           <TranslationSelector />
           <LanguageSwitcher />
           <SettingsModal />
@@ -360,6 +383,28 @@ export function Header() {
             </Button>
           )}
         </nav>
+
+        {/* Now-playing chip — mobile (absolute, left of hamburger) */}
+        {currentSong && (
+          <button
+            onClick={() => {
+              localStorage.removeItem("miniplayer-dismissed");
+              window.dispatchEvent(new CustomEvent("miniplayer-restore"));
+            }}
+            className="lg:hidden absolute right-16 flex items-center gap-1.5 px-2 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-colors text-xs font-medium max-w-[110px]"
+            aria-label={`Now playing: ${currentSong.title}`}
+            data-testid="header-now-playing-mobile"
+            title={`Now playing: ${currentSong.title}`}
+          >
+            <span className="relative flex-shrink-0 w-3 h-3">
+              <Music2 className="w-3 h-3" />
+              {isPlaying && (
+                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              )}
+            </span>
+            <span className="truncate">{currentSong.title}</span>
+          </button>
+        )}
 
         {/* Mobile Menu Button */}
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
