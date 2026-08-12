@@ -1,0 +1,65 @@
+Implement ONLY the following update to the existing 365 Daily Devotional – God’s Promise feature.
+
+OBJECTIVE
+
+Fix the existing Amen counter so that it represents genuine, persistent user engagement and does NOT appear to restart from 0 whenever a God’s Promise is displayed again.
+
+REQUIRED BEHAVIOR
+
+1. Use only real Amen clicks.
+    * Do NOT generate random numbers.
+    * Do NOT create fake/seeded engagement counts.
+    * Do NOT artificially increase the count.
+2. Make each God’s Promise Amen count persistent.
+    * Each individual Promise should retain its accumulated Amen count in the existing database/backend.
+    * When that same Promise appears again later, retrieve and display its existing total rather than resetting it to 0.
+    * Example:
+        * “Steadfast Love” has received 237 genuine Amens.
+        * When it appears again, it should still have 237.
+        * The next valid Amen click changes it to 238.
+3. Do not display low counts.
+    * For a Promise with fewer than 10 genuine Amens, display the button simply as:
+        ❤️ Amen
+    * Do NOT show:
+        Amen (0)
+        Amen (1)
+        etc.
+    * Once the Promise reaches 10 genuine Amens, begin displaying the genuine count:
+        ❤️ Amen (10)
+        ❤️ Amen (11)
+        etc.
+4. Prevent accidental duplicate counting.
+    * Preserve any existing protection that prevents the same user/device/session from repeatedly tapping Amen and artificially increasing the count.
+    * If duplicate protection already exists, reuse it rather than rebuilding it.
+    * Do not introduce a complicated authentication requirement just for Amen.
+5. Keep the existing design.
+    * Do NOT redesign the God’s Promise card.
+    * Keep the current pink Amen button, layout, Share button, background, typography, “Go To Today’s Devotional” button, and all other existing functionality.
+    * Only adjust what is necessary for the Amen counting behavior.
+
+IMPORTANT — KEEP THIS CHANGE SMALL
+
+Before changing anything, locate the existing God’s Promise Amen counter implementation and reuse the current database/API structure wherever possible.
+
+Do NOT:
+
+* rebuild the God’s Promise feature;
+* perform a broad codebase audit;
+* refactor unrelated code;
+* modify unrelated pages/components;
+* create unnecessary new services or dependencies;
+* change the Promise rotation schedule;
+* change the Share functionality;
+* change the devotional itself.
+
+Make the smallest safe modification necessary to make genuine Amen totals persistent and display them according to the rules above.
+
+After implementation, briefly report:
+
+1. what file(s) were changed;
+2. where the Amen count is stored;
+3. how persistence works;
+4. how duplicate Amen clicks are prevented;
+5. confirmation that no fake/random counts were introduced.
+
+Do not make additional improvements outside this reques
