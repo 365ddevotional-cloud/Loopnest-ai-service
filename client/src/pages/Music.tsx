@@ -4,6 +4,28 @@ import {
   Music2, Play, ExternalLink, Loader2, Clock, RotateCcw, Sparkles,
   Search, ListMusic, X, ChevronDown,
 } from "lucide-react";
+
+/** Animated equalizer bars — shown on the currently-playing row. */
+function EqualizerBars({ playing }: { playing: boolean }) {
+  return (
+    <span className="inline-flex items-end gap-[2px] h-4 w-4 flex-shrink-0" aria-label="Now playing">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="w-[3px] rounded-sm bg-primary origin-bottom"
+          style={
+            playing
+              ? {
+                  animation: `eq-bounce 0.9s ease-in-out ${i * 0.15}s infinite alternate`,
+                  height: "100%",
+                }
+              : { height: "40%", opacity: 0.5 }
+          }
+        />
+      ))}
+    </span>
+  );
+}
 import type { Song, SongCollection } from "@shared/schema";
 import { useMusicPlayer, type RecentlyPlayedEntry } from "@/contexts/MusicPlayerContext";
 import { useState, useMemo, useEffect } from "react";
@@ -19,10 +41,14 @@ const CUSTOM_LANG = "__custom__";
 function SongCard({
   song,
   isFeatured,
+  isActive,
+  isPlaying,
   onPlay,
 }: {
   song: Song;
   isFeatured?: boolean;
+  isActive?: boolean;
+  isPlaying?: boolean;
   onPlay?: (song: Song) => void;
 }) {
   const [, setLocation] = useLocation();
@@ -32,7 +58,9 @@ function SongCard({
   return (
     <div
       className={`group flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md active:scale-[0.99] ${
-        isFeatured
+        isActive
+          ? "border-primary/40 bg-primary/5 dark:bg-primary/10"
+          : isFeatured
           ? "border-amber-300/60 bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-amber-950/20 dark:to-amber-900/10 dark:border-amber-800/40"
           : "border-border/50 bg-card hover:border-primary/20"
       }`}
@@ -66,8 +94,9 @@ function SongCard({
             🎵 Song of the Week
           </div>
         )}
-        <h3 className="font-serif font-bold text-base text-foreground group-hover:text-primary transition-colors leading-tight truncate">
-          {song.title}
+        <h3 className="font-serif font-bold text-base text-foreground group-hover:text-primary transition-colors leading-tight flex items-center gap-1.5">
+          <span className="truncate">{song.title}</span>
+          {isActive && <EqualizerBars playing={!!isPlaying} />}
         </h3>
         {song.artist && (
           <p className="text-xs text-muted-foreground truncate">{song.artist}</p>
@@ -199,7 +228,8 @@ export default function Music() {
     }
   }, [fetchedCollections]);
 
-  const { continueListening, recentlyPlayed, recommendations, settings, setQueue, playSong } = useMusicPlayer();
+  const { continueListening, recentlyPlayed, recommendations, settings, setQueue, playSong,
+    currentSong, isPlaying } = useMusicPlayer();
 
   // Filter state
   const [search, setSearch] = useState("");
@@ -320,7 +350,7 @@ export default function Music() {
             <span className="w-2 h-2 rounded-full bg-amber-500 inline-block animate-pulse" />
             Song of the Week
           </h2>
-          <SongCard song={featured} isFeatured onPlay={handleSongClick} />
+          <SongCard song={featured} isFeatured isActive={currentSong?.id === featured.id} isPlaying={isPlaying} onPlay={handleSongClick} />
         </div>
       )}
 
@@ -333,7 +363,7 @@ export default function Music() {
           </h2>
           <div className="space-y-3">
             {recommendations.map((song) => (
-              <SongCard key={song.id} song={song} onPlay={handleSongClick} />
+              <SongCard key={song.id} song={song} isActive={currentSong?.id === song.id} isPlaying={isPlaying} onPlay={handleSongClick} />
             ))}
           </div>
         </div>
@@ -397,7 +427,7 @@ export default function Music() {
               </div>
               {col.songs && col.songs.length > 0 && (
                 <div className="p-2 space-y-1">
-                  {col.songs.map(song => <SongCard key={song.id} song={song} onPlay={handleSongClick} />)}
+                  {col.songs.map(song => <SongCard key={song.id} song={song} isActive={currentSong?.id === song.id} isPlaying={isPlaying} onPlay={handleSongClick} />)}
                 </div>
               )}
             </div>
@@ -555,6 +585,8 @@ export default function Music() {
                 key={song.id}
                 song={song}
                 isFeatured={song.id === featured?.id}
+                isActive={currentSong?.id === song.id}
+                isPlaying={isPlaying}
                 onPlay={handleSongClick}
               />
             ))}
