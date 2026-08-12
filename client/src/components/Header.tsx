@@ -158,6 +158,7 @@ export function Header() {
   const [chipAnim, setChipAnim] = useState<"entering" | "idle" | "exiting" | "pulsing">("idle");
   const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevSongIdRef = useRef<number | null>(currentSong?.id ?? null);
+  const prevIsOnCurrentSongPageRef = useRef<boolean>(isOnCurrentSongPage);
 
   useEffect(() => {
     if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
@@ -187,6 +188,19 @@ export function Header() {
       }, 220);
     }
   }, [currentSong]);
+
+  // Re-animate the chip when the user navigates away from the song detail page
+  // while the same song is still playing (isOnCurrentSongPage: true → false)
+  useEffect(() => {
+    const wasOnPage = prevIsOnCurrentSongPageRef.current;
+    prevIsOnCurrentSongPageRef.current = isOnCurrentSongPage;
+    if (wasOnPage && !isOnCurrentSongPage && currentSong) {
+      if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+      setDisplaySong(currentSong);
+      setChipAnim("entering");
+      exitTimerRef.current = setTimeout(() => setChipAnim("idle"), 350);
+    }
+  }, [isOnCurrentSongPage, currentSong]);
 
   const chipAnimClass =
     chipAnim === "entering" ? "animate-chip-enter" :
