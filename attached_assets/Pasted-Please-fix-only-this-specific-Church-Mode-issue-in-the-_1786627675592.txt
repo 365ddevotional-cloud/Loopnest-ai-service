@@ -1,0 +1,95 @@
+Please fix only this specific Church Mode issue in the 365 Daily Devotional app.
+
+Important constraints:
+
+* Do NOT audit the whole app.
+* Do NOT refactor unrelated code.
+* Do NOT redesign Church Mode.
+* Do NOT touch unrelated features, pages, database tables, or authentication flows.
+* Make the smallest safe change necessary.
+* Preserve all existing working Church Mode functionality.
+* Keep token/credit usage as low as possible.
+
+CURRENT PROBLEM
+
+I created a church named:
+
+Believers Dominion Covenant Church
+
+Denomination:
+Non-denominational
+
+After creation, the Church Mode “My Churches” page now shows TWO entries for Believers Dominion Covenant Church, both showing me as “Church Owner.”
+
+However, when I tap either church entry, the next page shows:
+
+“Church not found.
+This church space may have been removed or the link is incorrect.”
+
+This suggests the church list is able to retrieve ownership/membership information, but the church detail route cannot correctly retrieve the corresponding church record.
+
+TASK
+
+Please investigate and fix only this issue.
+
+1. Trace the exact church ID/value being used when a church card under “My Churches” is tapped.
+2. Compare that value with the ID/field expected by the Church Mode detail page/route.
+3. Fix any mismatch such as:
+    * church_id vs id
+    * membership ID being passed instead of church ID
+    * slug being passed where UUID is expected
+    * string/UUID mismatch
+    * wrong route parameter
+    * query using the wrong field
+4. Verify that the church creation process successfully creates:
+    * the church record
+    * the owner membership/role record
+    * any required related records
+5. Check whether the current creation flow can create the ownership/membership record even when the main church record is incomplete or not retrievable. If so, fix this with the smallest safe change.
+6. There are currently TWO Believers Dominion Covenant Church entries because I attempted creation more than once.
+
+Do NOT blindly delete either one.
+
+First identify:
+
+* the database IDs of both church-related records,
+* which church record is complete and valid,
+* which record is the accidental duplicate or incomplete record,
+* which memberships belong to each.
+
+Then preserve ONE valid Believers Dominion Covenant Church record and remove only the accidental duplicate/incomplete record and its duplicate relationship records, without affecting any unrelated user or church data.
+
+7. Add a simple safeguard so repeated taps/submissions on “Create a Church Space” do not accidentally create duplicate churches while a creation request is already being processed.
+
+A simple disabled/loading state on the Create button is enough if that is the cause.
+
+8. After the fix, verify this exact flow:
+
+Church Mode
+→ My Churches
+→ Believers Dominion Covenant Church
+→ tap the church card
+→ church dashboard/details open successfully
+
+It must no longer show “Church not found.”
+
+9. Do NOT create any new church records during testing unless absolutely necessary.
+10. Do NOT change the church name or denomination.
+
+Expected retained church:
+
+Church Name:
+Believers Dominion Covenant Church
+
+Denomination:
+Non-denominational
+
+Please make the minimal fix, then report back with:
+
+* the root cause,
+* the exact files changed,
+* whether a duplicate record was removed,
+* the remaining valid church ID,
+* and confirmation that tapping the church now opens the correct Church Mode dashboard.
+
+Do not make any other changes.

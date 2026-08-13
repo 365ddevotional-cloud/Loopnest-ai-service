@@ -26,7 +26,15 @@ export default function ChurchHome() {
 
   const { data: church, isLoading: churchLoading } = useQuery<Church>({
     queryKey: ["/api/churches/slug", slug],
-    queryFn: () => fetch(`/api/churches/slug/${slug}`).then(r => r.ok ? r.json() : Promise.reject()),
+    queryFn: async () => {
+      // Include auth token so draft churches are accessible to their owners/members.
+      // Approved public churches are returned for everyone regardless.
+      const token = isSignedIn ? await getIdToken() : null;
+      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+      const r = await fetch(`/api/churches/slug/${slug}`, { headers });
+      if (!r.ok) return Promise.reject(new Error("Church not found"));
+      return r.json();
+    },
     enabled: !!slug,
   });
 

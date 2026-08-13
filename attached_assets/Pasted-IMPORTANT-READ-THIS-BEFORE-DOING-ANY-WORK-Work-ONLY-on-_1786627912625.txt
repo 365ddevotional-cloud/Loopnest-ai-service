@@ -1,0 +1,192 @@
+IMPORTANT — READ THIS BEFORE DOING ANY WORK:
+
+Work ONLY on the Church Mode issue described below.
+
+IGNORE any previous, older, pending, or completed tasks that are not specifically included in this prompt.
+
+DO NOT work on Amen persistence / God’s Promises Amen counter.
+
+The Amen persistence issue has ALREADY BEEN FIXED, tested, and PUBLISHED.
+
+Therefore:
+
+* DO NOT inspect Amen persistence.
+* DO NOT modify Amen persistence.
+* DO NOT test Amen persistence.
+* DO NOT change God’s Promises Amen counter code.
+* DO NOT change its database logic.
+* DO NOT reopen that previous task.
+* DO NOT combine that previous task with this task.
+* DO NOT undo or alter the already-published Amen persistence implementation.
+
+This task is ONLY for the Church Mode problem below.
+
+CURRENT CHURCH MODE PROBLEM
+
+I created:
+
+Church Name: Believers Dominion Covenant Church
+Denomination: Non-denominational
+
+After submitting the church creation form, Church Mode now shows TWO entries for:
+
+Believers Dominion Covenant Church
+
+Both entries identify my account as:
+
+Church Owner
+
+However, when I tap the church entry, the next screen displays:
+
+“Church not found.
+This church space may have been removed or the link is incorrect.”
+
+I have attached screenshots showing:
+
+1. The duplicate Believers Dominion Covenant Church entries under My Churches.
+2. The Church not found error that appears when I try to open the church.
+
+Do NOT create another church as a workaround.
+
+TASK
+
+Investigate and fix ONLY this Church Mode problem.
+
+1. Trace the church navigation ID
+
+Determine exactly what ID/value the My Churches card uses when I tap Believers Dominion Covenant Church.
+
+Compare it with the ID/value expected by the Church Mode church detail/dashboard route.
+
+Look specifically for a small mismatch such as:
+
+* church_id versus id
+* membership ID being passed instead of church ID
+* wrong UUID
+* slug versus UUID
+* wrong route parameter
+* wrong database lookup field
+* incorrect client/server parameter mapping
+
+Make the smallest safe correction necessary.
+
+2. Verify the church creation transaction
+
+Check whether creating a church correctly creates:
+
+* the actual church record
+* the church-owner membership/relationship
+* the owner’s role
+* any other strictly required Church Mode relationship record
+
+Determine whether the creation process can currently create an ownership/membership entry while failing to create, retrieve, or correctly reference the main church record.
+
+If that is happening, fix only that specific problem.
+
+3. Handle the duplicate safely
+
+There are currently TWO Believers Dominion Covenant Church entries because the creation action appears to have been processed more than once.
+
+DO NOT blindly delete records.
+
+First identify:
+
+* both relevant church IDs
+* both membership/ownership records
+* which church record is complete and valid
+* which one is duplicate, orphaned, or incomplete
+* which related records belong to each one
+
+Then preserve ONE valid:
+
+Believers Dominion Covenant Church
+
+and remove ONLY the accidental duplicate/incomplete church record and its duplicate/orphaned relationship records.
+
+Do not delete or modify unrelated churches, users, memberships, or data.
+
+4. Prevent another duplicate
+
+Check whether repeated taps/submissions of Create a Church Space can create multiple records.
+
+If so, add the smallest reasonable safeguard.
+
+For example:
+
+* disable the Create button immediately while submission is processing
+* show a loading state
+* prevent the same request from being submitted twice
+
+Do NOT redesign the form.
+
+5. Verify the exact flow
+
+After the fix, verify:
+
+Church Mode
+→ My Churches
+→ Believers Dominion Covenant Church
+→ tap church
+→ Church dashboard/details opens successfully
+
+It must NOT show:
+
+“Church not found.”
+
+There should also be only ONE legitimate Believers Dominion Covenant Church entry under My Churches.
+
+VERY IMPORTANT SCOPE LIMITS
+
+Keep this task extremely small and targeted.
+
+DO NOT:
+
+* audit the entire application
+* audit the entire Church Mode feature
+* refactor unrelated code
+* redesign Church Mode
+* modify unrelated database tables
+* change authentication
+* change Daily Devotional features
+* change God’s Promises
+* change Amen persistence
+* change the Amen counter
+* change SpiritTone Music
+* change Sunday School
+* change Inbox
+* change Prayer/Counseling
+* change other working features
+* perform general cleanup
+* perform dependency upgrades
+* rebuild unrelated components
+
+Do NOT create additional features during this task.
+
+Use the minimum files and minimum code changes necessary to fix this exact bug.
+
+Preserve all existing working functionality.
+
+COST / CREDIT CONTROL
+
+Please keep investigation and implementation tightly scoped so this does not consume unnecessary Replit Agent credits.
+
+Do not perform broad searches or reviews after the root cause has been located.
+
+Once the specific cause is found, make the minimum safe correction and verify only the affected Church Mode flow.
+
+AFTER COMPLETION
+
+Do not start another task.
+
+Report back with only:
+
+1. The root cause of the Church not found error.
+2. Why two church entries appeared.
+3. The exact files changed.
+4. Whether an accidental duplicate/incomplete record was removed.
+5. The ID of the ONE valid remaining Believers Dominion Covenant Church record.
+6. What safeguard was added against duplicate creation, if needed.
+7. Confirmation that tapping Believers Dominion Covenant Church now opens the correct Church Mode dashboard.
+8. Confirmation that Amen persistence / God’s Promises Amen counter was NOT modified.
+
+Do not make any changes beyond this task.

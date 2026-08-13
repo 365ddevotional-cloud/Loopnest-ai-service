@@ -1900,7 +1900,11 @@ export class DatabaseStorage implements IStorage {
       .select({ member: churchMembers, church: churches })
       .from(churchMembers)
       .innerJoin(churches, eq(churchMembers.churchId, churches.id))
-      .where(and(eq(churchMembers.firebaseUid, firebaseUid), eq(churchMembers.status, "active")))
+      .where(and(
+        eq(churchMembers.firebaseUid, firebaseUid),
+        eq(churchMembers.status, "active"),
+        eq(churches.status, "active"),   // exclude suspended/deleted churches
+      ))
       .orderBy(desc(churchMembers.joinedAt));
     return rows.map(r => ({ ...r.member, church: r.church }));
   }
