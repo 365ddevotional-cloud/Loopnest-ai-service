@@ -1,0 +1,215 @@
+IMPORTANT — READ FIRST:
+
+Work ONLY on the Church Mode regression described below.
+
+Do NOT audit the whole app.
+Do NOT refactor unrelated code.
+Do NOT redesign Church Mode.
+Do NOT replace existing Church Mode architecture.
+Do NOT touch God’s Promises, Amen persistence, email persistence, SpiritTone Music, Sunday School, Inbox, Prayer/Counseling, or any unrelated feature.
+Do NOT publish or deploy.
+Do NOT create a new church.
+Do NOT delete the valid church.
+Do NOT make broad changes.
+
+Preserve all existing working functionality.
+
+The valid church to preserve is:
+
+Church Name: Believers Dominion Covenant Church
+Church ID: 3
+Slug: believers-dominion-covenant-church-8ger
+Status: active
+
+CURRENT REGRESSION
+
+I tested the app in Replit Preview.
+
+Under:
+
+My Account → MY CHURCHES
+
+I can see:
+
+Believers Dominion Covenant Church
+Church Owner
+
+The card is clickable.
+
+However, when I tap it, it takes me to the generic:
+
+MY GROUPS
+
+page.
+
+That is WRONG.
+
+The church card is supposed to open the actual Church Mode church space/dashboard for Believers Dominion Covenant Church.
+
+This app previously had Church Mode features for managing the church, including church profile and church logo upload/edit access.
+
+Those existing features must NOT be rebuilt from scratch.
+
+Please first locate the existing Church Mode routes, dashboard/profile/admin components, and existing church logo upload/edit implementation, then reconnect the navigation correctly.
+
+TASK 1 — FIX WRONG CHURCH CARD ROUTING
+
+Inspect the church card under:
+
+My Account → MY CHURCHES
+
+Determine why tapping Believers Dominion Covenant Church navigates to MY GROUPS instead of the church dashboard.
+
+Check only what is necessary, including possibilities such as:
+
+* wrong route target
+* generic groups route being reused incorrectly
+* wrong Link destination
+* wrong onClick handler
+* route parameter mismatch
+* church slug not being passed
+* church ID being ignored
+* fallback route incorrectly pointing to My Groups
+* stale navigation code left from earlier implementation
+
+Fix the card so it opens the EXISTING Church Mode church dashboard/profile for:
+
+Slug: believers-dominion-covenant-church-8ger
+
+Do NOT create a new dashboard if an existing one already exists.
+
+Use the existing Church Mode route structure.
+
+TASK 2 — RESTORE EXISTING CHURCH PROFILE / LOGO ACCESS
+
+Church Mode previously allowed the church owner to manage the church profile and upload/edit the church logo.
+
+That access is currently missing or disconnected.
+
+Please locate the existing implementation before making changes.
+
+Search only the relevant Church Mode files for existing components/functions related to:
+
+* church profile
+* church settings
+* church admin
+* church logo
+* logo upload
+* image upload
+* church identity/profile editing
+* Church Owner permissions
+
+If the feature already exists but is no longer reachable, reconnect it.
+
+Do NOT rebuild the feature from scratch unless the existing implementation is truly absent.
+
+Expected behavior for the Church Owner:
+
+Believers Dominion Covenant Church dashboard
+→ Profile / Settings / Admin area
+→ ability to upload or change the church logo
+→ saved logo displays beside or within the church identity where originally intended
+
+Preserve existing storage/database fields if they already exist.
+
+Do NOT introduce a new logo storage system unless absolutely necessary.
+
+TASK 3 — PRESERVE EXISTING CHURCH MODE FEATURES
+
+Before changing routing, confirm that existing Church Mode pages/components such as these are preserved and still reachable where appropriate:
+
+* Church Home / Dashboard
+* Admin
+* Members
+* Departments
+* Groups
+* Sermons
+* Announcements
+* Messaging
+* Prayer
+* Pastor Notes
+* Pastor Dashboard
+* Member/Profile pages
+* any existing reporting or church management components already in the project
+
+Do NOT delete, replace, merge, or simplify these features.
+
+The goal is RESTORATION / RECONNECTION, not redesign.
+
+TASK 4 — MY CHURCHES BEHAVIOR
+
+My Churches should show churches that the signed-in user owns or belongs to.
+
+It should NOT send the user to the generic My Groups page.
+
+For this account, the valid church is:
+
+Believers Dominion Covenant Church
+Church ID 3
+Slug believers-dominion-covenant-church-8ger
+
+Keep that record unchanged.
+
+Do NOT create another Believers Dominion Covenant Church.
+
+Do NOT modify the church name, denomination, or ownership.
+
+VERY IMPORTANT — DO NOT DESTROY EXISTING WORK
+
+This project already has a substantial Church Mode implementation.
+
+Do not assume missing navigation means the feature does not exist.
+
+Before writing new code:
+
+1. Locate the existing route/component.
+2. Locate the existing profile/admin access.
+3. Locate the existing logo upload/edit implementation.
+4. Reconnect what is already there whenever possible.
+
+Make the smallest safe changes necessary.
+
+Avoid:
+
+* rewrites
+* migrations
+* new architecture
+* duplicated pages
+* duplicated upload systems
+* unrelated cleanup
+* dependency changes
+* database restructuring
+
+PREVIEW TEST REQUIRED
+
+Do NOT publish.
+
+After fixing, test in Replit Preview:
+
+1. Sign in.
+2. Go to My Account.
+3. Under MY CHURCHES, tap Believers Dominion Covenant Church.
+4. Confirm it opens the actual Church Mode church dashboard, NOT My Groups.
+5. Confirm the church owner can reach church profile/settings/admin.
+6. Confirm church logo upload/edit access is available.
+7. Confirm Church ID 3 and slug believers-dominion-covenant-church-8ger are preserved.
+8. Confirm no unrelated features were changed.
+
+AFTER COMPLETION — REPORT ONLY
+
+Do not start another task.
+
+Report back with:
+
+1. Why the church card was routing to My Groups.
+2. The correct route it now opens.
+3. The exact files changed.
+4. Where the existing church profile/settings/admin access was found.
+5. Where the church logo upload/edit implementation was found.
+6. Whether it was reconnected or minimally repaired.
+7. Confirmation that Church ID 3 and slug believers-dominion-covenant-church-8ger were preserved.
+8. Confirmation that no new church was created.
+9. Confirmation that Amen persistence and all unrelated features were not touched.
+10. Confirmation that nothing was published or deployed.
+
+Stop after this so I can test everything in Preview before we decide whether to publish.

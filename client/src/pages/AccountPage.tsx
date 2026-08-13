@@ -380,30 +380,33 @@ export default function AccountPage() {
         <div className="space-y-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">My Churches</p>
           {memberships.map(m => (
-            <Card key={m.id} className="border-primary/10" data-testid={`card-account-church-${m.church.slug}`}>
-              <CardContent className="py-3 px-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-primary/8">
-                  {m.church.logoUrl
-                    ? <img src={m.church.logoUrl} alt={m.church.name} className="w-9 h-9 rounded-lg object-cover" />
-                    : <Building2 className="w-4 h-4 text-primary" />
-                  }
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">{m.church.name}</p>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    {ROLE_ICON[m.role] ?? <Users className="w-3.5 h-3.5 text-muted-foreground" />}
-                    <span className="text-xs text-muted-foreground">
-                      {CHURCH_ROLE_LABELS[m.role as ChurchRole] ?? m.role}
-                    </span>
-                    {m.church.country && (
-                      <span className="text-xs text-muted-foreground ml-2 flex items-center gap-0.5">
-                        <MapPin className="w-3 h-3" />{getCountryName(m.church.country)}
-                      </span>
-                    )}
+            <Link key={m.id} href={`/church/${m.church.slug}`}>
+              <Card className="border-primary/10 cursor-pointer hover:shadow-md transition-shadow" data-testid={`card-account-church-${m.church.slug}`}>
+                <CardContent className="py-3 px-4 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-primary/8">
+                    {m.church.logoUrl
+                      ? <img src={m.church.logoUrl} alt={m.church.name} className="w-9 h-9 rounded-lg object-cover" />
+                      : <Building2 className="w-4 h-4 text-primary" />
+                    }
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{m.church.name}</p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      {ROLE_ICON[m.role] ?? <Users className="w-3.5 h-3.5 text-muted-foreground" />}
+                      <span className="text-xs text-muted-foreground">
+                        {CHURCH_ROLE_LABELS[m.role as ChurchRole] ?? m.role}
+                      </span>
+                      {m.church.country && (
+                        <span className="text-xs text-muted-foreground ml-2 flex items-center gap-0.5">
+                          <MapPin className="w-3 h-3" />{getCountryName(m.church.country)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}
