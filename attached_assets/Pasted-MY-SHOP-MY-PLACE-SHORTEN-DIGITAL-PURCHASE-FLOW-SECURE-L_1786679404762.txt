@@ -1,0 +1,262 @@
+MY SHOP MY PLACE — SHORTEN DIGITAL PURCHASE FLOW + SECURE LIMITED DOWNLOADS + OTP WORDING FIX
+
+IMPORTANT:
+This is a tightly scoped correction.
+Do NOT refactor the app.
+Do NOT modify unrelated features.
+Do NOT change the 3% platform commission.
+Do NOT alter working Paystack/Flutterwave verification.
+Do NOT weaken payment security.
+Do NOT launch/deploy automatically.
+Reuse existing code wherever possible.
+
+==================================================
+1. DIGITAL-ONLY ORDERS MUST NOT USE PHYSICAL FULFILLMENT
+==================================================
+
+Current problem:
+A paid DIGITAL product is still showing/using physical-order concepts such as:
+
+- Pickup
+- Ready for Pickup / Dispatch
+- Ready
+- Dispatched
+- Delivered
+- seller manually marking the digital order ready
+- physical fulfillment status emails
+
+This is wrong for digital-only purchases.
+
+For an order containing ONLY digital products, change the post-payment flow to:
+
+ORDER CREATED
+→ PAYMENT VERIFIED SERVER-SIDE
+→ DIGITAL DOWNLOAD READY
+
+Once trusted server-side payment verification succeeds:
+
+- automatically mark the digital fulfillment state as ready for download
+- do NOT require seller action
+- do NOT show Pickup
+- do NOT show Dispatch
+- do NOT show Ready for Pickup
+- do NOT show Delivered as a physical delivery event
+- do NOT require "Mark as Ready", "Mark as Dispatched", or similar physical buttons
+
+The customer-facing order should prominently show:
+
+"Payment Confirmed"
+"Your digital purchase is ready"
+[DOWNLOAD NOW]
+
+The Download Now button must be highly visible near the top of the paid-order screen.
+
+After a successful Paystack/Flutterwave payment callback/verification for a digital-only order, redirect or surface the buyer directly to a DIGITAL DOWNLOAD READY screen instead of making them search through My Orders.
+
+Keep mixed carts and physical products unchanged.
+
+==================================================
+2. DIGITAL EMAILS
+==================================================
+
+For digital-only orders, stop sending physical fulfillment wording such as:
+
+"Ready for Pickup / Dispatch"
+"Delivered"
+
+After payment verification send an email such as:
+
+Subject:
+Your Digital Purchase Is Ready — [ORDER REFERENCE]
+
+Body:
+Payment confirmed.
+Your digital purchase is ready to download.
+
+Include:
+- product title
+- order reference
+- amount
+- secure button/link back to My Shop My Place to access the authenticated download page
+
+Do NOT put the raw permanent storage file URL in email.
+
+Physical order emails must remain unchanged.
+
+==================================================
+3. LIMITED DOWNLOAD ACCESS
+==================================================
+
+Current problem:
+A buyer can apparently return indefinitely and continue seeing download access.
+
+Implement controlled download entitlement for paid DIGITAL products.
+
+Recommended policy:
+
+- download availability window: 72 HOURS from payment confirmation
+- maximum successful downloads: 3 PER PURCHASED DIGITAL ITEM
+- whichever limit is reached first disables normal download access
+
+Each actual file delivery must continue using a short-lived Supabase signed URL.
+Keep the existing approximately 60-second signed URL expiry.
+
+Do NOT expose a permanent public storage URL.
+
+Server-side download API must verify ALL of the following before issuing every signed URL:
+
+- authenticated user
+- buyer owns the order
+- payment_status is trusted/confirmed
+- order is not cancelled/refunded/disputed
+- requested product belongs to the order
+- product is digital
+- digital file exists
+- current time is still within the 72-hour entitlement window
+- successful download count is below 3
+
+Increment the download count ONLY when a valid download request is successfully authorized.
+
+If expired, show:
+
+"Download access expired"
+
+and:
+
+"For help with a legitimate purchase, contact the seller or My Shop My Place support."
+
+Provide an admin/seller-controlled way to grant ONE additional download/reset access when there is a genuine customer support issue.
+
+Do not automatically reopen downloads after refund/dispute/cancellation.
+
+If schema support for:
+download_expires_at
+download_count
+download_limit
+or equivalent
+does not already exist, add ONLY the minimum necessary migration.
+
+Do not create duplicate entitlement architecture if an existing download-log/table can safely support this.
+
+==================================================
+4. DOWNLOAD UX
+==================================================
+
+On a confirmed digital order, show prominently:
+
+DIGITAL PURCHASE READY
+
+Product cover image
+Product title
+File type if known
+
+[DOWNLOAD NOW]
+
+Then smaller text:
+
+"Available for 72 hours after payment confirmation."
+"Up to 3 downloads."
+
+Also show:
+"Downloads remaining: X"
+
+Do not bury download access inside several screens.
+
+==================================================
+5. PAYMENT FLOW MUST REMAIN SECURE
+==================================================
+
+DO NOT change the current trusted payment-verification architecture.
+
+Paystack/Flutterwave must continue to confirm payment server-side.
+
+A browser/client action must NEVER unlock a download by itself.
+
+No "I paid" or buyer claim may unlock the digital product.
+
+Only trusted payment confirmation unlocks it.
+
+==================================================
+6. OTP EMAIL WORDING FIX
+==================================================
+
+Current issue:
+The My Shop My Place OTP email says:
+
+"Use this 6-digit code to sign in:"
+
+but the actual OTP is 8 digits, and the application correctly asks for an 8-digit code.
+
+Fix the EMAIL TEMPLATE wording only so it says:
+
+"Use this 8-digit code to sign in:"
+
+Also search the My Shop My Place auth/email templates for any other active user-facing references to "6-digit" OTP and correct them to "8-digit" ONLY where they refer to this same Supabase OTP flow.
+
+Do NOT change the OTP generation length.
+Do NOT change Supabase authentication configuration.
+Do NOT alter login/session behavior.
+This is a wording consistency fix only.
+
+==================================================
+7. PRESERVE ALL EXISTING WORK
+==================================================
+
+Do NOT change:
+
+- Paystack live keys/configuration
+- Flutterwave keys/configuration
+- webhook validation
+- amount/currency verification
+- manual bank transfer
+- seller payouts
+- platform fee (must remain exactly 3%)
+- refunds except that refunded digital orders must remain download-blocked
+- existing physical order fulfillment
+- authentication other than OTP email wording
+- unrelated notifications/pages
+
+==================================================
+8. CREDIT-SAVING RULE
+==================================================
+
+Inspect existing digital-order/download code first.
+
+Reuse existing:
+- digital detection
+- payment confirmation
+- signed download URL logic
+- order timeline
+- email function
+- existing download logging if present
+
+Make the smallest safe implementation.
+
+No broad audit.
+No unrelated cleanup.
+No refactor.
+No automatic launch.
+
+==================================================
+9. FINAL REPORT
+==================================================
+
+When finished, STOP and report:
+
+1. What caused digital orders to follow physical fulfillment
+2. Exact files changed
+3. Whether a DB migration was required
+4. Exact new digital-only flow
+5. Confirmation that digital payment automatically surfaces Download Ready
+6. Confirmation seller action is no longer required for paid digital-only orders
+7. Exact download expiry duration
+8. Exact download-count limit
+9. Confirmation each file URL remains short-lived
+10. Confirmation refunded/cancelled/disputed orders cannot download
+11. Exact OTP wording corrected from 6-digit to 8-digit
+12. Confirmation OTP length/auth logic was NOT changed
+13. Confirmation platform commission remains exactly 3%
+14. ONE manual test I should perform next
+
+DO NOT LAUNCH.
+Wait for my approval.
