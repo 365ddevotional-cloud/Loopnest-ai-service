@@ -53,3 +53,6 @@ VITE_CASHTAG = "$365dailydevotional"
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 120000
+
+[objectStorage]
+defaultBucketID = "replit-objstore-221520df-bef4-43e3-8c44-265706b67c28"

@@ -71,15 +71,6 @@ export function registerObjectStorageRoutes(app: Express): void {
    * For protected files, add authentication middleware and ACL checks.
    */
   app.get("/objects/:objectPath(*)", async (req, res) => {
-    const r2BaseUrl = process.env.R2_PUBLIC_URL;
-
-    if (r2BaseUrl && req.params.objectPath?.startsWith("uploads/")) {
-      const r2ObjectUrl =
-        `${r2BaseUrl.replace(/\/$/, "")}/.private/${req.params.objectPath}`;
-
-      return res.redirect(302, r2ObjectUrl);
-    }
-
     try {
       const objectFile = await objectStorageService.getObjectEntityFile(req.path);
       await objectStorageService.downloadObject(objectFile, res);
