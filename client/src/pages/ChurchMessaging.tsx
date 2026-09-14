@@ -113,7 +113,7 @@ export default function ChurchMessaging() {
       return r.ok ? r.json() : { conversations: [], unreadCount: 0 };
     },
     enabled: !!church?.id && isSignedIn && myRole?.status === "active",
-    refetchInterval: 15000,
+    refetchInterval: 5 * 60 * 1000,
   });
 
   const { data: churchMembers } = useQuery<ChurchMember[]>({
@@ -144,7 +144,7 @@ export default function ChurchMessaging() {
       return r.ok ? r.json() : null;
     },
     enabled: !!church?.id && !!selectedConvId && isSignedIn,
-    refetchInterval: 10000,
+    refetchInterval: 5 * 60 * 1000,
   });
 
   useEffect(() => {

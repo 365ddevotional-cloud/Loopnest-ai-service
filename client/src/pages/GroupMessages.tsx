@@ -38,7 +38,7 @@ export default function GroupMessages() {
   const { data: messages = [], isLoading: loadingMsgs } = useQuery<GroupMessage[]>({
     queryKey: ["/api/groups", groupId, "messages"],
     enabled: !!groupData,
-    refetchInterval: 8000,
+    refetchInterval: 5 * 60 * 1000,
     queryFn: async () => {
       const token = await getIdToken();
       const res = await fetch(`/api/groups/${groupId}/messages`, { headers: { Authorization: `Bearer ${token}` } });

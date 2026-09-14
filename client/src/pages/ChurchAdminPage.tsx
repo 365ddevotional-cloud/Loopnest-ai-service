@@ -425,7 +425,7 @@ export default function ChurchAdminPage() {
       return r.ok ? r.json() : { count: 0 };
     },
     enabled: !!church?.id && !!myRole?.role && ADMIN_ROLES.includes(myRole.role),
-    refetchInterval: 30000,
+    refetchInterval: 5 * 60 * 1000,
   });
   const pendingCount = pendingCountData?.count ?? 0;
 
@@ -590,7 +590,7 @@ export default function ChurchAdminPage() {
       return r.ok ? r.json() : [];
     },
     enabled: !!church?.id,
-    refetchInterval: 60_000,
+    refetchInterval: 5 * 60 * 1000,
   });
   const unreadAnnouncements = platformAnnouncements.filter((a: any) => !a.isRead);
 

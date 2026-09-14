@@ -178,7 +178,7 @@ export default function ChurchDashboard() {
       return r.json();
     },
     enabled: !!church?.id && isAdmin,
-    refetchInterval: 60000,
+    refetchInterval: 5 * 60 * 1000,
     staleTime: 30000,
   });
 

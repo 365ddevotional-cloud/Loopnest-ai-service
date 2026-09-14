@@ -247,7 +247,7 @@ export default function PastorDashboard() {
       return r.json();
     },
     enabled: !!church?.id && isAdmin,
-    refetchInterval: 60000,
+    refetchInterval: 5 * 60 * 1000,
   });
 
   const { data: notes = [] } = useQuery<PastorNote[]>({

@@ -135,7 +135,7 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
       return r.ok ? r.json() : { count: 0 };
     },
     enabled: !!church?.id && isSignedIn && isAdmin,
-    refetchInterval: 30000,
+    refetchInterval: 5 * 60 * 1000,
   });
   const livePendingCount = pendingMembers ?? pendingCountData?.count ?? 0;
   const isMember = !!currentRole;
