@@ -1637,46 +1637,50 @@ export async function registerRoutes(
     }
   });
 
-  // Public: stream audio for listening (no download headers)
+  // Public: stream audio for listening — redirect media to Cloudflare R2
   app.get("/api/songs/:id/audio", async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+
     try {
       const song = await storage.getSong(id);
-      if (!song || !song.isActive) return res.status(404).json({ message: "Song not found" });
-      if (!song.audioUrl) return res.status(404).json({ message: "No audio file" });
+      if (!song || !song.isActive) {
+        return res.status(404).json({ message: "Song not found" });
+      }
+      if (!song.audioUrl) {
+        return res.status(404).json({ message: "No audio file" });
+      }
 
-      const { ObjectStorageService } = await import("./replit_integrations/object_storage/index.js");
-      const svc = new ObjectStorageService();
-      const file = await svc.getObjectEntityFile(song.audioUrl);
+      const r2Base = process.env.R2_PUBLIC_URL;
+      if (!r2Base) {
+        console.error("R2_PUBLIC_URL is not configured");
+        return res.status(500).json({ message: "Media storage is not configured" });
+      }
 
-      const [metadata] = await file.getMetadata();
-      res.set({
-        "Content-Type": (metadata.contentType as string) || "audio/mpeg",
-        "Cache-Control": "public, max-age=3600",
-        "Accept-Ranges": "bytes",
-      });
-      if (metadata.size) res.set("Content-Length", String(metadata.size));
+      const objectPath = song.audioUrl
+        .replace(/^https?:\/\/[^/]+\/?/, "")
+        .replace(/^\/?objects\//, "")
+        .replace(/^\/+/, "");
 
-      const stream = file.createReadStream();
-      stream.on("error", (err) => {
-        console.error("Song audio stream error:", err);
-        if (!res.headersSent) res.status(500).json({ message: "Error streaming audio" });
-      });
-      stream.pipe(res);
-    } catch (err: any) {
-      if (err?.name === "ObjectNotFoundError") return res.status(404).json({ message: "Audio file not found" });
-      res.status(500).json({ message: "Streaming failed" });
+      const r2Url =
+        `${r2Base.replace(/\/+$/, "")}/.private/${objectPath.replace(/^\.private\//, "")}`;
+
+      return res.redirect(302, r2Url);
+    } catch (err) {
+      console.error("Song audio redirect error:", err);
+      return res.status(500).json({ message: "Streaming failed" });
     }
   });
 
-  // Public: free promotional download — streams audio with safe filename
+  // Public: free promotional audio download — media served directly by Cloudflare R2
   app.get("/api/songs/:id/download", async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+
     try {
       const song = await storage.getSong(id);
       if (!song) return res.status(404).json({ message: "Song not found" });
+
       if (song.downloadStatus === "disabled") {
         return res.status(403).json({ message: "Download is not available for this song" });
       }
@@ -1684,52 +1688,36 @@ export async function registerRoutes(
         return res.status(404).json({ message: "No audio file associated with this song" });
       }
 
-      const { ObjectStorageService } = await import("./replit_integrations/object_storage/index.js");
-      const svc = new ObjectStorageService();
-      const file = await svc.getObjectEntityFile(song.audioUrl);
-
-      const [metadata] = await file.getMetadata();
-      const contentType = (metadata.contentType as string) || "audio/mpeg";
-      const ext = contentType.includes("mp4") || contentType.includes("m4a") ? ".m4a"
-        : contentType.includes("wav") ? ".wav"
-        : contentType.includes("ogg") ? ".ogg"
-        : ".mp3";
-
-      const safeTitle = song.title
-        .replace(/[^\w\s-]/gi, "")
-        .trim()
-        .replace(/\s+/g, "-")
-        .substring(0, 80) || "song";
-
-      res.set({
-        "Content-Type": contentType,
-        "Content-Disposition": `attachment; filename="${safeTitle}${ext}"`,
-        "Cache-Control": "private, no-store",
-      });
-      if (metadata.size) res.set("Content-Length", String(metadata.size));
-
-      const stream = file.createReadStream();
-      stream.on("error", (err) => {
-        console.error("Song download stream error:", err);
-        if (!res.headersSent) res.status(500).json({ message: "Error streaming audio file" });
-      });
-      stream.pipe(res);
-    } catch (err: any) {
-      console.error("Song download error:", err);
-      if (err?.name === "ObjectNotFoundError") {
-        return res.status(404).json({ message: "Audio file not found in storage" });
+      const r2Base = process.env.R2_PUBLIC_URL;
+      if (!r2Base) {
+        console.error("R2_PUBLIC_URL is not configured");
+        return res.status(500).json({ message: "Media storage is not configured" });
       }
-      res.status(500).json({ message: "Download failed" });
+
+      const objectPath = song.audioUrl
+        .replace(/^https?:\/\/[^/]+\/?/, "")
+        .replace(/^\/?objects\//, "")
+        .replace(/^\/+/, "");
+
+      const r2Url =
+        `${r2Base.replace(/\/+$/, "")}/.private/${objectPath.replace(/^\.private\//, "")}`;
+
+      return res.redirect(302, r2Url);
+    } catch (err) {
+      console.error("Song download redirect error:", err);
+      return res.status(500).json({ message: "Download failed" });
     }
   });
 
-  // Public: free promotional video download — streams MP4 with safe filename
+  // Public: free promotional video download — media served directly by Cloudflare R2
   app.get("/api/songs/:id/download-video", async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+
     try {
       const song = await storage.getSong(id);
       if (!song) return res.status(404).json({ message: "Song not found" });
+
       if ((song as any).videoDownloadStatus === "disabled") {
         return res.status(403).json({ message: "Video download is not available for this song" });
       }
@@ -1737,37 +1725,24 @@ export async function registerRoutes(
         return res.status(404).json({ message: "No video file associated with this song" });
       }
 
-      const { ObjectStorageService } = await import("./replit_integrations/object_storage/index.js");
-      const svc = new ObjectStorageService();
-      const file = await svc.getObjectEntityFile((song as any).videoUrl);
-      const [metadata] = await file.getMetadata();
-      const contentType = (metadata.contentType as string) || "video/mp4";
-
-      const safeTitle = song.title
-        .replace(/[^\w\s-]/gi, "")
-        .trim()
-        .replace(/\s+/g, "-")
-        .substring(0, 80) || "song";
-
-      res.set({
-        "Content-Type": contentType,
-        "Content-Disposition": `attachment; filename="${safeTitle}.mp4"`,
-        "Cache-Control": "private, no-store",
-      });
-      if (metadata.size) res.set("Content-Length", String(metadata.size));
-
-      const stream = file.createReadStream();
-      stream.on("error", (err) => {
-        console.error("Song video download stream error:", err);
-        if (!res.headersSent) res.status(500).json({ message: "Error streaming video file" });
-      });
-      stream.pipe(res);
-    } catch (err: any) {
-      console.error("Song video download error:", err);
-      if (err?.name === "ObjectNotFoundError") {
-        return res.status(404).json({ message: "Video file not found in storage" });
+      const r2Base = process.env.R2_PUBLIC_URL;
+      if (!r2Base) {
+        console.error("R2_PUBLIC_URL is not configured");
+        return res.status(500).json({ message: "Media storage is not configured" });
       }
-      res.status(500).json({ message: "Video download failed" });
+
+      const objectPath = String((song as any).videoUrl)
+        .replace(/^https?:\/\/[^/]+\/?/, "")
+        .replace(/^\/?objects\//, "")
+        .replace(/^\/+/, "");
+
+      const r2Url =
+        `${r2Base.replace(/\/+$/, "")}/.private/${objectPath.replace(/^\.private\//, "")}`;
+
+      return res.redirect(302, r2Url);
+    } catch (err) {
+      console.error("Song video download redirect error:", err);
+      return res.status(500).json({ message: "Video download failed" });
     }
   });
 
