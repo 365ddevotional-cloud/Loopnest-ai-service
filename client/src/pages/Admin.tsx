@@ -1222,7 +1222,15 @@ function PrayerInbox() {
                     )}
                   </CardTitle>
                   {selectedRequest.email && (
-                    <a href={`mailto:${selectedRequest.email}`} className="text-sm text-muted-foreground hover:underline cursor-pointer">{selectedRequest.email}</a>
+                    <button
+  type="button"
+  onClick={() => {
+    window.location.href = `mailto:${selectedRequest.email}`;
+  }}
+  className="text-sm text-muted-foreground hover:underline cursor-pointer bg-transparent border-0 p-0 text-left"
+>
+  {selectedRequest.email}
+</button>
                   )}
                   {selectedRequest.smsEnabled && (
                     <Badge variant="outline" className="text-xs mt-1">
