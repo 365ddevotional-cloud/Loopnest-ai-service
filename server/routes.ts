@@ -6189,27 +6189,20 @@ export async function registerRoutes(
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 
-  // GET /api/user/profile/picture  — stream profile picture from object storage
+  // GET /api/user/profile/picture — resolve profile picture through R2 media route
   app.get("/api/user/profile/picture", requireUser, async (req, res) => {
     const uid = (req as any).uid as string;
     try {
       const profile = await storage.getUserProfile(uid);
-      if (!profile?.profilePictureUrl) return res.status(404).json({ message: "No profile picture" });
-      const { ObjectStorageService } = await import("./replit_integrations/object_storage/index.js");
-      const svc = new ObjectStorageService();
-      const file = await svc.getObjectEntityFile(profile.profilePictureUrl);
-      const [metadata] = await file.getMetadata();
-      res.set({
-        "Content-Type": (metadata.contentType as string) || "image/jpeg",
-        "Cache-Control": "private, max-age=300",
-      });
-      if (metadata.size) res.set("Content-Length", String(metadata.size));
-      const stream = file.createReadStream();
-      stream.on("error", () => { if (!res.headersSent) res.status(500).end(); });
-      stream.pipe(res);
-    } catch (err: any) {
-      if (err?.name === "ObjectNotFoundError") return res.status(404).json({ message: "Picture not found" });
-      res.status(500).json({ message: "Server error" });
+      if (!profile?.profilePictureUrl) {
+        return res.status(404).json({ message: "No profile picture" });
+      }
+
+      // Existing profile pictures use /objects/uploads/... paths.
+      // That route now resolves directly to Cloudflare R2.
+      return res.redirect(302, profile.profilePictureUrl);
+    } catch {
+      return res.status(500).json({ message: "Server error" });
     }
   });
 

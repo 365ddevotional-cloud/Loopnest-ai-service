@@ -1,40 +1,31 @@
 import type { Express } from "express";
-import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { randomUUID } from "crypto";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-/**
- * Register object storage routes for file uploads.
- *
- * This provides example routes for the presigned URL upload flow:
- * 1. POST /api/uploads/request-url - Get a presigned URL for uploading
- * 2. The client then uploads directly to the presigned URL
- *
- * IMPORTANT: These are example routes. Customize based on your use case:
- * - Add authentication middleware for protected uploads
- * - Add file metadata storage (save to database after upload)
- * - Add ACL policies for access control
- */
+function getR2Client() {
+  const accountId = process.env.R2_ACCOUNT_ID;
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+
+  if (!accountId || !accessKeyId || !secretAccessKey) {
+    throw new Error("R2 upload credentials are not configured");
+  }
+
+  return new S3Client({
+    region: "auto",
+    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+    credentials: {
+      accessKeyId,
+      secretAccessKey,
+    },
+  });
+}
+
 export function registerObjectStorageRoutes(app: Express): void {
-  const objectStorageService = new ObjectStorageService();
 
-  /**
-   * Request a presigned URL for file upload.
-   *
-   * Request body (JSON):
-   * {
-   *   "name": "filename.jpg",
-   *   "size": 12345,
-   *   "contentType": "image/jpeg"
-   * }
-   *
-   * Response:
-   * {
-   *   "uploadURL": "https://storage.googleapis.com/...",
-   *   "objectPath": "/objects/uploads/uuid"
-   * }
-   *
-   * IMPORTANT: The client should NOT send the file to this endpoint.
-   * Send JSON metadata only, then upload the file directly to uploadURL.
-   */
+  // Generate a temporary Cloudflare R2 upload URL.
+  // The browser uploads directly to R2; Railway never handles the file bytes.
   app.post("/api/uploads/request-url", async (req, res) => {
     try {
       const { name, size, contentType } = req.body;
@@ -45,51 +36,57 @@ export function registerObjectStorageRoutes(app: Express): void {
         });
       }
 
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const bucketName = process.env.R2_BUCKET_NAME;
+      if (!bucketName) {
+        throw new Error("R2_BUCKET_NAME is not configured");
+      }
 
-      // Extract object path from the presigned URL for later reference
-      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+      const objectId = randomUUID();
+      const objectKey = `.private/uploads/${objectId}`;
+
+      const command = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: objectKey,
+        ContentType: contentType || "application/octet-stream",
+      });
+
+      const uploadURL = await getSignedUrl(getR2Client(), command, {
+        expiresIn: 900,
+      });
+
+      // Preserve the same path format already stored throughout the app.
+      const objectPath = `/objects/uploads/${objectId}`;
 
       res.json({
         uploadURL,
         objectPath,
-        // Echo back the metadata for client convenience
         metadata: { name, size, contentType },
       });
     } catch (error) {
-      console.error("Error generating upload URL:", error);
+      console.error("Error generating R2 upload URL:", error);
       res.status(500).json({ error: "Failed to generate upload URL" });
     }
   });
 
-  /**
-   * Serve uploaded objects.
-   *
-   * GET /objects/:objectPath(*)
-   *
-   * This serves files from object storage. For public files, no auth needed.
-   * For protected files, add authentication middleware and ACL checks.
-   */
+  // Existing and new /objects/uploads/... paths resolve to Cloudflare R2.
   app.get("/objects/:objectPath(*)", async (req, res) => {
     const r2BaseUrl = process.env.R2_PUBLIC_URL;
 
-    if (r2BaseUrl && req.params.objectPath?.startsWith("uploads/")) {
-      const r2ObjectUrl =
-        `${r2BaseUrl.replace(/\/$/, "")}/.private/${req.params.objectPath}`;
-
-      return res.redirect(302, r2ObjectUrl);
+    if (!r2BaseUrl) {
+      return res.status(503).json({
+        error: "Media storage is not configured",
+      });
     }
 
-    try {
-      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
-      await objectStorageService.downloadObject(objectFile, res);
-    } catch (error) {
-      console.error("Error serving object:", error);
-      if (error instanceof ObjectNotFoundError) {
-        return res.status(404).json({ error: "Object not found" });
-      }
-      return res.status(500).json({ error: "Failed to serve object" });
+    const objectPath = req.params.objectPath;
+
+    if (!objectPath?.startsWith("uploads/")) {
+      return res.status(404).json({ error: "Object not found" });
     }
+
+    const r2ObjectUrl =
+      `${r2BaseUrl.replace(/\/$/, "")}/.private/${objectPath}`;
+
+    return res.redirect(302, r2ObjectUrl);
   });
 }
-
