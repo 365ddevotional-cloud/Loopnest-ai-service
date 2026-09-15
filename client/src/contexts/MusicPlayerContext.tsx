@@ -120,11 +120,9 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
   const { user, emailVerified, getIdToken } = useUser();
   const isSignedIn = !!user && emailVerified;
 
-  const audioRef = useRef<HTMLAudioElement>(() => {
-  const audio = new Audio();
-  audio.crossOrigin = "anonymous";
-  return audio;
-})());
+  const audioRef = useRef<HTMLAudioElement>(new Audio());
+  audioRef.current.crossOrigin = "anonymous";
+
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
