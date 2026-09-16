@@ -168,7 +168,7 @@ export default function PromiseCard3D({
 
                 <button
                   data-testid="button-go-to-devotional"
-                  onClick={() => onClose?.()}
+                  onClick={() => onClose ? onClose() : navigate("/")}
                   className="flex items-center justify-center gap-2 w-full px-5 py-3 rounded-full text-sm font-semibold transition-all mb-3"
                   style={{
                     background: [
