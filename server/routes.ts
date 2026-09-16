@@ -80,7 +80,7 @@ async function getFirebaseCerts(): Promise<Record<string, string>> {
   return certs;
 }
 
-const FIREBASE_PROJECT_ID = "loopnest-app";
+const FIREBASE_PROJECT_ID = process.env.VITE_FIREBASE_PROJECT_ID || "loopnest-app";
 
 async function verifyFirebaseToken(idToken: string): Promise<string> {
   const certs = await getFirebaseCerts();
