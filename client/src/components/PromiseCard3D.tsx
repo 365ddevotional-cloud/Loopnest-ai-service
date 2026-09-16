@@ -168,12 +168,20 @@ export default function PromiseCard3D({
 
                 <button
                   data-testid="button-go-to-devotional"
-                  onClick={() => navigate("/")}
+                  onClick={() => navigate("/devotional/today")}
                   className="flex items-center justify-center gap-2 w-full px-5 py-3 rounded-full text-sm font-semibold transition-all mb-3"
                   style={{
-                    background: "linear-gradient(135deg, #e8872a 0%, #c9a84c 100%)",
+                    background: [
+                      "linear-gradient(135deg, #c2410c 0%, #fb923c 100%)",
+                      "linear-gradient(135deg, #1d4ed8 0%, #60a5fa 100%)",
+                      "linear-gradient(135deg, #15803d 0%, #4ade80 100%)",
+                      "linear-gradient(135deg, #7e22ce 0%, #c084fc 100%)",
+                      "linear-gradient(135deg, #be123c 0%, #fb7185 100%)",
+                      "linear-gradient(135deg, #0f766e 0%, #5eead4 100%)",
+                      "linear-gradient(135deg, #b45309 0%, #fbbf24 100%)",
+                    ][Math.floor(Date.now() / 604800000) % 7],
                     color: "#fff",
-                    boxShadow: "0 4px 14px rgba(232,135,42,0.5)",
+                    boxShadow: "0 4px 14px rgba(0,0,0,0.25)",
                     letterSpacing: "0.02em",
                   }}
                 >
