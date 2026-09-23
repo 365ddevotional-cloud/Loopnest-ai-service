@@ -3,7 +3,7 @@ import { api, buildUrl } from "@shared/routes";
 import type { InsertDevotional } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { getLocalDateString } from "@/lib/date-utils";
-import { getAllDevotionals, getDevotionalByDate as getOfflineDevotional } from "@/lib/offlineDb";
+import { getAllDevotionals, getDevotionalByDate as getOfflineDevotional, saveDevotionals } from "@/lib/offlineDb";
 
 function getLangParam(): string {
   try {
@@ -112,12 +112,8 @@ export function useTodayDevotional() {
       }
 
       try {
-        const url = appendLangParam(`${api.devotionals.getToday.path}?clientDate=${localDate}&_t=${Date.now()}`);
-        const res = await fetch(url, { 
-          credentials: "include",
-          cache: "no-store",
-          headers: { "Cache-Control": "no-cache" }
-        });
+        const url = appendLangParam(`${api.devotionals.getToday.path}?clientDate=${localDate}`);
+        const res = await fetch(url, { credentials: "include" });
         if (res.status === 404) {
           const offline = await fallbackTodayFromIndexedDB(localDate);
           if (offline) return offline;
@@ -128,7 +124,11 @@ export function useTodayDevotional() {
           if (offline) return offline;
           throw new Error("Failed to fetch today's devotional");
         }
-        return api.devotionals.getToday.responses[200].parse(await res.json());
+        const parsed = api.devotionals.getToday.responses[200].parse(await res.json());
+        if (!lang) {
+          saveDevotionals([parsed]).catch(() => {});
+        }
+        return parsed;
       } catch (e) {
         if (e instanceof Error && e.message === "offline_no_data") throw e;
         const offline = await fallbackTodayFromIndexedDB(localDate);
@@ -136,7 +136,7 @@ export function useTodayDevotional() {
         throw e;
       }
     },
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000,
     retry: (failureCount, error) => {
       if (error instanceof Error && error.message === "offline_no_data") return false;
       return failureCount < 2;
@@ -181,12 +181,8 @@ export function useDevotionalByDate(date: string) {
 
       try {
         const baseUrl = buildUrl(api.devotionals.getByDate.path, { date });
-        const url = appendLangParam(`${baseUrl}?clientDate=${localDate}&_t=${Date.now()}`);
-        const res = await fetch(url, { 
-          credentials: "include",
-          cache: "no-store",
-          headers: { "Cache-Control": "no-cache" }
-        });
+        const url = appendLangParam(`${baseUrl}?clientDate=${localDate}`);
+        const res = await fetch(url, { credentials: "include" });
         if (res.status === 404) return { devotional: null };
         if (res.status === 403) {
           const data = await res.json();
@@ -200,6 +196,9 @@ export function useDevotionalByDate(date: string) {
           throw new Error("Failed to fetch devotional");
         }
         const devotional = api.devotionals.getByDate.responses[200].parse(await res.json());
+        if (!lang) {
+          saveDevotionals([devotional]).catch(() => {});
+        }
         return { devotional };
       } catch (e) {
         const offline = await fallbackByDate();
@@ -208,7 +207,7 @@ export function useDevotionalByDate(date: string) {
       }
     },
     enabled: !!date,
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -228,12 +227,8 @@ export function useDevotionalsList() {
       }
 
       try {
-        const url = appendLangParam(`${api.devotionals.list.path}?clientDate=${localDate}&_t=${Date.now()}`);
-        const res = await fetch(url, { 
-          credentials: "include",
-          cache: "no-store",
-          headers: { "Cache-Control": "no-cache" }
-        });
+        const url = appendLangParam(`${api.devotionals.list.path}?clientDate=${localDate}`);
+        const res = await fetch(url, { credentials: "include" });
         if (!res.ok) {
           const allOffline = await getAllDevotionals();
           if (allOffline.length > 0) {
@@ -241,7 +236,11 @@ export function useDevotionalsList() {
           }
           throw new Error("Failed to fetch devotionals list");
         }
-        return api.devotionals.list.responses[200].parse(await res.json());
+        const parsed = api.devotionals.list.responses[200].parse(await res.json());
+        if (!lang) {
+          saveDevotionals(parsed).catch(() => {});
+        }
+        return parsed;
       } catch (e) {
         if (e instanceof Error && e.message === "offline_no_data") throw e;
         const allOffline = await getAllDevotionals();
@@ -251,7 +250,7 @@ export function useDevotionalsList() {
         throw e;
       }
     },
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000,
     retry: (failureCount, error) => {
       if (error instanceof Error && error.message === "offline_no_data") return false;
       return failureCount < 2;
