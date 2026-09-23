@@ -42,6 +42,7 @@ export default function PromisePopup() {
     isEnabled: boolean;
   }>({
     queryKey: ["/api/promise/current"],
+    staleTime: 5 * 60 * 1000,
     refetchInterval: 60 * 60 * 1000,
   });
 
