@@ -650,17 +650,34 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  private readonly readCacheTtlMs = 5 * 60 * 1000;
+  private devotionalsCache: { data: Devotional[]; expiresAt: number } | null = null;
+  private sundaySchoolCache: { data: SundaySchoolLesson[]; expiresAt: number } | null = null;
+
+  private invalidateDevotionalsCache() {
+    this.devotionalsCache = null;
+  }
+
+  private invalidateSundaySchoolCache() {
+    this.sundaySchoolCache = null;
+  }
+
   // Helper to filter out soft-deleted devotionals
   private notDeleted() {
     return or(eq(devotionals.isDeleted, false), isNull(devotionals.isDeleted));
   }
 
   async getDevotionals(): Promise<Devotional[]> {
-    return await db
+    if (this.devotionalsCache && this.devotionalsCache.expiresAt > Date.now()) {
+      return this.devotionalsCache.data;
+    }
+    const data = await db
       .select()
       .from(devotionals)
       .where(this.notDeleted())
       .orderBy(desc(devotionals.date));
+    this.devotionalsCache = { data, expiresAt: Date.now() + this.readCacheTtlMs };
+    return data;
   }
 
   async getDevotional(id: number): Promise<Devotional | undefined> {
@@ -694,6 +711,7 @@ export class DatabaseStorage implements IStorage {
       .insert(devotionals)
       .values(insertDevotional)
       .returning();
+    this.invalidateDevotionalsCache();
     return devotional;
   }
 
@@ -706,6 +724,7 @@ export class DatabaseStorage implements IStorage {
       .set(updates)
       .where(eq(devotionals.id, id))
       .returning();
+    this.invalidateDevotionalsCache();
     return updated;
   }
 
@@ -728,6 +747,7 @@ export class DatabaseStorage implements IStorage {
         },
       })
       .returning();
+    this.invalidateDevotionalsCache();
     return devotional;
   }
 
@@ -745,6 +765,7 @@ export class DatabaseStorage implements IStorage {
       .set({ isDeleted: false, deletedAt: null })
       .where(eq(devotionals.id, id))
       .returning();
+    this.invalidateDevotionalsCache();
     return restored;
   }
 
@@ -1070,10 +1091,15 @@ export class DatabaseStorage implements IStorage {
 
   // Sunday School
   async getSundaySchoolLessons(): Promise<SundaySchoolLesson[]> {
-    return await db
+    if (this.sundaySchoolCache && this.sundaySchoolCache.expiresAt > Date.now()) {
+      return this.sundaySchoolCache.data;
+    }
+    const data = await db
       .select()
       .from(sundaySchoolLessons)
       .orderBy(desc(sundaySchoolLessons.date));
+    this.sundaySchoolCache = { data, expiresAt: Date.now() + this.readCacheTtlMs };
+    return data;
   }
 
   async getSundaySchoolLesson(id: number): Promise<SundaySchoolLesson | undefined> {
@@ -1089,6 +1115,7 @@ export class DatabaseStorage implements IStorage {
       .insert(sundaySchoolLessons)
       .values(lesson)
       .returning();
+    this.invalidateSundaySchoolCache();
     return created;
   }
 
@@ -1098,11 +1125,13 @@ export class DatabaseStorage implements IStorage {
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(sundaySchoolLessons.id, id))
       .returning();
+    this.invalidateSundaySchoolCache();
     return updated;
   }
 
   async deleteSundaySchoolLesson(id: number): Promise<void> {
     await db.delete(sundaySchoolLessons).where(eq(sundaySchoolLessons.id, id));
+    this.invalidateSundaySchoolCache();
   }
 
   async getApprovedTestimonies(): Promise<Testimony[]> {
