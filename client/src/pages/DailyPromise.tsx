@@ -13,6 +13,7 @@ interface PromiseResponse {
 export default function DailyPromise() {
   const { data, isLoading } = useQuery<PromiseResponse>({
     queryKey: ["/api/promise/current"],
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: nextData } = useQuery<{ promise: { id: number; heading: string; text: string; reference: string }; index: number }>({
