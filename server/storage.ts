@@ -756,6 +756,7 @@ export class DatabaseStorage implements IStorage {
       .update(devotionals)
       .set({ isDeleted: true, deletedAt: new Date() })
       .where(eq(devotionals.id, id));
+    this.invalidateDevotionalsCache();
   }
 
   // Admin-only method to restore a soft-deleted devotional
