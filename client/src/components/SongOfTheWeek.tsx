@@ -393,6 +393,7 @@ export function SongOfTheWeek() {
   const { toast } = useToast();
   const { data: song, isLoading } = useQuery<Song>({
     queryKey: ["/api/songs/featured"],
+    staleTime: 10 * 60 * 1000,
     retry: 1,
   });
 
@@ -884,6 +885,7 @@ export function SongOfTheWeek() {
 export function SongMiniCard() {
   const { data: song } = useQuery<Song>({
     queryKey: ["/api/songs/featured"],
+    staleTime: 10 * 60 * 1000,
     retry: 1,
   });
 
