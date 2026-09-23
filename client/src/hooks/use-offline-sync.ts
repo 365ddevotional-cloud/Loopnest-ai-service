@@ -1,7 +1,5 @@
 import { useEffect, useRef } from "react";
 import {
-  saveDevotionals,
-  saveSundayLessons,
   saveBibleChapters,
   hasOfflineBible,
   setMeta,
@@ -9,9 +7,6 @@ import {
   type BibleChapterEntry,
 } from "@/lib/offlineDb";
 import { BIBLE_BOOKS } from "@/lib/bible-data";
-
-const SYNC_KEY = "offlineSyncTimestamp";
-const SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 const BOOK_NUMBERS: Record<string, number> = {
   genesis: 1, exodus: 2, leviticus: 3, numbers: 4, deuteronomy: 5,
@@ -28,56 +23,6 @@ const BOOK_NUMBERS: Record<string, number> = {
   titus: 56, philemon: 57, hebrews: 58, james: 59, "1 peter": 60, "2 peter": 61,
   "1 john": 62, "2 john": 63, "3 john": 64, jude: 65, revelation: 66,
 };
-
-function shouldSync(): boolean {
-  try {
-    const last = localStorage.getItem(SYNC_KEY);
-    if (!last) return true;
-    return Date.now() - parseInt(last, 10) > SYNC_INTERVAL_MS;
-  } catch {
-    return true;
-  }
-}
-
-async function syncDevotionals(): Promise<void> {
-  try {
-    console.log("[OfflineSync] Fetching all devotionals...");
-    const res = await fetch("/api/devotionals?_t=" + Date.now(), { credentials: "include" });
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        await saveDevotionals(data);
-        await setMeta("devotionalsSynced", true);
-        await setMeta("devotionalsCount", data.length);
-        console.log(`[OfflineSync] Devotionals synced: ${data.length} items`);
-      }
-    } else {
-      console.warn("[OfflineSync] Devotionals API returned:", res.status);
-    }
-  } catch (e) {
-    console.warn("[OfflineSync] Devotionals sync failed:", e);
-  }
-}
-
-async function syncSundayLessons(): Promise<void> {
-  try {
-    console.log("[OfflineSync] Fetching all Sunday lessons...");
-    const res = await fetch("/api/sunday-school?_t=" + Date.now(), { credentials: "include" });
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        await saveSundayLessons(data);
-        await setMeta("sundayLessonsSynced", true);
-        await setMeta("sundayLessonsCount", data.length);
-        console.log(`[OfflineSync] Sunday lessons synced: ${data.length} items`);
-      }
-    } else {
-      console.warn("[OfflineSync] Sunday lessons API returned:", res.status);
-    }
-  } catch (e) {
-    console.warn("[OfflineSync] Sunday lessons sync failed:", e);
-  }
-}
 
 async function syncBibleKJV(): Promise<void> {
   const alreadyComplete = await getMeta("bibleSyncComplete");
@@ -157,25 +102,12 @@ export function useOfflineSync() {
 
   useEffect(() => {
     if (!navigator.onLine || syncingRef.current) return;
-    if (!shouldSync()) return;
 
     syncingRef.current = true;
-
-    (async () => {
-      try {
-        console.log("[OfflineSync] Starting sync...");
-        await Promise.all([syncDevotionals(), syncSundayLessons()]);
-        localStorage.setItem(SYNC_KEY, String(Date.now()));
-        console.log("[OfflineSync] Devotionals + Sunday lessons sync complete");
-
-        syncBibleKJV().catch((e) =>
-          console.warn("[OfflineSync] Bible KJV background sync error:", e)
-        );
-      } catch (e) {
-        console.warn("[OfflineSync] Sync error:", e);
-      } finally {
+    syncBibleKJV()
+      .catch((e) => console.warn("[OfflineSync] Bible KJV background sync error:", e))
+      .finally(() => {
         syncingRef.current = false;
-      }
-    })();
+      });
   }, []);
 }
