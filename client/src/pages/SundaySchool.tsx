@@ -43,7 +43,10 @@ async function fetchLessonsWithFallback(): Promise<any[]> {
     const res = await fetch("/api/sunday-school", { credentials: "include" });
     if (!res.ok) throw new Error("API error");
     const data = await res.json();
-    if (Array.isArray(data) && data.length > 0) return data;
+    if (Array.isArray(data) && data.length > 0) {
+      saveSundayLessons(data).catch(() => {});
+      return data;
+    }
     throw new Error("Empty response");
   } catch (e) {
     const offline = await getAllSundayLessons();
@@ -62,6 +65,7 @@ export default function SundaySchool() {
   const { data: lessons, isLoading } = useQuery<SundaySchoolLesson[]>({
     queryKey: ["/api/sunday-school"],
     queryFn: fetchLessonsWithFallback,
+    staleTime: 10 * 60 * 1000,
     retry: (failureCount, error) => {
       if (error instanceof Error && error.message === "offline_no_data") return false;
       return failureCount < 2;
