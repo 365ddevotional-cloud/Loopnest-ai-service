@@ -4,11 +4,6 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import path from "path";
-import { runGovernanceMigration } from "./migrate-governance";
-import { runPromisePictureMigration } from "./migrate-promise-picture";
-import { runYoutubeUrlMigration } from "./migrate-youtube-url";
-import { runUploadDefaultsMigration } from "./migrate-upload-defaults";
-import { runYoutubePublishingMigration } from "./migrate-youtube-publishing";
 
 const app = express();
 const httpServer = createServer(app);
@@ -83,24 +78,12 @@ export function log(message: string, source = "express") {
 
 app.use((req, res, next) => {
   const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
+  const requestPath = req.path;
 
   res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      log(logLine);
+    if (requestPath.startsWith("/api")) {
+      const duration = Date.now() - start;
+      log(`${req.method} ${requestPath} ${res.statusCode} in ${duration}ms`);
     }
   });
 
@@ -146,40 +129,9 @@ httpServer.listen(
     log(`Database host hash: ${dbHash}`);
     log(`Build time: ${new Date().toISOString()}`);
 
-    // Run incremental governance migration (idempotent, safe for existing DBs)
-    runGovernanceMigration().catch((err) => console.error("[governance-migration] Error:", err));
-    runPromisePictureMigration().catch((err) => console.error("[promise-picture-migration] Error:", err));
-    runYoutubeUrlMigration().catch((err) => console.error("[youtube-url-migration] Error:", err));
-    runUploadDefaultsMigration().catch((err) => console.error("[upload-defaults-migration] Error:", err));
-    runYoutubePublishingMigration().catch((err) => console.error("[youtube-publishing-migration] Error:", err));
+    // Completed schema/data migrations and seed jobs are intentionally not run on every
+    // production startup. Run them explicitly only when a future migration requires it.
+    // This avoids repeated full-table reads/writes and keeps Neon compute/transfer low.
 
-    import("./seed-devotionals").then(({ seedAllDevotionals }) => {
-      import("./storage").then(({ storage }) => {
-        storage.getDevotionals().then((before) => {
-          const beforeCount = before.length;
-          log(`Devotional auto-sync starting (beforeCount: ${beforeCount}, NODE_ENV: ${process.env.NODE_ENV || "development"})`);
-          seedAllDevotionals()
-            .then(() => {
-              storage.getDevotionals().then((after) => {
-                const afterCount = after.length;
-                log(`Devotional auto-sync complete (beforeCount: ${beforeCount}, afterCount: ${afterCount}, inserted: ${afterCount - beforeCount})`);
-
-                import("./sync-production-data").then(({ syncProductionData }) => {
-                  syncProductionData()
-                    .then((result) => {
-                      log(`Data standardization complete (scanned: ${result.scanned}, updated: ${result.updated})`);
-                    })
-                    .catch((err) => console.error("Data standardization failed:", err));
-                });
-              });
-            })
-            .catch((err) => console.error("Devotional auto-sync failed:", err));
-        });
-      });
-    });
-
-    import("./seed-sunday-school").then(({ seedSundaySchoolLessons }) => {
-      seedSundaySchoolLessons().catch((err) => console.error("Sunday School seed failed:", err));
-    });
   },
 );
