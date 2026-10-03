@@ -14,15 +14,25 @@ export async function getUncachableSendGridClient() {
   if (!fromEmail || !/^[^\s<>@]+@(?:[a-z0-9-]+\.)*365dailydevotional\.com$/i.test(fromEmail)) {
     throw new Error("Configure a verified EMAIL_FROM address on the 365dailydevotional.com domain");
   }
+  const brevoKey = process.env.BREVO_API_KEY;
   const resendKey = process.env.RESEND_API_KEY;
   const sendgridKey = process.env.SENDGRID_API_KEY;
-  if (!resendKey && !sendgridKey) throw new Error("Configure RESEND_API_KEY or SENDGRID_API_KEY in Railway");
+  if (!brevoKey && !resendKey && !sendgridKey) throw new Error("Configure BREVO_API_KEY, RESEND_API_KEY or SENDGRID_API_KEY in Railway");
   return {
     fromEmail,
     client: {
       async send(message: OutgoingEmail) {
         const subject = message.subject.includes(EMAIL_BRAND_NAME) ? message.subject : `${EMAIL_BRAND_NAME} — ${message.subject}`;
         const html = brandEmailHtml(message.html);
+        if (brevoKey) {
+          const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+            method: "POST",
+            headers: { "api-key": brevoKey, "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({ sender: { name: EMAIL_BRAND_NAME, email: fromEmail }, to: [{ email: message.to }], replyTo: { email: message.replyTo || "365ddevotional@gmail.com" }, subject, htmlContent: html }),
+          });
+          if (!response.ok) throw new Error(`Email provider rejected delivery (${response.status})`);
+          return;
+        }
         if (resendKey) {
           const response = await fetch("https://api.resend.com/emails", {
             method: "POST",
