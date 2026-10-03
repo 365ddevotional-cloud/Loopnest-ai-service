@@ -24,7 +24,7 @@ function getR2Client() {
 
 // Download directly from R2 with attachment headers, without sending media bytes
 // through Railway or changing the headers used for normal playback.
-export async function getVideoDownloadUrl(objectPath: string, slug: string): Promise<string> {
+export async function getVideoDownloadUrl(objectPath: string, title: string): Promise<string> {
   const bucketName = process.env.R2_BUCKET_NAME;
   if (!bucketName) throw new Error("R2_BUCKET_NAME is not configured");
 
@@ -32,7 +32,10 @@ export async function getVideoDownloadUrl(objectPath: string, slug: string): Pro
   if (!key.startsWith("uploads/") || key.split("/").some(part => part === "..") || /[?#]/.test(key)) {
     throw new Error("Invalid video object path");
   }
-  const filename = `${slug.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 120) || "song-video"}.mp4`;
+  const safeTitle = title.normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/https?:\/\/\S+|www\.\S+/gi, "")
+    .replace(/[^a-zA-Z0-9 _!-]/g, "").replace(/\s+/g, " ").trim().slice(0, 120);
+  const filename = `${safeTitle || "Song"} - from 365 Daily Devotional.mp4`;
   return getSignedUrl(getR2Client(), new GetObjectCommand({
     Bucket: bucketName,
     Key: `.private/${key}`,

@@ -1,3 +1,4 @@
+import logoImage from "@assets/IMG_0618_1785225816241.png";
 import { useState, useEffect, useRef } from "react";
 import { useRoute, Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -460,7 +461,7 @@ export default function SongDetail() {
     setShowDownloadModal(false);
     const a = document.createElement("a");
     a.href = `/api/songs/${song.id}/download-video`;
-    a.download = `${song.slug}.mp4`;
+    a.download = `${song.title.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "")} - from 365 Daily Devotional.mp4`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -989,6 +990,13 @@ export default function SongDetail() {
       <Dialog open={showDownloadModal} onOpenChange={(v) => !v && setShowDownloadModal(false)}>
         <DialogContent className="max-w-md max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <img src={logoImage} alt="365 Daily Devotional" className="h-14 w-14 object-contain rounded-md" />
+              <div className="min-w-0 text-left">
+                <p className="font-semibold break-words">{song.title}</p>
+                <p className="text-sm text-muted-foreground">from 365 Daily Devotional</p>
+              </div>
+            </div>
             <DialogTitle className="font-serif text-2xl text-primary flex items-center gap-2">
               <Download className="w-6 h-6" />
               {downloadType === "video" ? "Your Video Download Is Ready" : "Your Audio Download Is Ready"}

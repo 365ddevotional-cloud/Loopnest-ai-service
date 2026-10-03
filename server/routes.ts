@@ -1731,7 +1731,7 @@ export async function registerRoutes(
         .replace(/^\/?objects\//, "")
         .replace(/^\/+/, "");
 
-      const downloadUrl = await getVideoDownloadUrl(objectPath, song.slug);
+      const downloadUrl = await getVideoDownloadUrl(objectPath, song.title);
       res.setHeader("Cache-Control", "no-store");
       return res.redirect(302, downloadUrl);
     } catch (err) {
