@@ -1,3 +1,4 @@
+import { DownloadAccessCard } from "@/components/DownloadAccessCard";
 import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -183,7 +184,8 @@ export default function AccountPage() {
     return (
       <div className="max-w-lg mx-auto py-16 px-4 text-center space-y-4">
         <UserCircle className="w-16 h-16 mx-auto text-muted-foreground/40" />
-        <p className="text-muted-foreground">You are not signed in.</p>
+        <DownloadAccessCard />
+        <p className="text-muted-foreground">Please sign in with a verified email to manage your account.</p>
         <Button onClick={() => setLocation("/signin")} data-testid="button-account-signin">Sign In</Button>
       </div>
     );
@@ -206,6 +208,7 @@ export default function AccountPage() {
 
   return (
     <div className="max-w-lg mx-auto py-10 px-4 space-y-6">
+      <DownloadAccessCard />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-serif text-2xl font-semibold text-foreground">My Account</h1>

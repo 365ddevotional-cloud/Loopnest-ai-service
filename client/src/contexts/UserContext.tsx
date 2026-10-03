@@ -45,6 +45,7 @@ const UserContext = createContext<UserContextType>({
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [verifiedEmail, setVerifiedEmail] = useState(false);
   const { toast } = useToast();
 
   const mergeLocalFavorites = useCallback(async (firebaseUser: User) => {
@@ -122,6 +123,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
+      setVerifiedEmail(firebaseUser?.emailVerified ?? false);
       setLoading(false);
       if (firebaseUser) {
         await mergeLocalFavorites(firebaseUser);
@@ -264,6 +266,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (!currentUser) return false;
     try {
       await currentUser.reload();
+      await currentUser.getIdToken(true);
+      setVerifiedEmail(auth.currentUser?.emailVerified ?? false);
       return auth.currentUser?.emailVerified ?? false;
     } catch {
       return false;
@@ -275,7 +279,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         loading,
-        emailVerified: user?.emailVerified ?? false,
+        emailVerified: verifiedEmail,
         getIdToken,
         signIn,
         signUp,

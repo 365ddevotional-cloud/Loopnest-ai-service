@@ -1,3 +1,4 @@
+import { getDownloadAccess } from "./download-access";
 import { defaultMusicPricing, musicPricingSchema } from "@shared/music-pricing";
 import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
@@ -1671,6 +1672,21 @@ export async function registerRoutes(
     } catch (err) {
       console.error("Song audio redirect error:", err);
       return res.status(500).json({ message: "Streaming failed" });
+    }
+  });
+
+  // One server-owned entitlement shared by all future paid download checkouts.
+  // Admin-password sessions and profile/request email fields cannot grant it.
+  app.get("/api/user/download-access", async (req, res) => {
+    res.setHeader("Cache-Control", "private, no-store");
+    const header = req.headers.authorization;
+    if (!header?.startsWith("Bearer ")) return res.status(401).json({ message: "Please sign in to confirm your download access." });
+    try {
+      const { auth } = await import("./firebase-admin");
+      const claims = await auth.verifyIdToken(header.slice(7));
+      return res.json(getDownloadAccess(claims));
+    } catch {
+      return res.status(401).json({ message: "Your session has expired. Please sign in again." });
     }
   });
 
