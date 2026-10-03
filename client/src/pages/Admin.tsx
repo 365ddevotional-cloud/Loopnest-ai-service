@@ -1,3 +1,4 @@
+import MusicPricingAdmin from "@/components/MusicPricingAdmin";
 import { CreateDevotionalForm } from "@/components/CreateDevotionalForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -2819,6 +2820,7 @@ export default function Admin() {
         </TabsContent>
 
         <TabsContent value="songs">
+          <MusicPricingAdmin />
           <SongsAdmin />
         </TabsContent>
 

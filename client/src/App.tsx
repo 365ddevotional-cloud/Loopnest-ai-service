@@ -1,3 +1,4 @@
+import LoopNestSeparated from "@/pages/LoopNestSeparated";
 import { useEffect, useState } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
@@ -53,11 +54,6 @@ import PublicArchive from "@/pages/PublicArchive";
 import SundaySchool from "@/pages/SundaySchool";
 import SundaySchoolLessonPage from "@/pages/SundaySchoolLesson";
 import { GamePage, GamesHub, CreateGamePage } from "@/game-engine";
-import { LoopNestAuthProvider } from "@/loopnest/AuthContext";
-import LoopNestRoot from "@/loopnest/LoopNestRoot";
-import LoopNestLogin from "@/loopnest/LoginPage";
-import LoopNestDashboard from "@/loopnest/DashboardPage";
-import LoopNestBuilder from "@/loopnest/BuilderPage";
 import TestimonyWall from "@/pages/TestimonyWall";
 import QuickPrayer from "@/pages/QuickPrayer";
 import DailyPromise from "@/pages/DailyPromise";
@@ -239,10 +235,10 @@ function Router() {
       <Route path="/interactive" component={GamesHub} />
       <Route path="/interactive/create" component={CreateGamePage} />
       <Route path="/interactive/:gameSlug" component={GamePage} />
-      <Route path="/loopnest" component={LoopNestRoot} />
-      <Route path="/loopnest/login" component={LoopNestLogin} />
-      <Route path="/loopnest/dashboard" component={LoopNestDashboard} />
-      <Route path="/loopnest/builder" component={LoopNestBuilder} />
+      <Route path="/loopnest" component={LoopNestSeparated} />
+      <Route path="/loopnest/login" component={LoopNestSeparated} />
+      <Route path="/loopnest/dashboard" component={LoopNestSeparated} />
+      <Route path="/loopnest/builder" component={LoopNestSeparated} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -262,13 +258,6 @@ function AppContent() {
   const isPublicRoute =
     location.startsWith("/devotional") || location.startsWith("/public") || location.startsWith("/interactive") || location.startsWith("/loopnest");
 
-  if (location.startsWith("/loopnest")) {
-    return (
-      <LoopNestAuthProvider>
-        <Router />
-      </LoopNestAuthProvider>
-    );
-  }
 
   // Group mode shell routes (have their own header/layout via GroupModeShell)
   const groupIdPath = location.startsWith("/group/") && !isNaN(Number(location.split("/")[2]));

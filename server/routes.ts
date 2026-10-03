@@ -1,3 +1,4 @@
+import { defaultMusicPricing, musicPricingSchema } from "@shared/music-pricing";
 import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
 import fs from "fs";
@@ -2009,6 +2010,23 @@ export async function registerRoutes(
   // ── End Songs ─────────────────────────────────────────────────────────────
 
   // ── Song Upload Defaults (Phase 2) ────────────────────────────────────────
+  app.get("/api/admin/music-pricing", requireAdmin, async (_req, res) => {
+    try {
+      const saved = await storage.getGlobalGivingSetting("music_download_prices_v1");
+      res.setHeader("Cache-Control", "no-store");
+      res.json(saved ? musicPricingSchema.parse(JSON.parse(saved)) : defaultMusicPricing);
+    } catch { res.status(500).json({ message: "Could not load download prices" }); }
+  });
+
+  app.put("/api/admin/music-pricing", requireAdmin, async (req, res) => {
+    const parsed = musicPricingSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid download prices. USD prices must be at least $0.50." });
+    try {
+      await storage.setGlobalGivingSetting("music_download_prices_v1", JSON.stringify(parsed.data), "admin");
+      res.json(parsed.data);
+    } catch { res.status(500).json({ message: "Could not save download prices" }); }
+  });
+
   app.get("/api/admin/song-upload-defaults", requireAdmin, async (_req, res) => {
     try {
       res.json(await storage.getSongUploadDefaults() ?? {});
