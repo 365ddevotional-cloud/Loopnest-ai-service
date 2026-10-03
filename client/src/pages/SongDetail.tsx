@@ -384,10 +384,16 @@ export default function SongDetail() {
     if (navigator.share) {
       try {
         await navigator.share({ title: song?.title, url });
-      } catch {}
-    } else {
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    }
+    try {
       await navigator.clipboard.writeText(url);
       toast({ title: "Link copied!" });
+    } catch {
+      toast({ title: "Share this song", description: "Copy this page's address from your browser to share the song." });
     }
   };
 
@@ -452,17 +458,12 @@ export default function SongDetail() {
   const triggerVideoDownload = () => {
     if (!song) return;
     setShowDownloadModal(false);
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    if (isIOS) {
-      window.open(`/api/songs/${song.id}/download-video`, "_blank");
-    } else {
-      const a = document.createElement("a");
-      a.href = `/api/songs/${song.id}/download-video`;
-      a.setAttribute("download", "");
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
+    const a = document.createElement("a");
+    a.href = `/api/songs/${song.id}/download-video`;
+    a.download = `${song.slug}.mp4`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   };
 
   if (isLoading) {
@@ -986,7 +987,7 @@ export default function SongDetail() {
 
       {/* Download Encouragement Modal */}
       <Dialog open={showDownloadModal} onOpenChange={(v) => !v && setShowDownloadModal(false)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl text-primary flex items-center gap-2">
               <Download className="w-6 h-6" />
@@ -1006,10 +1007,13 @@ export default function SongDetail() {
             <p className="text-xs text-muted-foreground font-medium text-center">
               Giving is completely optional. You may continue your download whether or not you give.
             </p>
-            {/iPad|iPhone|iPod/.test(navigator.userAgent) && (
+            {isIOSDevice && (
               <p className="text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 rounded-md px-3 py-2 text-center">
-                On iPhone: Tap the Share icon after the file opens, then choose{" "}
-                <strong>{downloadType === "video" ? "Save Video" : "Save to Files"}</strong>.
+                {downloadType === "video" ? (
+                  <>On iPhone: Download the MP4, then open <strong>Files → Downloads</strong>. Touch and hold the file, tap <strong>Share</strong>, then <strong>Save Video</strong> if offered. If downloads are blocked inside another app, open this song page in Safari.</>
+                ) : (
+                  <>On iPhone: Tap the Share icon after the audio file opens, then choose <strong>Save to Files</strong>.</>
+                )}
               </p>
             )}
             <div className="flex flex-col gap-2 pt-1">
@@ -1020,6 +1024,10 @@ export default function SongDetail() {
               >
                 <Download className="w-4 h-4 mr-2" />
                 {downloadType === "video" ? "Continue to Download Video" : "Continue to Download Audio"}
+              </Button>
+              <Button variant="outline" className="w-full" onClick={handleShare} data-testid="button-download-modal-share">
+                <Share2 className="w-4 h-4 mr-2" />
+                Share Song Link
               </Button>
               <Button
                 variant="outline"

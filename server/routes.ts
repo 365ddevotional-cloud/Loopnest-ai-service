@@ -10,6 +10,7 @@ import { randomBytes } from "crypto";
 import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification, sendDonationThankYouEmail, sendChurchNameChangeSecurityEmail, sendChurchWelcomeEmail, sendChurchComplianceEmail } from "./sendgrid";
 import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import { getVideoDownloadUrl } from "./replit_integrations/object_storage/routes";
 import { getTodayDateString, isFutureDate, isPastDate, getDayOfYear } from "./date-utils";
 import { seedAllDevotionals } from "./seed-devotionals";
 import { getOrCreateTranslation, isAllowedLanguage, getCachedTranslationsForLanguage } from "./translationService";
@@ -1725,21 +1726,14 @@ export async function registerRoutes(
         return res.status(404).json({ message: "No video file associated with this song" });
       }
 
-      const r2Base = process.env.R2_PUBLIC_URL;
-      if (!r2Base) {
-        console.error("R2_PUBLIC_URL is not configured");
-        return res.status(500).json({ message: "Media storage is not configured" });
-      }
-
       const objectPath = String((song as any).videoUrl)
         .replace(/^https?:\/\/[^/]+\/?/, "")
         .replace(/^\/?objects\//, "")
         .replace(/^\/+/, "");
 
-      const r2Url =
-        `${r2Base.replace(/\/+$/, "")}/.private/${objectPath.replace(/^\.private\//, "")}`;
-
-      return res.redirect(302, r2Url);
+      const downloadUrl = await getVideoDownloadUrl(objectPath, song.slug);
+      res.setHeader("Cache-Control", "no-store");
+      return res.redirect(302, downloadUrl);
     } catch (err) {
       console.error("Song video download redirect error:", err);
       return res.status(500).json({ message: "Video download failed" });

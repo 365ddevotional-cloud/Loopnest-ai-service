@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { randomUUID } from "crypto";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 function getR2Client() {
@@ -20,6 +20,25 @@ function getR2Client() {
       secretAccessKey,
     },
   });
+}
+
+// Download directly from R2 with attachment headers, without sending media bytes
+// through Railway or changing the headers used for normal playback.
+export async function getVideoDownloadUrl(objectPath: string, slug: string): Promise<string> {
+  const bucketName = process.env.R2_BUCKET_NAME;
+  if (!bucketName) throw new Error("R2_BUCKET_NAME is not configured");
+
+  const key = objectPath.replace(/^\.private\//, "");
+  if (!key.startsWith("uploads/") || key.split("/").some(part => part === "..") || /[?#]/.test(key)) {
+    throw new Error("Invalid video object path");
+  }
+  const filename = `${slug.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 120) || "song-video"}.mp4`;
+  return getSignedUrl(getR2Client(), new GetObjectCommand({
+    Bucket: bucketName,
+    Key: `.private/${key}`,
+    ResponseContentDisposition: `attachment; filename="${filename}"`,
+    ResponseContentType: "application/octet-stream",
+  }), { expiresIn: 3600 });
 }
 
 export function registerObjectStorageRoutes(app: Express): void {
