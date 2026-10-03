@@ -1,44 +1,41 @@
 // SendGrid email integration
 import sgMail from '@sendgrid/mail';
 
-let connectionSettings: any;
+import { brandEmailHtml, EMAIL_BRAND_NAME } from "./email-branding";
 
-async function getCredentials() {
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY 
-    ? 'repl ' + process.env.REPL_IDENTITY 
-    : process.env.WEB_REPL_RENEWAL 
-    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
-    : null;
+type OutgoingEmail = {
+  to: string; from?: unknown; replyTo?: string; subject: string; text: string; html: string;
+};
 
-  if (!xReplitToken) {
-    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
-  }
-
-  connectionSettings = await fetch(
-    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sendgrid',
-    {
-      headers: {
-        'Accept': 'application/json',
-        'X_REPLIT_TOKEN': xReplitToken
-      }
-    }
-  ).then(res => res.json()).then(data => data.items?.[0]);
-
-  if (!connectionSettings || (!connectionSettings.settings.api_key || !connectionSettings.settings.from_email)) {
-    throw new Error('SendGrid not connected');
-  }
-  return { apiKey: connectionSettings.settings.api_key, email: connectionSettings.settings.from_email };
-}
-
-// WARNING: Never cache this client.
-// Access tokens expire, so a new client must be created each time.
+// Railway-owned credentials; email delivery no longer relies on Replit connectors.
+// EMAIL_FROM must be authenticated by the selected provider before configuring it.
 export async function getUncachableSendGridClient() {
-  const { apiKey, email } = await getCredentials();
-  sgMail.setApiKey(apiKey);
+  const fromEmail = process.env.EMAIL_FROM;
+  if (!fromEmail || !/^[^\s<>@]+@(?:[a-z0-9-]+\.)*365dailydevotional\.com$/i.test(fromEmail)) {
+    throw new Error("Configure a verified EMAIL_FROM address on the 365dailydevotional.com domain");
+  }
+  const resendKey = process.env.RESEND_API_KEY;
+  const sendgridKey = process.env.SENDGRID_API_KEY;
+  if (!resendKey && !sendgridKey) throw new Error("Configure RESEND_API_KEY or SENDGRID_API_KEY in Railway");
   return {
-    client: sgMail,
-    fromEmail: email
+    fromEmail,
+    client: {
+      async send(message: OutgoingEmail) {
+        const subject = message.subject.includes(EMAIL_BRAND_NAME) ? message.subject : `${EMAIL_BRAND_NAME} — ${message.subject}`;
+        const html = brandEmailHtml(message.html);
+        if (resendKey) {
+          const response = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ to: message.to, from: `${EMAIL_BRAND_NAME} <${fromEmail}>`, reply_to: message.replyTo || "365ddevotional@gmail.com", subject, text: message.text, html }),
+          });
+          if (!response.ok) throw new Error(`Email provider rejected delivery (${response.status})`);
+          return;
+        }
+        sgMail.setApiKey(sendgridKey!);
+        await sgMail.send({ ...message, subject, html, from: { name: EMAIL_BRAND_NAME, email: fromEmail }, replyTo: message.replyTo || "365ddevotional@gmail.com" });
+      },
+    },
   };
 }
 
