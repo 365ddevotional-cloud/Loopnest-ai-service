@@ -331,6 +331,8 @@ export default function Music() {
         </p>
       </div>
 
+      <FiveSongCollection />
+
       {/* Continue Listening */}
       {continueListening.length > 0 && (
         <div className="space-y-2" data-testid="section-continue-listening">
@@ -387,7 +389,6 @@ export default function Music() {
         </div>
       )}
 
-      <FiveSongCollection />
 
       {/* Collections */}
       {collections.filter(c => c.isPublished).length > 0 && (

@@ -1,3 +1,4 @@
+import { auth } from "@/lib/firebase";
 import { getMusicProduct } from "../../../shared/music-products";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -14,7 +15,7 @@ export function useMusicCatalog() {
 }
 export default function MusicPurchasePanel({ productId }: { productId: string }) {
   const { data: catalog, isLoading, error } = useMusicCatalog();
-  const { user, getIdToken } = useUser();
+  const { user, getIdToken, signUserOut, loading } = useUser();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
@@ -34,11 +35,21 @@ export default function MusicPurchasePanel({ productId }: { productId: string })
     if (!user) { setLocation(`/sign-in?return=${encodeURIComponent(window.location.pathname)}`); return; }
     setBusy(true);
     try {
-      const token = await getIdToken();
-      if (!token) throw new Error("Please sign in again.");
+      const token = await auth.currentUser?.getIdToken(true);
+      if (!token) {
+        await signUserOut();
+        setLocation(`/sign-in?return=${encodeURIComponent(window.location.pathname)}`);
+        return;
+      }
       const response = await fetch("/api/music-commerce/checkout", { method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ productId }) });
+      if (response.status === 401) {
+        await signUserOut();
+        toast({ title: "Please sign in again", description: "Your selected songs have been saved." });
+        setLocation(`/sign-in?return=${encodeURIComponent(window.location.pathname)}`);
+        return;
+      }
       const result = await response.json();
       if (!response.ok) throw new Error(result.message ?? "Checkout could not be opened.");
       if (result.purchaseUrl === "/music/purchases") { setLocation(result.purchaseUrl); return; }
@@ -47,7 +58,16 @@ export default function MusicPurchasePanel({ productId }: { productId: string })
       const url = new URL(result.checkoutUrl);
       if (url.protocol !== "https:" || url.hostname !== "checkout.stripe.com") throw new Error("Checkout could not be opened.");
       window.location.assign(url.href);
-    } catch (err) { toast({ title: "Checkout unavailable", description: (err as Error).message, variant: "destructive" }); }
+    } catch (err) {
+      const code = (err as { code?: string }).code;
+      if (code === "auth/user-token-expired" || code === "auth/invalid-user-token" || code === "auth/user-disabled") {
+        await signUserOut();
+        toast({ title: "Please sign in again", description: "Your selected songs have been saved." });
+        setLocation(`/sign-in?return=${encodeURIComponent(window.location.pathname)}`);
+      } else {
+        toast({ title: "Checkout unavailable", description: (err as Error).message, variant: "destructive" });
+      }
+    }
     finally { setBusy(false); }
   }
   return <section className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3" data-testid={`purchase-${productId}`}>
@@ -57,7 +77,7 @@ export default function MusicPurchasePanel({ productId }: { productId: string })
     {!product?.ready && !freeAccess && <p className="text-sm" role="status">{error ? "Purchase options could not be loaded. Please refresh." : isLoading ? "Loading purchase options…" : "Paid downloads are coming soon. Listen and watch for free now."}</p>}
     {freeAccess && <p className="text-sm">Your verified account has lifetime free download access.</p>}
     <div className="flex flex-wrap items-center gap-3">
-      <Button disabled={busy || (!product?.ready && !freeAccess)} onClick={buy} data-testid={`buy-${productId}`}>
+      <Button disabled={loading || busy || (!product?.ready && !freeAccess)} onClick={buy} data-testid={`buy-${productId}`}>
         {busy ? "Preparing…" : freeAccess ? "Download Free" : five ? "Buy Five Songs — $2.99" : productId === "heaven-reigns-bundle" ? "Buy Bundle — $1.89" : "Buy Track — $0.89"}
       </Button>
       <Link href="/music/purchases" className="text-sm underline">My Music Purchases</Link>
