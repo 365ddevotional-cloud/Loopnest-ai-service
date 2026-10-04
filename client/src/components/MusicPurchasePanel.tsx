@@ -1,3 +1,4 @@
+import { getMusicProduct } from "../../../shared/music-products";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
@@ -5,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 
-export type MusicCatalog = { mode: string; products: { id: string; title: string; cents: number; slugs: string[]; ready: boolean }[] };
+export type MusicCatalog = { mode: string; fiveSongOffer?: { cents: number; ready: boolean }; products: { id: string; title: string; cents: number; slugs: string[]; ready: boolean }[] };
 export function useMusicCatalog() {
   return useQuery<MusicCatalog>({ queryKey: ["/api/music-commerce/catalog"], staleTime: 30000,
     queryFn: async () => { const response = await fetch("/api/music-commerce/catalog");
@@ -26,7 +27,9 @@ export default function MusicPurchasePanel({ productId }: { productId: string })
     },
   });
   const freeAccess = access?.lifetimeFreeDownloads === true;
-  const product = catalog?.products.find(p => p.id === productId);
+  const five = productId.startsWith("five:");
+  const product = five ? (getMusicProduct(productId) ? { ...getMusicProduct(productId)!, ready: catalog?.fiveSongOffer?.ready === true } : undefined) : catalog?.products.find(p => p.id === productId);
+  const [downloads, setDownloads] = useState<{ title: string; url: string }[]>([]);
   async function buy() {
     if (!user) { setLocation(`/sign-in?return=${encodeURIComponent(window.location.pathname)}`); return; }
     setBusy(true);
@@ -39,6 +42,7 @@ export default function MusicPurchasePanel({ productId }: { productId: string })
       const result = await response.json();
       if (!response.ok) throw new Error(result.message ?? "Checkout could not be opened.");
       if (result.purchaseUrl === "/music/purchases") { setLocation(result.purchaseUrl); return; }
+      if (result.downloads) { setDownloads(result.downloads); return; }
       if (result.downloadUrl) { window.location.assign(result.downloadUrl); return; }
       const url = new URL(result.checkoutUrl);
       if (url.protocol !== "https:" || url.hostname !== "checkout.stripe.com") throw new Error("Checkout could not be opened.");
@@ -47,16 +51,17 @@ export default function MusicPurchasePanel({ productId }: { productId: string })
     finally { setBusy(false); }
   }
   return <section className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3" data-testid={`purchase-${productId}`}>
-    <h3 className="font-semibold">{productId === "heaven-reigns-bundle" ? "Download all three tracks — $1.00" : "Download this track — $0.50"}</h3>
-    <p className="text-sm text-muted-foreground">{productId === "heaven-reigns-bundle" ? "Original, Instrumental, and Remix MP3s in one ZIP." : "One MP3 track."} One-time purchase in USD. No subscription.</p>
+    <h3 className="font-semibold">{five ? "Download your five songs — $2.99" : productId === "heaven-reigns-bundle" ? "Download all three tracks — $1.89" : "Download this track — $0.89"}</h3>
+    <p className="text-sm text-muted-foreground">{five ? "Five distinct tracks of your choice, including tracks from bundles. Download each MP3 below after purchase." : productId === "heaven-reigns-bundle" ? "Original, Instrumental, and Remix MP3s in one ZIP." : "One MP3 track."} One-time purchase in USD. No subscription.</p>
     {catalog?.mode === "test" && <p className="text-sm font-semibold">Test checkout only. Live purchases are not enabled.</p>}
     {!product?.ready && !freeAccess && <p className="text-sm" role="status">{error ? "Purchase options could not be loaded. Please refresh." : isLoading ? "Loading purchase options…" : "Paid downloads are coming soon. Listen and watch for free now."}</p>}
     {freeAccess && <p className="text-sm">Your verified account has lifetime free download access.</p>}
     <div className="flex flex-wrap items-center gap-3">
       <Button disabled={busy || (!product?.ready && !freeAccess)} onClick={buy} data-testid={`buy-${productId}`}>
-        {busy ? "Preparing…" : freeAccess ? "Download Free" : productId === "heaven-reigns-bundle" ? "Buy Bundle — $1.00" : "Buy Track — $0.50"}
+        {busy ? "Preparing…" : freeAccess ? "Download Free" : five ? "Buy Five Songs — $2.99" : productId === "heaven-reigns-bundle" ? "Buy Bundle — $1.89" : "Buy Track — $0.89"}
       </Button>
       <Link href="/music/purchases" className="text-sm underline">My Music Purchases</Link>
     </div>
+    {downloads.map(d => <a key={d.title + d.url} href={d.url} className="block underline">Download {d.title}</a>)}
   </section>;
 }

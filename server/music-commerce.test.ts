@@ -61,13 +61,13 @@ function fixture(overrides: Record<string, any> = {}) {
   return { app, orders, sessions, created, signed, checkout, post, pay, webhook };
 }
 
-test("server prices are 50 cents per track and 100 cents for all three; retries reuse checkout", async () => {
+test("server prices are 89 cents per track and 189 cents for all three; retries reuse checkout", async () => {
   const f = fixture();
   assert.equal((await f.checkout()).status, 200);
-  assert.equal(f.created[0].line_items[0].price_data.unit_amount, 50);
+  assert.equal(f.created[0].line_items[0].price_data.unit_amount, 89);
   assert.equal((await f.checkout()).status, 200); assert.equal(f.created.length, 1);
   assert.equal((await f.checkout("heaven-reigns-bundle")).status, 200);
-  assert.equal(f.created[1].line_items[0].price_data.unit_amount, 100);
+  assert.equal(f.created[1].line_items[0].price_data.unit_amount, 189);
   assert.equal(f.created[1].line_items[0].quantity, 1);
   assert.equal(f.created[1].success_url, "https://365dailydevotional.com/music/purchases?session_id={CHECKOUT_SESSION_ID}");
 });
@@ -140,4 +140,17 @@ test("a paid bundle returns buyers to their purchases without charging for a tra
   const response = await f.checkout("heaven-reigns-original");
   assert.equal(response.status, 200); assert.equal(response.body.purchaseUrl, "/music/purchases");
   assert.equal(f.created.length, 1);
+});
+
+
+test("any five distinct tracks cost 299 cents and fulfill all five; duplicates and unavailable files reject", async () => {
+  const f = fixture(); const id = "five:a,b,heaven-reigns-original,heaven-reigns-remix,z";
+  assert.equal((await f.checkout(id)).status, 200);
+  assert.equal(f.created[0].line_items[0].price_data.unit_amount, 299);
+  f.pay(); const result = await f.post("download", { sessionId: "cs_test_1" });
+  assert.equal(result.status, 200); assert.equal(result.body.downloads.length, 5);
+  assert.equal((await f.checkout("five:a,a,b,c,d")).status, 400);
+  assert.equal((await f.checkout("five:a,b,c,d")).status, 400);
+  const missing = fixture({ getSong: async () => undefined });
+  assert.equal((await missing.checkout(id)).status, 409);
 });

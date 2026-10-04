@@ -1,3 +1,4 @@
+import FiveSongCollection from "@/components/FiveSongCollection";
 import MusicPurchasePanel from "@/components/MusicPurchasePanel";
 import { heavenTrackSlugs, heavenBundleId } from "@shared/music-products";
 import { useQuery } from "@tanstack/react-query";
@@ -385,6 +386,8 @@ export default function Music() {
           </div>
         </div>
       )}
+
+      <FiveSongCollection />
 
       {/* Collections */}
       {collections.filter(c => c.isPublished).length > 0 && (

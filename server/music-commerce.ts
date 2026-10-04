@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import Stripe from "stripe";
 import { createHash } from "crypto";
-import { getMusicProduct, musicProducts, heavenBundleId } from "../shared/music-products";
+import { getMusicProduct, musicProducts, heavenBundleId, fiveSongCollectionPriceCents } from "../shared/music-products";
 import { getDownloadAccess } from "./download-access";
 
 export type MusicOrder = {
@@ -67,7 +67,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
     const product = getMusicProduct(productId);
     if (!product) throw Object.assign(new Error("Unknown music product."), { status: 400 });
     const songs = await Promise.all(product.slugs.map(services.getSong));
-    if (songs.some(s => !s?.isActive || !s.audioUrl)) throw Object.assign(new Error("This release is currently unavailable."), { status: 409 });
+    if (songs.some(s => !s?.isActive || !s.audioUrl || (product.id.startsWith("five:") && !validBundleArchive(s.audioUrl)))) throw Object.assign(new Error("This release is currently unavailable."), { status: 409 });
     return { product, songs };
   };
   const confirm = async (order: MusicOrder) => {
@@ -93,7 +93,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
           (product.id !== heavenBundleId || validBundleArchive(archive));
         return { ...product, ready: credentialsReady && storageReady && filesReady };
       }));
-      res.json({ currency: "USD", mode: live ? "live" : key ? "test" : "unconfigured", products });
+      res.json({ fiveSongOffer: { cents: fiveSongCollectionPriceCents, ready: credentialsReady && storageReady }, currency: "USD", mode: live ? "live" : key ? "test" : "unconfigured", products });
     } catch (err) { respondError(res, err); }
   });
 
@@ -107,6 +107,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
       const { product } = await materialFor(req.body.productId);
       if (getDownloadAccess(claims).lifetimeFreeDownloads) {
         const { songs } = await materialFor(product.id);
+        if (product.id.startsWith("five:")) return res.json({ downloads: await Promise.all(songs.map(async s => ({ title: s.title, url: await services.signDownload(s.audioUrl, s.title, "mp3") }))) });
         const archive = product.id === heavenBundleId ? await services.getArchive() : null;
         if (product.id === heavenBundleId && !validBundleArchive(archive)) throw new Error("Archive unavailable");
         return res.json({ downloadUrl: await services.signDownload(archive ?? songs[0].audioUrl, product.title,
@@ -116,17 +117,17 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
       if (product.id === heavenBundleId && !validBundleArchive(await services.getArchive())) return res.status(503).json({ message: "The bundle download is not ready yet." });
       const orders = await services.listOrders(claims.uid);
       if (orders.some(o => o.status === "paid" && (o.productId === product.id ||
-        (o.productId === heavenBundleId && product.id !== heavenBundleId)))) {
+        (o.productId === heavenBundleId && product.slugs.length === 1)))) {
         return res.json({ purchaseUrl: "/music/purchases" });
       }
-      const pending = orders.filter(o => o.productId === product.id && o.status === "pending");
+      const pending = orders.filter(o => o.productId === product.id && o.amountCents === product.cents && o.status === "pending");
       // Reuse an open checkout to avoid duplicate sessions on mobile double-taps/retries.
       for (const order of pending.slice(0, 3)) {
         const previous = await stripe.checkout.sessions.retrieve(order.sessionId);
         if (previous.status === "open" && previous.url) return res.json({ checkoutUrl: previous.url });
       }
       const base = "https://365dailydevotional.com";
-      const idempotencyKey = createHash("sha256").update(`${claims.uid}:${product.id}:${Math.floor(Date.now() / 1200000)}`).digest("hex");
+      const idempotencyKey = createHash("sha256").update(`${claims.uid}:${product.id}:${product.cents}:${Math.floor(Date.now() / 1200000)}`).digest("hex");
       const session = await stripe.checkout.sessions.create({
         mode: "payment", payment_method_types: ["card"],
         client_reference_id: claims.uid,
@@ -134,7 +135,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
         metadata: { app: "365-music-v1", uid: claims.uid, productId: product.id },
         payment_intent_data: { metadata: { app: "365-music-v1", uid: claims.uid, productId: product.id } },
         line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: product.cents,
-          product_data: { name: product.title, description: product.slugs.length === 3 ? "Original, Instrumental, and Remix MP3s in one ZIP. One-time purchase." : "One MP3 track. One-time purchase." } } }],
+          product_data: { name: product.title, description: product.slugs.length === 5 ? "Five selected MP3 tracks. One-time purchase." : product.slugs.length === 3 ? "Original, Instrumental, and Remix MP3s in one ZIP. One-time purchase." : "One MP3 track. One-time purchase." } } }],
         success_url: `${base}/music/purchases?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${base}/music/purchases?cancelled=1`,
       }, { idempotencyKey: `365-music-${idempotencyKey}` });
@@ -173,6 +174,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
       if (!order || order.uid !== uid) return res.status(404).json({ message: "Purchase not found for this account." });
       await confirm(order); // Re-check refunds/disputes before issuing every temporary download URL.
       const { product, songs } = await materialFor(order.productId);
+      if (product.id.startsWith("five:")) return res.json({ downloads: await Promise.all(songs.map(async s => ({ title: s.title, url: await services.signDownload(s.audioUrl, s.title, "mp3") }))) });
       if (product.id === heavenBundleId) {
         const archive = await services.getArchive();
         if (!validBundleArchive(archive)) throw new Error("Archive unavailable");

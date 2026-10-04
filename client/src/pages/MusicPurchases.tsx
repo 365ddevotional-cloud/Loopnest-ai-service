@@ -11,6 +11,7 @@ export default function MusicPurchases() {
   const sessionId = new URLSearchParams(window.location.search).get("session_id");
   const cancelled = new URLSearchParams(window.location.search).has("cancelled");
   const [message, setMessage] = useState("");
+  const [downloads, setDownloads] = useState<{ title: string; url: string }[]>([]);
   const [downloading, setDownloading] = useState<string | null>(null);
   async function request(path: string, body?: object) {
     const token = await getIdToken();
@@ -34,7 +35,8 @@ export default function MusicPurchases() {
     setDownloading(purchase.sessionId); setMessage("");
     try {
       const result = await request("/api/music-commerce/download", { sessionId: purchase.sessionId });
-      window.location.assign(result.downloadUrl);
+      if (result.downloads) setDownloads(result.downloads);
+      else window.location.assign(result.downloadUrl);
     } catch (err) { setMessage((err as Error).message); }
     finally { setDownloading(null); }
   }
@@ -44,6 +46,7 @@ export default function MusicPurchases() {
     <p className="text-muted-foreground">Sign in to the same account you used at checkout to return to your purchased downloads.</p>
     {cancelled && <p role="status">Checkout was cancelled. No download access was granted.</p>}
     {message && <p role="status" className="rounded-lg border p-3">{message}</p>}
+    {downloads.map(d => <a key={d.title + d.url} href={d.url} className="block underline">Download {d.title}</a>)}
     {confirm.isPending && <p role="status">Verifying your payment…</p>}
     {loading ? <p>Loading…</p> : !user ? <Button asChild><Link href={`/sign-in?return=${encodeURIComponent(window.location.pathname + window.location.search)}`}>Sign In to View Purchases</Link></Button> : <>
       {purchases.isLoading && <p>Loading purchases…</p>}
@@ -52,7 +55,7 @@ export default function MusicPurchases() {
       {purchases.data?.map(purchase => <article key={purchase.sessionId} className="rounded-xl border p-4 space-y-3">
         <h2 className="font-semibold">{purchase.title}</h2>
         <p className="text-sm">${(purchase.amountCents / 100).toFixed(2)} USD · {purchase.status === "paid" ? "Paid" : purchase.status === "pending" ? "Awaiting payment confirmation" : purchase.status === "revoked" ? "Download access revoked" : "Checkout expired"}</p>
-        {purchase.status === "paid" ? <Button disabled={!!downloading} onClick={() => download(purchase)}>{downloading === purchase.sessionId ? "Preparing download…" : purchase.productId === "heaven-reigns-bundle" ? "Download All Three (ZIP)" : "Download MP3"}</Button> : purchase.status === "pending" ? <Button variant="outline" disabled={confirm.isPending} onClick={() => confirm.mutate(purchase.sessionId)}>Check Payment</Button> : null}
+        {purchase.status === "paid" ? <Button disabled={!!downloading} onClick={() => download(purchase)}>{downloading === purchase.sessionId ? "Preparing download…" : purchase.productId.startsWith("five:") ? "Get Five MP3 Downloads" : purchase.productId === "heaven-reigns-bundle" ? "Download All Three (ZIP)" : "Download MP3"}</Button> : purchase.status === "pending" ? <Button variant="outline" disabled={confirm.isPending} onClick={() => confirm.mutate(purchase.sessionId)}>Check Payment</Button> : null}
       </article>)}
     </>}
   </main>;

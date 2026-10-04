@@ -37,7 +37,7 @@ export default function MusicCheckoutAdmin() {
   }
   return <section className="border-t pt-4 space-y-3" data-testid="music-checkout-admin">
     <h3 className="font-semibold">Heaven Reigns Checkout</h3>
-    <p className="text-sm">Each MP3 track costs $0.50 USD. The Original, Instrumental, and Remix bundle costs $1.00 USD. These release prices are fixed separately from the default prices above.</p>
+    <p className="text-sm">Each MP3 track costs $0.89 USD. The Original, Instrumental, and Remix bundle costs $1.89 USD. Any five distinct selected tracks cost $2.99 USD. These release prices are fixed separately from the default prices above.</p>
     {error ? <p role="alert">Checkout setup status could not be loaded.</p> : data ? <ul className="text-sm space-y-1">
       <li>Stripe live key: {data.liveKey ? "Configured" : data.secretKeySet ? "Test key only" : "Missing"}</li>
       <li>Music webhook secret: {data.webhookSecretSet ? "Configured" : "Missing"}</li>
