@@ -45,7 +45,7 @@ export async function getVideoDownloadUrl(objectPath: string, title: string): Pr
 }
 
 // Only call after server-side entitlement/payment verification.
-export async function getMusicDownloadUrl(objectPath: string, title: string, extension: "mp3" | "zip"): Promise<string> {
+export async function getMusicDownloadUrl(objectPath: string, title: string, extension: "mp3" | "zip", expiresInSeconds = 900): Promise<string> {
   const bucketName = process.env.R2_BUCKET_NAME;
   if (!bucketName) throw new Error("Media storage is unavailable");
   const key = objectPath.replace(/^\/objects\//, "");
@@ -56,7 +56,7 @@ export async function getMusicDownloadUrl(objectPath: string, title: string, ext
     Bucket: bucketName, Key: `.private/${key}`,
     ResponseContentDisposition: `attachment; filename="${safeTitle || "Heaven Reigns"} - 365 Daily Devotional.${extension}"`,
     ResponseContentType: "application/octet-stream",
-  }), { expiresIn: 900 });
+  }), { expiresIn: Math.min(900, Math.max(1, Math.floor(expiresInSeconds))) });
 }
 
 export function registerObjectStorageRoutes(app: Express): void {
@@ -127,4 +127,5 @@ export function registerObjectStorageRoutes(app: Express): void {
     return res.redirect(302, r2ObjectUrl);
   });
 }
+
 

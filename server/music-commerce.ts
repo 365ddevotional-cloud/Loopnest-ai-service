@@ -6,7 +6,7 @@ import { getDownloadAccess } from "./download-access";
 
 export type MusicOrder = {
   sessionId: string; uid: string; productId: string; amountCents: number;
-  status: string; paymentIntentId: string | null; createdAt?: string;
+  status: string; paymentIntentId: string | null; createdAt?: string; downloadWindowHours?: number | null; downloadExpiresAt?: string | null;
 };
 export type MusicCommerceServices = {
   verifyToken: (token: string) => Promise<{ uid: string; email?: string; email_verified?: boolean }>;
@@ -14,14 +14,15 @@ export type MusicCommerceServices = {
   createOrder: (order: MusicOrder) => Promise<void>;
   getOrder: (id: string) => Promise<MusicOrder | undefined>;
   listOrders: (uid: string) => Promise<MusicOrder[]>;
-  updateOrder: (id: string, status: string, paymentIntentId?: string) => Promise<void>;
+  updateOrder: (id: string, status: string, paymentIntentId?: string, downloadExpiresAt?: string) => Promise<void>;
   revokeByPaymentIntent: (id: string) => Promise<void>;
   getArchive: () => Promise<string | null>;
   setArchive: (path: string) => Promise<void>;
-  signDownload: (path: string, title: string, extension: "mp3" | "zip") => Promise<string>;
+  signDownload: (path: string, title: string, extension: "mp3" | "zip", expiresInSeconds?: number) => Promise<string>;
   requireAdmin: (req: Request, res: Response, next: NextFunction) => void;
   env?: Record<string, string | undefined>;
   stripe?: Stripe;
+  now?: () => number;
 };
 
 const archivePattern = /^\/objects\/uploads\/[a-f0-9-]{36}$/;
@@ -45,6 +46,7 @@ export function paymentMatchesOrder(session: any, order: MusicOrder): boolean {
 }
 
 export function registerMusicCommerceRoutes(app: Express, services: MusicCommerceServices) {
+  const now = services.now ?? Date.now;
   const env = services.env ?? process.env;
   const key = env.STRIPE_SECRET_KEY;
   const webhookSecret = env.STRIPE_MUSIC_WEBHOOK_SECRET;
@@ -70,6 +72,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
     if (songs.some(s => !s?.isActive || !s.audioUrl || (product.id.startsWith("five:") && !validBundleArchive(s.audioUrl)))) throw Object.assign(new Error("This release is currently unavailable."), { status: 409 });
     return { product, songs };
   };
+  const downloadExpired = (order: MusicOrder) => !!order.downloadExpiresAt && new Date(order.downloadExpiresAt).getTime() <= now();
   const confirm = async (order: MusicOrder) => {
     if (!stripe || !credentialsReady) throw new Error("Stripe unavailable");
     const session = await stripe.checkout.sessions.retrieve(order.sessionId, { expand: ["payment_intent.latest_charge", "line_items"] });
@@ -79,8 +82,30 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
       if (charge && (charge.amount_refunded > 0 || charge.disputed)) await services.updateOrder(order.sessionId, "revoked");
       throw Object.assign(new Error("A completed, valid payment is required for this download."), { status: 403 });
     }
-    await services.updateOrder(order.sessionId, "paid", (session.payment_intent as Stripe.PaymentIntent).id);
-    return session;
+    // Use the successful charge time, not a browser timer or confirmation retry.
+    // Legacy purchases have no window because they were sold without this policy.
+    const intent = session.payment_intent as Stripe.PaymentIntent;
+    let expiresAt = order.downloadExpiresAt ?? undefined;
+    if (order.downloadWindowHours === 2 && !expiresAt) {
+      const charge = intent.latest_charge as Stripe.Charge;
+      if (!Number.isFinite(charge.created) || charge.created <= 0) throw new Error("Payment time unavailable");
+      expiresAt = new Date(charge.created * 1000 + 2 * 60 * 60 * 1000).toISOString();
+    }
+    await services.updateOrder(order.sessionId, "paid", intent.id, expiresAt);
+    // Read the stored deadline: concurrent confirmations must never extend it.
+    const recorded = await services.getOrder(order.sessionId);
+    if (!recorded || recorded.status !== "paid") throw Object.assign(new Error("Download access is not available for this purchase."), { status: 403 });
+    return recorded;
+  };
+  const requireDownloadWindow = (order: MusicOrder) => {
+    if (downloadExpired(order)) throw Object.assign(new Error("Your two-hour download window has ended."), { status: 410 });
+    if (order.downloadWindowHours === 2 && !order.downloadExpiresAt) throw new Error("Download deadline unavailable");
+    return order.downloadExpiresAt ? Math.min(900, Math.floor((new Date(order.downloadExpiresAt).getTime() - now()) / 1000)) : 900;
+  };
+  const signedDownload = (order: MusicOrder, path: string, title: string, extension: "mp3" | "zip") => {
+    const seconds = requireDownloadWindow(order);
+    if (seconds < 1) throw Object.assign(new Error("Your two-hour download window has ended."), { status: 410 });
+    return services.signDownload(path, title, extension, seconds);
   };
 
   app.get("/api/music-commerce/catalog", async (_req, res) => {
@@ -101,8 +126,15 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
     try {
       const claims = await uidOf(req);
       // Reject client prices, quantities, currency and URLs; only a catalog ID is accepted.
-      if (!req.body || Object.keys(req.body).some(k => k !== "productId") || typeof req.body.productId !== "string") {
+      if (!req.body || Object.keys(req.body).some(k => !["productId", "email", "downloadPolicyAccepted"].includes(k)) || typeof req.body.productId !== "string") {
         return res.status(400).json({ message: "Choose a music product." });
+      }
+      if (!claims.email || !claims.email_verified) return res.status(403).json({ message: "Please verify your account email before buying music." });
+      if (typeof req.body.email !== "string" || req.body.email.trim().toLowerCase() !== claims.email.toLowerCase()) {
+        return res.status(400).json({ message: "Confirm the email of your signed-in account before checkout." });
+      }
+      if (!getDownloadAccess(claims).lifetimeFreeDownloads && req.body.downloadPolicyAccepted !== true) {
+        return res.status(400).json({ message: "Please confirm the two-hour download policy before paying." });
       }
       const { product } = await materialFor(req.body.productId);
       if (getDownloadAccess(claims).lifetimeFreeDownloads) {
@@ -116,31 +148,32 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
       if (!credentialsReady || !storageReady || !stripe) return res.status(503).json({ message: "Paid downloads are not available yet. You can still listen and watch for free." });
       if (product.id === heavenBundleId && !validBundleArchive(await services.getArchive())) return res.status(503).json({ message: "The bundle download is not ready yet." });
       const orders = await services.listOrders(claims.uid);
-      if (orders.some(o => o.status === "paid" && (o.productId === product.id ||
+      if (orders.some(o => o.status === "paid" && !downloadExpired(o) && (o.productId === product.id ||
         (o.productId === heavenBundleId && product.slugs.length === 1)))) {
         return res.json({ purchaseUrl: "/music/purchases" });
       }
-      const pending = orders.filter(o => o.productId === product.id && o.amountCents === product.cents && o.status === "pending");
+      const pending = orders.filter(o => o.productId === product.id && o.amountCents === product.cents && o.status === "pending" && o.downloadWindowHours === 2);
       // Reuse an open checkout to avoid duplicate sessions on mobile double-taps/retries.
       for (const order of pending.slice(0, 3)) {
         const previous = await stripe.checkout.sessions.retrieve(order.sessionId);
         if (previous.status === "open" && previous.url) return res.json({ checkoutUrl: previous.url });
       }
       const base = "https://365dailydevotional.com";
-      const idempotencyKey = createHash("sha256").update(`${claims.uid}:${product.id}:${product.cents}:${Math.floor(Date.now() / 1200000)}`).digest("hex");
+      const idempotencyKey = createHash("sha256").update(`${claims.uid}:${product.id}:${product.cents}:two-hour-v1:${Math.floor(now() / 1200000)}`).digest("hex");
       const session = await stripe.checkout.sessions.create({
         mode: "payment", payment_method_types: ["card"],
         client_reference_id: claims.uid,
-        ...(claims.email_verified && claims.email ? { customer_email: claims.email } : {}),
-        metadata: { app: "365-music-v1", uid: claims.uid, productId: product.id },
-        payment_intent_data: { metadata: { app: "365-music-v1", uid: claims.uid, productId: product.id } },
+        customer_email: claims.email,
+        custom_text: { submit: { message: "Download every purchased file within 2 hours after payment. You may retry during that window. Download access disappears afterward. Sign in with the same email to return to your downloads." } },
+        metadata: { app: "365-music-v1", uid: claims.uid, productId: product.id, download_window_hours: "2" },
+        payment_intent_data: { metadata: { app: "365-music-v1", uid: claims.uid, productId: product.id, download_window_hours: "2" } },
         line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: product.cents,
           product_data: { name: product.title, description: product.slugs.length === 5 ? "Five selected MP3 tracks. One-time purchase." : product.slugs.length === 3 ? "Original, Instrumental, and Remix MP3s in one ZIP. One-time purchase." : "One MP3 track. One-time purchase." } } }],
         success_url: `${base}/music/purchases?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${base}/music/purchases?cancelled=1`,
       }, { idempotencyKey: `365-music-${idempotencyKey}` });
       await services.createOrder({ sessionId: session.id, uid: claims.uid, productId: product.id,
-        amountCents: product.cents, status: "pending", paymentIntentId: null });
+        amountCents: product.cents, status: "pending", paymentIntentId: null, downloadWindowHours: 2 });
       res.json({ checkoutUrl: session.url });
     } catch (err) { respondError(res, err); }
   });
@@ -150,9 +183,9 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
     try {
       const { uid } = await uidOf(req);
       const orders = await services.listOrders(uid);
-      res.json(orders.map(order => ({ sessionId: order.sessionId, productId: order.productId,
+      res.json(orders.filter(order => !downloadExpired(order)).map(order => ({ sessionId: order.sessionId, productId: order.productId,
         title: getMusicProduct(order.productId)?.title ?? "Music purchase", status: order.status,
-        amountCents: order.amountCents, createdAt: order.createdAt })));
+        amountCents: order.amountCents, createdAt: order.createdAt, downloadExpiresAt: order.downloadExpiresAt ?? null })));
     } catch (err) { respondError(res, err); }
   });
 
@@ -161,8 +194,9 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
       const { uid } = await uidOf(req);
       const order = typeof req.body?.sessionId === "string" ? await services.getOrder(req.body.sessionId) : null;
       if (!order || order.uid !== uid) return res.status(404).json({ message: "Purchase not found for this account." });
-      await confirm(order);
-      res.json({ paid: true });
+      const paidOrder = await confirm(order);
+      requireDownloadWindow(paidOrder);
+      res.json({ paid: true, downloadExpiresAt: paidOrder.downloadExpiresAt ?? null });
     } catch (err) { respondError(res, err); }
   });
 
@@ -172,15 +206,17 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
       const { uid } = await uidOf(req);
       const order = typeof req.body?.sessionId === "string" ? await services.getOrder(req.body.sessionId) : null;
       if (!order || order.uid !== uid) return res.status(404).json({ message: "Purchase not found for this account." });
-      await confirm(order); // Re-check refunds/disputes before issuing every temporary download URL.
+      if (downloadExpired(order)) requireDownloadWindow(order);
+      const paidOrder = await confirm(order); // Re-check refunds/disputes before issuing download URLs.
+      requireDownloadWindow(paidOrder);
       const { product, songs } = await materialFor(order.productId);
-      if (product.id.startsWith("five:")) return res.json({ downloads: await Promise.all(songs.map(async s => ({ title: s.title, url: await services.signDownload(s.audioUrl, s.title, "mp3") }))) });
+      if (product.id.startsWith("five:")) return res.json({ downloads: await Promise.all(songs.map(async s => ({ title: s.title, url: await signedDownload(paidOrder, s.audioUrl, s.title, "mp3") }))), downloadExpiresAt: paidOrder.downloadExpiresAt ?? null });
       if (product.id === heavenBundleId) {
         const archive = await services.getArchive();
         if (!validBundleArchive(archive)) throw new Error("Archive unavailable");
-        return res.json({ downloadUrl: await services.signDownload(archive, product.title, "zip") });
+        return res.json({ downloadUrl: await signedDownload(paidOrder, archive, product.title, "zip"), downloadExpiresAt: paidOrder.downloadExpiresAt ?? null });
       }
-      res.json({ downloadUrl: await services.signDownload(songs[0].audioUrl, songs[0].title, "mp3") });
+      res.json({ downloadUrl: await signedDownload(paidOrder, songs[0].audioUrl, songs[0].title, "mp3"), downloadExpiresAt: paidOrder.downloadExpiresAt ?? null });
     } catch (err) { respondError(res, err); }
   });
 
@@ -224,3 +260,4 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
     catch (err) { respondError(res, err); }
   });
 }
+
