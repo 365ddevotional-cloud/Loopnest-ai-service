@@ -782,6 +782,27 @@ export default function SongDetail() {
 
       <MusicSettings open={showMusicSettings} onClose={() => setShowMusicSettings(false)} />
 
+      {/* Watch uploaded lyric videos independently of paid download availability. */}
+      {song.videoUrl && (
+        <section className="rounded-xl border border-border/40 bg-card p-4 space-y-3" data-testid="section-song-video">
+          <h3 className="font-serif text-base font-bold text-foreground">Watch Video</h3>
+          <video
+            key={song.videoUrl}
+            src={song.videoUrl}
+            controls
+            controlsList="nodownload"
+            playsInline
+            preload="metadata"
+            aria-label={`${song.title} video`}
+            className="w-full aspect-video rounded-lg bg-black object-contain"
+            onPlay={() => {
+              if (playerIsPlaying) togglePlay();
+            }}
+            data-testid="video-song"
+          />
+        </section>
+      )}
+
       {/* Scripture */}
       {song.scriptureReference && (
         <div className="rounded-xl border border-amber-200/50 dark:border-amber-800/30 bg-amber-50/60 dark:bg-amber-950/20 p-4 space-y-1" data-testid="section-scripture">
