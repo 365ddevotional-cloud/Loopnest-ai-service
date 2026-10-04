@@ -1,3 +1,4 @@
+import MusicCheckoutAdmin from "./MusicCheckoutAdmin";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -46,7 +47,7 @@ export default function MusicPricingAdmin() {
     <CardHeader><CardTitle>Music Download Prices</CardTitle></CardHeader>
     <CardContent className="space-y-4">
       <p className="text-sm text-muted-foreground">Set separate audio and video prices. These are one-time purchases, with no subscription. Buying multiple items uses the per-item price.</p>
-      <p className="text-sm">Checkout is awaiting payment-provider setup. Saving prices does not activate charges or change today’s free downloads.</p>
+      <p className="text-sm">Default prices are stored for future releases. Heaven Reigns checkout and its fixed single/bundle prices are configured below; saving these defaults does not enable checkout.</p>
       {error ? <p role="alert">Prices could not be loaded. Please refresh before editing.</p> : <div className="grid gap-4 sm:grid-cols-2">
         {fields.map(([key, label]) => <div key={key} className="space-y-2">
           <Label htmlFor={key}>{label}</Label>
@@ -54,6 +55,8 @@ export default function MusicPricingAdmin() {
         </div>)}
       </div>}
       <Button onClick={save} disabled={isLoading || saving || !!error} data-testid="save-music-prices">{saving ? "Saving…" : "Save Download Prices"}</Button>
+      <MusicCheckoutAdmin />
     </CardContent>
   </Card>;
 }
+

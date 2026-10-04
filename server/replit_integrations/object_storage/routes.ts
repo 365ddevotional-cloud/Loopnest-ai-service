@@ -44,6 +44,21 @@ export async function getVideoDownloadUrl(objectPath: string, title: string): Pr
   }), { expiresIn: 3600 });
 }
 
+// Only call after server-side entitlement/payment verification.
+export async function getMusicDownloadUrl(objectPath: string, title: string, extension: "mp3" | "zip"): Promise<string> {
+  const bucketName = process.env.R2_BUCKET_NAME;
+  if (!bucketName) throw new Error("Media storage is unavailable");
+  const key = objectPath.replace(/^\/objects\//, "");
+  if (!/^uploads\/[a-f0-9-]{36}$/.test(key)) throw new Error("Invalid music object path");
+  const safeTitle = title.normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9 _!-]/g, "").trim().slice(0, 100);
+  return getSignedUrl(getR2Client(), new GetObjectCommand({
+    Bucket: bucketName, Key: `.private/${key}`,
+    ResponseContentDisposition: `attachment; filename="${safeTitle || "Heaven Reigns"} - 365 Daily Devotional.${extension}"`,
+    ResponseContentType: "application/octet-stream",
+  }), { expiresIn: 900 });
+}
+
 export function registerObjectStorageRoutes(app: Express): void {
 
   // Generate a temporary Cloudflare R2 upload URL.
@@ -112,3 +127,4 @@ export function registerObjectStorageRoutes(app: Express): void {
     return res.redirect(302, r2ObjectUrl);
   });
 }
+

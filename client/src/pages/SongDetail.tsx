@@ -1,3 +1,5 @@
+import MusicPurchasePanel from "@/components/MusicPurchasePanel";
+import { isPaidMusicSlug } from "@shared/music-products";
 import logoImage from "@assets/IMG_0618_1785225816241.png";
 import { useState, useEffect, useRef } from "react";
 import { useRoute, Link, useLocation } from "wouter";
@@ -489,8 +491,9 @@ export default function SongDetail() {
   }
 
   const hasCover = !!song.coverImageUrl;
-  const audioDownloadEnabled = song.downloadStatus !== "disabled" && !!song.audioUrl;
-  const videoDownloadEnabled = (song as any).videoDownloadStatus !== "disabled" && !!(song as any).videoUrl;
+  const paidRelease = isPaidMusicSlug(song.slug);
+  const audioDownloadEnabled = !paidRelease && song.downloadStatus !== "disabled" && !!song.audioUrl;
+  const videoDownloadEnabled = !paidRelease && (song as any).videoDownloadStatus !== "disabled" && !!(song as any).videoUrl;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-12">
@@ -882,7 +885,7 @@ export default function SongDetail() {
             Download Video (MP4)
           </Button>
         )}
-        {!audioDownloadEnabled && !videoDownloadEnabled && (
+        {!paidRelease && !audioDownloadEnabled && !videoDownloadEnabled && (
           <Button variant="outline" size="sm" disabled className="opacity-50" data-testid="button-download-unavailable">
             <Download className="w-4 h-4 mr-1.5" />
             Download Unavailable
@@ -900,6 +903,8 @@ export default function SongDetail() {
           Support the Ministry
         </Button>
       </div>
+
+      {paidRelease && <MusicPurchasePanel productId={song.slug} />}
 
       {/* Short Description */}
       {song.shortDescription && (
@@ -1077,3 +1082,4 @@ export default function SongDetail() {
     </div>
   );
 }
+

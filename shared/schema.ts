@@ -2,6 +2,17 @@ import { pgTable, text, serial, date, timestamp, boolean, integer, unique, jsonb
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Durable Stripe orders for one-time music purchases, separate from church giving.
+export const musicPurchaseOrders = pgTable("music_purchase_orders", {
+  sessionId: text("session_id").primaryKey(),
+  firebaseUid: text("firebase_uid").notNull(),
+  productId: text("product_id").notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  status: text("status").notNull().default("pending"),
+  paymentIntentId: text("payment_intent_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Bible Translation Types
 export const BIBLE_TRANSLATIONS = ["KJV", "WEB", "ASV", "DRB"] as const;
 export type BibleTranslation = typeof BIBLE_TRANSLATIONS[number];

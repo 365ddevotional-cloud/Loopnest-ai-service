@@ -1,3 +1,5 @@
+import MusicPurchasePanel from "@/components/MusicPurchasePanel";
+import { heavenTrackSlugs, heavenBundleId } from "@shared/music-products";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import {
@@ -425,6 +427,9 @@ export default function Music() {
                   </Button>
                 )}
               </div>
+              {col.songs?.length === 3 && heavenTrackSlugs.every(slug => col.songs?.some(song => song.slug === slug)) && (
+                <div className="p-3"><MusicPurchasePanel productId={heavenBundleId} /></div>
+              )}
               {col.songs && col.songs.length > 0 && (
                 <div className="p-2 space-y-1">
                   {col.songs.map(song => <SongCard key={song.id} song={song} isActive={currentSong?.id === song.id} isPlaying={isPlaying} onPlay={handleSongClick} />)}
@@ -596,3 +601,4 @@ export default function Music() {
     </div>
   );
 }
+

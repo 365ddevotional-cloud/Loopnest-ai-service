@@ -1,3 +1,7 @@
+import { registerMusicCommerceRoutes } from "./music-commerce";
+import { ensureMusicOrdersTable, musicOrderStorage } from "./music-commerce-storage";
+import { isPaidMusicSlug } from "../shared/music-products";
+import { getMusicDownloadUrl } from "./replit_integrations/object_storage/routes";
 import { getDownloadAccess } from "./download-access";
 import { defaultMusicPricing, musicPricingSchema } from "@shared/music-pricing";
 import type { Express, Request, Response, NextFunction } from "express";
@@ -156,6 +160,16 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express,
 ): Promise<Server> {
+  await ensureMusicOrdersTable();
+  registerMusicCommerceRoutes(app, {
+    ...musicOrderStorage,
+    verifyToken: async token => (await import("./firebase-admin")).auth.verifyIdToken(token),
+    getSong: slug => storage.getSongBySlug(slug),
+    getArchive: () => storage.getGlobalGivingSetting("music_heaven_bundle_archive_v1"),
+    setArchive: async objectPath => { await storage.setGlobalGivingSetting("music_heaven_bundle_archive_v1", objectPath, "admin"); },
+    signDownload: getMusicDownloadUrl,
+    requireAdmin,
+  });
   // Auth Routes
   app.post("/api/auth/login", (req, res) => {
     if (!ADMIN_PASSWORD) {
@@ -1709,6 +1723,7 @@ export async function registerRoutes(
     try {
       const song = await storage.getSong(id);
       if (!song) return res.status(404).json({ message: "Song not found" });
+      if (isPaidMusicSlug(song.slug)) return res.status(402).json({ message: "Please use My Music Purchases to access this paid release." });
 
       if (song.downloadStatus === "disabled") {
         return res.status(403).json({ message: "Download is not available for this song" });
@@ -1746,6 +1761,7 @@ export async function registerRoutes(
     try {
       const song = await storage.getSong(id);
       if (!song) return res.status(404).json({ message: "Song not found" });
+      if (isPaidMusicSlug(song.slug)) return res.status(402).json({ message: "Please use My Music Purchases to access this paid release." });
 
       if ((song as any).videoDownloadStatus === "disabled") {
         return res.status(403).json({ message: "Video download is not available for this song" });
@@ -6652,3 +6668,4 @@ async function seedAutoReplyTemplates() {
     console.log("Auto-reply templates seeded.");
   }
 }
+

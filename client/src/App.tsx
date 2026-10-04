@@ -1,3 +1,4 @@
+import MusicPurchases from "@/pages/MusicPurchases";
 import LoopNestSeparated from "@/pages/LoopNestSeparated";
 import { useEffect, useState } from "react";
 import { Switch, Route, useLocation } from "wouter";
@@ -206,6 +207,7 @@ function Router() {
       <Route path="/testimonies" component={TestimonyWall} />
       <Route path="/quick-prayer" component={QuickPrayer} />
       <Route path="/daily-promise" component={DailyPromise} />
+      <Route path="/music/purchases" component={MusicPurchases} />
       <Route path="/music/:slug" component={SongDetail} />
       <Route path="/music" component={Music} />
       <Route path="/signin" component={SignIn} />
@@ -334,3 +336,4 @@ function App() {
 }
 
 export default App;
+
