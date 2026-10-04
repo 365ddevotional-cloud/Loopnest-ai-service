@@ -1587,6 +1587,17 @@ export async function registerRoutes(
   });
 
   // Admin: get song by id
+  // Public: get all published collections with their active songs
+  app.get("/api/songs/collections", async (_req, res) => {
+    try {
+      const collections = await storage.getPublicSongCollections();
+      res.json(collections);
+    } catch (err) {
+      console.error("Error fetching song collections:", err);
+      res.status(500).json({ message: "Could not fetch collections" });
+    }
+  });
+
   app.get("/api/songs/:id", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
@@ -1889,17 +1900,6 @@ export async function registerRoutes(
   });
 
   // ── Song Collections ──────────────────────────────────────────────────────
-
-  // Public: get all published collections with their active songs
-  app.get("/api/songs/collections", async (_req, res) => {
-    try {
-      const collections = await storage.getPublicSongCollections();
-      res.json(collections);
-    } catch (err) {
-      console.error("Error fetching song collections:", err);
-      res.status(500).json({ message: "Could not fetch collections" });
-    }
-  });
 
   // Admin: list all collections
   app.get("/api/song-collections", requireAdmin, async (_req, res) => {
