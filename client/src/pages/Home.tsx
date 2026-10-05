@@ -69,6 +69,11 @@ export default function Home() {
 
   return (
     <div className="pb-12 space-y-8">
+      <details className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm" data-testid="home-quick-help">
+        <summary className="cursor-pointer font-semibold text-foreground">New here? A quick guide to today's devotional</summary>
+        <p className="mt-2 text-muted-foreground">Scroll to the daily message for Scripture, reflection, prayer points, and declarations. Use the menu for the Bible, past devotionals, prayer requests, and music.</p>
+        <Link href="/how-to-use" className="mt-2 inline-block font-medium underline text-primary">See all tips and replay the tour</Link>
+      </details>
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}

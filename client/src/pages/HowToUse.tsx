@@ -1,7 +1,9 @@
-import { BookOpen, Heart, MessageCircle, Play, Gift, Book, Menu, Archive, Shield } from "lucide-react";
+import { BookOpen, Heart, MessageCircle, Music2, Gift, Book, Menu, Archive, Shield } from "lucide-react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { REPLAY_WALKTHROUGH_EVENT } from "@/components/WalkthroughModal";
 
 type OnboardingAction = 
   | { type: "scroll"; target: string }
@@ -56,10 +58,10 @@ const ONBOARDING_ITEMS: OnboardingItem[] = [
     action: { type: "route", path: "/prayer-counseling" },
   },
   {
-    icon: Play,
+    icon: Music2,
     title: "Watch & Listen",
-    description: "Visit the YouTube section for Bible stories, prayers, worship, devotionals, and seasonal faith-based content.",
-    action: { type: "route", path: "/about" },
+    description: "Visit Music to listen to worship songs and watch available videos. If you choose a paid download, check the price and download window before checkout.",
+    action: { type: "route", path: "/music" },
   },
   {
     icon: Gift,
@@ -130,8 +132,10 @@ export default function HowToUse() {
           A simple guide to growing daily in God's Word, prayer, and faith.
         </p>
         <div className="decorative-divider mt-4" />
+        <Button variant="outline" className="mt-5" onClick={() => window.dispatchEvent(new Event(REPLAY_WALKTHROUGH_EVENT))}>
+          Replay the quick tour
+        </Button>
       </div>
-
       <div className="grid gap-4 md:gap-5 max-w-3xl mx-auto">
         {visibleItems.map((item, index) => {
           const isClickable = item.action.type !== "none";
@@ -176,6 +180,19 @@ export default function HowToUse() {
           );
         })}
       </div>
+      <section className="max-w-3xl mx-auto mt-10 rounded-xl border border-primary/20 bg-card p-5 md:p-6" aria-labelledby="quick-answers-title">
+        <h2 id="quick-answers-title" className="font-serif text-xl font-bold text-foreground mb-4">Quick answers</h2>
+        <div className="space-y-3">
+          <details className="rounded-lg border p-3"><summary className="cursor-pointer font-medium">Where is today's message?</summary>
+            <p className="mt-2 text-sm text-muted-foreground">Open Today from the menu or return to the home page. Use Archive to find another published date.</p></details>
+          <details className="rounded-lg border p-3"><summary className="cursor-pointer font-medium">How do I send a prayer request?</summary>
+            <p className="mt-2 text-sm text-muted-foreground">Open Prayer &amp; Counseling from the menu. Review the form's privacy options before you send your request.</p></details>
+          <details className="rounded-lg border p-3"><summary className="cursor-pointer font-medium">Where are purchased music downloads?</summary>
+            <p className="mt-2 text-sm text-muted-foreground">Open Music, then My Music Purchases. Sign in with the verified account used at checkout. New purchases have a two-hour download window.</p></details>
+          <details className="rounded-lg border p-3"><summary className="cursor-pointer font-medium">What if a page does not load offline?</summary>
+            <p className="mt-2 text-sm text-muted-foreground">Connect to the internet and open the content once. Availability offline depends on what your device has already saved.</p></details>
+        </div>
+      </section>
     </motion.div>
   );
 }
