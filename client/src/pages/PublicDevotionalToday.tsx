@@ -5,6 +5,7 @@ import { format, parseISO } from "date-fns";
 import { Link } from "wouter";
 import { Loader2 } from "lucide-react";
 import { useScriptureText } from "@/hooks/use-scripture";
+import { splitPrayerCounselingInvitation } from "@/lib/prayerCounselingInvitation";
 
 function PublicFooter() {
   const currentYear = new Date().getFullYear();
@@ -131,10 +132,12 @@ export default function PublicDevotionalToday() {
     }
   })();
 
+  const { message, invitation } = splitPrayerCounselingInvitation(devotional.content);
+
   const seoDescription =
-    devotional.content.length > 150
-      ? devotional.content.substring(0, 150) + "..."
-      : devotional.content;
+    message.length > 150
+      ? message.substring(0, 150) + "..."
+      : message;
 
   const regularDeclarations = devotional.faithDeclarations || [];
   const quotes = devotional.christianQuotes
@@ -240,7 +243,7 @@ export default function PublicDevotionalToday() {
           }}
           data-testid="text-public-content"
         >
-          {devotional.content.split("\n\n").map((paragraph: string, i: number) => (
+          {message.split("\n\n").map((paragraph: string, i: number) => (
             <p key={i} style={{ marginBottom: "1.5rem" }}>
               {paragraph}
             </p>
@@ -395,6 +398,28 @@ export default function PublicDevotionalToday() {
                 {p}
               </p>
             ))}
+          </section>
+        )}
+
+        {invitation && (
+          <section
+            style={{
+              marginTop: "3rem",
+              padding: "1.75rem",
+              border: "2px solid #0f766e",
+              borderRadius: "16px",
+              background: "linear-gradient(135deg, #e6fffa, #f0fdfa, #ffffff)",
+              boxShadow: "0 12px 28px rgba(15, 118, 110, 0.12)",
+            }}
+            data-testid="section-prayer-counseling-invitation"
+          >
+            <h2 style={{ fontFamily: "'Playfair Display', 'Georgia', serif", fontSize: "1.4rem", color: "#115e59", marginTop: 0 }}>
+              Need Prayer or Counseling?
+            </h2>
+            <p style={{ lineHeight: 1.8, color: "#134e4a", whiteSpace: "pre-line" }}>{invitation}</p>
+            <Link href="/prayer-counseling" style={{ display: "inline-block", marginTop: "0.75rem", backgroundColor: "#0f766e", color: "#fff", padding: "0.75rem 1.25rem", borderRadius: "999px", textDecoration: "none", fontWeight: 600 }}>
+              Share a Prayer Request or Ask for Counseling
+            </Link>
           </section>
         )}
 

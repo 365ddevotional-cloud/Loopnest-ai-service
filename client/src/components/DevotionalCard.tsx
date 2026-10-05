@@ -15,6 +15,7 @@ import { Loader2, Sun, Moon, Share2, Shield, Quote, Flame, Volume2, Bookmark, Bo
 import { useAudioReader } from "@/hooks/useAudioReader";
 import { useI18n } from "@/hooks/useI18n";
 import { useDevotionalAccount } from "@/hooks/useDevotionalAccount";
+import { splitPrayerCounselingInvitation } from "@/lib/prayerCounselingInvitation";
 
 const fontSizeClasses = {
   "small": {
@@ -84,6 +85,7 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
     recordRead();
   }, [recordRead]);
 
+  const { message, invitation } = splitPrayerCounselingInvitation(devotional.content);
   const faithItems = devotional.faithDeclarations || [];
   const quoteItems = devotional.christianQuotes
     ? devotional.christianQuotes.split("\n").map(q => q.trim()).filter(Boolean)
@@ -101,7 +103,7 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
     `— ${devotional.scriptureReference}`,
     ``,
     `${t("devotional")}:`,
-    devotional.content,
+    message,
     ``,
     `${t("prayerPoints")}:`,
     ...devotional.prayerPoints.map(p => `• ${p}`),
@@ -109,6 +111,7 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
     ...(faithItems.length > 0 ? [`${t("faithDeclaration")}:`, ...faithItems.map(d => `• ${d}`), ``] : []),
     ...(quoteItems.length > 0 ? [`${t("christianQuotes")}:`, ...quoteItems.map(d => `• ${d}`), ``] : []),
     ...(propheticItems.length > 0 ? [`${t("propheticDeclaration")}:`, ...propheticItems.map(d => `• ${d}`), ``] : []),
+    ...(invitation ? [`Need Prayer or Counseling? ${invitation}`, ``] : []),
     `${t("writtenBy")} ${devotional.author}`,
     ``,
     `— ${t("sharedFrom")}`,
@@ -155,12 +158,13 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
                   `${t("title")}: ${devotional.title}.`,
                   `${t("scripture")}: ${stripRedLetterMarkers(scriptureText)}.`,
                   `${devotional.scriptureReference}.`,
-                  devotional.content,
+                  message,
                   `${t("prayerPoints")}:`,
                   ...devotional.prayerPoints.map(p => p + "."),
                   ...(faithItems.length > 0 ? [`${t("faithDeclaration")}:`, ...faithItems.map(d => d + ".")] : []),
                   ...(quoteItems.length > 0 ? [`${t("christianQuotes")}:`, ...quoteItems.map(d => d + ".")] : []),
                   ...(propheticItems.length > 0 ? [`${t("propheticDeclaration")}:`, ...propheticItems.map(d => d + ".")] : []),
+                  ...(invitation ? [`Need Prayer or Counseling? ${invitation}`] : []),
                 ].join(" ");
                 audio.play(listenText, devotional.title, { devotional: true });
               }}
@@ -228,7 +232,7 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
       {/* Main Content */}
       <div className="p-8 md:p-12 space-y-8">
         <div className={`prose prose-stone dark:prose-invert ${sizeClasses.prose} max-w-none font-serif leading-relaxed text-foreground/90 dark:text-foreground first-letter:text-5xl first-letter:font-bold first-letter:text-primary first-letter:float-left first-letter:mr-3 first-letter:mt-[-10px]`}>
-          {devotional.content.split('\n').map((paragraph, idx) => (
+          {message.split('\n').map((paragraph, idx) => (
             paragraph.trim() && <p key={idx}>{paragraph}</p>
           ))}
         </div>
@@ -309,6 +313,22 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
               ))}
             </ul>
           </div>
+        )}
+
+        {invitation && (
+          <section
+            className="rounded-2xl border-2 border-teal-500/60 bg-gradient-to-br from-teal-50 via-cyan-50 to-white dark:from-[#103439] dark:via-[#142b37] dark:to-[#152034] p-6 md:p-8 shadow-lg shadow-teal-900/10"
+            data-testid="section-prayer-counseling-invitation"
+            aria-labelledby="prayer-counseling-heading"
+          >
+            <h3 id="prayer-counseling-heading" className="font-serif text-xl md:text-2xl font-bold text-teal-900 dark:text-teal-100 mb-3">
+              Need Prayer or Counseling?
+            </h3>
+            <p className={`leading-relaxed ${sizeClasses.list} text-teal-950 dark:text-teal-50 whitespace-pre-line`}>{invitation}</p>
+            <a href="/prayer-counseling" className="inline-flex mt-5 rounded-full bg-teal-700 hover:bg-teal-800 text-white px-5 py-3 font-semibold text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500">
+              Share a Prayer Request or Ask for Counseling
+            </a>
+          </section>
         )}
 
         <div className="flex items-center justify-center pt-8">
