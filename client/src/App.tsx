@@ -1,4 +1,3 @@
-import MusicPurchases from "@/pages/MusicPurchases";
 import LoopNestSeparated from "@/pages/LoopNestSeparated";
 import { useEffect, useState } from "react";
 import { Switch, Route, useLocation } from "wouter";
@@ -30,7 +29,6 @@ import { useOfflineSync } from "@/hooks/use-offline-sync";
 import { useLanguageAutoApply } from "@/components/LanguageSwitcher";
 import Home from "@/pages/Home";
 import Archive from "@/pages/Archive";
-import Admin from "@/pages/Admin";
 import AdminLogin from "@/pages/AdminLogin";
 import About from "@/pages/About";
 import Donate from "@/pages/Donate";
@@ -49,18 +47,14 @@ import Feedback from "@/pages/Feedback";
 import Partnership from "@/pages/Partnership";
 import Support from "@/pages/Support";
 import HowToUse from "@/pages/HowToUse";
-import Bible from "@/pages/Bible";
 import PublicDevotionalToday from "@/pages/PublicDevotionalToday";
 import PublicArchive from "@/pages/PublicArchive";
 import SundaySchool from "@/pages/SundaySchool";
 import SundaySchoolLessonPage from "@/pages/SundaySchoolLesson";
-import { GamePage, GamesHub, CreateGamePage } from "@/game-engine";
 import TestimonyWall from "@/pages/TestimonyWall";
 import QuickPrayer from "@/pages/QuickPrayer";
 import DailyPromise from "@/pages/DailyPromise";
 import Inbox from "@/pages/Inbox";
-import Music from "@/pages/Music";
-import SongDetail from "@/pages/SongDetail";
 import SignIn from "@/pages/SignIn";
 import MyLibrary from "@/pages/MyLibrary";
 import AccountPage from "@/pages/AccountPage";
@@ -70,6 +64,15 @@ import PromisePopup from "@/components/PromisePopup";
 import NotFound from "@/pages/not-found";
 import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
+// Keep large feature pages out of the first-load bundle.
+const Admin = lazy(() => import("@/pages/Admin"));
+const Bible = lazy(() => import("@/pages/Bible"));
+const Music = lazy(() => import("@/pages/Music"));
+const MusicPurchases = lazy(() => import("@/pages/MusicPurchases"));
+const SongDetail = lazy(() => import("@/pages/SongDetail"));
+const GamesHub = lazy(() => import("@/game-engine").then(m => ({ default: m.GamesHub })));
+const CreateGamePage = lazy(() => import("@/game-engine").then(m => ({ default: m.CreateGamePage })));
+const GamePage = lazy(() => import("@/game-engine").then(m => ({ default: m.GamePage })));
 const ChurchLanding = lazy(() => import("@/pages/ChurchLanding"));
 const ChurchCreate = lazy(() => import("@/pages/ChurchCreate"));
 const ChurchJoin = lazy(() => import("@/pages/ChurchJoin"));
@@ -125,6 +128,12 @@ function ChurchPageFallback() {
       <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#b8962e" }} />
     </div>
   );
+}
+
+function FeaturePageFallback() {
+  return <div className="flex items-center justify-center min-h-[50vh]" role="status" aria-label="Loading page">
+    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+  </div>;
 }
 
 function ChurchGateway() {
@@ -198,7 +207,7 @@ function Router() {
       <Route path="/church" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchLanding /></Suspense>} />
       <Route path="/" component={Home} />
       <Route path="/archive" component={Archive} />
-      <Route path="/admin" component={Admin} />
+      <Route path="/admin" component={() => <Suspense fallback={<FeaturePageFallback />}><Admin /></Suspense>} />
       <Route path="/about" component={About} />
       <Route path="/donate" component={Donate} />
       <Route path="/donation-success" component={DonationSuccess} />
@@ -207,9 +216,9 @@ function Router() {
       <Route path="/testimonies" component={TestimonyWall} />
       <Route path="/quick-prayer" component={QuickPrayer} />
       <Route path="/daily-promise" component={DailyPromise} />
-      <Route path="/music/purchases" component={MusicPurchases} />
-      <Route path="/music/:slug" component={SongDetail} />
-      <Route path="/music" component={Music} />
+      <Route path="/music/purchases" component={() => <Suspense fallback={<FeaturePageFallback />}><MusicPurchases /></Suspense>} />
+      <Route path="/music/:slug" component={() => <Suspense fallback={<FeaturePageFallback />}><SongDetail /></Suspense>} />
+      <Route path="/music" component={() => <Suspense fallback={<FeaturePageFallback />}><Music /></Suspense>} />
       <Route path="/signin" component={SignIn} />
       <Route path="/my-library" component={MyLibrary} />
       <Route path="/account" component={AccountPage} />
@@ -229,14 +238,14 @@ function Router() {
       <Route path="/prayer" component={PrayerCounseling} />
       <Route path="/support" component={Support} />
       <Route path="/how-to-use" component={HowToUse} />
-      <Route path="/bible" component={Bible} />
+      <Route path="/bible" component={() => <Suspense fallback={<FeaturePageFallback />}><Bible /></Suspense>} />
       <Route path="/sunday-school/:id" component={SundaySchoolLessonPage} />
       <Route path="/sunday-school" component={SundaySchool} />
       <Route path="/inbox" component={Inbox} />
       <Route path="/admin-login" component={AdminLogin} />
-      <Route path="/interactive" component={GamesHub} />
-      <Route path="/interactive/create" component={CreateGamePage} />
-      <Route path="/interactive/:gameSlug" component={GamePage} />
+      <Route path="/interactive" component={() => <Suspense fallback={<FeaturePageFallback />}><GamesHub /></Suspense>} />
+      <Route path="/interactive/create" component={() => <Suspense fallback={<FeaturePageFallback />}><CreateGamePage /></Suspense>} />
+      <Route path="/interactive/:gameSlug" component={() => <Suspense fallback={<FeaturePageFallback />}><GamePage /></Suspense>} />
       <Route path="/loopnest" component={LoopNestSeparated} />
       <Route path="/loopnest/login" component={LoopNestSeparated} />
       <Route path="/loopnest/dashboard" component={LoopNestSeparated} />
@@ -336,4 +345,3 @@ function App() {
 }
 
 export default App;
-

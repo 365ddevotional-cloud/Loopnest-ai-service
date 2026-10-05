@@ -37,7 +37,7 @@ const fontSizeLabels: Record<FontSizeLevel, string> = {
 const themeOptions = [
   { value: "light" as const, label: "Light", icon: Sun },
   { value: "dark" as const, label: "Dark", icon: Moon },
-  { value: "system" as const, label: "System", icon: Monitor },
+  { value: "system" as const, label: "Follow device", icon: Monitor },
 ];
 
 const VOICE_STORAGE_KEY = "audio-reader-voice";
@@ -60,6 +60,7 @@ export function MobileSettingsSection() {
             <button
               key={opt.value}
               onClick={() => setTheme(opt.value)}
+              aria-pressed={theme === opt.value}
               className={cn(
                 "flex items-center gap-3 px-4 py-2 rounded-lg text-base font-medium transition-all duration-200",
                 theme === opt.value
@@ -255,6 +256,7 @@ export function SettingsModal() {
                 <button
                   key={opt.value}
                   onClick={() => setTheme(opt.value)}
+                  aria-pressed={theme === opt.value}
                   className={cn(
                     "flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border",
                     theme === opt.value

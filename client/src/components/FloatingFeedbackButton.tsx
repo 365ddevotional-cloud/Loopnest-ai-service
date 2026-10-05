@@ -14,6 +14,7 @@ export function FloatingFeedbackButton() {
         onClick={() => setLocation("/contact/feedback")}
         className="h-12 w-12 rounded-full shadow-lg"
         title="Send Feedback"
+        aria-label="Send feedback or suggest a feature"
         data-testid="button-floating-feedback"
       >
         <MessageSquare className="w-5 h-5" />

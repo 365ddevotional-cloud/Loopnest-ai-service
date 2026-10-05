@@ -43,6 +43,17 @@ export default function About() {
             Whether you are new to the faith or have walked with God for years, 365 Daily Devotional exists to support your daily journey with clarity, truth, and hope.
           </p>
 
+          <section className="rounded-xl border border-primary/20 bg-primary/5 p-5 md:p-6 space-y-3 font-sans text-base" aria-labelledby="app-updates-title">
+            <h3 id="app-updates-title" className="font-serif text-xl font-bold text-foreground">App updates and your ideas</h3>
+            <p>Recent improvements include a quick tour, a clearer How to Use guide, and easier access to music purchases. The app also offers a theme setting that can follow your device. You can share a devotional or join a group from the app.</p>
+            <p>We review feedback to guide future improvements to navigation, accessibility, and performance. Features under consideration have no promised release date.</p>
+            <div className="flex flex-wrap gap-3 pt-1">
+              <Link href="/how-to-use"><Button variant="outline">How to Use</Button></Link>
+              <Link href="/groups"><Button variant="outline">Explore groups</Button></Link>
+              <Link href="/contact/feedback"><Button variant="outline">Send feedback or an idea</Button></Link>
+            </div>
+          </section>
+          
           <Separator className="bg-primary/10" />
 
           <div className="text-center space-y-4">
