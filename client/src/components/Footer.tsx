@@ -17,6 +17,9 @@ export default function Footer() {
     <footer className="w-full border-t border-primary/10 bg-gradient-to-b from-background to-muted/30 mt-auto">
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col items-center space-y-6">
+          <Link href="/updates" className="text-sm font-medium text-primary hover:underline" data-testid="footer-link-updates">
+            Latest community update
+          </Link>
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
             {legalLinks.map((link) => (
               <Link 

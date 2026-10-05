@@ -31,6 +31,7 @@ import Home from "@/pages/Home";
 import Archive from "@/pages/Archive";
 import AdminLogin from "@/pages/AdminLogin";
 import About from "@/pages/About";
+import Updates from "@/pages/Updates";
 import Donate from "@/pages/Donate";
 import DonationSuccess from "@/pages/DonationSuccess";
 import PrayerCounseling from "@/pages/PrayerCounseling";
@@ -209,6 +210,7 @@ function Router() {
       <Route path="/archive" component={Archive} />
       <Route path="/admin" component={() => <Suspense fallback={<FeaturePageFallback />}><Admin /></Suspense>} />
       <Route path="/about" component={About} />
+      <Route path="/updates" component={Updates} />
       <Route path="/donate" component={Donate} />
       <Route path="/donation-success" component={DonationSuccess} />
       <Route path="/prayer-counseling" component={PrayerCounseling} />

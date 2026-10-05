@@ -49,6 +49,7 @@ export default function About() {
             <p>We review feedback to guide future improvements to navigation, accessibility, and performance. Features under consideration have no promised release date.</p>
             <div className="flex flex-wrap gap-3 pt-1">
               <Link href="/how-to-use"><Button variant="outline">How to Use</Button></Link>
+              <Link href="/updates"><Button variant="outline">Read the latest update</Button></Link>
               <Link href="/groups"><Button variant="outline">Explore groups</Button></Link>
               <Link href="/contact/feedback"><Button variant="outline">Send feedback or an idea</Button></Link>
             </div>
