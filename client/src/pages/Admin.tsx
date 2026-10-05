@@ -14,7 +14,7 @@ import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckChe
 import { useUpload } from "@/hooks/use-upload";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useState, useEffect, useRef, Component } from "react";
+import { useState, useEffect, useRef, Component, type FormEvent } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { format, parseISO } from "date-fns";
 import { useLocation } from "wouter";
@@ -6401,6 +6401,96 @@ function ChurchOversightAdmin() {
 
 // ── App Analytics Admin ────────────────────────────────────────────────────────
 
+type AudienceStats = {
+  periodDays: number; websiteVisitors: number; websiteCountries: { country: string; total: number }[];
+  songPlays: number; downloadLinks: number; songCountries: { kind: string; country: string; total: number }[];
+  topSongs: { id: number; title: string; plays: number; downloads: number }[];
+  playStoreVisitors: number; playStoreCountries: { country: string; total: number }[];
+  dailyVisitors: { day: string; visitors: number }[];
+};
+
+function AudienceAnalyticsAdmin() {
+  const [days, setDays] = useState(30);
+  const [day, setDay] = useState(new Date().toISOString().slice(0, 10));
+  const [country, setCountry] = useState("US");
+  const [visitors, setVisitors] = useState("");
+  const [notice, setNotice] = useState("");
+  const [saving, setSaving] = useState(false);
+  const { data, isLoading, error, refetch } = useQuery<AudienceStats>({
+    queryKey: ["/api/admin/audience", days],
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/audience?days=${days}`, { credentials: "include" });
+      if (!response.ok) throw new Error("Could not load audience statistics.");
+      return response.json();
+    },
+    refetchInterval: 60000,
+  });
+  async function savePlayCount(event: FormEvent) {
+    event.preventDefault();
+    setSaving(true); setNotice("");
+    try {
+      const response = await fetch("/api/admin/audience/play-store", {
+        method: "PUT", credentials: "include", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ day, country: country.trim().toUpperCase(), visitors: Number(visitors) }),
+      });
+      if (!response.ok) throw new Error((await response.json()).message ?? "Could not save count.");
+      setNotice("Play Store count saved. Enter another country or date to add more.");
+      await refetch();
+    } catch (error) { setNotice((error as Error).message); }
+    finally { setSaving(false); }
+  }
+  const groups = [
+    { title: "Website visits", rows: data?.websiteCountries ?? [] },
+    { title: "Song plays", rows: data?.songCountries.filter(r => r.kind === "play") ?? [] },
+    { title: "Download links", rows: Object.values((data?.songCountries.filter(r => r.kind !== "play") ?? []).reduce((acc, row) => { acc[row.country] ??= { country: row.country, total: 0 }; acc[row.country].total += Number(row.total); return acc; }, {} as Record<string, { country: string; total: number }>)) },
+    { title: "Google Play visits", rows: data?.playStoreCountries ?? [] },
+  ];
+  return <div className="space-y-5 rounded-xl border p-4">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <h3 className="text-lg font-semibold">Audience and music</h3>
+      <select aria-label="Reporting period" value={days} onChange={e => setDays(Number(e.target.value))} className="rounded-md border bg-background px-3 py-2 text-sm">
+        <option value={7}>Last 7 days</option><option value={30}>Last 30 days</option><option value={90}>Last 90 days</option>
+      </select>
+    </div>
+    {isLoading && <p>Loading audience statistics…</p>}
+    {error && <p role="alert">Could not load audience statistics.</p>}
+    {data && <>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          ["Website visitors", data.websiteVisitors],
+          ["Song plays", data.songPlays],
+          ["Download links issued", data.downloadLinks],
+          ["Google Play listing visitors", data.playStoreVisitors],
+        ].map(([label, value]) => <div key={label} className="rounded-lg bg-muted/40 p-3"><p className="text-2xl font-bold text-primary">{Number(value).toLocaleString()}</p><p className="text-sm">{label}</p></div>)}
+      </div>
+      <p className="text-xs text-muted-foreground">Website visitors are distinct browsers per UTC day, summed across the selected days. Plays count ten seconds of listening. Download links count files made available after access checks; storage does not report completed transfers here. Country is shown as Unknown when no trusted location header is available. Figures start when this feature goes live.</p>
+      <div className="grid gap-4 md:grid-cols-2">
+        {groups.map(group => <div key={group.title} className="rounded-lg border p-3">
+          <h4 className="font-semibold mb-2">{group.title} by country</h4>
+          {group.rows.length === 0 ? <p className="text-sm text-muted-foreground">No data yet.</p> :
+            <div className="max-h-48 overflow-y-auto">{group.rows.map((row, index) => <div key={row.country + index} className="flex justify-between border-t py-1 text-sm"><span>{row.country}</span><span>{Number(row.total).toLocaleString()}</span></div>)}</div>}
+        </div>)}
+      </div>
+      <div className="overflow-x-auto"><h4 className="font-semibold mb-2">Songs</h4>
+        {data.topSongs.length === 0 ? <p className="text-sm text-muted-foreground">No song activity yet.</p> :
+          <table className="w-full text-sm"><thead><tr className="border-b"><th className="text-left py-2">Song</th><th className="text-right">Plays</th><th className="text-right">Links issued</th></tr></thead>
+            <tbody>{data.topSongs.map(song => <tr key={song.id} className="border-b"><td className="py-2">{song.title}</td><td className="text-right">{song.plays}</td><td className="text-right">{song.downloads}</td></tr>)}</tbody></table>}
+      </div>
+    </>}
+    <form onSubmit={savePlayCount} className="space-y-3 rounded-lg border p-3">
+      <h4 className="font-semibold">Enter Google Play listing visitors</h4>
+      <p className="text-sm text-muted-foreground">In Play Console, open Store listing performance and export the report. Enter its daily visitor count for each country. Saving the same date and country replaces that value, so corrections do not double count.</p>
+      <div className="flex flex-wrap gap-2">
+        <label className="text-sm">Date <input type="date" required max={new Date().toISOString().slice(0, 10)} value={day} onChange={e => setDay(e.target.value)} className="block rounded-md border bg-background p-2" /></label>
+        <label className="text-sm">Country code <input required maxLength={7} value={country} onChange={e => setCountry(e.target.value)} placeholder="US or Unknown" className="block w-32 rounded-md border bg-background p-2" /></label>
+        <label className="text-sm">Visitors <input type="number" min={0} step={1} required value={visitors} onChange={e => setVisitors(e.target.value)} className="block w-32 rounded-md border bg-background p-2" /></label>
+      </div>
+      <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save Play Store count"}</Button>
+      {notice && <p role="status" className="text-sm">{notice}</p>}
+    </form>
+  </div>;
+}
+
 interface AnalyticsData {
   dau: number;
   wau: number;
@@ -6433,9 +6523,9 @@ function AppAnalyticsAdmin() {
 
   return (
     <div className="space-y-6">
+      <AudienceAnalyticsAdmin />
       <p className="text-xs text-muted-foreground bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-        <strong>Data source:</strong> Database-backed activity log. Only signed-in (verified) users are counted.
-        Anonymous page visits are not included. Google Analytics integration would require a service-account key added server-side.
+        <strong>Signed-in account metrics below:</strong> Activity records for registered users.
       </p>
 
       {/* Main stat cards */}
@@ -6492,17 +6582,7 @@ function AppAnalyticsAdmin() {
         </div>
       )}
 
-      <div className="bg-muted/30 rounded-lg p-4 text-xs text-muted-foreground space-y-1">
-        <p className="font-semibold text-foreground">Metrics requiring additional Google Analytics configuration:</p>
-        <ul className="list-disc list-inside space-y-0.5 mt-1">
-          <li>Anonymous visitor counts (not signed in)</li>
-          <li>Users by platform (web vs Android PWA vs iOS browser)</li>
-          <li>Most visited app areas (page-view tracking)</li>
-          <li>Average engagement time per session</li>
-          <li>Church Mode vs Devotional vs Song page breakdown</li>
-        </ul>
-        <p className="mt-2">These require a Google Analytics 4 property + Data API service-account key added to the server environment.</p>
-      </div>
+
     </div>
   );
 }

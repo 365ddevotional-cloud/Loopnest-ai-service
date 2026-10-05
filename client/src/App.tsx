@@ -268,6 +268,22 @@ function AppContent() {
     stopAudioOnNavigate();
   }, [location]);
 
+  useEffect(() => {
+    if (location.startsWith("/admin") || (window as any).Capacitor?.isNativePlatform?.()) return;
+    try {
+      let browserId = localStorage.getItem("audience-browser-id");
+      if (!browserId) {
+        browserId = crypto.randomUUID();
+        localStorage.setItem("audience-browser-id", browserId);
+      }
+      // One browser per UTC day, regardless of how many pages it opens.
+      fetch("/api/analytics/visit", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ browserId }), keepalive: true,
+      }).catch(() => {});
+    } catch { /* Analytics must never interrupt the site. */ }
+  }, []);
+
   const isPublicRoute =
     location.startsWith("/devotional") || location.startsWith("/public") || location.startsWith("/interactive") || location.startsWith("/loopnest");
 

@@ -8,7 +8,7 @@ export default function PrivacyPolicy() {
       <div className="text-center mb-12 space-y-4">
         <h1 className="font-serif text-4xl md:text-5xl font-bold text-primary">Privacy Policy</h1>
         <div className="decorative-divider" />
-        <p className="text-muted-foreground">Last updated: January 2026</p>
+        <p className="text-muted-foreground">Last updated: October 2026</p>
       </div>
 
       <Card className="bg-card border-card-border shadow-xl shadow-primary/10 overflow-hidden">
@@ -23,7 +23,7 @@ export default function PrivacyPolicy() {
 
         <div className="p-8 md:p-12 space-y-8 text-foreground/80 leading-relaxed">
           <p>
-            This app does not collect, store, or share personal information such as names, email addresses, phone numbers, or precise location data.
+            To provide accounts, purchases, and support, we process information you provide, including your email address and submitted messages. We also measure website use and music activity as described below.
           </p>
 
           <Separator className="bg-primary/10" />
@@ -31,7 +31,7 @@ export default function PrivacyPolicy() {
           <section className="space-y-4">
             <h2 className="font-serif text-xl font-bold text-primary">Information Collection</h2>
             <p>
-              We do not knowingly collect personal or sensitive user data. Any data processed is used only to provide app functionality.
+              The public website stores a random browser identifier locally and uses a daily hash to count distinct browsers. We record song plays after listening, and when music download links are issued. Country may be recorded from a hosting provider’s location header; otherwise it is Unknown. These analytics do not store your IP address or precise location. Administrators also enter aggregate Play Store visitor counts from Google Play Console. Account details, purchases, and messages are used to provide the services you request.
             </p>
           </section>
 

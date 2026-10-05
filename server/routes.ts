@@ -1,4 +1,5 @@
 import { registerMusicCommerceRoutes } from "./music-commerce";
+import { ensureAudienceAnalyticsTables, recordBrowserVisit, recordAudienceSongEvent, getAudienceAnalytics, savePlayStoreVisit } from "./audience-analytics";
 import { ensureMusicOrdersTable, musicOrderStorage } from "./music-commerce-storage";
 import { getMusicDownloadUrl } from "./replit_integrations/object_storage/routes";
 import { getDownloadAccess } from "./download-access";
@@ -167,6 +168,7 @@ export async function registerRoutes(
   app: Express,
 ): Promise<Server> {
   await ensureMusicOrdersTable();
+  await ensureAudienceAnalyticsTables();
   registerMusicCommerceRoutes(app, {
     ...musicOrderStorage,
     verifyToken: async token => (await import("./firebase-admin")).auth.verifyIdToken(token),
@@ -174,6 +176,10 @@ export async function registerRoutes(
     getArchive: () => storage.getGlobalGivingSetting("music_heaven_bundle_archive_v1"),
     setArchive: async objectPath => { await storage.setGlobalGivingSetting("music_heaven_bundle_archive_v1", objectPath, "admin"); },
     signDownload: getMusicDownloadUrl,
+    recordDownloadLinks: async (req, songs, kind) => {
+      try { await Promise.all(songs.map(song => recordAudienceSongEvent(req, song.id, kind))); }
+      catch (error) { console.error("Download analytics error:", error); }
+    },
     requireAdmin,
   });
   // Auth Routes
@@ -1991,6 +1997,7 @@ export async function registerRoutes(
       }
       const userId = (req as any).firebaseUid ?? undefined;
       await storage.recordSongEvent(songId, eventType, userId, sessionId ?? undefined);
+      if (eventType === "play") await recordAudienceSongEvent(req, songId, "play");
       res.json({ recorded: true });
     } catch (err) {
       console.error("Error recording song event:", err);
@@ -6251,6 +6258,35 @@ export async function registerRoutes(
   // ADMIN — APP ANALYTICS
   // ─────────────────────────────────────────────────────────────────────────
 
+  app.post("/api/analytics/visit", async (req, res) => {
+    if (/bot|crawler|spider|headless/i.test(req.get("user-agent") ?? "")) return res.status(204).end();
+    try {
+      await recordBrowserVisit(req, req.body?.browserId);
+      res.status(204).end();
+    } catch (err) {
+      if ((err as Error).message === "Invalid browser ID") return res.status(400).json({ message: "Invalid browser ID" });
+      console.error("Visitor analytics error:", err);
+      res.status(503).json({ message: "Visitor analytics unavailable" });
+    }
+  });
+  app.get("/api/admin/audience", requireAdmin, async (req, res) => {
+    try {
+      const days = Number(req.query.days);
+      if (![7, 30, 90].includes(days)) return res.status(400).json({ message: "Choose 7, 30, or 90 days." });
+      res.setHeader("Cache-Control", "private, no-store");
+      res.json(await getAudienceAnalytics(days));
+    } catch (err) { console.error("Audience analytics error:", err); res.status(500).json({ message: "Could not load audience analytics" }); }
+  });
+  app.put("/api/admin/audience/play-store", requireAdmin, async (req, res) => {
+    const { day, country, visitors } = req.body ?? {};
+    if (typeof day !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isFinite(Date.parse(day)) ||
+      day > new Date().toISOString().slice(0, 10) || typeof country !== "string" ||
+      !/^(?:[A-Z]{2}|Unknown)$/.test(country) || !Number.isInteger(visitors) || visitors < 0 || visitors > 100000000) {
+      return res.status(400).json({ message: "Enter a valid past date, country code, and visitor count." });
+    }
+    try { await savePlayStoreVisit(day, country, visitors); res.json({ saved: true }); }
+    catch (err) { console.error("Play Store analytics error:", err); res.status(500).json({ message: "Could not save Play Store count" }); }
+  });
   // GET /api/admin/analytics  — DAU/WAU/MAU + user stats for admin
   app.get("/api/admin/analytics", requireAdmin, async (req, res) => {
     try {
