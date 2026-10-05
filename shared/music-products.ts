@@ -10,12 +10,20 @@ export const musicProducts = [
 export function getMusicProduct(id: string) {
   const fixed = musicProducts.find(p => p.id === id);
   if (fixed) return fixed;
-  if (!id.startsWith("five:")) return undefined;
+  if (!id.startsWith("five:")) {
+    if (!id.startsWith("single:") || !isPaidMusicSlug(id.slice(7))) return undefined;
+    const slug = id.slice(7);
+    return { id, title: slug, cents: 89, slugs: [slug] };
+  }
   const slugs = id.slice(5).split(",");
   if (slugs.length !== 5 || new Set(slugs).size !== 5 || slugs.some(s => !/^[a-z0-9-]{1,100}$/.test(s)) || slugs.join(",") !== [...slugs].sort().join(",")) return undefined;
   return { id, title: "Your Five-Song Collection", cents: fiveSongCollectionPriceCents, slugs };
 }
-export function isPaidMusicSlug(slug: string) { return heavenTrackSlugs.includes(slug); }
+// Every published song is sold through verified checkout; no song slug may use
+// the legacy unauthenticated download redirects.
+export function isPaidMusicSlug(slug: string) {
+  return /^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$/.test(slug);
+}
 
 // Approved mix-and-match offer: five distinct tracks, including bundle tracks.
 export const fiveSongCollectionPriceCents = 299;

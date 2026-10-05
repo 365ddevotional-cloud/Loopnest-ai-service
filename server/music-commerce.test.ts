@@ -73,6 +73,31 @@ test("server prices are 89 cents per track and 189 cents for all three; retries 
   assert.equal(f.created[1].line_items[0].quantity, 1);
   assert.equal(f.created[1].success_url, "https://365dailydevotional.com/music/purchases?session_id={CHECKOUT_SESSION_ID}");
 });
+
+test("God Got Me and other catalog singles require their own verified payment", async () => {
+  const f = fixture({ getSong: async (slug: string) => ({
+    slug, title: slug === "god-got-me" ? "God Got Me" : "Another Song",
+    isActive: true, audioUrl: archive,
+  }) });
+  const result = await f.checkout("single:god-got-me");
+  assert.equal(result.status, 200);
+  assert.equal(f.created[0].line_items[0].price_data.unit_amount, 89);
+  assert.equal(f.created[0].line_items[0].price_data.product_data.name, "God Got Me");
+  assert.equal((await f.post("download", { sessionId: "cs_test_1" })).status, 403);
+  f.pay();
+  assert.equal((await f.post("download", { sessionId: "cs_test_1" })).status, 200);
+  assert.equal(f.signed[0][1], "God Got Me");
+  assert.equal((await f.checkout("single:another-song")).status, 200);
+  assert.equal(f.created.length, 2);
+});
+
+test("a non-R2 song cannot be charged for a file the checkout cannot deliver", async () => {
+  const f = fixture({ getSong: async (slug: string) => ({
+    slug, title: "External media", isActive: true, audioUrl: "https://example.test/song.mp3",
+  }) });
+  assert.equal((await f.checkout("single:external-media")).status, 409);
+  assert.equal(f.created.length, 0);
+});
 test("rejects client prices, unknown products, missing and forged authentication", async () => {
   const f = fixture();
   assert.equal((await request(f.app).post("/api/music-commerce/checkout").send({ productId: "heaven-reigns-bundle" })).status, 401);

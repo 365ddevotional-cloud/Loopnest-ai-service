@@ -54,7 +54,7 @@ export async function getMusicDownloadUrl(objectPath: string, title: string, ext
     .replace(/[^a-zA-Z0-9 _!-]/g, "").trim().slice(0, 100);
   return getSignedUrl(getR2Client(), new GetObjectCommand({
     Bucket: bucketName, Key: `.private/${key}`,
-    ResponseContentDisposition: `attachment; filename="${safeTitle || "Heaven Reigns"} - 365 Daily Devotional.${extension}"`,
+    ResponseContentDisposition: `attachment; filename="${safeTitle || "Song"} - from 365 Daily Devotional.${extension}"`,
     ResponseContentType: "application/octet-stream",
   }), { expiresIn: Math.min(900, Math.max(1, Math.floor(expiresInSeconds))) });
 }
@@ -127,5 +127,4 @@ export function registerObjectStorageRoutes(app: Express): void {
     return res.redirect(302, r2ObjectUrl);
   });
 }
-
 

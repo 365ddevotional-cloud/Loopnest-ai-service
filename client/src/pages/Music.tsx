@@ -81,7 +81,7 @@ function SongCard({
           <img
             src={song.coverImageUrl}
             alt={song.title}
-            className="w-full h-full object-cover"
+            className={`w-full h-full object-cover ${song.slug === "god-got-me" ? "object-right" : ""}`}
             loading="lazy"
             decoding="async"
             onError={() => setImgBroken(true)}
@@ -152,7 +152,7 @@ function RecentCard({ entry, isContinue }: { entry: RecentlyPlayedEntry; isConti
             <img
               src={entry.coverImageUrl}
               alt={entry.title}
-              className="w-full h-full object-cover"
+              className={`w-full h-full object-cover ${entry.slug === "god-got-me" ? "object-right" : ""}`}
               loading="lazy"
               decoding="async"
               onError={() => setImgBroken(true)}

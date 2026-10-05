@@ -7,13 +7,13 @@ import { Button } from "@/components/ui/button";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 
-export type MusicCatalog = { mode: string; fiveSongOffer?: { cents: number; ready: boolean }; products: { id: string; title: string; cents: number; slugs: string[]; ready: boolean }[] };
+export type MusicCatalog = { mode: string; fiveSongOffer?: { cents: number; ready: boolean }; singleSongOffer?: { cents: number; ready: boolean }; products: { id: string; title: string; cents: number; slugs: string[]; ready: boolean }[] };
 export function useMusicCatalog() {
   return useQuery<MusicCatalog>({ queryKey: ["/api/music-commerce/catalog"], staleTime: 30000,
     queryFn: async () => { const response = await fetch("/api/music-commerce/catalog");
       if (!response.ok) throw new Error("Purchase options could not be loaded."); return response.json(); } });
 }
-export default function MusicPurchasePanel({ productId }: { productId: string }) {
+export default function MusicPurchasePanel({ productId, songTitle }: { productId: string; songTitle?: string }) {
   const { data: catalog, isLoading, error } = useMusicCatalog();
   const { user, getIdToken, signUserOut, loading, emailVerified } = useUser();
   const [, setLocation] = useLocation();
@@ -37,7 +37,10 @@ export default function MusicPurchasePanel({ productId }: { productId: string })
   });
   const freeAccess = access?.lifetimeFreeDownloads === true;
   const five = productId.startsWith("five:");
-  const product = five ? (getMusicProduct(productId) ? { ...getMusicProduct(productId)!, ready: catalog?.fiveSongOffer?.ready === true } : undefined) : catalog?.products.find(p => p.id === productId);
+  const catalogProduct = catalog?.products.find(p => p.id === productId);
+  const product = five
+    ? (getMusicProduct(productId) ? { ...getMusicProduct(productId)!, ready: catalog?.fiveSongOffer?.ready === true } : undefined)
+    : catalogProduct ?? (getMusicProduct(productId) ? { ...getMusicProduct(productId)!, title: songTitle ?? productId, ready: catalog?.singleSongOffer?.ready === true } : undefined);
   const [downloads, setDownloads] = useState<{ title: string; url: string }[]>([]);
   async function buy() {
     if (!user) { setLocation(`/sign-in?return=${encodeURIComponent(window.location.pathname)}`); return; }
@@ -88,7 +91,7 @@ export default function MusicPurchasePanel({ productId }: { productId: string })
     finally { setBusy(false); }
   }
   return <section className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3" data-testid={`purchase-${productId}`}>
-    <h3 className="font-semibold">{five ? "Download your five songs — $2.99" : productId === "heaven-reigns-bundle" ? "Download all three tracks — $1.89" : "Download this track — $0.89"}</h3>
+    <h3 className="font-semibold">{five ? "Download your five songs — $2.99" : productId === "heaven-reigns-bundle" ? "Download all three tracks — $1.89" : `Download ${songTitle ?? product?.title ?? "this track"} — $0.89`}</h3>
     <p className="text-sm text-muted-foreground">{five ? "Five distinct tracks of your choice, including tracks from bundles. Download each MP3 below after purchase." : productId === "heaven-reigns-bundle" ? "Original, Instrumental, and Remix MP3s in one ZIP." : "One MP3 track."} One-time purchase in USD. No subscription.</p>
     {user ? <div className="space-y-2">
       <label htmlFor={emailInputId} className="block text-sm font-semibold">Confirm your account email</label>
@@ -113,4 +116,3 @@ export default function MusicPurchasePanel({ productId }: { productId: string })
     {downloads.map(d => <a key={d.title + d.url} href={d.url} className="block underline">Download {d.title}</a>)}
   </section>;
 }
-

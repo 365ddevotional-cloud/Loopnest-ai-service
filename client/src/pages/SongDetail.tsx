@@ -1,12 +1,11 @@
 import MusicPurchasePanel from "@/components/MusicPurchasePanel";
-import { isPaidMusicSlug } from "@shared/music-products";
-import logoImage from "@assets/IMG_0618_1785225816241.png";
+import { heavenTrackSlugs, isPaidMusicSlug } from "@shared/music-products";
 import { useState, useEffect, useRef } from "react";
 import { useRoute, Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
-  Play, Pause, Volume2, VolumeX, Download, Share2,
+  Play, Pause, Volume2, VolumeX, Share2,
   Heart, ChevronLeft, Music2, BookOpen, Loader2, ExternalLink,
   Gift, X, AlertCircle, BookMarked, SkipForward, SkipBack, Settings2,
   Copy, Check, Calendar, Send, CheckCircle2, RefreshCw,
@@ -270,8 +269,6 @@ export default function SongDetail() {
   const [showLyrics, setShowLyrics] = useState(false);
   const [showMusicSettings, setShowMusicSettings] = useState(false);
   const [localFav, setLocalFav] = useState(false);
-  const [showDownloadModal, setShowDownloadModal] = useState(false);
-  const [downloadType, setDownloadType] = useState<"audio" | "video">("audio");
 
   const { data: song, isLoading, error } = useQuery<Song>({
     queryKey: ["/api/songs/by-slug", slug],
@@ -427,48 +424,6 @@ export default function SongDetail() {
     toast({ title: adding ? "Saved to My Library" : "Removed from library" });
   };
 
-  const handleDownloadClick = async () => {
-    if (!song || !isSignedIn) return;
-    try {
-      const token = await getIdToken();
-      if (!token) return;
-      await fetch("/api/user/library/downloads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ songId: song.id }),
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/library/downloads"] });
-    } catch {}
-  };
-
-  const triggerDownload = () => {
-    if (!song) return;
-    handleDownloadClick();
-    setShowDownloadModal(false);
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    if (isIOS) {
-      window.open(`/api/songs/${song.id}/download`, "_blank");
-    } else {
-      const a = document.createElement("a");
-      a.href = `/api/songs/${song.id}/download`;
-      a.setAttribute("download", "");
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-  };
-
-  const triggerVideoDownload = () => {
-    if (!song) return;
-    setShowDownloadModal(false);
-    const a = document.createElement("a");
-    a.href = `/api/songs/${song.id}/download-video`;
-    a.download = `${song.title.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "")} - from 365 Daily Devotional.mp4`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -492,8 +447,6 @@ export default function SongDetail() {
 
   const hasCover = !!song.coverImageUrl;
   const paidRelease = isPaidMusicSlug(song.slug);
-  const audioDownloadEnabled = !paidRelease && song.downloadStatus !== "disabled" && !!song.audioUrl;
-  const videoDownloadEnabled = !paidRelease && (song as any).videoDownloadStatus !== "disabled" && !!(song as any).videoUrl;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-12">
@@ -520,7 +473,7 @@ export default function SongDetail() {
           <img
             src={song.coverImageUrl!}
             alt={song.title}
-            className="absolute inset-0 w-full h-full object-contain"
+            className={`absolute inset-0 w-full h-full ${song.slug === "god-got-me" ? "object-cover object-right" : "object-contain"}`}
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
         )}
@@ -872,26 +825,6 @@ export default function SongDetail() {
           </Button>
         )}
 
-        {/* Download buttons */}
-        {audioDownloadEnabled && (
-          <Button variant="outline" size="sm" onClick={() => { setDownloadType("audio"); setShowDownloadModal(true); }} data-testid="button-download-audio">
-            <Download className="w-4 h-4 mr-1.5" />
-            Download Audio
-          </Button>
-        )}
-        {videoDownloadEnabled && (
-          <Button variant="outline" size="sm" onClick={() => { setDownloadType("video"); setShowDownloadModal(true); }} data-testid="button-download-video">
-            <Download className="w-4 h-4 mr-1.5" />
-            Download Video (MP4)
-          </Button>
-        )}
-        {!paidRelease && !audioDownloadEnabled && !videoDownloadEnabled && (
-          <Button variant="outline" size="sm" disabled className="opacity-50" data-testid="button-download-unavailable">
-            <Download className="w-4 h-4 mr-1.5" />
-            Download Unavailable
-          </Button>
-        )}
-
         {/* Support the Ministry — voluntary only */}
         <Button
           size="sm"
@@ -904,7 +837,7 @@ export default function SongDetail() {
         </Button>
       </div>
 
-      {paidRelease && <MusicPurchasePanel productId={song.slug} />}
+      {paidRelease && <MusicPurchasePanel productId={heavenTrackSlugs.includes(song.slug) ? song.slug : `single:${song.slug}`} songTitle={song.title} />}
 
       {/* Short Description */}
       {song.shortDescription && (
@@ -1012,74 +945,6 @@ export default function SongDetail() {
         defaultGivingType="One-Time Donation"
       />
 
-      {/* Download Encouragement Modal */}
-      <Dialog open={showDownloadModal} onOpenChange={(v) => !v && setShowDownloadModal(false)}>
-        <DialogContent className="max-w-md max-h-[90dvh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <img src={logoImage} alt="365 Daily Devotional" className="h-14 w-14 object-contain rounded-md" />
-              <div className="min-w-0 text-left">
-                <p className="font-semibold break-words">{song.title}</p>
-                <p className="text-sm text-muted-foreground">from 365 Daily Devotional</p>
-              </div>
-            </div>
-            <DialogTitle className="font-serif text-2xl text-primary flex items-center gap-2">
-              <Download className="w-6 h-6" />
-              {downloadType === "video" ? "Your Video Download Is Ready" : "Your Audio Download Is Ready"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <p className="text-sm text-foreground/80 leading-relaxed">
-              Thank you for listening to music from SpiritTone Records and 365 Daily Devotional. You may download this {downloadType === "video" ? "video" : "song"} freely. Your voluntary support helps us continue producing Scripture-based songs, devotionals, Bible teaching, prayer resources, and counseling encouragement.
-            </p>
-            <div className="rounded-lg bg-primary/5 border border-primary/15 p-4 space-y-1">
-              <p className="text-sm italic text-foreground/80 leading-relaxed">
-                "Each of you should give what you have decided in your heart to give, not reluctantly or under compulsion, for God loves a cheerful giver."
-              </p>
-              <p className="text-xs font-semibold text-primary">— 2 Corinthians 9:7</p>
-            </div>
-            <p className="text-xs text-muted-foreground font-medium text-center">
-              Giving is completely optional. You may continue your download whether or not you give.
-            </p>
-            {isIOSDevice && (
-              <p className="text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 rounded-md px-3 py-2 text-center">
-                {downloadType === "video" ? (
-                  <>On iPhone: Download the MP4, then open <strong>Files → Downloads</strong>. Touch and hold the file, tap <strong>Share</strong>, then <strong>Save Video</strong> if offered. If downloads are blocked inside another app, open this song page in Safari.</>
-                ) : (
-                  <>On iPhone: Tap the Share icon after the audio file opens, then choose <strong>Save to Files</strong>.</>
-                )}
-              </p>
-            )}
-            <div className="flex flex-col gap-2 pt-1">
-              <Button
-                onClick={downloadType === "video" ? triggerVideoDownload : triggerDownload}
-                className="w-full"
-                data-testid="button-confirm-download"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                {downloadType === "video" ? "Continue to Download Video" : "Continue to Download Audio"}
-              </Button>
-              <Button variant="outline" className="w-full" onClick={handleShare} data-testid="button-download-modal-share">
-                <Share2 className="w-4 h-4 mr-2" />
-                Share Song Link
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full border-amber-500/50 text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
-                onClick={() => { setShowDownloadModal(false); setShowSupport(true); }}
-                data-testid="button-download-modal-support"
-              >
-                <Gift className="w-4 h-4 mr-2" />
-                Support the Ministry
-              </Button>
-              <Button variant="ghost" className="w-full text-muted-foreground" onClick={() => setShowDownloadModal(false)} data-testid="button-download-modal-cancel">
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
-

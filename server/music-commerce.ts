@@ -69,7 +69,12 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
     const product = getMusicProduct(productId);
     if (!product) throw Object.assign(new Error("Unknown music product."), { status: 400 });
     const songs = await Promise.all(product.slugs.map(services.getSong));
-    if (songs.some(s => !s?.isActive || !s.audioUrl || (product.id.startsWith("five:") && !validBundleArchive(s.audioUrl)))) throw Object.assign(new Error("This release is currently unavailable."), { status: 409 });
+    if (songs.some(s => !s?.isActive || !validBundleArchive(s.audioUrl))) throw Object.assign(new Error("This release is currently unavailable for paid download."), { status: 409 });
+    // Generic single-track products take the public song title from the
+    // database, never from the browser or a slug-derived placeholder.
+    if (product.slugs.length === 1 && !musicProducts.some(p => p.id === product.id)) {
+      return { product: { ...product, title: songs[0].title }, songs };
+    }
     return { product, songs };
   };
   const downloadExpired = (order: MusicOrder) => !!order.downloadExpiresAt && new Date(order.downloadExpiresAt).getTime() <= now();
@@ -118,7 +123,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
           (product.id !== heavenBundleId || validBundleArchive(archive));
         return { ...product, ready: credentialsReady && storageReady && filesReady };
       }));
-      res.json({ fiveSongOffer: { cents: fiveSongCollectionPriceCents, ready: credentialsReady && storageReady }, currency: "USD", mode: live ? "live" : key ? "test" : "unconfigured", products });
+      res.json({ fiveSongOffer: { cents: fiveSongCollectionPriceCents, ready: credentialsReady && storageReady }, singleSongOffer: { cents: 89, ready: credentialsReady && storageReady }, currency: "USD", mode: live ? "live" : key ? "test" : "unconfigured", products });
     } catch (err) { respondError(res, err); }
   });
 
@@ -183,9 +188,14 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
     try {
       const { uid } = await uidOf(req);
       const orders = await services.listOrders(uid);
-      res.json(orders.filter(order => !downloadExpired(order)).map(order => ({ sessionId: order.sessionId, productId: order.productId,
-        title: getMusicProduct(order.productId)?.title ?? "Music purchase", status: order.status,
-        amountCents: order.amountCents, createdAt: order.createdAt, downloadExpiresAt: order.downloadExpiresAt ?? null })));
+      res.json(await Promise.all(orders.filter(order => !downloadExpired(order)).map(async order => {
+        const product = getMusicProduct(order.productId);
+        const title = product?.slugs.length === 1 && !musicProducts.some(p => p.id === order.productId)
+          ? (await services.getSong(product.slugs[0]))?.title ?? product.title
+          : product?.title ?? "Music purchase";
+        return { sessionId: order.sessionId, productId: order.productId, title, status: order.status,
+          amountCents: order.amountCents, createdAt: order.createdAt, downloadExpiresAt: order.downloadExpiresAt ?? null };
+      })));
     } catch (err) { respondError(res, err); }
   });
 
@@ -260,4 +270,3 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
     catch (err) { respondError(res, err); }
   });
 }
-

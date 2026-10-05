@@ -1,6 +1,5 @@
 import { registerMusicCommerceRoutes } from "./music-commerce";
 import { ensureMusicOrdersTable, musicOrderStorage } from "./music-commerce-storage";
-import { isPaidMusicSlug } from "../shared/music-products";
 import { getMusicDownloadUrl } from "./replit_integrations/object_storage/routes";
 import { getDownloadAccess } from "./download-access";
 import { defaultMusicPricing, musicPricingSchema } from "@shared/music-pricing";
@@ -16,7 +15,6 @@ import { randomBytes } from "crypto";
 import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification, sendDonationThankYouEmail, sendChurchNameChangeSecurityEmail, sendChurchWelcomeEmail, sendChurchComplianceEmail } from "./sendgrid";
 import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { getVideoDownloadUrl } from "./replit_integrations/object_storage/routes";
 import { getTodayDateString, isFutureDate, isPastDate, getDayOfYear } from "./date-utils";
 import { seedAllDevotionals } from "./seed-devotionals";
 import { getOrCreateTranslation, isAllowedLanguage, getCachedTranslationsForLanguage } from "./translationService";
@@ -154,6 +152,14 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
   } else {
     res.status(401).json({ message: "Unauthorized: Admin access required" });
   }
+}
+
+// Keep the existing God Got Me artwork tied to that song across the featured
+// banner, library, collection, and detail API responses.
+function withSongArtwork<T extends { slug: string; title: string; coverImageUrl?: string | null }>(song: T): T {
+  return song.slug === "god-got-me" || song.title.trim().toLowerCase() === "god got me"
+    ? { ...song, coverImageUrl: "/music/god-got-me.jpg" }
+    : song;
 }
 
 export async function registerRoutes(
@@ -1560,7 +1566,7 @@ export async function registerRoutes(
     try {
       const song = await storage.getFeaturedSong();
       if (!song) return res.status(404).json({ message: "No featured song found" });
-      res.json(song);
+      res.json(withSongArtwork(song));
     } catch (err) {
       console.error("Error fetching featured song:", err);
       res.status(500).json({ message: "Could not fetch featured song" });
@@ -1571,7 +1577,7 @@ export async function registerRoutes(
   app.get("/api/songs/library", async (req, res) => {
     try {
       const allSongs = await storage.getPublicSongs();
-      res.json(allSongs);
+      res.json(allSongs.map(withSongArtwork));
     } catch (err) {
       console.error("Error fetching public songs:", err);
       res.status(500).json({ message: "Could not fetch songs" });
@@ -1583,7 +1589,7 @@ export async function registerRoutes(
     try {
       const song = await storage.getSongBySlug(req.params.slug);
       if (!song || !song.isActive) return res.status(404).json({ message: "Song not found" });
-      res.json(song);
+      res.json(withSongArtwork(song));
     } catch (err) {
       res.status(500).json({ message: "Could not fetch song" });
     }
@@ -1605,7 +1611,10 @@ export async function registerRoutes(
   app.get("/api/songs/collections", async (_req, res) => {
     try {
       const collections = await storage.getPublicSongCollections();
-      res.json(collections);
+      res.json(collections.map(collection => ({
+        ...collection,
+        songs: collection.songs?.map(withSongArtwork),
+      })));
     } catch (err) {
       console.error("Error fetching song collections:", err);
       res.status(500).json({ message: "Could not fetch collections" });
@@ -1715,7 +1724,7 @@ export async function registerRoutes(
     }
   });
 
-  // Public: free promotional audio download — media served directly by Cloudflare R2
+  // Legacy links must never expose paid audio without a verified purchase.
   app.get("/api/songs/:id/download", async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
@@ -1723,37 +1732,14 @@ export async function registerRoutes(
     try {
       const song = await storage.getSong(id);
       if (!song) return res.status(404).json({ message: "Song not found" });
-      if (isPaidMusicSlug(song.slug)) return res.status(402).json({ message: "Please use My Music Purchases to access this paid release." });
-
-      if (song.downloadStatus === "disabled") {
-        return res.status(403).json({ message: "Download is not available for this song" });
-      }
-      if (!song.audioUrl) {
-        return res.status(404).json({ message: "No audio file associated with this song" });
-      }
-
-      const r2Base = process.env.R2_PUBLIC_URL;
-      if (!r2Base) {
-        console.error("R2_PUBLIC_URL is not configured");
-        return res.status(500).json({ message: "Media storage is not configured" });
-      }
-
-      const objectPath = song.audioUrl
-        .replace(/^https?:\/\/[^/]+\/?/, "")
-        .replace(/^\/?objects\//, "")
-        .replace(/^\/+/, "");
-
-      const r2Url =
-        `${r2Base.replace(/\/+$/, "")}/.private/${objectPath.replace(/^\.private\//, "")}`;
-
-      return res.redirect(302, r2Url);
+      return res.status(402).json({ message: "Sign in and use the song's purchase panel to buy a download, or open My Music Purchases if you already paid." });
     } catch (err) {
       console.error("Song download redirect error:", err);
       return res.status(500).json({ message: "Download failed" });
     }
   });
 
-  // Public: free promotional video download — media served directly by Cloudflare R2
+  // Video files are not part of the MP3 checkout. Never expose a free bypass.
   app.get("/api/songs/:id/download-video", async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
@@ -1761,23 +1747,7 @@ export async function registerRoutes(
     try {
       const song = await storage.getSong(id);
       if (!song) return res.status(404).json({ message: "Song not found" });
-      if (isPaidMusicSlug(song.slug)) return res.status(402).json({ message: "Please use My Music Purchases to access this paid release." });
-
-      if ((song as any).videoDownloadStatus === "disabled") {
-        return res.status(403).json({ message: "Video download is not available for this song" });
-      }
-      if (!(song as any).videoUrl) {
-        return res.status(404).json({ message: "No video file associated with this song" });
-      }
-
-      const objectPath = String((song as any).videoUrl)
-        .replace(/^https?:\/\/[^/]+\/?/, "")
-        .replace(/^\/?objects\//, "")
-        .replace(/^\/+/, "");
-
-      const downloadUrl = await getVideoDownloadUrl(objectPath, song.title);
-      res.setHeader("Cache-Control", "no-store");
-      return res.redirect(302, downloadUrl);
+      return res.status(402).json({ message: "Video downloads are not available through the MP3 purchase. Listen and watch on this page." });
     } catch (err) {
       console.error("Song video download redirect error:", err);
       return res.status(500).json({ message: "Video download failed" });
@@ -6668,4 +6638,3 @@ async function seedAutoReplyTemplates() {
     console.log("Auto-reply templates seeded.");
   }
 }
-

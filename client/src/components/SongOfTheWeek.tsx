@@ -463,38 +463,6 @@ export function SongOfTheWeek() {
 
   const hasCover = !!song.coverImageUrl;
 
-  // Download helpers ──────────────────────────────────────────────────────────
-  const audioDownloadEnabled = song.downloadStatus !== "disabled" && !!song.audioUrl;
-  const videoDownloadEnabled = (song as any).videoDownloadStatus !== "disabled" && !!(song as any).videoUrl;
-
-  const triggerAudioDownload = () => {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    if (isIOS) {
-      window.open(`/api/songs/${song.id}/download`, "_blank");
-    } else {
-      const a = document.createElement("a");
-      a.href = `/api/songs/${song.id}/download`;
-      a.setAttribute("download", "");
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-  };
-
-  const triggerVideoDownload = () => {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    if (isIOS) {
-      window.open(`/api/songs/${song.id}/download-video`, "_blank");
-    } else {
-      const a = document.createElement("a");
-      a.href = `/api/songs/${song.id}/download-video`;
-      a.setAttribute("download", "");
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-  };
-
   return (
     <>
       <div
@@ -517,7 +485,7 @@ export function SongOfTheWeek() {
             <img
               src={song.coverImageUrl!}
               alt={song.title}
-              className="absolute inset-0 w-full h-full object-contain"
+               className={`absolute inset-0 w-full h-full ${song.slug === "god-got-me" ? "object-cover object-right" : "object-contain"}`}
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
             />
           )}
@@ -816,51 +784,16 @@ export function SongOfTheWeek() {
                 Support the Ministry
               </button>
 
-              {audioDownloadEnabled ? (
-                <button
-                  onClick={triggerAudioDownload}
-                  aria-label="Download Audio"
-                  data-testid="button-download-audio"
-                  className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors text-sm text-muted-foreground hover:text-foreground font-medium active:scale-95"
-                >
-                  <Download className="w-4 h-4" />
-                  Download Audio
-                </button>
-              ) : videoDownloadEnabled ? (
-                <button
-                  onClick={triggerVideoDownload}
-                  aria-label="Download Video (MP4)"
-                  data-testid="button-download-video"
-                  className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors text-sm text-muted-foreground hover:text-foreground font-medium active:scale-95"
-                >
-                  <Download className="w-4 h-4" />
-                  Download Video (MP4)
-                </button>
-              ) : (
-                <button
-                  aria-label="Download Unavailable"
-                  data-testid="button-download-unavailable"
-                  disabled
-                  className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-border/40 bg-muted/30 text-sm text-muted-foreground/50 cursor-not-allowed"
-                >
-                  <Download className="w-4 h-4" />
-                  Download Unavailable
-                </button>
-              )}
-            </div>
-
-            {/* Extra row when both audio and video are available */}
-            {audioDownloadEnabled && videoDownloadEnabled && (
-              <button
-                onClick={triggerVideoDownload}
-                aria-label="Download Video (MP4)"
-                data-testid="button-download-video"
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors text-sm text-muted-foreground hover:text-foreground font-medium active:scale-95"
+              <Link
+                href={`/music/${song.slug}`}
+                aria-label={`Buy and download ${song.title}`}
+                data-testid="button-buy-download-song"
+                className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors text-sm text-muted-foreground hover:text-foreground font-medium active:scale-95"
               >
                 <Download className="w-4 h-4" />
-                Download Video (MP4)
-              </button>
-            )}
+                Buy &amp; Download
+              </Link>
+            </div>
           </div>
 
           {/* Copyright */}
@@ -933,7 +866,7 @@ export function SongMiniCard() {
             <img
               src={song.coverImageUrl}
               alt={song.title}
-              className="w-full h-full object-cover"
+               className={`w-full h-full object-cover ${song.slug === "god-got-me" ? "object-right" : ""}`}
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
             />
           ) : (
