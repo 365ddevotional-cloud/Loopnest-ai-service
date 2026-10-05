@@ -65,9 +65,8 @@ export default function MusicPurchases() {
         <h2 className="font-semibold">{purchase.title}</h2>
         <p className="text-sm">${(purchase.amountCents / 100).toFixed(2)} USD · {purchase.status === "paid" ? "Paid" : purchase.status === "pending" ? "Awaiting payment confirmation" : purchase.status === "revoked" ? "Download access revoked" : "Checkout expired"}</p>
         {purchase.downloadExpiresAt && <p className="text-sm font-semibold" role="status">Download before {new Date(purchase.downloadExpiresAt).toLocaleString()} · {Math.max(1, Math.ceil((new Date(purchase.downloadExpiresAt).getTime() - clock) / 60000))} minutes remaining</p>}
-        {purchase.status === "paid" ? <Button disabled={!!downloading} onClick={() => download(purchase)}>{downloading === purchase.sessionId ? "Preparing download…" : purchase.productId.startsWith("five:") ? "Get Five MP3 Downloads" : purchase.productId === "heaven-reigns-bundle" ? "Download All Three (ZIP)" : "Download MP3"}</Button> : purchase.status === "pending" ? <Button variant="outline" disabled={confirm.isPending} onClick={() => confirm.mutate(purchase.sessionId)}>Check Payment</Button> : null}
+        {purchase.status === "paid" ? <Button disabled={!!downloading} onClick={() => download(purchase)}>{downloading === purchase.sessionId ? "Preparing download…" : purchase.productId.startsWith("five:") ? "Get Five MP3 Downloads" : purchase.productId === "heaven-reigns-bundle" ? "Download All Three (ZIP)" : purchase.productId.startsWith("video:") ? "Download MP4" : "Download MP3"}</Button> : purchase.status === "pending" ? <Button variant="outline" disabled={confirm.isPending} onClick={() => confirm.mutate(purchase.sessionId)}>Check Payment</Button> : null}
       </article>)}
     </>}
   </main>;
 }
-

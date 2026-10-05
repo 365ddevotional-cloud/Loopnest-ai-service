@@ -18,7 +18,7 @@ export type MusicCommerceServices = {
   revokeByPaymentIntent: (id: string) => Promise<void>;
   getArchive: () => Promise<string | null>;
   setArchive: (path: string) => Promise<void>;
-  signDownload: (path: string, title: string, extension: "mp3" | "zip", expiresInSeconds?: number) => Promise<string>;
+  signDownload: (path: string, title: string, extension: "mp3" | "mp4" | "zip", expiresInSeconds?: number) => Promise<string>;
   requireAdmin: (req: Request, res: Response, next: NextFunction) => void;
   env?: Record<string, string | undefined>;
   stripe?: Stripe;
@@ -28,6 +28,16 @@ export type MusicCommerceServices = {
 const archivePattern = /^\/objects\/uploads\/[a-f0-9-]{36}$/;
 export function validBundleArchive(path: unknown): path is string {
   return typeof path === "string" && archivePattern.test(path);
+}
+
+// Video URLs may be stored as an object path or as the public R2 URL. Only
+// known uploads in our own bucket can become paid download products.
+function videoDownloadPath(url: unknown): string | null {
+  if (typeof url !== "string") return null;
+  const key = url.replace(/^https?:\/\/[^/]+\/?/, "").replace(/^\/?objects\//, "")
+    .replace(/^\/?\.private\//, "").replace(/^\/+/, "");
+  const path = `/objects/${key}`;
+  return validBundleArchive(path) ? path : null;
 }
 
 export function paymentMatchesOrder(session: any, order: MusicOrder): boolean {
@@ -69,11 +79,14 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
     const product = getMusicProduct(productId);
     if (!product) throw Object.assign(new Error("Unknown music product."), { status: 400 });
     const songs = await Promise.all(product.slugs.map(services.getSong));
-    if (songs.some(s => !s?.isActive || !validBundleArchive(s.audioUrl))) throw Object.assign(new Error("This release is currently unavailable for paid download."), { status: 409 });
+    const video = product.id.startsWith("video:");
+    if (songs.some(s => !s?.isActive || (video
+      ? s.videoDownloadStatus === "disabled" || !videoDownloadPath(s.videoUrl)
+      : !validBundleArchive(s.audioUrl)))) throw Object.assign(new Error("This release is currently unavailable for paid download."), { status: 409 });
     // Generic single-track products take the public song title from the
     // database, never from the browser or a slug-derived placeholder.
     if (product.slugs.length === 1 && !musicProducts.some(p => p.id === product.id)) {
-      return { product: { ...product, title: songs[0].title }, songs };
+      return { product: { ...product, title: video ? `${songs[0].title} — Video (MP4)` : songs[0].title }, songs };
     }
     return { product, songs };
   };
@@ -107,7 +120,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
     if (order.downloadWindowHours === 2 && !order.downloadExpiresAt) throw new Error("Download deadline unavailable");
     return order.downloadExpiresAt ? Math.min(900, Math.floor((new Date(order.downloadExpiresAt).getTime() - now()) / 1000)) : 900;
   };
-  const signedDownload = (order: MusicOrder, path: string, title: string, extension: "mp3" | "zip") => {
+  const signedDownload = (order: MusicOrder, path: string, title: string, extension: "mp3" | "mp4" | "zip") => {
     const seconds = requireDownloadWindow(order);
     if (seconds < 1) throw Object.assign(new Error("Your two-hour download window has ended."), { status: 410 });
     return services.signDownload(path, title, extension, seconds);
@@ -147,8 +160,11 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
         if (product.id.startsWith("five:")) return res.json({ downloads: await Promise.all(songs.map(async s => ({ title: s.title, url: await services.signDownload(s.audioUrl, s.title, "mp3") }))) });
         const archive = product.id === heavenBundleId ? await services.getArchive() : null;
         if (product.id === heavenBundleId && !validBundleArchive(archive)) throw new Error("Archive unavailable");
-        return res.json({ downloadUrl: await services.signDownload(archive ?? songs[0].audioUrl, product.title,
-          product.id === heavenBundleId ? "zip" : "mp3") });
+        const video = product.id.startsWith("video:");
+        const path = video ? videoDownloadPath(songs[0].videoUrl) : archive ?? songs[0].audioUrl;
+        if (!path) throw new Error("Video download is unavailable");
+        return res.json({ downloadUrl: await services.signDownload(path, video ? songs[0].title : product.title,
+          video ? "mp4" : product.id === heavenBundleId ? "zip" : "mp3") });
       }
       if (!credentialsReady || !storageReady || !stripe) return res.status(503).json({ message: "Paid downloads are not available yet. You can still listen and watch for free." });
       if (product.id === heavenBundleId && !validBundleArchive(await services.getArchive())) return res.status(503).json({ message: "The bundle download is not ready yet." });
@@ -173,7 +189,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
         metadata: { app: "365-music-v1", uid: claims.uid, productId: product.id, download_window_hours: "2" },
         payment_intent_data: { metadata: { app: "365-music-v1", uid: claims.uid, productId: product.id, download_window_hours: "2" } },
         line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: product.cents,
-          product_data: { name: product.title, description: product.slugs.length === 5 ? "Five selected MP3 tracks. One-time purchase." : product.slugs.length === 3 ? "Original, Instrumental, and Remix MP3s in one ZIP. One-time purchase." : "One MP3 track. One-time purchase." } } }],
+          product_data: { name: product.title, description: product.id.startsWith("video:") ? "One MP4 video. One-time purchase." : product.slugs.length === 5 ? "Five selected MP3 tracks. One-time purchase." : product.slugs.length === 3 ? "Original, Instrumental, and Remix MP3s in one ZIP. One-time purchase." : "One MP3 track. One-time purchase." } } }],
         success_url: `${base}/music/purchases?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${base}/music/purchases?cancelled=1`,
       }, { idempotencyKey: `365-music-${idempotencyKey}` });
@@ -191,7 +207,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
       res.json(await Promise.all(orders.filter(order => !downloadExpired(order)).map(async order => {
         const product = getMusicProduct(order.productId);
         const title = product?.slugs.length === 1 && !musicProducts.some(p => p.id === order.productId)
-          ? (await services.getSong(product.slugs[0]))?.title ?? product.title
+          ? ((await services.getSong(product.slugs[0]))?.title ?? product.slugs[0]) + (order.productId.startsWith("video:") ? " — Video (MP4)" : "")
           : product?.title ?? "Music purchase";
         return { sessionId: order.sessionId, productId: order.productId, title, status: order.status,
           amountCents: order.amountCents, createdAt: order.createdAt, downloadExpiresAt: order.downloadExpiresAt ?? null };
@@ -225,6 +241,11 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
         const archive = await services.getArchive();
         if (!validBundleArchive(archive)) throw new Error("Archive unavailable");
         return res.json({ downloadUrl: await signedDownload(paidOrder, archive, product.title, "zip"), downloadExpiresAt: paidOrder.downloadExpiresAt ?? null });
+      }
+      if (product.id.startsWith("video:")) {
+        const path = videoDownloadPath(songs[0].videoUrl);
+        if (!path) throw new Error("Video download is unavailable");
+        return res.json({ downloadUrl: await signedDownload(paidOrder, path, songs[0].title, "mp4"), downloadExpiresAt: paidOrder.downloadExpiresAt ?? null });
       }
       res.json({ downloadUrl: await signedDownload(paidOrder, songs[0].audioUrl, songs[0].title, "mp3"), downloadExpiresAt: paidOrder.downloadExpiresAt ?? null });
     } catch (err) { respondError(res, err); }

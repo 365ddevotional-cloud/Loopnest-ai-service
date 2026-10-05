@@ -1739,7 +1739,7 @@ export async function registerRoutes(
     }
   });
 
-  // Video files are not part of the MP3 checkout. Never expose a free bypass.
+  // MP4 purchases use the verified music checkout. Legacy links must not bypass it.
   app.get("/api/songs/:id/download-video", async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
@@ -1747,7 +1747,7 @@ export async function registerRoutes(
     try {
       const song = await storage.getSong(id);
       if (!song) return res.status(404).json({ message: "Song not found" });
-      return res.status(402).json({ message: "Video downloads are not available through the MP3 purchase. Listen and watch on this page." });
+      return res.status(402).json({ message: "Sign in and use the song's MP4 purchase panel, or open My Music Purchases if you already paid." });
     } catch (err) {
       console.error("Song video download redirect error:", err);
       return res.status(500).json({ message: "Video download failed" });

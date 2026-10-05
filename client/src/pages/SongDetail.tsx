@@ -838,6 +838,9 @@ export default function SongDetail() {
       </div>
 
       {paidRelease && <MusicPurchasePanel productId={heavenTrackSlugs.includes(song.slug) ? song.slug : `single:${song.slug}`} songTitle={song.title} />}
+      {paidRelease && song.videoUrl && song.videoDownloadStatus !== "disabled" && (
+        <MusicPurchasePanel productId={`video:${song.slug}`} songTitle={song.title} />
+      )}
 
       {/* Short Description */}
       {song.shortDescription && (

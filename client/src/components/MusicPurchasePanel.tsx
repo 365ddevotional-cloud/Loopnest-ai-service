@@ -37,6 +37,7 @@ export default function MusicPurchasePanel({ productId, songTitle }: { productId
   });
   const freeAccess = access?.lifetimeFreeDownloads === true;
   const five = productId.startsWith("five:");
+  const video = productId.startsWith("video:");
   const catalogProduct = catalog?.products.find(p => p.id === productId);
   const product = five
     ? (getMusicProduct(productId) ? { ...getMusicProduct(productId)!, ready: catalog?.fiveSongOffer?.ready === true } : undefined)
@@ -91,8 +92,8 @@ export default function MusicPurchasePanel({ productId, songTitle }: { productId
     finally { setBusy(false); }
   }
   return <section className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3" data-testid={`purchase-${productId}`}>
-    <h3 className="font-semibold">{five ? "Download your five songs — $2.99" : productId === "heaven-reigns-bundle" ? "Download all three tracks — $1.89" : `Download ${songTitle ?? product?.title ?? "this track"} — $0.89`}</h3>
-    <p className="text-sm text-muted-foreground">{five ? "Five distinct tracks of your choice, including tracks from bundles. Download each MP3 below after purchase." : productId === "heaven-reigns-bundle" ? "Original, Instrumental, and Remix MP3s in one ZIP." : "One MP3 track."} One-time purchase in USD. No subscription.</p>
+    <h3 className="font-semibold">{five ? "Download your five songs — $2.99" : productId === "heaven-reigns-bundle" ? "Download all three tracks — $1.89" : video ? `Download ${songTitle ?? "this song"} video (MP4) — $0.89` : `Download ${songTitle ?? product?.title ?? "this track"} — $0.89`}</h3>
+    <p className="text-sm text-muted-foreground">{five ? "Five distinct tracks of your choice, including tracks from bundles. Download each MP3 below after purchase." : productId === "heaven-reigns-bundle" ? "Original, Instrumental, and Remix MP3s in one ZIP." : video ? "One MP4 video." : "One MP3 track."} One-time purchase in USD. No subscription.</p>
     {user ? <div className="space-y-2">
       <label htmlFor={emailInputId} className="block text-sm font-semibold">Confirm your account email</label>
       <input id={emailInputId} type="email" autoComplete="email" required value={confirmedEmail} onChange={e => setConfirmedEmail(e.target.value)} className="w-full rounded-md border bg-background p-3 text-foreground" />
@@ -109,7 +110,7 @@ export default function MusicPurchasePanel({ productId, songTitle }: { productId
     {freeAccess && <p className="text-sm">Your verified account has lifetime free download access.</p>}
     <div className="flex flex-wrap items-center gap-3">
       <Button disabled={loading || busy || (!product?.ready && !freeAccess) || (!!user && emailVerified && !freeAccess && !policyAccepted)} onClick={buy} data-testid={`buy-${productId}`}>
-        {busy ? "Preparing…" : !user ? "Sign In to Buy" : !emailVerified ? "Verify Email Before Buying" : freeAccess ? "Download Free" : five ? "Buy Five Songs — $2.99" : productId === "heaven-reigns-bundle" ? "Buy Bundle — $1.89" : "Buy Track — $0.89"}
+        {busy ? "Preparing…" : !user ? "Sign In to Buy" : !emailVerified ? "Verify Email Before Buying" : freeAccess ? "Download Free" : five ? "Buy Five Songs — $2.99" : productId === "heaven-reigns-bundle" ? "Buy Bundle — $1.89" : video ? "Buy MP4 — $0.89" : "Buy Track — $0.89"}
       </Button>
       <Link href="/music/purchases" className="text-sm underline">My Music Purchases</Link>
     </div>

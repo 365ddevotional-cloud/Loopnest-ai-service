@@ -91,6 +91,47 @@ test("God Got Me and other catalog singles require their own verified payment", 
   assert.equal(f.created.length, 2);
 });
 
+test("MP4 appears as its own purchase and requires verified payment before a branded video download", async () => {
+  const f = fixture({ getSong: async (slug: string) => ({
+    slug, title: "God Got Me", isActive: true, audioUrl: archive,
+    videoUrl: "https://media.example.test/objects/uploads/11111111-1111-1111-1111-111111111111",
+    videoDownloadStatus: "enabled",
+  }) });
+  assert.equal((await f.checkout("video:god-got-me")).status, 200);
+  assert.equal(f.created[0].line_items[0].price_data.unit_amount, 89);
+  assert.equal(f.created[0].line_items[0].price_data.product_data.name, "God Got Me — Video (MP4)");
+  assert.equal((await f.post("download", { sessionId: "cs_test_1" })).status, 403);
+  f.pay();
+  const result = await f.post("download", { sessionId: "cs_test_1" });
+  assert.equal(result.status, 200);
+  assert.equal(f.signed[0][0], archive);
+  assert.equal(f.signed[0][1], "God Got Me");
+  assert.equal(f.signed[0][2], "mp4");
+  const purchases = await request(f.app).get("/api/music-commerce/purchases").set("Authorization", "Bearer buyer");
+  assert.equal(purchases.body[0].title, "God Got Me — Video (MP4)");
+  assert.equal(purchases.body[0].productId, "video:god-got-me");
+});
+
+test("disabled or externally hosted videos cannot be charged for an unavailable MP4", async () => {
+  for (const video of [
+    { videoUrl: archive, videoDownloadStatus: "disabled" },
+    { videoUrl: "https://other.example.test/video.mp4", videoDownloadStatus: "enabled" },
+  ]) {
+    const f = fixture({ getSong: async (slug: string) => ({ slug, title: "God Got Me", isActive: true, audioUrl: archive, ...video }) });
+    assert.equal((await f.checkout("video:god-got-me")).status, 409);
+    assert.equal(f.created.length, 0);
+  }
+});
+
+test("the verified ministry account receives an MP4 without payment", async () => {
+  const f = fixture({ getSong: async (slug: string) => ({ slug, title: "God Got Me", isActive: true, audioUrl: archive,
+    videoUrl: archive, videoDownloadStatus: "enabled" }) });
+  const result = await f.checkout("video:god-got-me", "owner");
+  assert.equal(result.status, 200);
+  assert.equal(f.created.length, 0);
+  assert.equal(f.signed[0][2], "mp4");
+});
+
 test("a non-R2 song cannot be charged for a file the checkout cannot deliver", async () => {
   const f = fixture({ getSong: async (slug: string) => ({
     slug, title: "External media", isActive: true, audioUrl: "https://example.test/song.mp3",

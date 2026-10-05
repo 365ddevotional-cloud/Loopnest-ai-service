@@ -11,9 +11,12 @@ export function getMusicProduct(id: string) {
   const fixed = musicProducts.find(p => p.id === id);
   if (fixed) return fixed;
   if (!id.startsWith("five:")) {
-    if (!id.startsWith("single:") || !isPaidMusicSlug(id.slice(7))) return undefined;
-    const slug = id.slice(7);
-    return { id, title: slug, cents: 89, slugs: [slug] };
+    const video = id.startsWith("video:");
+    const single = id.startsWith("single:");
+    if (!video && !single) return undefined;
+    const slug = id.slice(video ? 6 : 7);
+    if (!isPaidMusicSlug(slug)) return undefined;
+    return { id, title: video ? `${slug} — Video (MP4)` : slug, cents: 89, slugs: [slug] };
   }
   const slugs = id.slice(5).split(",");
   if (slugs.length !== 5 || new Set(slugs).size !== 5 || slugs.some(s => !/^[a-z0-9-]{1,100}$/.test(s)) || slugs.join(",") !== [...slugs].sort().join(",")) return undefined;
