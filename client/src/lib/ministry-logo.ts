@@ -1,19 +1,24 @@
 export const MINISTRY_LOGOS = {
   still: "/365-logo.jpeg",
+  preferred: "/branding/365-jesus-christ-is-lord.gif",
   white: "/branding/365-white-outline-jesus-christ-is-lord.gif",
   gold: "/branding/365-gold-outline-jesus-christ-is-lord.gif",
 } as const;
 
-export function logoForSeed(seed: string | number): string {
-  const index = typeof seed === "number" ? seed : Array.from(seed).reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return index % 2 === 0 ? MINISTRY_LOGOS.white : MINISTRY_LOGOS.gold;
+// Retain the existing call signature; the approved gold GIF is now used everywhere.
+export function logoForSeed(_seed: string | number): string {
+  return MINISTRY_LOGOS.preferred;
 }
 
-// Only upload defaults may contain "alternate". Songs always store a real URL.
-// Empty string explicitly means no logo; null/undefined use the ministry default.
-export function resolveUploadLogo(value: string | null | undefined, seed: string | number): string | null {
+export function normalizeMinistryLogo(value: string | null | undefined): string | null | undefined {
+  return value === "alternate" || value === MINISTRY_LOGOS.white || value === MINISTRY_LOGOS.gold
+    ? MINISTRY_LOGOS.preferred : value;
+}
+
+// Empty string explicitly means no logo. Preserve custom logos and the still option.
+export function resolveUploadLogo(value: string | null | undefined, _seed: string | number): string | null {
   if (value === "") return null;
-  return value == null || value === "alternate" ? logoForSeed(seed) : value;
+  return normalizeMinistryLogo(value) ?? MINISTRY_LOGOS.preferred;
 }
 
 export function isStillLogoRoute(route: string): boolean {
