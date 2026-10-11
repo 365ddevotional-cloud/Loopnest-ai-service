@@ -1,3 +1,5 @@
+import { MinistryLogoPicker } from "@/components/MinistryLogoPicker";
+import { resolveUploadLogo } from "@/lib/ministry-logo";
 import MusicPricingAdmin from "@/components/MusicPricingAdmin";
 import { FormattedPrayerMessage } from "@/components/FormattedPrayerMessage";
 import { pastePrayerReply } from "@/lib/prayer-reply-paste";
@@ -3187,6 +3189,7 @@ interface BatchSong {
   featuredWeekEnd: string;
   copyrightNotice: string;
   releaseYear: number;
+  labelLogoUrl: string | null;
   labelLogoFile: File | null;
   labelLogoPreview: string | null;
   coverFile: File | null;
@@ -3296,6 +3299,7 @@ function SongAssignPanel({ collectionId, allSongs, onAdd, onRemove }: {
 }
 
 function SongsAdmin() {
+  const logoSequence = useRef(0);
   const { toast } = useToast();
   const [editingSong, setEditingSong] = useState<Song | null>(null);
   const [editCustomLanguage, setEditCustomLanguage] = useState("");
@@ -3925,7 +3929,7 @@ function SongsAdmin() {
       artist: d.artist ?? null,
       featuredArtist: d.featuredArtist ?? null,
       labelName: d.labelName ?? "SpiritTone Records",
-      labelLogoUrl: d.labelLogoUrl ?? null,
+      labelLogoUrl: resolveUploadLogo(d.labelLogoUrl, logoSequence.current++),
       producer: d.producer ?? "Moses Afolabi",
       composer: d.composer ?? null,
       lyricist: d.lyricist ?? null,
@@ -4031,6 +4035,7 @@ function SongsAdmin() {
 
   const makeBatchSong = (file: File | null, overrides: Partial<BatchSong> = {}): BatchSong => {
     const d = uploadDefaults ?? {};
+    const labelLogoUrl = resolveUploadLogo(d.labelLogoUrl, logoSequence.current++);
     return {
       id: `batch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       file, title: "", slug: "",
@@ -4055,7 +4060,7 @@ function SongsAdmin() {
       featuredWeekStart: "", featuredWeekEnd: "",
       copyrightNotice: d.copyrightNotice ?? `© ${new Date().getFullYear()} SpiritTone Records. All rights reserved.`,
       releaseYear: d.releaseYear ?? new Date().getFullYear(),
-      labelLogoFile: null, labelLogoPreview: null,
+      labelLogoUrl, labelLogoFile: null, labelLogoPreview: labelLogoUrl,
       coverFile: null, coverPreview: null,
       videoFile: null, videoUploadStatus: "none" as const, videoError: null,
       downloadStatus: (d.downloadStatus as "free" | "disabled") ?? "free",
@@ -4101,7 +4106,7 @@ function SongsAdmin() {
     try {
       let audioPath: string | null = null;
       if (bsong.file) audioPath = await doFileUpload(bsong.file);
-      let logoPath: string | null = null;
+      let logoPath: string | null = bsong.labelLogoUrl;
       if (bsong.labelLogoFile) logoPath = await doFileUpload(bsong.labelLogoFile);
       let coverPath: string | null = null;
       if (bsong.coverFile) coverPath = await doFileUpload(bsong.coverFile);
@@ -4438,11 +4443,12 @@ function SongsAdmin() {
 
                         {/* Logo */}
                         <div className="space-y-2">
-                          <Label className="text-xs">SpiritTone Records Logo <span className="text-muted-foreground">(PNG/JPG/SVG, max 5MB)</span></Label>
+                          <Label className="text-xs">SpiritTone Records Logo <span className="text-muted-foreground">(GIF/PNG/JPG/SVG, max 5MB)</span></Label>
+                          <MinistryLogoPicker value={song.labelLogoFile ? song.labelLogoPreview : song.labelLogoUrl} onChange={value => updateBatchSong(song.id, { labelLogoUrl: value || null, labelLogoFile: null, labelLogoPreview: value || null })} />
                           {song.labelLogoPreview && (
                             <div className="flex items-center gap-2">
                               <img src={song.labelLogoPreview} alt="Logo preview" className="h-10 object-contain border rounded p-1 bg-muted/30" />
-                              <Button size="sm" variant="ghost" className="text-destructive h-7 text-xs" onClick={() => updateBatchSong(song.id, { labelLogoFile: null, labelLogoPreview: null })}>
+                              <Button size="sm" variant="ghost" className="text-destructive h-7 text-xs" onClick={() => updateBatchSong(song.id, { labelLogoUrl: null, labelLogoFile: null, labelLogoPreview: null })}>
                                 <X className="w-3 h-3 mr-1" /> Remove
                               </Button>
                             </div>
@@ -4450,7 +4456,7 @@ function SongsAdmin() {
                           <label className="inline-flex items-center gap-1.5 text-xs border rounded-md px-3 py-1.5 cursor-pointer hover:bg-muted transition-colors">
                             <Upload className="w-3 h-3" />
                             {song.labelLogoPreview ? "Replace Logo" : "Upload Logo"}
-                            <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.webp,.svg" onChange={(e) => {
+                            <input type="file" className="hidden" accept=".gif,.jpg,.jpeg,.png,.webp,.svg" onChange={(e) => {
                               const f = e.target.files?.[0]; e.target.value = "";
                               if (!f) return;
                               if (f.size > 5 * 1024 * 1024) { toast({ title: "File too large", description: "Logo must be under 5MB.", variant: "destructive" }); return; }
@@ -4683,6 +4689,10 @@ function SongsAdmin() {
             <p className="text-xs text-muted-foreground mb-4">
               These values are pre-filled when you open "Upload One Song" or add a song in batch mode. You can always override them per song.
             </p>
+            <div className="mb-4">
+              <MinistryLogoPicker value={uploadDefaults.labelLogoUrl} allowAlternate onChange={value => setUploadDefaults(prev => ({ ...prev, labelLogoUrl: value }))} />
+              <p className="text-xs text-muted-foreground mt-2">Applies to new uploads only. Song cover artwork is selected separately.</p>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {([
                 ["labelName", "Label Name"],
@@ -5952,7 +5962,8 @@ function SongsAdmin() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs">SpiritTone Records Logo <span className="text-muted-foreground">(PNG/JPG/SVG, max 5MB)</span></Label>
+                <Label className="text-xs">SpiritTone Records Logo <span className="text-muted-foreground">(GIF/PNG/JPG/SVG, max 5MB)</span></Label>
+                <MinistryLogoPicker value={editingSong.labelLogoUrl} onChange={value => setEditingSong({ ...editingSong, labelLogoUrl: value || null })} />
                 {editingSong.labelLogoUrl && (
                   <div className="flex items-center gap-2">
                     <img src={editingSong.labelLogoUrl} alt="Label logo preview" className="h-10 object-contain border rounded p-1 bg-muted/30" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
@@ -5964,7 +5975,7 @@ function SongsAdmin() {
                 <label className={`inline-flex items-center gap-1.5 text-xs border rounded-md px-3 py-1.5 cursor-pointer hover:bg-muted transition-colors ${logoUpload.isUploading ? "opacity-60 pointer-events-none" : ""}`}>
                   <Upload className="w-3 h-3" />
                   {logoUpload.isUploading ? `Uploading ${Math.round(logoUpload.progress ?? 0)}%…` : editingSong.labelLogoUrl ? "Replace Logo" : "Upload Logo"}
-                  <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.webp,.svg" disabled={logoUpload.isUploading} onChange={handleLogoUpload} data-testid="input-song-label-logo" />
+                  <input type="file" className="hidden" accept=".gif,.jpg,.jpeg,.png,.webp,.svg" disabled={logoUpload.isUploading} onChange={handleLogoUpload} data-testid="input-song-label-logo" />
                 </label>
                 {logoUpload.isUploading && (
                   <div className="w-48 bg-muted rounded-full h-1.5">
@@ -7509,3 +7520,4 @@ function PlatformAnnouncementsAdmin() {
     </div>
   );
 }
+

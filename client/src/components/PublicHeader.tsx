@@ -1,6 +1,9 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { MinistryLogo } from "@/components/MinistryLogo";
+import { isStillLogoRoute } from "@/lib/ministry-logo";
 
 export default function PublicHeader() {
+  const [location] = useLocation();
   return (
     <header
       style={{
@@ -19,6 +22,7 @@ export default function PublicHeader() {
         }}
       >
         <Link href="/devotional/today">
+          {!isStillLogoRoute(location) && <MinistryLogo seed={location} className="w-16 h-16 object-contain mx-auto mb-3" />}
           <span
             data-testid="link-public-logo"
             style={{
@@ -128,3 +132,4 @@ export default function PublicHeader() {
     </header>
   );
 }
+
