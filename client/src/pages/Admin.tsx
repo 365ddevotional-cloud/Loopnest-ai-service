@@ -1,4 +1,6 @@
 import MusicPricingAdmin from "@/components/MusicPricingAdmin";
+import { FormattedPrayerMessage } from "@/components/FormattedPrayerMessage";
+import { pastePrayerReply } from "@/lib/prayer-reply-paste";
 import { CreateDevotionalForm } from "@/components/CreateDevotionalForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +20,7 @@ import { useState, useEffect, useRef, Component, type FormEvent } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { format, parseISO } from "date-fns";
 import { useLocation } from "wouter";
-import type { PrayerRequest, ThreadMessage, PrayerAttachment, Devotional, SundaySchoolLesson, InboxThread, InboxMessage, Song, SongTestimony, GivingMethod, DonationConfirmation, SongCollection } from "@shared/schema";
+import type { PrayerRequest, ThreadMessage, PrayerReply, PrayerAttachment, Devotional, SundaySchoolLesson, InboxThread, InboxMessage, Song, SongTestimony, GivingMethod, DonationConfirmation, SongCollection } from "@shared/schema";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getDevotionalStatus } from "@/lib/date-utils";
@@ -1006,12 +1008,21 @@ function PrayerInbox() {
   const { toast } = useToast();
   const [selectedRequest, setSelectedRequest] = useState<PrayerRequest | null>(null);
   const [replyMessage, setReplyMessage] = useState("");
+  const replyEditorRef = useRef<HTMLTextAreaElement>(null);
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: requests = [], isLoading } = useQuery<PrayerRequest[]>({
+  const { data: requests = [], isLoading, isError } = useQuery<PrayerRequest[]>({
     queryKey: ["/api/prayer-requests"],
   });
+
+  // Keep the last opened request visible after a reply, refresh or tab change.
+  useEffect(() => {
+    if (selectedRequest || requests.length === 0) return;
+    const lastId = Number(sessionStorage.getItem("prayer-inbox-selected-id"));
+    const lastRequest = requests.find(request => request.id === lastId);
+    if (lastRequest) setSelectedRequest(lastRequest);
+  }, [requests, selectedRequest]);
 
   const { data: threadMessages = [] } = useQuery<ThreadMessage[]>({
     queryKey: ["/api/prayer-requests", selectedRequest?.id, "thread"],
@@ -1020,6 +1031,11 @@ function PrayerInbox() {
 
   const { data: attachments = [] } = useQuery<PrayerAttachment[]>({
     queryKey: ["/api/prayer-requests", selectedRequest?.id, "attachments"],
+    enabled: !!selectedRequest,
+  });
+
+  const { data: earlierReplies = [] } = useQuery<PrayerReply[]>({
+    queryKey: ["/api/prayer-requests", selectedRequest?.id, "replies"],
     enabled: !!selectedRequest,
   });
 
@@ -1038,11 +1054,16 @@ function PrayerInbox() {
       });
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (saved: ThreadMessage, variables) => {
       setReplyMessage("");
+      setSelectedRequest(previous => previous?.id === variables.requestId ? { ...previous, status: "replied" } : previous);
+      setFilter("all");
+      setSearchQuery("");
+      queryClient.setQueryData<ThreadMessage[]>(["/api/prayer-requests", variables.requestId, "thread"], previous =>
+        previous?.some(message => message.id === saved.id) ? previous : [...(previous ?? []), saved]);
       queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests", selectedRequest?.id, "thread"] });
-      toast({ title: "Reply sent successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests", variables.requestId, "thread"] });
+      toast({ title: "Reply saved in the conversation" });
     },
     onError: (error: Error) => {
       toast({ title: "Failed to send reply", description: error.message, variant: "destructive" });
@@ -1131,7 +1152,7 @@ function PrayerInbox() {
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
               <SelectItem value="unreplied">Unreplied</SelectItem>
-              <SelectItem value="being_prayed">Being Prayed For</SelectItem>
+              <SelectItem value="being_prayed">Replied / Being Prayed For</SelectItem>
               <SelectItem value="answered">Answered</SelectItem>
               <SelectItem value="urgent">Urgent Only</SelectItem>
               <SelectItem value="counseling">Counseling Only</SelectItem>
@@ -1160,13 +1181,14 @@ function PrayerInbox() {
         </div>
 
         <div className="space-y-2 max-h-[500px] overflow-y-auto">
+          {isError && <p role="alert" className="text-destructive text-sm">Could not load prayer requests. Please refresh.</p>}
           {filteredRequests.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">No requests found.</p>
+            <p className="text-muted-foreground text-center py-8">No requests found. Try All or Replied / Being Prayed For.</p>
           ) : (
             filteredRequests.map((request) => (
               <div
                 key={request.id}
-                onClick={() => setSelectedRequest(request)}
+                onClick={() => { setSelectedRequest(request); sessionStorage.setItem("prayer-inbox-selected-id", String(request.id)); }}
                 className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                   selectedRequest?.id === request.id
                     ? "border-primary bg-primary/5"
@@ -1303,9 +1325,13 @@ function PrayerInbox() {
                 </div>
               )}
 
-              {threadMessages.length > 0 && (
+              {(threadMessages.length > 0 || earlierReplies.length > 0) && (
                 <div className="space-y-3">
                   <h4 className="font-medium text-foreground">Conversation</h4>
+                  {earlierReplies.map(reply => <div key={`earlier-${reply.id}`} className="p-3 rounded-lg bg-primary/10 ml-4">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Earlier reply · {reply.createdAt ? format(new Date(reply.createdAt), "MMM d, h:mm a") : ""}</p>
+                    <FormattedPrayerMessage message={reply.replyMessage} className="text-foreground text-sm" />
+                  </div>)}
                   {threadMessages.map((msg) => (
                     <div
                       key={msg.id}
@@ -1318,7 +1344,7 @@ function PrayerInbox() {
                     >
                       <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
                         <span className="text-xs font-medium text-muted-foreground">
-                          {msg.senderType === "admin" ? "Admin" : "User"}
+                          {msg.senderType === "admin" ? "Admin" : msg.senderType === "automated" ? "Automated encouragement" : "User"}
                         </span>
                         <div className="flex items-center gap-2">
                           {msg.senderType === "admin" && (
@@ -1341,7 +1367,7 @@ function PrayerInbox() {
                           </span>
                         </div>
                       </div>
-                      <p className="text-foreground text-sm">{msg.message}</p>
+                      <FormattedPrayerMessage message={msg.message} className="text-foreground text-sm" />
                     </div>
                   ))}
                 </div>
@@ -1371,13 +1397,30 @@ function PrayerInbox() {
                   </Select>
                 </div>
                 <Textarea
+                  ref={replyEditorRef}
                   placeholder="Write your reply..."
                   value={replyMessage}
                   onChange={(e) => setReplyMessage(e.target.value)}
-                  rows={4}
-                  className="resize-none"
+                  onPaste={(event) => pastePrayerReply(event, setReplyMessage)}
+                  rows={8}
+                  className="min-h-44 resize-y whitespace-pre-wrap"
                   data-testid="textarea-reply"
                 />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button type="button" variant="outline" size="sm" onClick={() => {
+                    const editor = replyEditorRef.current;
+                    if (!editor) return;
+                    const { selectionStart: start, selectionEnd: end } = editor;
+                    if (start === end) return;
+                    setReplyMessage(previous => previous.slice(0, start) + "**" + previous.slice(start, end) + "**" + previous.slice(end));
+                    requestAnimationFrame(() => { editor.focus(); editor.setSelectionRange(start + 2, end + 2); });
+                  }}>Bold selected text</Button>
+                  <span className="text-xs text-muted-foreground">Paragraphs and bold text are kept when pasted.</span>
+                </div>
+                {replyMessage.trim() && <div className="rounded-lg border bg-muted/20 p-3 space-y-2" aria-label="Reply preview">
+                  <p className="text-xs font-semibold text-muted-foreground">Preview as the requester will read it</p>
+                  <FormattedPrayerMessage message={replyMessage} className="text-sm text-foreground" />
+                </div>}
                 <div className="flex items-center gap-2 flex-wrap">
                   <Button
                     type="button"

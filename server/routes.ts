@@ -885,6 +885,13 @@ export async function registerRoutes(
       };
       
       const prayerRequest = await storage.createPrayerRequest(sanitizedInput);
+      try {
+        const template = await storage.getAutoReplyTemplate(prayerRequest.priority);
+        if (template) {
+          await storage.createThreadMessage({ requestId: prayerRequest.id, senderType: "automated",
+            message: `${template.encouragement}\n\n“${template.scriptureText}” — ${template.scriptureReference}\n\n${template.prayer}` });
+        }
+      } catch (error) { console.error("Could not save the automated prayer encouragement:", error); }
       res.status(201).json(prayerRequest);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -933,7 +940,7 @@ export async function registerRoutes(
       return res.status(400).json({ message: "Invalid ID" });
     }
     const { status } = req.body;
-    if (!["new", "replied", "closed"].includes(status)) {
+    if (!["new", "replied", "answered", "closed"].includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
     }
     const updated = await storage.updatePrayerRequestStatus(id, status);

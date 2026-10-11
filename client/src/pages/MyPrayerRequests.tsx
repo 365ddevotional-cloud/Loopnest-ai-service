@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormattedPrayerMessage } from "@/components/FormattedPrayerMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -285,13 +286,13 @@ export default function MyPrayerRequests() {
                         >
                           <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
                             <span className="text-xs font-medium text-muted-foreground">
-                              {msg.senderType === "admin" ? "365 Daily Devotional Team" : "You"}
+                              {msg.senderType === "admin" ? "365 Daily Devotional Team" : msg.senderType === "automated" ? "Automated encouragement" : "You"}
                             </span>
                             <span className="text-xs text-muted-foreground">
                               {msg.createdAt ? format(new Date(msg.createdAt), "MMM d, h:mm a") : ""}
                             </span>
                           </div>
-                          <p className="text-foreground text-sm">{msg.message}</p>
+                          <FormattedPrayerMessage message={msg.message} className="text-foreground text-sm" />
                         </div>
                       ))}
                     </div>

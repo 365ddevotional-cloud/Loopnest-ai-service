@@ -49,6 +49,17 @@ export async function getUncachableSendGridClient() {
   };
 }
 
+function escapePrayerHtml(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/\x27/g, "&#39;");
+}
+
+function prayerReplyHtml(message: string): string {
+  return escapePrayerHtml(message).replace(/\r\n?/g, "\n")
+    .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\n/g, "<br />");
+}
+
 export async function sendPrayerReplyNotification(
   toEmail: string,
   requesterName: string,
@@ -69,12 +80,12 @@ export async function sendPrayerReplyNotification(
             <p style="color: #666; margin: 5px 0;">Prayer & Counseling Ministry</p>
           </div>
           
-          <p style="color: #333; font-size: 16px;">Dear ${requesterName},</p>
+          <p style="color: #333; font-size: 16px;">Dear ${escapePrayerHtml(requesterName)},</p>
           
           <p style="color: #333; font-size: 16px;">You have received a reply to your prayer request:</p>
           
           <div style="background-color: #f8f6f3; border-left: 4px solid #9c6b30; padding: 20px; margin: 20px 0;">
-            <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${replyMessage}</p>
+            <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0;">${prayerReplyHtml(replyMessage)}</p>
           </div>
           
           <p style="color: #333; font-size: 16px;">Visit our website to view the full conversation and send follow-up messages.</p>
