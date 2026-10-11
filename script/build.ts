@@ -2,12 +2,13 @@ import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
 import { rm, readFile } from "fs/promises";
 
+// Keep connect-pg-simple external: it reads table.sql relative to its package at runtime.
+// Bundling it moves __dirname into dist and breaks first-time session table creation.
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
 const allowlist = [
   "@google/generative-ai",
   "axios",
-  "connect-pg-simple",
   "cors",
   "date-fns",
   "drizzle-orm",
