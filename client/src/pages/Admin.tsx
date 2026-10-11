@@ -1016,6 +1016,9 @@ function PrayerInbox() {
         : {};
     } catch { return {}; }
   });
+  const [sentRequestIds, setSentRequestIds] = useState<Record<number, boolean>>({});
+  const sendInFlight = useRef(false);
+  const sentNoticeRef = useRef<HTMLDivElement>(null);
   const replyMessage = selectedRequest ? replyDrafts[selectedRequest.id] || "" : "";
   const setReplyMessage = (value: string | ((previous: string) => string)) => {
     if (!selectedRequest) return;
@@ -1093,6 +1096,12 @@ function PrayerInbox() {
     return <FileText className="w-4 h-4" />;
   };
 
+  useEffect(() => {
+    if (selectedRequest && sentRequestIds[selectedRequest.id]) {
+      sentNoticeRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [selectedRequest?.id, sentRequestIds]);
+
   const sendReplyMutation = useMutation({
     mutationFn: async ({ requestId, message }: { requestId: number; message: string }) => {
       // Check before sending; never retry a POST automatically after a lost response.
@@ -1107,11 +1116,18 @@ function PrayerInbox() {
       return await res.json();
     },
     onSuccess: (saved: ThreadMessage, variables) => {
+      // Remove the persisted draft before any refetch can remount the inbox.
+      try {
+        const drafts = JSON.parse(sessionStorage.getItem("prayer-inbox-drafts") || "{}");
+        delete drafts[variables.requestId];
+        sessionStorage.setItem("prayer-inbox-drafts", JSON.stringify(drafts));
+      } catch {}
       setReplyDrafts(previous => {
         const next = { ...previous };
         delete next[variables.requestId];
         return next;
       });
+      setSentRequestIds(previous => ({ ...previous, [variables.requestId]: true }));
       setSelectedRequest(previous => previous?.id === variables.requestId ? { ...previous, status: "replied" } : previous);
       setFilter("all");
       setSearchQuery("");
@@ -1119,8 +1135,9 @@ function PrayerInbox() {
         previous?.some(message => message.id === saved.id) ? previous : [...(previous ?? []), saved]);
       queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests"] });
       queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests", variables.requestId, "thread"] });
-      toast({ title: "Reply saved in the conversation" });
+      toast({ title: "Reply sent", description: "Your reply is saved in the conversation." });
     },
+    onSettled: () => { sendInFlight.current = false; },
     onError: (error: Error) => {
       if (error.message.startsWith("401:")) {
         needsSignIn();
@@ -1188,7 +1205,8 @@ function PrayerInbox() {
   };
 
   const handleSendReply = () => {
-    if (!selectedRequest || !replyMessage.trim()) return;
+    if (!selectedRequest || !replyMessage.trim() || sendInFlight.current || sentRequestIds[selectedRequest.id]) return;
+    sendInFlight.current = true;
     sendReplyMutation.mutate({ requestId: selectedRequest.id, message: replyMessage });
   };
 
@@ -1451,6 +1469,14 @@ function PrayerInbox() {
               )}
 
               <div className="space-y-3">
+                {sentRequestIds[selectedRequest.id] ? (
+                  <div ref={sentNoticeRef} role="status" className="rounded-lg border border-green-500/30 bg-green-500/10 p-4 space-y-3" data-testid="reply-sent-confirmation">
+                    <p className="font-semibold flex items-center gap-2"><CheckCircle className="w-5 h-5" />Reply sent</p>
+                    <p className="text-sm text-muted-foreground">Your reply is saved in the conversation above.</p>
+                    <Button type="button" variant="outline" onClick={() => setSentRequestIds(previous => ({ ...previous, [selectedRequest.id]: false }))}>Write another reply</Button>
+                  </div>
+                ) : (
+                <>
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-primary" />
                   <span className="text-sm font-medium text-foreground">Quick Replies:</span>
@@ -1475,6 +1501,7 @@ function PrayerInbox() {
                 </div>
                 <Textarea
                   ref={replyEditorRef}
+                  disabled={sendReplyMutation.isPending}
                   placeholder="Write your reply..."
                   value={replyMessage}
                   onChange={(e) => setReplyMessage(e.target.value)}
@@ -1494,10 +1521,10 @@ function PrayerInbox() {
                   }}>Bold selected text</Button>
                   <span className="text-xs text-muted-foreground">Paragraphs and bold text are kept when pasted.</span>
                 </div>
-                {replyMessage.trim() && <div className="rounded-lg border bg-muted/20 p-3 space-y-2" aria-label="Reply preview">
-                  <p className="text-xs font-semibold text-muted-foreground">Preview as the requester will read it</p>
+                {replyMessage.trim() && <details className="rounded-lg border bg-muted/20 p-3 space-y-2" aria-label="Reply preview">
+                  <summary className="cursor-pointer text-sm font-medium">Preview formatting (optional)</summary>
                   <FormattedPrayerMessage message={replyMessage} className="text-sm text-foreground" />
-                </div>}
+                </details>}
                 <div className="flex items-center gap-2 flex-wrap">
                   <Button
                     type="button"
@@ -1510,8 +1537,12 @@ function PrayerInbox() {
                     ) : (
                       <Send className="w-4 h-4 mr-2" />
                     )}
-                    Send Reply
+                    {sendReplyMutation.isPending ? "Sending…" : "Send Reply"}
                   </Button>
+                </div>
+                </>
+                )}
+                <div className="flex items-center gap-2 flex-wrap">
                   {selectedRequest.status !== "replied" && selectedRequest.status !== "answered" && (
                     <Button
                       variant="outline"
