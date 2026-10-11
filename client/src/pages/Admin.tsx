@@ -1007,14 +1007,61 @@ function AdminArchive() {
 function PrayerInbox() {
   const { toast } = useToast();
   const [selectedRequest, setSelectedRequest] = useState<PrayerRequest | null>(null);
-  const [replyMessage, setReplyMessage] = useState("");
+  // Keep drafts per request for this tab, including across sign-in and refresh.
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>(() => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem("prayer-inbox-drafts") || "{}");
+      return saved && typeof saved === "object" && !Array.isArray(saved)
+        ? Object.fromEntries(Object.entries(saved).filter(([, value]) => typeof value === "string")) as Record<string, string>
+        : {};
+    } catch { return {}; }
+  });
+  const replyMessage = selectedRequest ? replyDrafts[selectedRequest.id] || "" : "";
+  const setReplyMessage = (value: string | ((previous: string) => string)) => {
+    if (!selectedRequest) return;
+    const id = selectedRequest.id;
+    setReplyDrafts(previous => ({ ...previous, [id]: typeof value === "function" ? value(previous[id] || "") : value }));
+  };
+  useEffect(() => {
+    try { sessionStorage.setItem("prayer-inbox-drafts", JSON.stringify(replyDrafts)); } catch {}
+  }, [replyDrafts]);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const [signInOpen, setSignInOpen] = useState(false);
+  const [adminPassword, setAdminPassword] = useState("");
+  const [signInError, setSignInError] = useState("");
+  const [signingIn, setSigningIn] = useState(false);
+  const needsSignIn = () => { setSessionExpired(true); setSignInOpen(true); };
+  const restoreAdminSession = async (event: FormEvent) => {
+    event.preventDefault();
+    setSigningIn(true);
+    setSignInError("");
+    try {
+      await apiRequest("POST", "/api/auth/login", { password: adminPassword });
+      const response = await fetch("/api/auth/check", { credentials: "include", cache: "no-store" });
+      const session = await response.json();
+      if (!response.ok || session.isAdmin !== true) throw new Error("The sign-in session could not be restored. Please allow cookies and try again.");
+      setAdminPassword("");
+      setSessionExpired(false);
+      setSignInOpen(false);
+      await queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests"] });
+      toast({ title: "Signed in", description: "Your draft is ready. Review it, then click Send Reply." });
+    } catch (error) {
+      setSignInError(error instanceof Error && error.message.startsWith("401:")
+        ? "Incorrect admin password. Please try again."
+        : "Could not restore your admin session. Please check your connection and try again.");
+    } finally { setSigningIn(false); }
+  };
   const replyEditorRef = useRef<HTMLTextAreaElement>(null);
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: requests = [], isLoading, isError } = useQuery<PrayerRequest[]>({
+  const { data: requests = [], isLoading, isError, error: requestsError } = useQuery<PrayerRequest[]>({
     queryKey: ["/api/prayer-requests"],
   });
+
+  useEffect(() => {
+    if (requestsError instanceof Error && requestsError.message.startsWith("401:")) needsSignIn();
+  }, [requestsError]);
 
   // Keep the last opened request visible after a reply, refresh or tab change.
   useEffect(() => {
@@ -1048,6 +1095,11 @@ function PrayerInbox() {
 
   const sendReplyMutation = useMutation({
     mutationFn: async ({ requestId, message }: { requestId: number; message: string }) => {
+      // Check before sending; never retry a POST automatically after a lost response.
+      const check = await fetch("/api/auth/check", { credentials: "include", cache: "no-store" });
+      if (!check.ok) throw new Error("Could not check your admin session.");
+      const auth = await check.json();
+      if (auth.isAdmin !== true) throw new Error("401: Admin sign-in required");
       const res = await apiRequest("POST", `/api/prayer-requests/${requestId}/thread`, {
         message,
         senderType: "admin",
@@ -1055,7 +1107,11 @@ function PrayerInbox() {
       return await res.json();
     },
     onSuccess: (saved: ThreadMessage, variables) => {
-      setReplyMessage("");
+      setReplyDrafts(previous => {
+        const next = { ...previous };
+        delete next[variables.requestId];
+        return next;
+      });
       setSelectedRequest(previous => previous?.id === variables.requestId ? { ...previous, status: "replied" } : previous);
       setFilter("all");
       setSearchQuery("");
@@ -1066,7 +1122,11 @@ function PrayerInbox() {
       toast({ title: "Reply saved in the conversation" });
     },
     onError: (error: Error) => {
-      toast({ title: "Failed to send reply", description: error.message, variant: "destructive" });
+      if (error.message.startsWith("401:")) {
+        needsSignIn();
+        return;
+      }
+      toast({ title: "Could not confirm the reply was sent", description: "Your draft is still here. Check the conversation before trying again to avoid sending twice.", variant: "destructive" });
     },
   });
 
@@ -1141,6 +1201,23 @@ function PrayerInbox() {
   }
 
   return (
+    <>
+      <Dialog open={signInOpen} onOpenChange={open => { setSignInOpen(open); if (!open) setAdminPassword(""); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Sign in again to reply</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Your admin session has expired. Your selected request and reply draft will stay here while you sign in.</p>
+          <form onSubmit={restoreAdminSession} className="space-y-4">
+            <Label htmlFor="prayer-admin-password">Admin password</Label>
+            <Input id="prayer-admin-password" type="password" autoComplete="current-password" value={adminPassword} onChange={event => setAdminPassword(event.target.value)} required disabled={signingIn} />
+            {signInError && <p role="alert" className="text-sm text-destructive">{signInError}</p>}
+            <Button type="submit" disabled={signingIn || !adminPassword}>{signingIn ? "Signing in…" : "Sign in and keep my draft"}</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+      {sessionExpired && <div role="alert" className="mb-4 rounded-lg border border-primary/30 p-4">
+        <p>Your admin session has expired. Sign in again to load the conversation and send your reply.</p>
+        <Button className="mt-2" onClick={() => setSignInOpen(true)}>Sign in again</Button>
+      </div>}
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -1490,6 +1567,7 @@ function PrayerInbox() {
         )}
       </div>
     </div>
+    </>
   );
 }
 
