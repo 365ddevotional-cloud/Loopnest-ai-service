@@ -18,7 +18,7 @@ const fields = [
 
 export default function MusicPricingAdmin() {
   const { toast } = useToast();
-  const { data, isLoading, error } = useQuery<MusicPricing>({queryKey: ["/api/admin/music-pricing"]});
+  const { data, isLoading, error, refetch, isFetching } = useQuery<MusicPricing>({queryKey: ["/api/admin/music-pricing"]});
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function MusicPricingAdmin() {
     <CardContent className="space-y-4">
       <p className="text-sm text-muted-foreground">Set separate audio and video prices. These are one-time purchases, with no subscription. Buying multiple items uses the per-item price.</p>
       <p className="text-sm">Default prices are stored for future releases. Heaven Reigns checkout and its fixed single/bundle prices are configured below; saving these defaults does not enable checkout.</p>
-      {error ? <p role="alert">Prices could not be loaded. Please refresh before editing.</p> : <div className="grid gap-4 sm:grid-cols-2">
+      {error ? <div role="alert" className="space-y-2"><p>{error.message.startsWith("401:") ? "Your admin session has expired. Sign in again to load prices." : "Prices could not be loaded. Retry before editing."}</p><Button variant="outline" disabled={isFetching} onClick={() => refetch()}>Retry Loading Prices</Button>{error.message.startsWith("401:") && <a className="block text-primary underline" href="/admin-login" target="_blank" rel="noopener noreferrer">Sign in again in a new tab</a>}</div> : <div className="grid gap-4 sm:grid-cols-2">
         {fields.map(([key, label]) => <div key={key} className="space-y-2">
           <Label htmlFor={key}>{label}</Label>
           <Input id={key} data-testid={`price-${key}`} type="number" step="0.01" min={key.startsWith("usd") ? "0.50" : "1"} value={prices[key] ?? ((defaultMusicPricing[key] / 100).toFixed(2))} disabled={isLoading || saving} onChange={e => setPrices({...prices, [key]: e.target.value})}/>

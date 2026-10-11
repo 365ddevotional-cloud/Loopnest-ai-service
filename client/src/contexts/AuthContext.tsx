@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface AuthContextType {
   isAdmin: boolean;
@@ -17,9 +17,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = useCallback(async () => {
     try {
-      const response = await fetch("/api/auth/check", { credentials: "include" });
+      const response = await fetch("/api/auth/check", { credentials: "include", cache: "no-store" });
       const data = await response.json();
-      setIsAdmin(data.isAdmin);
+      setIsAdmin(response.ok && data.isAdmin === true);
     } catch {
       setIsAdmin(false);
     } finally {
@@ -36,12 +36,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await apiRequest("POST", "/api/auth/login", { password });
       const data = await response.json();
       if (data.success) {
+        // Confirm the browser retained the session before opening admin screens.
+        const check = await fetch("/api/auth/check", { credentials: "include", cache: "no-store" });
+        const session = await check.json();
+        if (!check.ok || session.isAdmin !== true) {
+          throw new Error("Your sign-in session could not be established. Please allow cookies and try again.");
+        }
         setIsAdmin(true);
+        await queryClient.invalidateQueries();
         return true;
       }
       return false;
-    } catch {
-      return false;
+    } catch (error) {
+      setIsAdmin(false);
+      throw error;
     }
   };
 

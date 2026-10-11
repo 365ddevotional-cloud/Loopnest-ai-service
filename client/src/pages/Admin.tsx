@@ -2612,7 +2612,7 @@ export default function Admin() {
     { value: "sunday-school",          label: "Sunday School",      icon: GraduationCap, count: 0 },
     { value: "devotionals",            label: "Create New",         icon: ShieldCheck,   count: 0 },
     { value: "promises",               label: "Promises",           icon: Sparkles,      count: 0 },
-    { value: "songs",                  label: "Songs",              icon: Music,         count: 0 },
+    { value: "songs",                  label: "Music Management",              icon: Music,         count: 0 },
     { value: "donations",              label: "Donations",          icon: Gift,          count: 0 },
     { value: "churches",               label: "Churches",           icon: Building2,     count: 0 },
     { value: "church-oversight",       label: "Oversight",          icon: TrendingUp,    count: 0 },
@@ -2863,7 +2863,6 @@ export default function Admin() {
         </TabsContent>
 
         <TabsContent value="songs">
-          <MusicPricingAdmin />
           <SongsAdmin />
         </TabsContent>
 
@@ -3546,7 +3545,7 @@ function SongsAdmin() {
   const [filterSongType, setFilterSongType] = useState("all");
   const [filterVisibility, setFilterVisibility] = useState("all");
 
-  const { data: songs = [], isLoading, refetch } = useQuery<Song[]>({
+  const { data: songs = [], isLoading, error: songsError, refetch } = useQuery<Song[]>({
     queryKey: ["/api/songs"],
   });
 
@@ -4073,6 +4072,25 @@ function SongsAdmin() {
 
   return (
     <div className="space-y-6">
+      <Card data-testid="music-management-admin" className="border-primary/20">
+        <CardHeader>
+          <CardTitle className="font-serif text-2xl text-primary">Music Management</CardTitle>
+          <p className="text-sm text-muted-foreground">Upload and manage every song, audio file, lyric video, cover image, and lyrics here. Featuring a song of the week is optional.</p>
+        </CardHeader>
+        <CardContent>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button size="default" onClick={openNew} data-testid="button-new-song">
+                <Upload className="w-4 h-4 mr-1.5" />
+                Upload One Song
+              </Button>
+              <Button size="default" variant="outline" onClick={() => { setBatchMode(true); setBatchSongs([]); setBatchUploading(false); }} data-testid="button-batch-upload">
+                <Plus className="w-4 h-4 mr-1.5" />
+                Upload Multiple Songs
+              </Button>
+            </div>
+        </CardContent>
+      </Card>
+      <MusicPricingAdmin />
       {/* Batch Upload Panel */}
       {batchMode && (
         <Card className="border-primary/10 shadow-lg shadow-primary/5">
@@ -5079,18 +5097,9 @@ function SongsAdmin() {
           <div className="flex items-center justify-between">
             <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
               <Music2 className="w-6 h-6" />
-              Song of the Week
+              Song Library
             </CardTitle>
-            <div className="flex items-center gap-2">
-              <Button size="sm" onClick={openNew} data-testid="button-new-song">
-                <Upload className="w-4 h-4 mr-1.5" />
-                Upload One Song
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => { setBatchMode(true); setBatchSongs([]); setBatchUploading(false); }} data-testid="button-batch-upload">
-                <Plus className="w-4 h-4 mr-1.5" />
-                Upload Multiple Songs
-              </Button>
-            </div>
+
           </div>
         </CardHeader>
         <CardContent className="p-6">
@@ -5138,6 +5147,12 @@ function SongsAdmin() {
           </div>
           {isLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+          ) : songsError ? (
+            <div role="alert" className="space-y-3">
+              <p>{songsError.message.startsWith("401:") ? "Your admin session has expired. Sign in again to load your songs." : "Your song library could not be loaded. Your songs have not been removed."}</p>
+              <Button variant="outline" onClick={() => refetch()}>Retry Song Library</Button>
+              {songsError.message.startsWith("401:") && <a className="block text-primary underline" href="/admin-login" target="_blank" rel="noopener noreferrer">Sign in again in a new tab</a>}
+            </div>
           ) : filteredSongs.length === 0 ? (
             <p className="text-sm text-muted-foreground">{songs.length === 0 ? "No songs yet." : "No songs match the current filters."}</p>
           ) : (

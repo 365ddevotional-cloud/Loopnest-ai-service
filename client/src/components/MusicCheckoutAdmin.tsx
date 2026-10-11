@@ -1,3 +1,4 @@
+import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -11,8 +12,8 @@ export default function MusicCheckoutAdmin() {
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
   const { data, error } = useQuery<Setup>({ queryKey: ["/api/admin/music-commerce"], queryFn: async () => {
-    const response = await fetch("/api/admin/music-commerce", { credentials: "include" });
-    if (!response.ok) throw new Error("Setup status unavailable"); return response.json(); } });
+    const response = await apiRequest("GET", "/api/admin/music-commerce");
+    return response.json(); } });
   async function uploadArchive(file?: File) {
     if (!file) return;
     if (!file.name.toLowerCase().endsWith(".zip") || file.size > 100 * 1024 * 1024) {
@@ -36,9 +37,10 @@ export default function MusicCheckoutAdmin() {
     finally { setUploading(false); }
   }
   return <section className="border-t pt-4 space-y-3" data-testid="music-checkout-admin">
-    <h3 className="font-semibold">Heaven Reigns Checkout</h3>
+    <h3 className="font-semibold">Checkout Setup Status</h3>
+    <p className="text-sm font-medium">Heaven Reigns checkout</p>
     <p className="text-sm">Each MP3 track costs $0.89 USD. The Original, Instrumental, and Remix bundle costs $1.89 USD. Any five distinct selected tracks cost $2.99 USD. These release prices are fixed separately from the default prices above.</p>
-    {error ? <p role="alert">Checkout setup status could not be loaded.</p> : data ? <ul className="text-sm space-y-1">
+    {error ? <p role="alert">{error.message.startsWith("401:") ? "Your admin session has expired. Sign in again to load checkout setup status." : "Checkout setup status could not be loaded. Use Refresh Checkout Status to retry."}</p> : data ? <ul className="text-sm space-y-1">
       <li>Stripe live key: {data.liveKey ? "Configured" : data.secretKeySet ? "Test key only" : "Missing"}</li>
       <li>Music webhook secret: {data.webhookSecretSet ? "Configured" : "Missing"}</li>
       <li>Media storage: {data.storageReady ? "Configured" : "Missing"}</li>

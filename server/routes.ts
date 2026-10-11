@@ -1,3 +1,4 @@
+import { registerAdminAuth } from "./admin-auth";
 import { registerMusicCommerceRoutes } from "./music-commerce";
 import { ensureAudienceAnalyticsTables, recordBrowserVisit, recordAudienceSongEvent, getAudienceAnalytics, savePlayStoreVisit } from "./audience-analytics";
 import { ensureMusicOrdersTable, musicOrderStorage } from "./music-commerce-storage";
@@ -182,33 +183,7 @@ export async function registerRoutes(
     },
     requireAdmin,
   });
-  // Auth Routes
-  app.post("/api/auth/login", (req, res) => {
-    if (!ADMIN_PASSWORD) {
-      return res.status(503).json({ success: false, message: "Admin login not configured" });
-    }
-    const { password } = req.body;
-    if (password === ADMIN_PASSWORD) {
-      req.session.isAdmin = true;
-      res.json({ success: true, message: "Login successful" });
-    } else {
-      res.status(401).json({ success: false, message: "Invalid password" });
-    }
-  });
-
-  app.post("/api/auth/logout", (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        res.status(500).json({ message: "Logout failed" });
-      } else {
-        res.json({ success: true, message: "Logged out" });
-      }
-    });
-  });
-
-  app.get("/api/auth/check", (req, res) => {
-    res.json({ isAdmin: !!req.session?.isAdmin });
-  });
+  registerAdminAuth(app, ADMIN_PASSWORD);
 
   // PUBLIC DEBUG ENDPOINT - Returns current server state for diagnosing production issues
   // This endpoint bypasses all caching and returns raw server data

@@ -26,15 +26,16 @@ export default function AdminLogin() {
     setError("");
     setIsSubmitting(true);
 
-    const success = await login(password);
-    
-    if (success) {
-      setLocation("/admin");
-    } else {
-      setError("Invalid password. Please try again.");
+    try {
+      const success = await login(password);
+      if (success) setLocation("/admin");
+      else setError("Sign-in failed. Please try again.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Sign-in failed. Please try again.";
+      setError(message.startsWith("401:") ? "Invalid password. Please try again." : message.startsWith("503:") ? "Admin sign-in is temporarily unavailable. Please try again shortly." : message);
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    setIsSubmitting(false);
   };
 
   if (isLoading) {
