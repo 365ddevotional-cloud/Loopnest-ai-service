@@ -7,7 +7,6 @@ import { SiYoutube } from "react-icons/si";
 import { cn } from "@/lib/utils";
 import { MinistryLogo } from "@/components/MinistryLogo";
 import { isStillLogoRoute } from "@/lib/ministry-logo";
-import logoImage from "@assets/IMG_0618_1785225816241.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { useNotifications } from "@/hooks/use-notifications";
@@ -278,7 +277,7 @@ export function Header() {
           className="flex items-center gap-3 group"
         >
           <MinistryLogo
-            still={logoImage} seed={location} animated={!isStillLogoRoute(location)}
+            seed={location} animated={!isStillLogoRoute(location)}
             className="w-12 h-12 object-contain transition-transform group-hover:scale-105"
           />
           <span className="font-serif text-2xl font-semibold text-primary tracking-wide">
@@ -493,7 +492,7 @@ export function Header() {
             <SheetHeader className="border-b border-primary/10 pb-4 mb-4">
               <SheetTitle className="flex items-center gap-3">
                 <MinistryLogo
-                  still={logoImage} seed={location} animated={!isStillLogoRoute(location)}
+                  seed={location} animated={!isStillLogoRoute(location)}
                   className="w-10 h-10 object-contain"
                 />
                 <span className="font-serif text-xl font-semibold text-primary tracking-wide">
