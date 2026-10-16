@@ -1,3 +1,4 @@
+import { formatMusicPrice } from "../../../shared/music-regions";
 import { auth } from "@/lib/firebase";
 import { getMusicProduct } from "../../../shared/music-products";
 import { useEffect, useId, useState } from "react";
@@ -7,11 +8,15 @@ import { Button } from "@/components/ui/button";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 
-export type MusicCatalog = { mode: string; fiveSongOffer?: { cents: number; ready: boolean }; singleSongOffer?: { cents: number; ready: boolean }; products: { id: string; title: string; cents: number; slugs: string[]; ready: boolean }[] };
+export type MusicCatalog = { country: string; countryName: string; currency: string; mode: string; fiveSongOffer?: { cents: number; ready: boolean; message?: string }; singleSongOffer?: { cents: number; ready: boolean; message?: string }; products: { id: string; title: string; cents: number; slugs: string[]; ready: boolean; message?: string }[] };
 export function useMusicCatalog() {
-  return useQuery<MusicCatalog>({ queryKey: ["/api/music-commerce/catalog"], staleTime: 30000,
-    queryFn: async () => { const response = await fetch("/api/music-commerce/catalog");
-      if (!response.ok) throw new Error("Purchase options could not be loaded."); return response.json(); } });
+  return useQuery<MusicCatalog>({ queryKey: ["/api/music-commerce/catalog"], staleTime: 30000, retry: false,
+    queryFn: async () => {
+      const response = await fetch("/api/music-commerce/catalog", {cache: "no-store"});
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message ?? "Purchase options could not be loaded.");
+      return result;
+    } });
 }
 export default function MusicPurchasePanel({ productId, songTitle }: { productId: string; songTitle?: string }) {
   const { data: catalog, isLoading, error } = useMusicCatalog();
@@ -40,8 +45,9 @@ export default function MusicPurchasePanel({ productId, songTitle }: { productId
   const video = productId.startsWith("video:");
   const catalogProduct = catalog?.products.find(p => p.id === productId);
   const product = five
-    ? (getMusicProduct(productId) ? { ...getMusicProduct(productId)!, ready: catalog?.fiveSongOffer?.ready === true } : undefined)
-    : catalogProduct ?? (getMusicProduct(productId) ? { ...getMusicProduct(productId)!, title: songTitle ?? productId, ready: catalog?.singleSongOffer?.ready === true } : undefined);
+    ? (getMusicProduct(productId) ? { ...getMusicProduct(productId)!, ...catalog?.fiveSongOffer, ready: catalog?.fiveSongOffer?.ready === true } : undefined)
+    : catalogProduct ?? (getMusicProduct(productId) ? { ...getMusicProduct(productId)!, ...catalog?.singleSongOffer, title: songTitle ?? productId, ready: catalog?.singleSongOffer?.ready === true } : undefined);
+  const priceLabel = catalog && product ? formatMusicPrice(product.cents, catalog.currency) : "Loading price…";
   const [downloads, setDownloads] = useState<{ title: string; url: string }[]>([]);
   async function buy() {
     if (!user) { setLocation(`/sign-in?return=${encodeURIComponent(window.location.pathname)}`); return; }
@@ -64,7 +70,7 @@ export default function MusicPurchasePanel({ productId, songTitle }: { productId
       }
       const response = await fetch("/api/music-commerce/checkout", { method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ productId, email: confirmedEmail.trim(), downloadPolicyAccepted: policyAccepted }) });
+        body: JSON.stringify({ productId, email: confirmedEmail.trim(), downloadPolicyAccepted: policyAccepted, expectedCountry: catalog?.country }) });
       if (response.status === 401) {
         await signUserOut();
         toast({ title: "Please sign in again", description: "Your selected songs have been saved." });
@@ -92,8 +98,9 @@ export default function MusicPurchasePanel({ productId, songTitle }: { productId
     finally { setBusy(false); }
   }
   return <section className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3" data-testid={`purchase-${productId}`}>
-    <h3 className="font-semibold">{five ? "Download your five songs — $2.99" : productId === "heaven-reigns-bundle" ? "Download all three tracks — $1.89" : video ? `Download ${songTitle ?? "this song"} video (MP4) — $0.89` : `Download ${songTitle ?? product?.title ?? "this track"} — $0.89`}</h3>
-    <p className="text-sm text-muted-foreground">{five ? "Five distinct tracks of your choice, including tracks from bundles. Download each MP3 below after purchase." : productId === "heaven-reigns-bundle" ? "Original, Instrumental, and Remix MP3s in one ZIP." : video ? "One MP4 video." : "One MP3 track."} One-time purchase in USD. No subscription.</p>
+    {catalog && <p className="text-sm text-muted-foreground">Local price for {catalog.countryName}</p>}
+    <h3 className="font-semibold">{five ? "Download your five songs" : productId === "heaven-reigns-bundle" ? "Download all three tracks" : video ? `Download ${songTitle ?? "this song"} video (MP4)` : `Download ${songTitle ?? product?.title ?? "this track"}`} — {priceLabel}</h3>
+    <p className="text-sm text-muted-foreground">{five ? "Five distinct tracks of your choice, including tracks from bundles." : productId === "heaven-reigns-bundle" ? "Original, Instrumental, and Remix MP3s in one ZIP." : video ? "One MP4 video." : "One MP3 track."} One-time purchase{catalog ? ` in ${catalog.currency}` : ""}. No subscription.</p>
     {user ? <div className="space-y-2">
       <label htmlFor={emailInputId} className="block text-sm font-semibold">Confirm your account email</label>
       <input id={emailInputId} type="email" autoComplete="email" required value={confirmedEmail} onChange={e => setConfirmedEmail(e.target.value)} className="w-full rounded-md border bg-background p-3 text-foreground" />
@@ -106,11 +113,11 @@ export default function MusicPurchasePanel({ productId, songTitle }: { productId
       {user && <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" checked={policyAccepted} onChange={e => setPolicyAccepted(e.target.checked)} /><span>I confirm this is my email and understand the two-hour download window.</span></label>}
     </div>}
     {catalog?.mode === "test" && <p className="text-sm font-semibold">Test checkout only. Live purchases are not enabled.</p>}
-    {!product?.ready && !freeAccess && <p className="text-sm" role="status">{error ? "Purchase options could not be loaded. Please refresh." : isLoading ? "Loading purchase options…" : "Paid downloads are coming soon. Listen and watch for free now."}</p>}
+    {!product?.ready && !freeAccess && <p className="text-sm" role="status">{error ? error.message : isLoading ? "Loading purchase options…" : product?.message ?? "Paid downloads are coming soon. Listen and watch for free now."}</p>}
     {freeAccess && <p className="text-sm">Your verified account has lifetime free download access.</p>}
     <div className="flex flex-wrap items-center gap-3">
       <Button disabled={loading || busy || (!product?.ready && !freeAccess) || (!!user && emailVerified && !freeAccess && !policyAccepted)} onClick={buy} data-testid={`buy-${productId}`}>
-        {busy ? "Preparing…" : !user ? "Sign In to Buy" : !emailVerified ? "Verify Email Before Buying" : freeAccess ? "Download Free" : five ? "Buy Five Songs — $2.99" : productId === "heaven-reigns-bundle" ? "Buy Bundle — $1.89" : video ? "Buy MP4 — $0.89" : "Buy Track — $0.89"}
+        {busy ? "Preparing…" : !user ? "Sign In to Buy" : !emailVerified ? "Verify Email Before Buying" : freeAccess ? "Download Free" : `Buy ${five ? "Five Songs" : productId === "heaven-reigns-bundle" ? "Bundle" : video ? "MP4" : "Track"} — ${priceLabel}`}
       </Button>
       <Link href="/music/purchases" className="text-sm underline">My Music Purchases</Link>
     </div>

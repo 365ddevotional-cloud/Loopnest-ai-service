@@ -18,16 +18,17 @@ function fixture(overrides: Record<string, any> = {}) {
     create: async (data: any) => {
       created.push(data);
       const session = { id: `cs_test_${created.length}`, url: "https://checkout.stripe.com/c/pay/test-fixture", status: "open", ...data,
-        amount_total: data.line_items[0].price_data.unit_amount, currency: "usd", payment_status: "unpaid" };
+        amount_total: data.line_items[0].price_data.unit_amount, currency: data.line_items[0].price_data.currency, payment_status: "unpaid" };
       sessions.set(session.id, session); return session;
     },
     retrieve: async (id: string) => { if (!sessions.has(id)) throw new Error("Stripe unavailable"); return sessions.get(id); },
   } } };
   const services = {
     env: { STRIPE_SECRET_KEY: "sk_live_fixture_only", STRIPE_MUSIC_WEBHOOK_SECRET: secret,
-      NODE_ENV: "production", R2_ACCOUNT_ID: "fixture", R2_ACCESS_KEY_ID: "fixture", R2_SECRET_ACCESS_KEY: "fixture", R2_BUCKET_NAME: "fixture" },
+      MUSIC_REGIONAL_PRICES_JSON: overrides.regionalPrices, NODE_ENV: "production", R2_ACCOUNT_ID: "fixture", R2_ACCESS_KEY_ID: "fixture", R2_SECRET_ACCESS_KEY: "fixture", R2_BUCKET_NAME: "fixture" },
     stripe: stripe as unknown as Stripe,
     now: () => time,
+    resolveCountry: () => "US",
     verifyToken: async (token: string) => {
       if (token === "bad") throw new Error("Invalid token");
       return { uid: token, email: token === "owner" ? "365ddevotional@gmail.com" : "fixture@example.test", email_verified: token !== "unverified" };
@@ -290,4 +291,103 @@ test("a concurrent revocation during confirmation cannot issue a download", asyn
   await f.checkout(); f.pay();
   assert.equal((await f.post("download", { sessionId: "cs_test_1" })).status, 403);
   assert.equal(f.signed.length, 0);
+});
+
+test('Nigeria catalog and five-song checkout use fixed naira prices and preserve currency', async () => {
+  const f = fixture({resolveCountry: () => 'NG'});
+  const catalog = await request(f.app).get('/api/music-commerce/catalog?timezone=Africa/Lagos');
+  assert.equal(catalog.body.currency, 'NGN');
+  assert.equal(catalog.body.fiveSongOffer.cents, 100000);
+  assert.equal(catalog.body.singleSongOffer.cents, 20000);
+  const result = await f.post('checkout', {productId:'five:a,b,c,d,e',email:'fixture@example.test',downloadPolicyAccepted:true});
+  assert.equal(result.status,200);
+  assert.equal(f.created[0].line_items[0].price_data.currency,'ngn');
+  assert.equal(f.created[0].line_items[0].price_data.unit_amount,100000);
+  assert.equal(f.orders.get('cs_test_1')?.currency,'NGN');
+  f.sessions.get('cs_test_1').currency='ngn'; f.pay();
+  assert.equal((await f.post('confirm',{sessionId:'cs_test_1'})).status,200);
+  f.sessions.get('cs_test_1').currency='usd';
+  assert.notEqual((await f.post('download',{sessionId:'cs_test_1'})).status,200);
+});
+test('Ghana displays cedi but cannot silently fall back to dollar checkout', async () => {
+  const f=fixture({resolveCountry: () => 'GH'});
+  const catalog=await request(f.app).get('/api/music-commerce/catalog?country=GH');
+  assert.equal(catalog.body.currency,'GHS');assert.equal(catalog.body.fiveSongOffer.cents,900);assert.equal(catalog.body.fiveSongOffer.ready,false);
+  const result=await f.post('checkout',{productId:'five:a,b,c,d,e',email:'fixture@example.test',downloadPolicyAccepted:true});
+  assert.equal(result.status,409);assert.equal(f.created.length,0);
+});
+test('Regional checkout never reuses a USD session and rejects below-minimum singles', async()=>{
+  let country = 'US';
+  const f=fixture({resolveCountry: () => country});await f.checkout('five:a,b,c,d,e');
+  country = 'NG';
+  await f.post('checkout',{productId:'five:a,b,c,d,e',email:'fixture@example.test',downloadPolicyAccepted:true});
+  assert.equal(f.created.length,2);
+  assert.equal((await f.post('checkout',{productId:'single:a',email:'fixture@example.test',downloadPolicyAccepted:true})).status,409);
+});
+
+test('country and timezone query/header spoofing cannot reveal other regional prices', async () => {
+  const f = fixture({resolveCountry: () => 'NG'});
+  const response = await request(f.app).get('/api/music-commerce/catalog?country=US&timezone=America/Chicago').set('cf-ipcountry', 'US');
+  assert.equal(response.status, 200);
+  assert.equal(response.body.country, 'NG');
+  assert.equal(response.body.fiveSongOffer.cents, 100000);
+  assert.equal(response.body.regions, undefined);
+  assert.equal(response.body.countryName, 'Nigeria');
+  assert.ok(response.body.products.every((p: any) => p.currency === 'NGN'));
+  assert.match(response.headers['cache-control'], /no-store/);
+  for (const field of ['country', 'timezone', 'currency', 'amount']) {
+    const result = await f.post('checkout', {productId:'five:a,b,c,d,e',email:'fixture@example.test',downloadPolicyAccepted:true,[field]:'US'});
+    assert.equal(result.status,400);
+  }
+  assert.equal(f.created.length,0);
+});
+
+test('changed or unknown network location never creates a surprise USD charge', async () => {
+  const f = fixture({resolveCountry: () => 'NG'});
+  assert.equal((await f.post('checkout', {productId:'five:a,b,c,d,e',email:'fixture@example.test',downloadPolicyAccepted:true,expectedCountry:'US'})).status,409);
+  for (const country of [null, 'XX']) {
+    const g = fixture({resolveCountry: () => country});
+    const result = await request(g.app).get('/api/music-commerce/catalog');
+    assert.equal(result.status,409);
+    assert.equal(result.body.currency,undefined);
+    assert.equal((await g.checkout('five:a,b,c,d,e')).status,409);
+    assert.equal(g.created.length,0);
+  }
+});
+
+test('every configured five-song offer preserves its local amount and currency through checkout and fulfillment', async () => {
+  const {musicRegions} = await import('./music-regions');
+  for (const [country, region] of Object.entries(musicRegions)) {
+    // Synthetic prices only; never publish the private production price table.
+    const f = fixture({resolveCountry: () => country, regionalPrices: JSON.stringify({[country]:{single:200,five:1000}})});
+    const catalog = await request(f.app).get('/api/music-commerce/catalog');
+    assert.equal(catalog.body.currency,region.currency,country);
+    assert.equal(catalog.body.fiveSongOffer.cents,1000,country);
+    const result = await f.checkout('five:a,b,c,d,e');
+    if (!region.stripe) {
+      assert.equal(result.status,409,country);
+      assert.equal(f.created.length,0,country);
+      continue;
+    }
+    assert.equal(result.status,200,country);
+    assert.equal(f.created[0].line_items[0].price_data.currency,region.currency.toLowerCase(),country);
+    assert.equal(f.created[0].line_items[0].price_data.unit_amount,1000,country);
+    assert.equal(f.created[0].adaptive_pricing.enabled,false,country);
+    f.pay();
+    assert.equal((await f.post('download',{sessionId:'cs_test_1'})).status,200,country);
+    assert.equal(f.signed.length,5,country);
+  }
+});
+
+test('network country lookup handles IPv4/IPv6 and trusted proxy chain without trusting country headers', async () => {
+  const {musicCountryFromRequest} = await import('./music-location');
+  const app=express(); app.set('trust proxy',1);
+  app.get('/', (req,res) => res.json({country:musicCountryFromRequest(req)}));
+  const nigeria = await request(app).get('/').set('X-Forwarded-For','8.8.8.8, 102.89.0.1').set('CF-IPCountry','US');
+  assert.equal(nigeria.body.country,'NG');
+  const ghana=await request(app).get('/').set('X-Forwarded-For','41.215.160.1');
+  assert.equal(ghana.body.country,'GH');
+  const ipv6=await request(app).get('/').set('X-Forwarded-For','2001:4860:4860::8888');
+  assert.equal(ipv6.body.country,'US');
+  assert.equal((await request(app).get('/')).body.country,null);
 });

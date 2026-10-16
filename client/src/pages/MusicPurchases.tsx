@@ -1,10 +1,11 @@
+import { formatMusicPrice } from "../../../shared/music-regions";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useUser } from "@/contexts/UserContext";
 import { Button } from "@/components/ui/button";
 
-type Purchase = { sessionId: string; productId: string; title: string; status: string; amountCents: number; createdAt: string; downloadExpiresAt: string | null };
+type Purchase = { sessionId: string; productId: string; title: string; status: string; amountCents: number; currency?: string; createdAt: string; downloadExpiresAt: string | null };
 export default function MusicPurchases() {
   const { user, loading, getIdToken } = useUser();
   const queryClient = useQueryClient();
@@ -63,7 +64,7 @@ export default function MusicPurchases() {
       {purchases.isSuccess && visiblePurchases(purchases.data).length === 0 && <p>You have no available music downloads. Expired downloads no longer appear here.</p>}
       {visiblePurchases(purchases.data).map(purchase => <article key={purchase.sessionId} className="rounded-xl border p-4 space-y-3">
         <h2 className="font-semibold">{purchase.title}</h2>
-        <p className="text-sm">${(purchase.amountCents / 100).toFixed(2)} USD · {purchase.status === "paid" ? "Paid" : purchase.status === "pending" ? "Awaiting payment confirmation" : purchase.status === "revoked" ? "Download access revoked" : "Checkout expired"}</p>
+        <p className="text-sm">{formatMusicPrice(purchase.amountCents, purchase.currency ?? "USD")} · {purchase.status === "paid" ? "Paid" : purchase.status === "pending" ? "Awaiting payment confirmation" : purchase.status === "revoked" ? "Download access revoked" : "Checkout expired"}</p>
         {purchase.downloadExpiresAt && <p className="text-sm font-semibold" role="status">Download before {new Date(purchase.downloadExpiresAt).toLocaleString()} · {Math.max(1, Math.ceil((new Date(purchase.downloadExpiresAt).getTime() - clock) / 60000))} minutes remaining</p>}
         {purchase.status === "paid" ? <Button disabled={!!downloading} onClick={() => download(purchase)}>{downloading === purchase.sessionId ? "Preparing download…" : purchase.productId.startsWith("five:") ? "Get Five MP3 Downloads" : purchase.productId === "heaven-reigns-bundle" ? "Download All Three (ZIP)" : purchase.productId.startsWith("video:") ? "Download MP4" : "Download MP3"}</Button> : purchase.status === "pending" ? <Button variant="outline" disabled={confirm.isPending} onClick={() => confirm.mutate(purchase.sessionId)}>Check Payment</Button> : null}
       </article>)}

@@ -208,7 +208,8 @@ function Router() {
       <Route path="/church" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchLanding /></Suspense>} />
       <Route path="/" component={Home} />
       <Route path="/archive" component={Archive} />
-      <Route path="/admin" component={() => <Suspense fallback={<FeaturePageFallback />}><Admin /></Suspense>} />
+      {/* Keep the admin component identity stable across parent renders and upload notifications. */}
+      <Route path="/admin"><Suspense fallback={<FeaturePageFallback />}><Admin /></Suspense></Route>
       <Route path="/about" component={About} />
       <Route path="/updates" component={Updates} />
       <Route path="/donate" component={Donate} />

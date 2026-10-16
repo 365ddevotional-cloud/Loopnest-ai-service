@@ -39,7 +39,7 @@ export default function MusicCheckoutAdmin() {
   return <section className="border-t pt-4 space-y-3" data-testid="music-checkout-admin">
     <h3 className="font-semibold">Checkout Setup Status</h3>
     <p className="text-sm font-medium">Heaven Reigns checkout</p>
-    <p className="text-sm">Each MP3 track costs $0.89 USD. The Original, Instrumental, and Remix bundle costs $1.89 USD. Any five distinct selected tracks cost $2.99 USD. These release prices are fixed separately from the default prices above.</p>
+    <p className="text-sm">Music checkout uses fixed local prices selected automatically from the customer’s network location. Customers see only their local price; there is no country selector. Nigeria: ₦1,000 for five songs. Ghana: GH₵9 for five (local payment provider required). Unsupported local currencies remain unavailable for payment rather than switching to USD. These checkout prices are separate from the upload defaults.</p>
     {error ? <p role="alert">{error.message.startsWith("401:") ? "Your admin session has expired. Sign in again to load checkout setup status." : "Checkout setup status could not be loaded. Use Refresh Checkout Status to retry."}</p> : data ? <ul className="text-sm space-y-1">
       <li>Stripe live key: {data.liveKey ? "Configured" : data.secretKeySet ? "Test key only" : "Missing"}</li>
       <li>Music webhook secret: {data.webhookSecretSet ? "Configured" : "Missing"}</li>

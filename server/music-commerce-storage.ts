@@ -10,19 +10,20 @@ export async function ensureMusicOrdersTable() {
     status text NOT NULL DEFAULT 'pending', payment_intent_id text,
     created_at timestamptz NOT NULL DEFAULT now()
   )`);
+  await db.execute(sql`ALTER TABLE music_purchase_orders ADD COLUMN IF NOT EXISTS currency text NOT NULL DEFAULT 'USD'`);
   await db.execute(sql`ALTER TABLE music_purchase_orders ADD COLUMN IF NOT EXISTS download_window_hours integer`);
   await db.execute(sql`ALTER TABLE music_purchase_orders ADD COLUMN IF NOT EXISTS download_expires_at timestamptz`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS music_purchase_orders_uid_idx ON music_purchase_orders(firebase_uid)`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS music_purchase_orders_intent_idx ON music_purchase_orders(payment_intent_id)`);
 }
 const fromRow = (r: any): MusicOrder => ({ sessionId: r.session_id, uid: r.firebase_uid,
-  productId: r.product_id, amountCents: r.amount_cents, status: r.status,
+  productId: r.product_id, amountCents: r.amount_cents, currency: r.currency ?? "USD", status: r.status,
   paymentIntentId: r.payment_intent_id, downloadWindowHours: r.download_window_hours,
   downloadExpiresAt: r.download_expires_at ? new Date(r.download_expires_at).toISOString() : null, createdAt: new Date(r.created_at).toISOString() });
 export const musicOrderStorage = {
   async createOrder(order: MusicOrder) {
-    await db.execute(sql`INSERT INTO music_purchase_orders (session_id,firebase_uid,product_id,amount_cents,status,download_window_hours)
-      VALUES (${order.sessionId},${order.uid},${order.productId},${order.amountCents},'pending',${order.downloadWindowHours ?? null}) ON CONFLICT (session_id) DO NOTHING`);
+    await db.execute(sql`INSERT INTO music_purchase_orders (session_id,firebase_uid,product_id,amount_cents,status,download_window_hours,currency)
+      VALUES (${order.sessionId},${order.uid},${order.productId},${order.amountCents},'pending',${order.downloadWindowHours ?? null},${order.currency ?? "USD"}) ON CONFLICT (session_id) DO NOTHING`);
   },
   async getOrder(id: string) {
     const r = await db.execute(sql`SELECT * FROM music_purchase_orders WHERE session_id=${id}`);
