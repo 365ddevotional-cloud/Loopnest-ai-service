@@ -296,12 +296,12 @@ test('Nigeria catalog and five-song checkout use fixed naira prices and preserve
   const f = fixture();
   const catalog = await request(f.app).get('/api/music-commerce/catalog?timezone=Africa/Lagos');
   assert.equal(catalog.body.currency, 'NGN');
-  assert.equal(catalog.body.fiveSongOffer.cents, 80000);
+  assert.equal(catalog.body.fiveSongOffer.cents, 100000);
   assert.equal(catalog.body.singleSongOffer.cents, 20000);
   const result = await f.post('checkout', {productId:'five:a,b,c,d,e',country:'NG',email:'fixture@example.test',downloadPolicyAccepted:true});
   assert.equal(result.status,200);
   assert.equal(f.created[0].line_items[0].price_data.currency,'ngn');
-  assert.equal(f.created[0].line_items[0].price_data.unit_amount,80000);
+  assert.equal(f.created[0].line_items[0].price_data.unit_amount,100000);
   assert.equal(f.orders.get('cs_test_1')?.currency,'NGN');
   f.sessions.get('cs_test_1').currency='ngn'; f.pay();
   assert.equal((await f.post('confirm',{sessionId:'cs_test_1'})).status,200);
@@ -311,7 +311,7 @@ test('Nigeria catalog and five-song checkout use fixed naira prices and preserve
 test('Ghana displays cedi but cannot silently fall back to dollar checkout', async () => {
   const f=fixture();
   const catalog=await request(f.app).get('/api/music-commerce/catalog?country=GH');
-  assert.equal(catalog.body.currency,'GHS');assert.equal(catalog.body.fiveSongOffer.cents,500);assert.equal(catalog.body.fiveSongOffer.ready,false);
+  assert.equal(catalog.body.currency,'GHS');assert.equal(catalog.body.fiveSongOffer.cents,900);assert.equal(catalog.body.fiveSongOffer.ready,false);
   const result=await f.post('checkout',{productId:'five:a,b,c,d,e',country:'GH',email:'fixture@example.test',downloadPolicyAccepted:true});
   assert.equal(result.status,409);assert.equal(f.created.length,0);
 });
