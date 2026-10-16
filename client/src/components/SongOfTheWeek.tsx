@@ -320,11 +320,6 @@ export function SongOfTheWeek() {
   const { isPlaying, currentTime, duration, loading: audioLoading, error: audioError, togglePlay, seek, volume, isMuted, setVolume, toggleMute } =
     useAudioPlayer(song);
 
-  // Broadcast play state so the mini preview card can sync its icon
-  useEffect(() => {
-    window.dispatchEvent(new CustomEvent("song-play-state", { detail: { isPlaying } }));
-  }, [isPlaying]);
-
   const [isFavorite, setIsFavorite] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
   const [showTestimony, setShowTestimony] = useState(false);
@@ -742,29 +737,13 @@ export function SongMiniCard() {
     retry: 1,
   });
 
-  const [miniIsPlaying, setMiniIsPlaying] = useState(false);
-
-  // Sync play/pause icon with the full section via custom event
-  useEffect(() => {
-    const handler = (e: Event) => {
-      setMiniIsPlaying((e as CustomEvent<{ isPlaying: boolean }>).detail.isPlaying);
-    };
-    window.addEventListener("song-play-state", handler);
-    return () => window.removeEventListener("song-play-state", handler);
-  }, []);
-
-  const scrollToFull = () => {
-    const el = document.getElementById("song-of-the-week-full");
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  const { isPlaying: miniIsPlaying, togglePlay } = useAudioPlayer(song);
 
   const handlePlayPause = () => {
-    // Scroll to the full player, then trigger its play/pause button
-    scrollToFull();
-    setTimeout(() => {
-      const btn = document.querySelector<HTMLButtonElement>('[data-testid="button-play-pause"]');
-      if (btn) btn.click();
-    }, 550);
+    // Start inside the tap so iPhone keeps user activation. Navigation and
+    // scrolling must not delay or synthesize the audio-start gesture.
+    togglePlay();
+    document.getElementById("song-of-the-week-full")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   if (!song) return null;
