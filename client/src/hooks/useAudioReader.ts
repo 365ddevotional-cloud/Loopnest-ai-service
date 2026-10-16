@@ -5,6 +5,7 @@ export interface AudioReaderState {
   isPaused: boolean;
   rate: number;
   currentLabel: string;
+  error: string | null;
 }
 
 export interface AudioReaderActions {
@@ -26,6 +27,7 @@ let globalState: AudioReaderState = {
   isPaused: false,
   rate: DEFAULT_RATE,
   currentLabel: "",
+  error: null,
 };
 
 let globalOriginalText = "";
@@ -34,6 +36,10 @@ let globalCurrentSegment = 0;
 let globalIsDevotional = false;
 let cachedVoices: SpeechSynthesisVoice[] = [];
 let voicesLoaded = false;
+let voiceLoad: Promise<SpeechSynthesisVoice[]> | null = null;
+let playbackSession = 0;
+// Keep the current utterance alive until its callbacks complete.
+let activeUtterance: SpeechSynthesisUtterance | null = null;
 const listeners = new Set<() => void>();
 
 function notify() {
@@ -51,23 +57,22 @@ function loadVoices(): Promise<SpeechSynthesisVoice[]> {
     voicesLoaded = true;
     return Promise.resolve(voices);
   }
-  return new Promise((resolve) => {
-    const handler = () => {
+  if (voiceLoad) return voiceLoad;
+  voiceLoad = new Promise<SpeechSynthesisVoice[]>((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
       cachedVoices = synth.getVoices();
       voicesLoaded = true;
-      synth.removeEventListener("voiceschanged", handler);
+      synth.removeEventListener("voiceschanged", finish);
       resolve(cachedVoices);
     };
-    synth.addEventListener("voiceschanged", handler);
-    setTimeout(() => {
-      if (!voicesLoaded) {
-        cachedVoices = synth.getVoices();
-        voicesLoaded = true;
-        synth.removeEventListener("voiceschanged", handler);
-        resolve(cachedVoices);
-      }
-    }, 2000);
-  });
+    const timer = setTimeout(finish, 2000);
+    synth.addEventListener("voiceschanged", finish);
+  }).finally(() => { voiceLoad = null; });
+  return voiceLoad;
 }
 
 function getEnglishVoices(): SpeechSynthesisVoice[] {
@@ -165,88 +170,75 @@ function getEffectiveRate(): number {
   return globalState.rate;
 }
 
-function speakSegment(segment: string, rate: number, onEnd: () => void) {
-  const synth = window.speechSynthesis;
-  const utterance = new SpeechSynthesisUtterance(segment);
-  utterance.rate = rate;
-  utterance.pitch = 1;
-  utterance.volume = 1;
-
-  const voice = selectBestVoice();
-  if (voice) {
-    utterance.voice = voice;
-  }
-
-  utterance.onend = onEnd;
-  utterance.onerror = (e) => {
-    if (e.error !== "canceled" && e.error !== "interrupted") {
-      onEnd();
-    }
-  };
-
-  synth.speak(utterance);
+function failSpeech(message: string) {
+  ++playbackSession;
+  cancelSpeech();
+  activeUtterance = null;
+  globalState = { ...globalState, isSpeaking: false, isPaused: false, error: message };
+  notify();
 }
 
-function speakFromSegment(startIndex: number) {
-  if (startIndex >= globalPacedSegments.length) {
-    globalState = { ...globalState, isSpeaking: false, isPaused: false, currentLabel: "" };
-    globalOriginalText = "";
-    globalPacedSegments = [];
-    globalCurrentSegment = 0;
-    globalIsDevotional = false;
-    notify();
-    return;
-  }
-
-  globalCurrentSegment = startIndex;
-  const rate = getEffectiveRate();
-
+function speakFromSegment(startIndex: number, session = playbackSession) {
   const speakNext = (idx: number) => {
-    if (idx >= globalPacedSegments.length || !globalState.isSpeaking) {
-      globalState = { ...globalState, isSpeaking: false, isPaused: false, currentLabel: "" };
-      globalOriginalText = "";
-      globalPacedSegments = [];
-      globalCurrentSegment = 0;
-      globalIsDevotional = false;
-      notify();
+    if (session !== playbackSession || !globalState.isSpeaking) return;
+    if (idx >= globalPacedSegments.length) {
+      doStop();
       return;
     }
     globalCurrentSegment = idx;
-    speakSegment(globalPacedSegments[idx], rate, () => {
-      speakNext(idx + 1);
-    });
+    try {
+      const utterance = new SpeechSynthesisUtterance(globalPacedSegments[idx]);
+      activeUtterance = utterance;
+      utterance.lang = "en-US";
+      utterance.rate = getEffectiveRate();
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      const voice = selectBestVoice();
+      if (voice) utterance.voice = voice;
+      utterance.onend = () => {
+        if (session !== playbackSession || activeUtterance !== utterance) return;
+        activeUtterance = null;
+        speakNext(idx + 1);
+      };
+      utterance.onerror = () => {
+        if (session !== playbackSession || activeUtterance !== utterance) return;
+        failSpeech("Unable to read aloud on this device. Tap Listen again. If it still fails, try Chrome or Safari and check your device's speech settings.");
+      };
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      failSpeech("Unable to start audio. Tap Listen again, or try opening the app in Chrome or Safari.");
+    }
   };
-
   speakNext(startIndex);
 }
 
 function doPlay(text: string, label: string, options?: { devotional?: boolean }) {
-  const isDevotional = options?.devotional ?? false;
-  globalIsDevotional = isDevotional;
-  const processedText = isDevotional ? prepareDevotionalText(text) : text;
-  const pacedText = addPacing(processedText);
-
-  globalOriginalText = processedText;
-  globalPacedSegments = splitIntoSegments(pacedText);
-  globalCurrentSegment = 0;
-  globalState = { ...globalState, isSpeaking: true, isPaused: false, currentLabel: label };
-  notify();
-
-  const startSpeaking = () => {
-    cancelSpeech();
-    speakFromSegment(0);
-  };
-
-  if (!voicesLoaded) {
-    loadVoices().then(startSpeaking);
-  } else {
-    startSpeaking();
+  // Cancel before creating the next session; late browser events must not advance it.
+  doStop();
+  if (typeof window === "undefined" || !window.speechSynthesis || typeof SpeechSynthesisUtterance === "undefined") {
+    failSpeech("Read aloud is unavailable in this browser. Please open the app in Chrome or Safari and try Listen again.");
+    return;
   }
+  if (!text.trim()) return;
+  globalIsDevotional = options?.devotional ?? false;
+  const processedText = globalIsDevotional ? prepareDevotionalText(text) : text;
+  globalOriginalText = processedText;
+  globalPacedSegments = splitIntoSegments(addPacing(processedText));
+  globalCurrentSegment = 0;
+  globalState = { ...globalState, isSpeaking: true, isPaused: false, currentLabel: label, error: null };
+  notify();
+  // Never wait for voices here: mobile browsers require speak() in the tap handler.
+  // The default English voice can start while the optional voice list loads.
+  cachedVoices = window.speechSynthesis.getVoices();
+  if (cachedVoices.length) voicesLoaded = true;
+  speakFromSegment(0);
 }
 
 function doStop() {
+  ++playbackSession;
   cancelSpeech();
-  globalState = { ...globalState, isSpeaking: false, isPaused: false, currentLabel: "" };
+  activeUtterance = null;
+  globalState = { ...globalState, isSpeaking: false, isPaused: false, currentLabel: "", error: null };
   globalOriginalText = "";
   globalPacedSegments = [];
   globalCurrentSegment = 0;
@@ -275,7 +267,9 @@ function doSetSpeed(rate: number) {
   notify();
 
   if (globalState.isSpeaking && globalPacedSegments.length > 0) {
+    ++playbackSession;
     cancelSpeech();
+    activeUtterance = null;
     globalState = { ...globalState, isPaused: false };
     notify();
     speakFromSegment(globalCurrentSegment);
@@ -328,7 +322,7 @@ export function useAudioReader(): AudioReaderState & AudioReaderActions {
 }
 
 export function stopAudioOnNavigate() {
-  if (globalState.isSpeaking) {
+  if (globalState.isSpeaking || globalState.error) {
     doStop();
   }
 }
