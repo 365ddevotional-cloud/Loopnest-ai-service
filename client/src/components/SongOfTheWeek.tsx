@@ -30,6 +30,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import type { Song } from "@shared/schema";
+import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -42,116 +43,35 @@ function formatTime(secs: number): string {
 
 // ── Audio Player Hook ─────────────────────────────────────────────────────────
 
-function useAudioPlayer(audioUrl: string | null | undefined) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [volume, setVolumeState] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
+function useAudioPlayer(song: Song | undefined) {
+  // Featured music and SpiritTone share one audio element, gain and session.
+  const player = useMusicPlayer();
+  const active = !!song && player.currentSong?.id === song.id;
   const prevVolumeRef = useRef(1);
-
-  useEffect(() => {
-    const audio = new Audio();
-    audioRef.current = audio;
-    audio.volume = prevVolumeRef.current;
-
-    const onTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const onLoaded = () => { setDuration(audio.duration); setLoading(false); };
-    const onEnded = () => setIsPlaying(false);
-    const onWaiting = () => setLoading(true);
-    const onCanPlay = () => setLoading(false);
-    const onError = () => {
-      setIsPlaying(false);
-      setLoading(false);
-      setError("Audio unavailable. Please check back later.");
-    };
-
-    audio.addEventListener("timeupdate", onTimeUpdate);
-    audio.addEventListener("loadedmetadata", onLoaded);
-    audio.addEventListener("ended", onEnded);
-    audio.addEventListener("waiting", onWaiting);
-    audio.addEventListener("canplay", onCanPlay);
-    audio.addEventListener("error", onError);
-
-    if (audioUrl) {
-      audio.src = audioUrl;
-      audio.preload = "metadata";
-    }
-
-    return () => {
-      audio.pause();
-      audio.removeEventListener("timeupdate", onTimeUpdate);
-      audio.removeEventListener("loadedmetadata", onLoaded);
-      audio.removeEventListener("ended", onEnded);
-      audio.removeEventListener("waiting", onWaiting);
-      audio.removeEventListener("canplay", onCanPlay);
-      audio.removeEventListener("error", onError);
-    };
-  }, [audioUrl]);
-
-  const togglePlay = useCallback(async () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (!audioUrl) {
-      setError("No audio file available for this song yet.");
-      return;
-    }
-    setError(null);
-    if (isPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-    } else {
-      try {
-        await audio.play();
-        setIsPlaying(true);
-      } catch {
-        setError("Could not play audio. Please try again.");
-        setIsPlaying(false);
-      }
-    }
-  }, [isPlaying, audioUrl]);
-
-  const seek = useCallback((value: number) => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.currentTime = value;
-    setCurrentTime(value);
-  }, []);
-
-  const setVolume = useCallback((val: number) => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const clamped = Math.max(0, Math.min(1, val));
-    audio.volume = clamped;
-    setVolumeState(clamped);
-    if (clamped > 0) {
-      prevVolumeRef.current = clamped;
-      setIsMuted(false);
-    } else {
-      setIsMuted(true);
-    }
-  }, []);
-
+  const togglePlay = useCallback(() => {
+    if (!song) return;
+    if (active) player.togglePlay();
+    else player.playSong(song);
+  }, [song, active, player.togglePlay, player.playSong]);
+  const seek = useCallback((time: number) => {
+    if (active) player.seek(time);
+  }, [active, player.seek]);
   const toggleMute = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (isMuted || audio.volume === 0) {
-      const restore = prevVolumeRef.current > 0 ? prevVolumeRef.current : 1;
-      audio.volume = restore;
-      setVolumeState(restore);
-      setIsMuted(false);
-    } else {
-      prevVolumeRef.current = audio.volume;
-      audio.volume = 0;
-      setVolumeState(0);
-      setIsMuted(true);
+    if (player.volume === 0) player.setVolume(prevVolumeRef.current || 1);
+    else {
+      prevVolumeRef.current = player.volume;
+      player.setVolume(0);
     }
-  }, [isMuted]);
-
-  return { isPlaying, currentTime, duration, loading, error, togglePlay, seek, volume, isMuted, setVolume, toggleMute };
+  }, [player.volume, player.setVolume]);
+  return {
+    isPlaying: active && player.isPlaying,
+    currentTime: active ? player.currentTime : 0,
+    duration: active ? player.duration : 0,
+    loading: active && player.isLoading,
+    error: active ? player.playbackError : null,
+    togglePlay, seek, volume: player.volume, isMuted: player.volume === 0,
+    setVolume: player.setVolume, toggleMute,
+  };
 }
 
 // ── Lyrics Modal ──────────────────────────────────────────────────────────────
@@ -398,7 +318,7 @@ export function SongOfTheWeek() {
   });
 
   const { isPlaying, currentTime, duration, loading: audioLoading, error: audioError, togglePlay, seek, volume, isMuted, setVolume, toggleMute } =
-    useAudioPlayer(song ? `/api/songs/${song.id}/audio` : undefined);
+    useAudioPlayer(song);
 
   // Broadcast play state so the mini preview card can sync its icon
   useEffect(() => {
