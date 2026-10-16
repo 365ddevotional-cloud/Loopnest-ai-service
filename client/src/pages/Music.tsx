@@ -1,3 +1,4 @@
+import { songLanguageCategories } from "@shared/song-languages";
 import FiveSongCollection from "@/components/FiveSongCollection";
 import MusicPurchasePanel from "@/components/MusicPurchasePanel";
 import { heavenTrackSlugs, heavenBundleId } from "@shared/music-products";
@@ -252,7 +253,7 @@ export default function Music() {
 
   // Build unique filter options from songs
   const languages = useMemo(() => {
-    const langs = [...new Set(songs.map(s => s.language).filter(Boolean))] as string[];
+    const langs = Array.from(new Set(songs.flatMap(s => songLanguageCategories(s.language)))) as string[];
     return langs.sort();
   }, [songs]);
 
@@ -271,7 +272,7 @@ export default function Music() {
     return songs.filter(s => {
       if (search && !s.title.toLowerCase().includes(search.toLowerCase()) &&
           !(s.artist ?? "").toLowerCase().includes(search.toLowerCase())) return false;
-      if (filterLanguage !== "all" && s.language !== filterLanguage) return false;
+      if (filterLanguage !== "all" && !songLanguageCategories(s.language).includes(filterLanguage)) return false;
       if (filterGenre !== "all" && s.genre !== filterGenre) return false;
       if (filterType !== "all" && (s as any).songType !== filterType) return false;
       return true;
