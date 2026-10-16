@@ -1,4 +1,4 @@
-import { Play, Pause, Square, ChevronDown } from "lucide-react";
+import { Play, Pause, Square, ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -19,7 +19,16 @@ const SPEED_OPTIONS = [
 ];
 
 export function AudioMiniPlayer() {
-  const { isSpeaking, isPaused, rate, currentLabel, pause, resume, stop, setSpeed } = useAudioReader();
+  const { isSpeaking, isPaused, rate, currentLabel, error, pause, resume, stop, setSpeed } = useAudioReader();
+
+  if (error) return (
+    <div role="alert" className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-card border border-border rounded-md shadow-lg px-4 py-3 w-[90vw] max-w-lg" data-testid="audio-reader-error">
+      <p className="text-sm">{error}</p>
+      <Button variant="ghost" size="icon" onClick={stop} aria-label="Dismiss audio message" className="shrink-0">
+        <X className="h-4 w-4" />
+      </Button>
+    </div>
+  );
 
   if (!isSpeaking) return null;
 
