@@ -1,3 +1,4 @@
+import { musicRegion, regionalMusicPrice, musicRegions } from "../shared/music-regions";
 import type { Express, Request, Response, NextFunction } from "express";
 import Stripe from "stripe";
 import { createHash } from "crypto";
@@ -5,7 +6,7 @@ import { getMusicProduct, musicProducts, heavenBundleId, fiveSongCollectionPrice
 import { getDownloadAccess } from "./download-access";
 
 export type MusicOrder = {
-  sessionId: string; uid: string; productId: string; amountCents: number;
+  sessionId: string; uid: string; productId: string; amountCents: number; currency?: string;
   status: string; paymentIntentId: string | null; createdAt?: string; downloadWindowHours?: number | null; downloadExpiresAt?: string | null;
 };
 export type MusicCommerceServices = {
@@ -47,7 +48,7 @@ export function paymentMatchesOrder(session: any, order: MusicOrder): boolean {
   return order.status !== "revoked" && order.status !== "expired" &&
     session.id === order.sessionId && session.mode === "payment" &&
     session.status === "complete" && session.payment_status === "paid" &&
-    session.currency === "usd" && session.amount_total === order.amountCents &&
+    session.currency === (order.currency ?? "USD").toLowerCase() && session.amount_total === order.amountCents &&
     session.client_reference_id === order.uid &&
     session.metadata?.app === "365-music-v1" &&
     session.metadata?.productId === order.productId &&
@@ -127,17 +128,20 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
     return services.signDownload(path, title, extension, seconds);
   };
 
-  app.get("/api/music-commerce/catalog", async (_req, res) => {
+  app.get("/api/music-commerce/catalog", async (req, res) => {
     res.setHeader("Cache-Control", "no-store");
+    const country = musicRegion(req.query.country || req.get("cf-ipcountry"), req.query.timezone);
     try {
       const archive = await services.getArchive();
       const products = await Promise.all(musicProducts.map(async product => {
         const songs = await Promise.all(product.slugs.map(services.getSong));
         const filesReady = songs.every(s => s?.isActive && s.audioUrl) &&
           (product.id !== heavenBundleId || validBundleArchive(archive));
-        return { ...product, ready: credentialsReady && storageReady && filesReady };
+        const price = regionalMusicPrice(country, product.slugs.length);
+        return { ...product, ...price, ready: price.ready && credentialsReady && storageReady && filesReady };
       }));
-      res.json({ fiveSongOffer: { cents: fiveSongCollectionPriceCents, ready: credentialsReady && storageReady }, singleSongOffer: { cents: 89, ready: credentialsReady && storageReady }, currency: "USD", mode: live ? "live" : key ? "test" : "unconfigured", products });
+      const five = regionalMusicPrice(country, 5), single = regionalMusicPrice(country, 1);
+      res.json({ country, regions: musicRegions, fiveSongOffer: { ...five, ready: five.ready && credentialsReady && storageReady }, singleSongOffer: { ...single, ready: single.ready && credentialsReady && storageReady }, currency: five.currency, mode: live ? "live" : key ? "test" : "unconfigured", products });
     } catch (err) { respondError(res, err); }
   });
 
@@ -145,7 +149,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
     try {
       const claims = await uidOf(req);
       // Reject client prices, quantities, currency and URLs; only a catalog ID is accepted.
-      if (!req.body || Object.keys(req.body).some(k => !["productId", "email", "downloadPolicyAccepted"].includes(k)) || typeof req.body.productId !== "string") {
+      if (!req.body || Object.keys(req.body).some(k => !["productId", "email", "downloadPolicyAccepted", "country", "timezone"].includes(k)) || typeof req.body.productId !== "string") {
         return res.status(400).json({ message: "Choose a music product." });
       }
       if (!claims.email || !claims.email_verified) return res.status(403).json({ message: "Please verify your account email before buying music." });
@@ -180,28 +184,31 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
         (o.productId === heavenBundleId && product.slugs.length === 1)))) {
         return res.json({ purchaseUrl: "/music/purchases" });
       }
-      const pending = orders.filter(o => o.productId === product.id && o.amountCents === product.cents && o.status === "pending" && o.downloadWindowHours === 2);
+      const country = musicRegion(req.body.country || req.get("cf-ipcountry"), req.body.timezone);
+      const price = regionalMusicPrice(country, product.slugs.length);
+      if (!price.ready) return res.status(409).json({ message: price.message });
+      const pending = orders.filter(o => o.productId === product.id && o.amountCents === price.cents && (o.currency ?? "USD") === price.currency && o.status === "pending" && o.downloadWindowHours === 2);
       // Reuse an open checkout to avoid duplicate sessions on mobile double-taps/retries.
       for (const order of pending.slice(0, 3)) {
         const previous = await stripe.checkout.sessions.retrieve(order.sessionId);
-        if (previous.status === "open" && previous.url) return res.json({ checkoutUrl: previous.url });
+        if (previous.status === "open" && previous.url && previous.currency === price.currency.toLowerCase() && previous.amount_total === price.cents) return res.json({ checkoutUrl: previous.url });
       }
       const base = "https://365dailydevotional.com";
-      const idempotencyKey = createHash("sha256").update(`${claims.uid}:${product.id}:${product.cents}:two-hour-v1:${Math.floor(now() / 1200000)}`).digest("hex");
+      const idempotencyKey = createHash("sha256").update(`${claims.uid}:${product.id}:${price.currency}:${price.cents}:regional-v1:${Math.floor(now() / 1200000)}`).digest("hex");
       const session = await stripe.checkout.sessions.create({
-        mode: "payment", payment_method_types: ["card"],
+        mode: "payment", adaptive_pricing: { enabled: false },
         client_reference_id: claims.uid,
         customer_email: claims.email,
         custom_text: { submit: { message: "Download every purchased file within 2 hours after payment. You may retry during that window. Download access disappears afterward. Sign in with the same email to return to your downloads." } },
         metadata: { app: "365-music-v1", uid: claims.uid, productId: product.id, download_window_hours: "2" },
         payment_intent_data: { metadata: { app: "365-music-v1", uid: claims.uid, productId: product.id, download_window_hours: "2" } },
-        line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: product.cents,
+        line_items: [{ quantity: 1, price_data: { currency: price.currency.toLowerCase(), unit_amount: price.cents,
           product_data: { name: product.title, description: product.id.startsWith("video:") ? "One MP4 video. One-time purchase." : product.slugs.length === 5 ? "Five selected MP3 tracks. One-time purchase." : product.slugs.length === 3 ? "Original, Instrumental, and Remix MP3s in one ZIP. One-time purchase." : "One MP3 track. One-time purchase." } } }],
         success_url: `${base}/music/purchases?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${base}/music/purchases?cancelled=1`,
       }, { idempotencyKey: `365-music-${idempotencyKey}` });
       await services.createOrder({ sessionId: session.id, uid: claims.uid, productId: product.id,
-        amountCents: product.cents, status: "pending", paymentIntentId: null, downloadWindowHours: 2 });
+        amountCents: price.cents, currency: price.currency, status: "pending", paymentIntentId: null, downloadWindowHours: 2 });
       res.json({ checkoutUrl: session.url });
     } catch (err) { respondError(res, err); }
   });
@@ -217,7 +224,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
           ? ((await services.getSong(product.slugs[0]))?.title ?? product.slugs[0]) + (order.productId.startsWith("video:") ? " — Video (MP4)" : "")
           : product?.title ?? "Music purchase";
         return { sessionId: order.sessionId, productId: order.productId, title, status: order.status,
-          amountCents: order.amountCents, createdAt: order.createdAt, downloadExpiresAt: order.downloadExpiresAt ?? null };
+          amountCents: order.amountCents, currency: order.currency ?? "USD", createdAt: order.createdAt, downloadExpiresAt: order.downloadExpiresAt ?? null };
       })));
     } catch (err) { respondError(res, err); }
   });

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import MusicPurchasePanel from "./MusicPurchasePanel";
+import { formatMusicPrice } from "../../../shared/music-regions";
+import MusicPurchasePanel, { useMusicCatalog, MusicCountrySelector } from "./MusicPurchasePanel";
 export default function FiveSongCollection() {
+  const { data: catalog } = useMusicCatalog();
   const [selected, setSelected] = useState<string[]>(() => {
     try {
       const saved: unknown = JSON.parse(sessionStorage.getItem("music-five-selection-v1") ?? "[]");
@@ -19,7 +21,8 @@ export default function FiveSongCollection() {
     setSelected(current => current.every(slug => available.has(slug)) ? current : current.filter(slug => available.has(slug)));
   }, [data]);
   return <section className="rounded-xl border p-4 space-y-3" data-testid="five-song-collection">
-    <h2 className="font-serif text-2xl font-semibold">Choose any five songs — $2.99</h2>
+    <h2 className="font-serif text-2xl font-semibold">Choose any five songs — {catalog?.fiveSongOffer ? formatMusicPrice(catalog.fiveSongOffer.cents, catalog.currency) : "Loading price…"}</h2>
+    <MusicCountrySelector />
     <p className="text-sm">Select five different tracks. Tracks from a bundle count individually; a three-track bundle counts as three songs.</p>
     <p role="status">{selected.length} of 5 selected</p>
     {selected.length > 0 && <p className="text-sm text-muted-foreground">Selected: {selected.map(slug => songs.find(s => s.slug === slug)?.title ?? slug).join(", ")}</p>}
