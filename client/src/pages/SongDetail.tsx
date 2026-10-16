@@ -348,7 +348,7 @@ export default function SongDetail() {
   const {
     currentSong: playerSong, isPlaying: playerIsPlaying, currentTime, duration, volume,
     isLoading: audioLoading, playSong, togglePlay, seek, setVolume, nextSong, playNext, playPrev,
-    activeQueue, queueIndex, audioElement, settings,
+    activeQueue, queueIndex, audioElement, settings, playbackError,
   } = useMusicPlayer();
   const isCurrentSong = playerSong?.id === song?.id;
   const isPlaying = isCurrentSong && playerIsPlaying;
@@ -569,6 +569,8 @@ export default function SongDetail() {
               className="mx-auto block"
             />
           )}
+
+          {isCurrentSong && playbackError && <p role="alert" className="text-sm text-destructive">{playbackError}</p>}
 
           {/* Row 1: Prev · Play/Pause · Scrubber · Next */}
           <div className="flex items-center gap-2.5">
