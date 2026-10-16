@@ -10,14 +10,20 @@ import { startMusicPlayback, usesSystemMusicVolume } from '../client/src/lib/mus
 
 // Run the real provider with a controllable media element, without Firebase.
 const dir = await mkdtemp(new URL('../.music-test-', import.meta.url).pathname);
-await build({ entryPoints: ['client/src/contexts/MusicPlayerContext.tsx'], bundle: true,
+const featuredSource = await readFile('client/src/components/SongOfTheWeek.tsx', 'utf8');
+const featuredHook = featuredSource.slice(featuredSource.indexOf('function useAudioPlayer('), featuredSource.indexOf('// ── Lyrics Modal'));
+await build({ stdin: {contents: `import {useRef,useCallback} from 'react';
+  import {useMusicPlayer} from './client/src/contexts/MusicPlayerContext';
+  export {MusicPlayerProvider,useMusicPlayer} from './client/src/contexts/MusicPlayerContext';
+  ${featuredHook}
+  export {useAudioPlayer};`, resolveDir: process.cwd(), loader: 'tsx'}, bundle: true,
   platform: 'node', format: 'cjs', jsx: 'automatic', packages: 'external', outfile: `${dir}/provider.cjs`,
   plugins: [{ name: 'signed-out-user', setup(b) {
     b.onResolve({filter: /^@\/contexts\/UserContext$/}, () => ({path:'user', namespace:'stub'}));
     b.onLoad({filter: /.*/, namespace:'stub'}, () => ({contents:'export const useUser = () => ({user:null,emailVerified:false,getIdToken:async()=>null});'}));
   }}],
 });
-const { MusicPlayerProvider, useMusicPlayer } = createRequire(import.meta.url)(`${dir}/provider.cjs`);
+const { MusicPlayerProvider, useMusicPlayer, useAudioPlayer } = createRequire(import.meta.url)(`${dir}/provider.cjs`);
 
 class FakeAudio extends EventTarget {
   static instances: FakeAudio[] = [];
@@ -31,14 +37,14 @@ class FakeAudio extends EventTarget {
 }
 function storage() { const data = new Map(); return {getItem:(k:string)=>data.get(k)??null, setItem:(k:string,v:string)=>data.set(k,v),removeItem:(k:string)=>data.delete(k)}; }
 const song = (id: number) => ({id,title:`Song ${id}`,slug:`song-${id}`,labelName:'SpiritTone',audioUrl:`song-${id}.mp3`,isActive:true});
-async function mount() {
+async function mount(withFeatured = false) {
   FakeAudio.instances = [];
   Object.assign(globalThis, {Audio:FakeAudio,window:new EventTarget(),localStorage:storage(),sessionStorage:storage(),
     fetch:async()=>({ok:true,json:async()=>[song(1),song(2),song(3)]})});
-  let player: any; function Probe(){ player=useMusicPlayer(); return null; }
+  let player: any, featured: any; function Probe(){ player=useMusicPlayer(); featured=useAudioPlayer(withFeatured ? song(1) : undefined); return null; }
   let tree: any;
   await act(async()=> {tree=create(createElement(MusicPlayerProvider,null,createElement(Probe)));});
-  return {get player(){return player;},tree,audio:FakeAudio.instances[0]};
+  return {get player(){return player;},get featured(){return featured;},tree,audio:FakeAudio.instances[0]};
 }
 
 test('one persistent audio element across 100 progress updates; play starts within tap', async()=>{
@@ -145,5 +151,25 @@ test('desktop volume preference and unsupported session browsers still work', as
   const browser={userAgent:'Desktop',get audioSession(){throw new Error('Unavailable');}};
   await startMusicPlayback(audio as any,browser);
   assert.equal(plays,2);
+});
+test('Today’s Message and SpiritTone share audio, volume, position and controls', async()=>{
+  const m=await mount(true);
+  act(()=>m.featured.togglePlay());
+  assert.equal(m.player.currentSong.id,1);
+  assert.equal(m.audio.src,'/api/songs/1/audio');
+  assert.equal(FakeAudio.instances.length,1);
+  act(()=>m.player.setVolume(0.8)); assert.equal(m.featured.volume,0.8);
+  m.audio.currentTime=37; act(()=>m.audio.dispatchEvent(new Event('timeupdate')));
+  assert.equal(m.featured.currentTime,37);
+  act(()=>m.player.togglePlay()); assert.equal(m.featured.isPlaying,false);
+  act(()=>m.featured.togglePlay()); assert.equal(m.player.isPlaying,true);
+  assert.equal(m.audio.currentTime,37);
+  act(()=>m.player.playSong(song(2)));
+  assert.equal(m.featured.isPlaying,false);
+  const otherPosition=m.audio.currentTime;
+  act(()=>m.featured.seek(12)); assert.equal(m.audio.currentTime,otherPosition);
+  act(()=>m.featured.togglePlay()); assert.equal(m.player.currentSong.id,1);
+  assert.equal(FakeAudio.instances.length,1);
+  act(()=>m.tree.unmount());
 });
 test.after(async()=>rm(dir,{recursive:true,force:true}));
