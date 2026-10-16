@@ -1,8 +1,8 @@
 // Affordable regional prices, independently set; these are not USD conversions.
 export const musicRegions: Record<string, { name: string; currency: string; single: number; five: number; stripe: boolean }> = {
   US: { name: 'United States / International', currency: 'USD', single: 89, five: 299, stripe: true },
-  NG: { name: 'Nigeria', currency: 'NGN', single: 20000, five: 100000, stripe: true },
-  GH: { name: 'Ghana', currency: 'GHS', single: 200, five: 1000, stripe: false },
+  NG: { name: 'Nigeria', currency: 'NGN', single: 20000, five: 80000, stripe: true },
+  GH: { name: 'Ghana', currency: 'GHS', single: 200, five: 500, stripe: false },
   KE: { name: 'Kenya', currency: 'KES', single: 2000, five: 10000, stripe: true },
   ZA: { name: 'South Africa', currency: 'ZAR', single: 300, five: 1500, stripe: true },
   UG: { name: 'Uganda', currency: 'UGX', single: 60000, five: 300000, stripe: true },
