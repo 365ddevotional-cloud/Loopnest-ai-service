@@ -842,3 +842,11 @@
   animation: promiseGlow 4s ease-in-out infinite;
 }
 
+
+@keyframes music-playback-pulse {
+  from { transform: scaleY(0.35); }
+  to { transform: scaleY(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .music-playback-bar { animation: none !important; }
+}
