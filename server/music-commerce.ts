@@ -1,4 +1,5 @@
-import { musicRegion, regionalMusicPrice, musicRegions } from "../shared/music-regions";
+import { regionalMusicPrice, musicRegions, readMusicPrices } from "./music-regions";
+import { musicCountryFromRequest } from "./music-location";
 import type { Express, Request, Response, NextFunction } from "express";
 import Stripe from "stripe";
 import { createHash } from "crypto";
@@ -25,6 +26,7 @@ export type MusicCommerceServices = {
   env?: Record<string, string | undefined>;
   stripe?: Stripe;
   now?: () => number;
+  resolveCountry?: (req: Request) => string | null;
 };
 
 const archivePattern = /^\/objects\/uploads\/[a-f0-9-]{36}$/;
@@ -59,7 +61,13 @@ export function paymentMatchesOrder(session: any, order: MusicOrder): boolean {
 
 export function registerMusicCommerceRoutes(app: Express, services: MusicCommerceServices) {
   const now = services.now ?? Date.now;
+  const localCountry = (req: Request) => {
+    const country = (services.resolveCountry ?? musicCountryFromRequest)(req);
+    if (!country || !musicRegions[country]) throw Object.assign(new Error("We could not confirm your local music price. Please turn off any VPN and refresh, or contact support."), {status: 409});
+    return country;
+  };
   const env = services.env ?? process.env;
+  const prices = readMusicPrices(env.MUSIC_REGIONAL_PRICES_JSON);
   const key = env.STRIPE_SECRET_KEY;
   const webhookSecret = env.STRIPE_MUSIC_WEBHOOK_SECRET;
   const live = !!key && /^(sk|rk)_live_/.test(key);
@@ -130,18 +138,18 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
 
   app.get("/api/music-commerce/catalog", async (req, res) => {
     res.setHeader("Cache-Control", "no-store");
-    const country = musicRegion(req.query.country || req.get("cf-ipcountry"), req.query.timezone);
     try {
+      const country = localCountry(req);
       const archive = await services.getArchive();
       const products = await Promise.all(musicProducts.map(async product => {
         const songs = await Promise.all(product.slugs.map(services.getSong));
         const filesReady = songs.every(s => s?.isActive && s.audioUrl) &&
           (product.id !== heavenBundleId || validBundleArchive(archive));
-        const price = regionalMusicPrice(country, product.slugs.length);
+        const price = regionalMusicPrice(country, product.slugs.length, prices);
         return { ...product, ...price, ready: price.ready && credentialsReady && storageReady && filesReady };
       }));
-      const five = regionalMusicPrice(country, 5), single = regionalMusicPrice(country, 1);
-      res.json({ country, regions: musicRegions, fiveSongOffer: { ...five, ready: five.ready && credentialsReady && storageReady }, singleSongOffer: { ...single, ready: single.ready && credentialsReady && storageReady }, currency: five.currency, mode: live ? "live" : key ? "test" : "unconfigured", products });
+      const five = regionalMusicPrice(country, 5, prices), single = regionalMusicPrice(country, 1, prices);
+      res.json({ country, countryName: musicRegions[country].name, fiveSongOffer: { ...five, ready: five.ready && credentialsReady && storageReady }, singleSongOffer: { ...single, ready: single.ready && credentialsReady && storageReady }, currency: five.currency, mode: live ? "live" : key ? "test" : "unconfigured", products });
     } catch (err) { respondError(res, err); }
   });
 
@@ -149,7 +157,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
     try {
       const claims = await uidOf(req);
       // Reject client prices, quantities, currency and URLs; only a catalog ID is accepted.
-      if (!req.body || Object.keys(req.body).some(k => !["productId", "email", "downloadPolicyAccepted", "country", "timezone"].includes(k)) || typeof req.body.productId !== "string") {
+      if (!req.body || Object.keys(req.body).some(k => !["productId", "email", "downloadPolicyAccepted", "expectedCountry"].includes(k)) || typeof req.body.productId !== "string") {
         return res.status(400).json({ message: "Choose a music product." });
       }
       if (!claims.email || !claims.email_verified) return res.status(403).json({ message: "Please verify your account email before buying music." });
@@ -184,8 +192,9 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
         (o.productId === heavenBundleId && product.slugs.length === 1)))) {
         return res.json({ purchaseUrl: "/music/purchases" });
       }
-      const country = musicRegion(req.body.country || req.get("cf-ipcountry"), req.body.timezone);
-      const price = regionalMusicPrice(country, product.slugs.length);
+      const country = localCountry(req);
+      if (req.body.expectedCountry && req.body.expectedCountry !== country) return res.status(409).json({message: "Your location changed. Refresh to see your current local price before paying."});
+      const price = regionalMusicPrice(country, product.slugs.length, prices);
       if (!price.ready) return res.status(409).json({ message: price.message });
       const pending = orders.filter(o => o.productId === product.id && o.amountCents === price.cents && (o.currency ?? "USD") === price.currency && o.status === "pending" && o.downloadWindowHours === 2);
       // Reuse an open checkout to avoid duplicate sessions on mobile double-taps/retries.
@@ -200,8 +209,8 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
         client_reference_id: claims.uid,
         customer_email: claims.email,
         custom_text: { submit: { message: "Download every purchased file within 2 hours after payment. You may retry during that window. Download access disappears afterward. Sign in with the same email to return to your downloads." } },
-        metadata: { app: "365-music-v1", uid: claims.uid, productId: product.id, download_window_hours: "2" },
-        payment_intent_data: { metadata: { app: "365-music-v1", uid: claims.uid, productId: product.id, download_window_hours: "2" } },
+        metadata: { app: "365-music-v1", uid: claims.uid, productId: product.id, country, download_window_hours: "2" },
+        payment_intent_data: { metadata: { app: "365-music-v1", uid: claims.uid, productId: product.id, country, download_window_hours: "2" } },
         line_items: [{ quantity: 1, price_data: { currency: price.currency.toLowerCase(), unit_amount: price.cents,
           product_data: { name: product.title, description: product.id.startsWith("video:") ? "One MP4 video. One-time purchase." : product.slugs.length === 5 ? "Five selected MP3 tracks. One-time purchase." : product.slugs.length === 3 ? "Original, Instrumental, and Remix MP3s in one ZIP. One-time purchase." : "One MP3 track. One-time purchase." } } }],
         success_url: `${base}/music/purchases?session_id={CHECKOUT_SESSION_ID}`,
