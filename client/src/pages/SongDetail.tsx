@@ -1,3 +1,4 @@
+import { songLanguageCategories } from "@shared/song-languages";
 import MusicPurchasePanel from "@/components/MusicPurchasePanel";
 import { heavenTrackSlugs, isPaidMusicSlug } from "@shared/music-products";
 import { useState, useEffect, useRef } from "react";
@@ -886,7 +887,7 @@ export default function SongDetail() {
           {(song as any).language && (
             <>
               <span className="text-muted-foreground">Language</span>
-              <span className="text-foreground">{(song as any).language}</span>
+              <span className="text-foreground">{songLanguageCategories(song.language).join(", ")}</span>
             </>
           )}
           {song.releaseYear && (

@@ -1,3 +1,5 @@
+import { SongLanguagePicker } from "@/components/SongLanguagePicker";
+import { SONG_LANGUAGES, songLanguageCategories, serializeSongLanguages } from "@shared/song-languages";
 import { MinistryLogoPicker } from "@/components/MinistryLogoPicker";
 import { resolveUploadLogo } from "@/lib/ministry-logo";
 import MusicPricingAdmin from "@/components/MusicPricingAdmin";
@@ -3140,11 +3142,7 @@ export default function Admin() {
 
 // ── Songs Admin ───────────────────────────────────────────────────────────────
 
-const LANGUAGES = [
-  "English", "Spanish", "French", "Portuguese", "German", "Italian", "Dutch",
-  "Hindi", "Punjabi", "Nepali", "Mandarin Chinese", "Japanese", "Korean",
-  "Arabic", "Swahili", "Yoruba", "Igbo", "Hausa", "Pidgin English",
-];
+const LANGUAGES = SONG_LANGUAGES;
 const CUSTOM_LANG = "__custom__";
 
 /** Validates that a YouTube URL is from an approved host over HTTPS. Empty string passes (field is optional). */
@@ -3973,7 +3971,7 @@ function SongsAdmin() {
       return;
     }
     const { id, createdAt, updatedAt, ...rest } = editingSong as any;
-    const payload = { ...rest, language: resolvedLanguage };
+    const payload = { ...rest, language: serializeSongLanguages(resolvedLanguage) || "English" };
     if (id && id > 0) {
       updateSongMutation.mutate({ id, data: payload });
     } else {
@@ -3989,8 +3987,8 @@ function SongsAdmin() {
     if (searchQuery && !s.title.toLowerCase().includes(searchQuery.toLowerCase()) && !(s.artist ?? "").toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (filterLanguage !== "all") {
       if (filterLanguage === CUSTOM_LANG) {
-        if (!s.language || LANGUAGES.includes(s.language)) return false;
-      } else if (s.language !== filterLanguage) return false;
+        if (!songLanguageCategories(s.language).some(l => !LANGUAGES.includes(l))) return false;
+      } else if (!songLanguageCategories(s.language).includes(filterLanguage)) return false;
     }
     if (filterGenre !== "all" && s.genre !== filterGenre) return false;
     if (filterSongType !== "all" && (s as any).songType !== filterSongType) return false;
@@ -4131,7 +4129,7 @@ function SongsAdmin() {
         songType: bsong.songType || null,
         producer: bsong.producer || "Moses Afolabi",
         composer: bsong.composer || null, lyricist: bsong.lyricist || null,
-        language: bsong.language === CUSTOM_LANG ? (bsong.customLanguage.trim() || "English") : (bsong.language || "English"),
+        language: serializeSongLanguages(bsong.language === CUSTOM_LANG ? bsong.customLanguage : bsong.language) || "English",
         scriptureReference: bsong.scriptureReference, scriptureText: bsong.scriptureText || null,
         lyrics: bsong.lyrics || null, shortDescription: bsong.shortDescription || null,
         description: bsong.description || null,
@@ -4410,22 +4408,7 @@ function SongsAdmin() {
                             <Input value={song.genre} onChange={(e) => updateBatchSong(song.id, { genre: e.target.value })} placeholder="e.g. Gospel, Worship" />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-xs">Language</Label>
-                            <Select value={song.language || "English"} onValueChange={(v) => updateBatchSong(song.id, { language: v, customLanguage: v !== CUSTOM_LANG ? song.customLanguage : "" })}>
-                              <SelectTrigger><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                {LANGUAGES.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-                                <SelectItem value={CUSTOM_LANG}>Custom / Other Language</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            {song.language === CUSTOM_LANG && (
-                              <Input
-                                className="text-xs mt-1"
-                                placeholder="Enter Language Name"
-                                value={song.customLanguage}
-                                onChange={(e) => updateBatchSong(song.id, { customLanguage: e.target.value })}
-                              />
-                            )}
+                            <SongLanguagePicker value={song.language} onChange={language => updateBatchSong(song.id, { language, customLanguage: "" })} />
                           </div>
                         </div>
 
@@ -5300,7 +5283,7 @@ function SongsAdmin() {
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {song.language && song.language !== "English" && (
-                      <Badge variant="outline" className="text-xs border-violet-400/50 text-violet-600 hidden sm:inline-flex">{song.language}</Badge>
+                      <Badge variant="outline" className="text-xs border-violet-400/50 text-violet-600 hidden sm:inline-flex">{songLanguageCategories(song.language).join(", ")}</Badge>
                     )}
                     {(song as any).songType && (
                       <Badge variant="outline" className="text-xs border-cyan-400/50 text-cyan-600 hidden sm:inline-flex">{(song as any).songType}</Badge>
@@ -5917,34 +5900,10 @@ function SongsAdmin() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Language</Label>
-                  <Select
-                    value={LANGUAGES.includes(editingSong.language ?? "") ? (editingSong.language ?? "English") : CUSTOM_LANG}
-                    onValueChange={(v) => {
-                      if (v === CUSTOM_LANG) {
-                        const prev = editingSong.language ?? "";
-                        setEditCustomLanguage(LANGUAGES.includes(prev) ? "" : prev);
-                        setEditingSong({ ...editingSong, language: CUSTOM_LANG });
-                      } else {
-                        setEditCustomLanguage("");
-                        setEditingSong({ ...editingSong, language: v });
-                      }
-                    }}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {LANGUAGES.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-                      <SelectItem value={CUSTOM_LANG}>Custom / Other Language</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {(editingSong.language === CUSTOM_LANG || (!LANGUAGES.includes(editingSong.language ?? "") && editingSong.language && editingSong.language !== "")) && (
-                    <Input
-                      className="text-xs mt-1"
-                      placeholder="Enter Language Name"
-                      value={editCustomLanguage || (!LANGUAGES.includes(editingSong.language ?? "") ? (editingSong.language ?? "") : "")}
-                      onChange={(e) => setEditCustomLanguage(e.target.value)}
-                    />
-                  )}
+                  <SongLanguagePicker value={editingSong.language} onChange={language => {
+                    setEditCustomLanguage("");
+                    setEditingSong({ ...editingSong, language });
+                  }} />
                 </div>
               </div>
 
