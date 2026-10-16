@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from "react";
 import { useUser } from "@/contexts/UserContext";
+import { startMusicPlayback, usesSystemMusicVolume } from "@/lib/music-volume";
 import type { Song } from "@shared/schema";
 
 const LOCAL_HISTORY_KEY = "spirittone-playback-history";
@@ -143,6 +144,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolumeState] = useState(() => {
+    if (usesSystemMusicVolume()) return 1;
     const saved = parseFloat(localStorage.getItem(LOCAL_VOLUME_KEY) ?? "1");
     return isNaN(saved) ? 1 : Math.max(0, Math.min(1, saved));
   });
@@ -404,7 +406,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
       // Repeat One: loop current song
       if (s.repeatMode === "one") {
         audio.currentTime = 0;
-        audio.play().catch(() => {});
+        startMusicPlayback(audio).catch(() => {});
         return;
       }
 
@@ -561,7 +563,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     audio.addEventListener("loadedmetadata", onReady, { once: true });
     // Call within the tap, rather than waiting for canplay and losing iOS
     // user activation. The browser handles buffering after this request.
-    audio.play().catch((error) => {
+    startMusicPlayback(audio).catch((error) => {
       if (request !== playRequestRef.current || error?.name === "AbortError") return;
       setIsLoading(false);
       setPlaybackError("Playback could not start. Press Play to try again.");
@@ -596,7 +598,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     }
     if (audio.paused) {
       setPlaybackError(null);
-      audio.play().catch((error) => {
+      startMusicPlayback(audio).catch((error) => {
         if (error?.name !== "AbortError") setPlaybackError("Playback could not start. Press Play to try again.");
       });
     } else audio.pause();
@@ -776,7 +778,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     const audio = audioRef.current;
 
     setActionHandler("play", () => {
-      audio.play().catch(() => {});
+      startMusicPlayback(audio).catch(() => {});
     });
     setActionHandler("pause", () => {
       audio.pause();
@@ -860,7 +862,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
         // Relay notification / hardware button taps → audio element
         const audio = audioRef.current;
         listenHandles = await Promise.all([
-          plugin.addListener("play",  () => { audio.play().catch(() => {}); }),
+          plugin.addListener("play",  () => { startMusicPlayback(audio).catch(() => {}); }),
           plugin.addListener("pause", () => { audio.pause(); }),
           plugin.addListener("next",  () => { playNextRef.current(); }),
           plugin.addListener("prev",  () => { playPrevRef.current(); }),
