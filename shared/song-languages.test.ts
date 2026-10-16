@@ -23,3 +23,7 @@ test("aliases, custom languages and repeated saves retain stable categories", ()
   assert.equal(serializeSongLanguages("Mandrain"), "Mandarin Chinese");
   assert.equal(serializeSongLanguages("Twi; English"), "Twi, English");
 });
+
+test("existing bullet-separated multilingual releases match every category", () => {
+  assert.deepEqual(songLanguageCategories("Spanish • English • Nigerian Pidgin"), ["Spanish", "English", "Nigerian Pidgin"]);
+});

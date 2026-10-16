@@ -11,7 +11,7 @@ export function songLanguages(value: string | null | undefined): string[] {
     "nigerian pidgin": "Nigerian Pidgin", "mandarin": "Mandarin Chinese",
     "mandrain": "Mandarin Chinese", "mandarin chinese": "Mandarin Chinese",
   };
-  return Array.from(new Set((value ?? "").split(/[,;+\/]/)
+  return Array.from(new Set((value ?? "").split(/[,;+\/•·|]/)
     .map(part => part.trim()).filter(Boolean)
     .map(part => aliases[part.toLowerCase()] ?? SONG_LANGUAGES.find(l => l.toLowerCase() === part.toLowerCase()) ?? part)));
 }
