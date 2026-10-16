@@ -21,7 +21,7 @@ function formatTime(sec: number) {
 export default function MiniPlayer() {
   const [location, setLocation] = useLocation();
   const {
-    currentSong, isPlaying, currentTime, duration, isLoading,
+    currentSong, isPlaying, currentTime, duration, isLoading, playbackError,
     togglePlay, seek, closePlayer, playNext, playPrev,
     activeQueue, queueIndex, nextSong, settings,
   } = useMusicPlayer();
@@ -194,6 +194,7 @@ export default function MiniPlayer() {
           data-testid="mini-player-collapsed"
         >
           {notifBanner}
+          {playbackError && <p role="alert" className="px-3 py-2 text-xs text-destructive">{playbackError}</p>}
           <div className="flex items-center gap-2 px-3 py-2">
             {/* Artwork */}
             <button
@@ -277,6 +278,7 @@ export default function MiniPlayer() {
         data-testid="mini-player"
       >
         {notifBanner}
+          {playbackError && <p role="alert" className="px-3 py-2 text-xs text-destructive">{playbackError}</p>}
 
         {/* Seek bar (thin strip at very top) */}
         <div

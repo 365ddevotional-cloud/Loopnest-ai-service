@@ -46,6 +46,7 @@ interface MusicPlayerContextType {
   volume: number;
   playbackRate: number;
   isLoading: boolean;
+  playbackError: string | null;
   settings: MusicSettings;
   recentlyPlayed: RecentlyPlayedEntry[];
   recommendations: Song[];
@@ -85,6 +86,13 @@ function readLocal<T>(key: string, fallback: T): T {
   catch { return fallback; }
 }
 
+function writeLocal(key: string, value: string) {
+  try { localStorage.setItem(key, value); } catch { /* Playback works without storage. */ }
+}
+function removeLocal(key: string) {
+  try { localStorage.removeItem(key); } catch { /* Storage may be unavailable. */ }
+}
+
 function scoreRecommendations(allSongs: Song[], current: Song, recentIds: Set<number>, favIds: Set<number>): Song[] {
   const currentBook = current.scriptureReference?.split(/[\s,:]/)[0] ?? "";
   return allSongs
@@ -100,14 +108,14 @@ function scoreRecommendations(allSongs: Song[], current: Song, recentIds: Set<nu
       if (book && book === currentBook) score += 1;
       return { s, score };
     })
-    .sort((a, b) => b.score - a.score || Math.random() - 0.5)
+    .sort((a, b) => b.score - a.score || a.s.id - b.s.id)
     .slice(0, 5)
     .map(x => x.s);
 }
 
 const MusicPlayerContext = createContext<MusicPlayerContextType>({
   currentSong: null, isPlaying: false, currentTime: 0, duration: 0, volume: 1,
-  playbackRate: 1, isLoading: false, settings: DEFAULT_SETTINGS,
+  playbackRate: 1, isLoading: false, playbackError: null, settings: DEFAULT_SETTINGS,
   recentlyPlayed: [], recommendations: [], nextSong: null, continueListening: [],
   activeQueue: [], queueIndex: -1, audioElement: null,
   miniPlayerDismissed: false, setMiniPlayerDismissed: () => {},
@@ -120,8 +128,15 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
   const { user, emailVerified, getIdToken } = useUser();
   const isSignedIn = !!user && emailVerified;
 
-  const audioRef = useRef<HTMLAudioElement>(new Audio());
-  audioRef.current.crossOrigin = "anonymous";
+  // A ref initializer is evaluated on EVERY render. Construct exactly once,
+  // and keep native media playback independent of Web Audio/route lifecycles.
+  const audioRef = useRef<HTMLAudioElement>(null!);
+  if (!audioRef.current) {
+    audioRef.current = new Audio();
+    audioRef.current.preload = "metadata";
+  }
+  const pendingReadyRef = useRef<(() => void) | null>(null);
+  const playRequestRef = useRef(0);
 
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -133,6 +148,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
   });
   const [playbackRate, setPlaybackRateState] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
   const [settings, setSettings] = useState<MusicSettings>(() => {
     const saved = readLocal<MusicSettings>(LOCAL_SETTINGS_KEY, DEFAULT_SETTINGS);
     // Migrate legacy "all" from old "repeat-all" semantics; just keep as-is
@@ -148,9 +164,9 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
   const setMiniPlayerDismissed = useCallback((dismissed: boolean) => {
     setMiniPlayerDismissedState(dismissed);
     if (dismissed) {
-      localStorage.setItem(DISMISSED_KEY, "1");
+      writeLocal(DISMISSED_KEY, "1");
     } else {
-      localStorage.removeItem(DISMISSED_KEY);
+      removeLocal(DISMISSED_KEY);
     }
   }, []);
 
@@ -158,7 +174,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!currentSong) {
       setMiniPlayerDismissedState(false);
-      localStorage.removeItem(DISMISSED_KEY);
+      removeLocal(DISMISSED_KEY);
     }
   }, [currentSong]);
 
@@ -226,7 +242,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     const onVolumeChange = () => {
       const v = audio.volume;
       setVolumeState(v);
-      localStorage.setItem(LOCAL_VOLUME_KEY, String(v));
+      writeLocal(LOCAL_VOLUME_KEY, String(v));
     };
     audio.addEventListener("volumechange", onVolumeChange);
     return () => audio.removeEventListener("volumechange", onVolumeChange);
@@ -260,7 +276,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
           const merged: MusicSettings = { ...DEFAULT_SETTINGS, ...s };
           setSettings(merged);
           settingsRef.current = merged;
-          localStorage.setItem(LOCAL_SETTINGS_KEY, JSON.stringify(merged));
+          writeLocal(LOCAL_SETTINGS_KEY, JSON.stringify(merged));
         }
         if (historyRes.ok) {
           const rows: any[] = await historyRes.json();
@@ -281,7 +297,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
             const merged = [...prev, ...entries.filter(e => !localIds.has(e.songId))]
               .sort((a, b) => new Date(b.lastPlayedAt).getTime() - new Date(a.lastPlayedAt).getTime())
               .slice(0, HISTORY_LIMIT);
-            localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(merged));
+            writeLocal(LOCAL_HISTORY_KEY, JSON.stringify(merged));
             return merged;
           });
         }
@@ -310,7 +326,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     };
     setRecentlyPlayed(prev => {
       const updated = [entry, ...prev.filter(r => r.songId !== song.id)].slice(0, HISTORY_LIMIT);
-      localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(updated));
+      writeLocal(LOCAL_HISTORY_KEY, JSON.stringify(updated));
       recentlyPlayedRef.current = updated;
       return updated;
     });
@@ -365,7 +381,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     const onDurationChange = () => {
       if (isFinite(audio.duration) && audio.duration > 0) setDuration(audio.duration);
     };
-    const onPlay = () => setIsPlaying(true);
+    const onPlay = () => { setIsPlaying(true); setPlaybackError(null); };
     const onPause = () => {
       setIsPlaying(false);
       const song = currentSongRef.current;
@@ -373,6 +389,11 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     };
     const onLoadStart = () => setIsLoading(true);
     const onCanPlay = () => setIsLoading(false);
+    const onError = () => {
+      setIsLoading(false);
+      setIsPlaying(false);
+      setPlaybackError("This song could not load. Check your connection and press Play to retry.");
+    };
     const onEnded = () => {
       setIsPlaying(false);
       const song = currentSongRef.current;
@@ -423,6 +444,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     audio.addEventListener("loadstart", onLoadStart);
     audio.addEventListener("canplay", onCanPlay);
     audio.addEventListener("ended", onEnded);
+    audio.addEventListener("error", onError);
     return () => {
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("durationchange", onDurationChange);
@@ -431,6 +453,10 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
       audio.removeEventListener("loadstart", onLoadStart);
       audio.removeEventListener("canplay", onCanPlay);
       audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("error", onError);
+      if (pendingReadyRef.current) audio.removeEventListener("loadedmetadata", pendingReadyRef.current);
+      if (dbSyncRef.current) clearTimeout(dbSyncRef.current);
+      audio.pause();
     };
   }, []);
 
@@ -504,30 +530,42 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
       savePositionRef.current(prevSong, audio.currentTime, audio.duration || 0);
     }
 
-    // Load new song
+    // Cancel the previous track's pending seek before replacing its source.
+    if (pendingReadyRef.current) {
+      audio.removeEventListener("loadedmetadata", pendingReadyRef.current);
+      pendingReadyRef.current = null;
+    }
+    const request = ++playRequestRef.current;
+    const saved = recentlyPlayedRef.current.find(r => r.songId === song.id);
+    const startPos = (settingsRef.current.rememberPosition && saved && saved.progressPercent < 95)
+      ? saved.lastPosition : 0;
+
     audio.pause();
     audio.src = `/api/songs/${song.id}/audio`;
     audio.playbackRate = settingsRef.current.defaultSpeed;
-    audio.volume = audioRef.current.volume;
-
-    // Find saved position
-    const saved = recentlyPlayedRef.current.find(r => r.songId === song.id);
-    const startPos = (settingsRef.current.rememberPosition && saved && saved.progressPercent < 95)
-      ? saved.lastPosition
-      : 0;
-
-    const onReady = () => {
-      if (startPos > 0 && isFinite(startPos)) audio.currentTime = startPos;
-      audio.play().catch(() => {});
-    };
-    audio.addEventListener("canplay", onReady, { once: true });
-    audio.load();
-
+    setPlaybackError(null);
     setCurrentSong(song);
     currentSongRef.current = song;
-    setCurrentTime(0);
+    setCurrentTime(startPos);
     setDuration(0);
     setPlaybackRateState(settingsRef.current.defaultSpeed);
+
+    const onReady = () => {
+      pendingReadyRef.current = null;
+      if (request !== playRequestRef.current) return;
+      if (startPos > 0 && isFinite(startPos) && isFinite(audio.duration)) {
+        audio.currentTime = Math.min(startPos, Math.max(0, audio.duration - 0.1));
+      }
+    };
+    pendingReadyRef.current = onReady;
+    audio.addEventListener("loadedmetadata", onReady, { once: true });
+    // Call within the tap, rather than waiting for canplay and losing iOS
+    // user activation. The browser handles buffering after this request.
+    audio.play().catch((error) => {
+      if (request !== playRequestRef.current || error?.name === "AbortError") return;
+      setIsLoading(false);
+      setPlaybackError("Playback could not start. Press Play to try again.");
+    });
 
     // Update recently played immediately
     const entry: RecentlyPlayedEntry = {
@@ -540,7 +578,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     };
     setRecentlyPlayed(prev => {
       const updated = [entry, ...prev.filter(r => r.songId !== song.id)].slice(0, HISTORY_LIMIT);
-      localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(updated));
+      writeLocal(LOCAL_HISTORY_KEY, JSON.stringify(updated));
       recentlyPlayedRef.current = updated;
       return updated;
     });
@@ -552,8 +590,16 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
     if (!audio.src) return;
-    if (audio.paused) audio.play().catch(() => {});
-    else audio.pause();
+    if (audio.error && currentSongRef.current) {
+      playSongRef.current(currentSongRef.current);
+      return;
+    }
+    if (audio.paused) {
+      setPlaybackError(null);
+      audio.play().catch((error) => {
+        if (error?.name !== "AbortError") setPlaybackError("Playback could not start. Press Play to try again.");
+      });
+    } else audio.pause();
   }, []);
 
   const seek = useCallback((time: number) => {
@@ -568,7 +614,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     const v = Math.max(0, Math.min(1, vol));
     audioRef.current.volume = v;
     setVolumeState(v);
-    localStorage.setItem(LOCAL_VOLUME_KEY, String(v));
+    writeLocal(LOCAL_VOLUME_KEY, String(v));
   }, []);
 
   const setPlaybackRate = useCallback((rate: number) => {
@@ -582,8 +628,14 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     if (song && audio.src) {
       savePositionRef.current(song, audio.currentTime, audio.duration || 0);
     }
+    ++playRequestRef.current;
+    if (pendingReadyRef.current) audio.removeEventListener("loadedmetadata", pendingReadyRef.current);
+    pendingReadyRef.current = null;
     audio.pause();
-    audio.src = "";
+    audio.removeAttribute("src");
+    audio.load();
+    setPlaybackError(null);
+    setIsLoading(false);
     setCurrentSong(null);
     currentSongRef.current = null;
     setIsPlaying(false);
@@ -657,7 +709,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     setSettings(prev => {
       const updated = { ...prev, ...partial };
       settingsRef.current = updated;
-      localStorage.setItem(LOCAL_SETTINGS_KEY, JSON.stringify(updated));
+      writeLocal(LOCAL_SETTINGS_KEY, JSON.stringify(updated));
       if (partial.defaultSpeed !== undefined) {
         audioRef.current.playbackRate = partial.defaultSpeed;
         setPlaybackRateState(partial.defaultSpeed);
@@ -693,21 +745,6 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     });
   }, [isSignedIn, getIdToken]);
 
-  // ── Resume Web Audio AudioContext after page returns to foreground ──────────
-  // When MusicVisualizer is mounted it routes the audio element through an
-  // AudioContext (stored as _audioCtx on the element).  Browsers may suspend
-  // that context during tab switches or screen locks.  We resume it here so
-  // playback continues when the user returns to the app.
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden) return;
-      const ctx = (audioRef.current as any)._audioCtx as AudioContext | undefined;
-      if (ctx?.state === "suspended") ctx.resume().catch(() => {});
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, []);
-
   // ── Media Session API ─────────────────────────────────────────────────────
   // Publish song metadata and register transport actions so the lock screen,
   // Control Center, notification shade, and Bluetooth controls work.
@@ -721,7 +758,10 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    navigator.mediaSession.metadata = new MediaMetadata({
+    const setActionHandler = (action: MediaSessionAction, handler: MediaSessionActionHandler | null) => {
+      try { navigator.mediaSession.setActionHandler(action, handler); } catch { /* Unsupported OS action. */ }
+    };
+    if (typeof MediaMetadata !== "undefined") navigator.mediaSession.metadata = new MediaMetadata({
       title: currentSong.title,
       artist: currentSong.artist ?? currentSong.labelName ?? "",
       album: currentSong.labelName ?? "SpiritTone Records",
@@ -735,33 +775,33 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
 
     const audio = audioRef.current;
 
-    navigator.mediaSession.setActionHandler("play", () => {
+    setActionHandler("play", () => {
       audio.play().catch(() => {});
     });
-    navigator.mediaSession.setActionHandler("pause", () => {
+    setActionHandler("pause", () => {
       audio.pause();
     });
-    navigator.mediaSession.setActionHandler("previoustrack", () => {
+    setActionHandler("previoustrack", () => {
       playPrevRef.current();
     });
-    navigator.mediaSession.setActionHandler("nexttrack", () => {
+    setActionHandler("nexttrack", () => {
       playNextRef.current();
     });
-    navigator.mediaSession.setActionHandler("seekbackward", (details) => {
+    setActionHandler("seekbackward", (details) => {
       const by = details.seekOffset ?? 10;
       audio.currentTime = Math.max(0, audio.currentTime - by);
     });
-    navigator.mediaSession.setActionHandler("seekforward", (details) => {
+    setActionHandler("seekforward", (details) => {
       const by = details.seekOffset ?? 10;
       audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + by);
     });
     try {
-      navigator.mediaSession.setActionHandler("seekto", (details) => {
+      setActionHandler("seekto", (details) => {
         if (details.seekTime != null) audio.currentTime = details.seekTime;
       });
     } catch {}
     try {
-      navigator.mediaSession.setActionHandler("stop", () => {
+      setActionHandler("stop", () => {
         closePlayerRef.current();
       });
     } catch {}
@@ -769,9 +809,9 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     return () => {
       if (!("mediaSession" in navigator)) return;
       (["play", "pause", "previoustrack", "nexttrack", "seekbackward", "seekforward"] as MediaSessionAction[])
-        .forEach((a) => { try { navigator.mediaSession.setActionHandler(a, null); } catch {} });
-      try { navigator.mediaSession.setActionHandler("seekto", null); } catch {}
-      try { navigator.mediaSession.setActionHandler("stop", null); } catch {}
+        .forEach((a) => { try { setActionHandler(a, null); } catch {} });
+      try { setActionHandler("seekto", null); } catch {}
+      try { setActionHandler("stop", null); } catch {}
     };
   }, [currentSong]);
 
@@ -893,7 +933,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
 
   return (
     <MusicPlayerContext.Provider value={{
-      currentSong, isPlaying, currentTime, duration, volume, playbackRate, isLoading,
+      currentSong, isPlaying, currentTime, duration, volume, playbackRate, isLoading, playbackError,
       settings, recentlyPlayed, recommendations, nextSong, continueListening,
       activeQueue, queueIndex, audioElement: audioRef.current,
       miniPlayerDismissed, setMiniPlayerDismissed,

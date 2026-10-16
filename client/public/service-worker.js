@@ -1,6 +1,6 @@
-const CACHE_NAME = '365dd-v9';
+const CACHE_NAME = '365dd-v10';
 const API_CACHE_NAME = '365dd-api-v5';
-const MUSIC_CACHE_NAME = 'spirittone-music-v1';
+const MUSIC_CACHE_NAME = 'spirittone-music-v2';
 
 const STATIC_ASSETS = [
   '/',
@@ -30,8 +30,8 @@ function isSensitiveApiPath(pathname) {
 }
 
 // Song cover images and label logos live under /objects/
-function isMusicThumbnail(url) {
-  return url.pathname.startsWith('/objects/');
+function isMusicThumbnail(url, request) {
+  return request.destination === "image" && url.pathname.startsWith('/objects/');
 }
 
 // Music library endpoints that benefit from stale-while-revalidate
@@ -82,16 +82,23 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
+  // Stream media directly. Never buffer/cache audio, video or partial Range
+  // responses as thumbnails; native media owns seeking and byte ranges.
+  if (event.request.headers.has('range') ||
+      event.request.destination === 'audio' || event.request.destination === 'video' ||
+      /^\/api\/songs\/[^/]+\/(audio|video)$/.test(url.pathname) ||
+      (url.pathname.startsWith('/objects/') && event.request.destination !== 'image')) return;
+
   // ── Song thumbnails / cover images: stale-while-revalidate ──────────────
   // Use spirittone-music-v1 cache. Return cached copy immediately;
   // fetch fresh copy in the background. Never replace cache with an error.
-  if (isMusicThumbnail(url)) {
+  if (isMusicThumbnail(url, event.request)) {
     event.respondWith(
       caches.open(MUSIC_CACHE_NAME).then((cache) => {
         return cache.match(event.request).then((cached) => {
           const fetchAndCache = fetch(event.request).then((response) => {
             if (response.ok) {
-              cache.put(event.request, response.clone());
+              event.waitUntil(cache.put(event.request, response.clone()).catch(() => {}));
             }
             return response;
           });
@@ -119,7 +126,7 @@ self.addEventListener('fetch', (event) => {
         return cache.match(event.request).then((cached) => {
           const fetchAndCache = fetch(event.request).then((response) => {
             if (response.ok) {
-              cache.put(event.request, response.clone());
+              event.waitUntil(cache.put(event.request, response.clone()).catch(() => {}));
             }
             return response;
           });

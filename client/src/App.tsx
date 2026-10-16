@@ -63,7 +63,7 @@ import OfflineContent from "@/pages/OfflineContent";
 import { OfflineStatusBanner } from "@/components/OfflineStatusBanner";
 import PromisePopup from "@/components/PromisePopup";
 import NotFound from "@/pages/not-found";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, memo } from "react";
 import { Loader2 } from "lucide-react";
 // Keep large feature pages out of the first-load bundle.
 const Admin = lazy(() => import("@/pages/Admin"));
@@ -159,7 +159,7 @@ function ChurchGateway() {
   return <Suspense fallback={<ChurchPageFallback />}><ChurchPublicHome /></Suspense>;
 }
 
-function Router() {
+const Router = memo(function Router() {
   return (
     <Switch>
       {/* Group Mode routes */}
@@ -219,9 +219,9 @@ function Router() {
       <Route path="/testimonies" component={TestimonyWall} />
       <Route path="/quick-prayer" component={QuickPrayer} />
       <Route path="/daily-promise" component={DailyPromise} />
-      <Route path="/music/purchases" component={() => <Suspense fallback={<FeaturePageFallback />}><MusicPurchases /></Suspense>} />
-      <Route path="/music/:slug" component={() => <Suspense fallback={<FeaturePageFallback />}><SongDetail /></Suspense>} />
-      <Route path="/music" component={() => <Suspense fallback={<FeaturePageFallback />}><Music /></Suspense>} />
+      <Route path="/music/purchases"><Suspense fallback={<FeaturePageFallback />}><MusicPurchases /></Suspense></Route>
+      <Route path="/music/:slug"><Suspense fallback={<FeaturePageFallback />}><SongDetail /></Suspense></Route>
+      <Route path="/music"><Suspense fallback={<FeaturePageFallback />}><Music /></Suspense></Route>
       <Route path="/signin" component={SignIn} />
       <Route path="/my-library" component={MyLibrary} />
       <Route path="/account" component={AccountPage} />
@@ -256,7 +256,7 @@ function Router() {
       <Route component={NotFound} />
     </Switch>
   );
-}
+});
 
 function AppContent() {
   useOfflineSync();

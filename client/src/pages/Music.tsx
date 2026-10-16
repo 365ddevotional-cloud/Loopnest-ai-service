@@ -32,7 +32,7 @@ function EqualizerBars({ playing }: { playing: boolean }) {
 }
 import type { Song, SongCollection } from "@shared/schema";
 import { useMusicPlayer, type RecentlyPlayedEntry } from "@/contexts/MusicPlayerContext";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -42,7 +42,7 @@ import {
 
 const CUSTOM_LANG = "__custom__";
 
-function SongCard({
+const SongCard = memo(function SongCard({
   song,
   isFeatured,
   isActive,
@@ -124,9 +124,9 @@ function SongCard({
       </div>
     </div>
   );
-}
+});
 
-function RecentCard({ entry, isContinue }: { entry: RecentlyPlayedEntry; isContinue?: boolean }) {
+const RecentCard = memo(function RecentCard({ entry, isContinue }: { entry: RecentlyPlayedEntry; isContinue?: boolean }) {
   const [imgBroken, setImgBroken] = useState(false);
 
   const timeAgo = (() => {
@@ -190,7 +190,7 @@ function RecentCard({ entry, isContinue }: { entry: RecentlyPlayedEntry; isConti
       </div>
     </Link>
   );
-}
+});
 
 export default function Music() {
   // ── IndexedDB cache: load last-known good data so the page is never blank ──
@@ -297,13 +297,13 @@ export default function Music() {
   };
 
   // When user clicks a song card in the library: set queue to filtered list starting at that song
-  const handleSongClick = (song: Song) => {
+  const handleSongClick = useCallback((song: Song) => {
     const playable = filteredSongs.filter(s => s.audioUrl && s.isActive);
     const idx = playable.findIndex(s => s.id === song.id);
     if (idx >= 0 && (settings.repeatMode === "play-all" || settings.repeatMode === "all")) {
       setQueue(playable, idx);
     }
-  };
+  }, [filteredSongs, settings.repeatMode, setQueue]);
 
   // Show a spinner only when the network is still loading AND we have no cached
   // data at all (first-ever visit, nothing in SW cache or IndexedDB)
