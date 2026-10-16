@@ -6,6 +6,7 @@ import { create, act } from 'react-test-renderer';
 import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
+import { startMusicPlayback, usesSystemMusicVolume } from '../client/src/lib/music-volume';
 
 // Run the real provider with a controllable media element, without Firebase.
 const dir = await mkdtemp(new URL('../.music-test-', import.meta.url).pathname);
@@ -124,5 +125,25 @@ test('route pages remain mounted during playback updates and still navigate', as
   assert.equal(mounts.SongDetail,1,'player detail must remain mounted');
   act(()=>location.navigate('/music')); assert.equal(mounts.Music,2);
   act(()=>tree.unmount());
+});
+test('iPhone requests music playback at full app gain before starting audio', async()=>{
+  const browser={userAgent:'iPhone',audioSession:{type:'play-and-record'}};
+  let played=false;
+  const audio={volume:0.6,play:()=>{
+    assert.equal(browser.audioSession.type,'playback');
+    assert.equal(audio.volume,1); played=true; return Promise.resolve();
+  }};
+  await startMusicPlayback(audio as any,browser);
+  assert.equal(played,true);
+  assert.equal(usesSystemMusicVolume({platform:'MacIntel',maxTouchPoints:5}),true);
+});
+test('desktop volume preference and unsupported session browsers still work', async()=>{
+  let plays=0;
+  const audio={volume:0.6,play:()=>{plays++;return Promise.resolve();}};
+  await startMusicPlayback(audio as any,{userAgent:'Desktop'});
+  assert.equal(audio.volume,0.6);
+  const browser={userAgent:'Desktop',get audioSession(){throw new Error('Unavailable');}};
+  await startMusicPlayback(audio as any,browser);
+  assert.equal(plays,2);
 });
 test.after(async()=>rm(dir,{recursive:true,force:true}));
