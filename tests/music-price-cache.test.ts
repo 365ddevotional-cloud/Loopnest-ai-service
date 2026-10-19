@@ -2,6 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { formatMusicPrice } from '../shared/music-regions';
+
+test('approved Nigerian and Ghanaian prices use recognizable local currency symbols', () => {
+  assert.equal(formatMusicPrice(100000, 'NGN'), '₦1,000.00');
+  assert.equal(formatMusicPrice(900, 'GHS'), 'GH₵9.00');
+  assert.equal(formatMusicPrice(199, 'GBP'), '£1.99');
+});
 
 function worker() {
   const handlers: Record<string, Function> = {};
