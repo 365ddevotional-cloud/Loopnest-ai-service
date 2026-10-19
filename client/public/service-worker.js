@@ -1,4 +1,4 @@
-const CACHE_NAME = '365dd-v10';
+const CACHE_NAME = '365dd-v11';
 const API_CACHE_NAME = '365dd-api-v5';
 const MUSIC_CACHE_NAME = 'spirittone-music-v2';
 
@@ -10,6 +10,8 @@ const STATIC_ASSETS = [
 ];
 
 const SENSITIVE_API_PATTERNS = [
+  /^\/api\/music-commerce(?:\/|$)/,
+  /^\/api\/user\/download-access(?:\/|$)/,
   /^\/api\/auth\//,
   /^\/api\/admin/,
   /^\/api\/stripe/,
@@ -51,6 +53,16 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
+  // Older workers cached local prices despite the server's no-store header.
+  // Remove those entries, including query variants, from every existing cache.
+  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.map(async (key) => {
+    const cache = await caches.open(key);
+    const requests = await cache.keys();
+    await Promise.all(requests.filter((request) => {
+      const url = new URL(request.url);
+      return url.origin === self.location.origin && isSensitiveApiPath(url.pathname);
+    }).map((request) => cache.delete(request)));
+  }))));
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
@@ -155,7 +167,7 @@ self.addEventListener('fetch', (event) => {
 
     event.respondWith(
       fetch(event.request).then((response) => {
-        if (response.ok) {
+        if (response.ok && !/no-store|private/i.test(response.headers.get('cache-control') || '')) {
           var contentType = response.headers.get('content-type') || '';
           if (contentType.includes('application/json')) {
             var cloned = response.clone();

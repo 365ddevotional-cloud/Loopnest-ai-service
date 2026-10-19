@@ -137,7 +137,8 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
   };
 
   app.get("/api/music-commerce/catalog", async (req, res) => {
-    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Cache-Control", "private, no-store, max-age=0");
+    res.setHeader("Vary", "X-Forwarded-For");
     try {
       const country = localCountry(req);
       const archive = await services.getArchive();

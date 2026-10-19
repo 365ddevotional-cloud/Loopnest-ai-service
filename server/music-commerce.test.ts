@@ -335,6 +335,8 @@ test('country and timezone query/header spoofing cannot reveal other regional pr
   assert.equal(response.body.countryName, 'Nigeria');
   assert.ok(response.body.products.every((p: any) => p.currency === 'NGN'));
   assert.match(response.headers['cache-control'], /no-store/);
+  assert.match(response.headers['cache-control'], /private/);
+  assert.match(response.headers.vary, /X-Forwarded-For/i);
   for (const field of ['country', 'timezone', 'currency', 'amount']) {
     const result = await f.post('checkout', {productId:'five:a,b,c,d,e',email:'fixture@example.test',downloadPolicyAccepted:true,[field]:'US'});
     assert.equal(result.status,400);

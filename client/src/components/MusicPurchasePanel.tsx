@@ -10,13 +10,17 @@ import { useToast } from "@/hooks/use-toast";
 
 export type MusicCatalog = { country: string; countryName: string; currency: string; mode: string; fiveSongOffer?: { cents: number; ready: boolean; message?: string }; singleSongOffer?: { cents: number; ready: boolean; message?: string }; products: { id: string; title: string; cents: number; slugs: string[]; ready: boolean; message?: string }[] };
 export function useMusicCatalog() {
-  return useQuery<MusicCatalog>({ queryKey: ["/api/music-commerce/catalog"], staleTime: 30000, retry: false,
+  const query = useQuery<MusicCatalog>({ queryKey: ["/api/music-commerce/catalog", "local-price-v2"], staleTime: 0, retry: false,
+    refetchOnMount: "always", refetchOnWindowFocus: "always", refetchOnReconnect: "always", refetchInterval: 60000,
     queryFn: async () => {
-      const response = await fetch("/api/music-commerce/catalog", {cache: "no-store"});
+      // A new URL also bypasses prices saved by an older installed worker.
+      const response = await fetch("/api/music-commerce/catalog?localPriceVersion=2", {cache: "no-store"});
       const result = await response.json();
       if (!response.ok) throw new Error(result.message ?? "Purchase options could not be loaded.");
       return result;
     } });
+  // A failed refresh must never leave an old country's price on screen.
+  return { ...query, data: query.isError ? undefined : query.data };
 }
 export default function MusicPurchasePanel({ productId, songTitle }: { productId: string; songTitle?: string }) {
   const { data: catalog, isLoading, error } = useMusicCatalog();
