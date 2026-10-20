@@ -21,10 +21,10 @@ export default function FiveSongCollection() {
     setSelected(current => current.every(slug => available.has(slug)) ? current : current.filter(slug => available.has(slug)));
   }, [data]);
   return <section className="rounded-xl border p-4 space-y-3" data-testid="five-song-collection">
-    <h2 className="font-serif text-2xl font-semibold">Choose any five songs — {catalog?.fiveSongOffer ? formatMusicPrice(catalog.fiveSongOffer.cents, catalog.currency) : priceError ? "Price unavailable" : "Loading price…"}</h2>
+    <h2 className="font-serif text-2xl font-semibold">Choose any five songs — {catalog?.fiveSongOffer ? formatMusicPrice(catalog.fiveSongOffer.cents, catalog.currency) : locationResolved && !deviceCountry ? "Location required" : priceError ? "Price unavailable" : "Loading price…"}</h2>
     {catalog && <p className="text-sm text-muted-foreground">Local price for {catalog.countryName} · {catalog.currency}</p>}
     {!locationResolved && <p className="text-sm text-muted-foreground" role="status">Checking your device location for local pricing…</p>}
-    {locationResolved && !deviceCountry && <p className="text-xs text-muted-foreground">We’re using your network location. If you blocked location access, allow it in your browser settings and try again.</p>}
+    {locationResolved && !deviceCountry && <p className="text-xs text-muted-foreground">Device location is required to show a local music price. Allow location access in your phone or browser settings, then try again.</p>}
     {locationResolved && !deviceCountry && <button type="button" className="text-sm underline" onClick={retryDeviceLocation}>Try device location again</button>}
 
     <button type="button" className="text-sm underline" disabled={refreshingPrice} onClick={() => void refreshPrice()}>{refreshingPrice ? "Checking local price…" : "Refresh local price"}</button>
