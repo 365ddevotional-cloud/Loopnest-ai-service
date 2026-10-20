@@ -98,7 +98,7 @@ export default function MusicPurchasePanel({ productId, songTitle }: { productId
       }
       const response = await fetch("/api/music-commerce/checkout", { method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ productId, email: confirmedEmail.trim(), downloadPolicyAccepted: policyAccepted, expectedCountry: catalog?.country }) });
+        body: JSON.stringify({ productId, email: confirmedEmail.trim(), downloadPolicyAccepted: policyAccepted, expectedCountry: catalog?.country, selectedCountry: selectedCountry || undefined }) });
       if (response.status === 401) {
         await signUserOut();
         toast({ title: "Please sign in again", description: "Your selected songs have been saved." });
