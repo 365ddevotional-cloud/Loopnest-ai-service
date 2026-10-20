@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatMusicPrice } from "../../../shared/music-regions";
 import MusicPurchasePanel, { useMusicCatalog } from "./MusicPurchasePanel";
 export default function FiveSongCollection() {
-  const { data: catalog, error: priceError, refetch: refreshPrice, isFetching: refreshingPrice, locationResolved, deviceCountry } = useMusicCatalog();
+  const { data: catalog, error: priceError, refetch: refreshPrice, isFetching: refreshingPrice, locationResolved, deviceCountry, retryDeviceLocation } = useMusicCatalog();
   const [selected, setSelected] = useState<string[]>(() => {
     try {
       const saved: unknown = JSON.parse(sessionStorage.getItem("music-five-selection-v1") ?? "[]");
@@ -25,6 +25,7 @@ export default function FiveSongCollection() {
     {catalog && <p className="text-sm text-muted-foreground">Local price for {catalog.countryName} · {catalog.currency}</p>}
     {!locationResolved && <p className="text-sm text-muted-foreground" role="status">Checking your device location for local pricing…</p>}
     {locationResolved && !deviceCountry && <p className="text-xs text-muted-foreground">Location access is unavailable, so we’re using your network location.</p>}
+    {locationResolved && !deviceCountry && <button type="button" className="text-sm underline" onClick={retryDeviceLocation}>Try device location again</button>
 
     <button type="button" className="text-sm underline" disabled={refreshingPrice} onClick={() => void refreshPrice()}>{refreshingPrice ? "Checking local price…" : "Refresh local price"}</button>
     {priceError && <p role="status">{priceError.message}</p>}
