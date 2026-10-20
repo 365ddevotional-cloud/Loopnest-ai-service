@@ -1,0 +1,55 @@
+name: Android release bundle
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-release.yml'
+      - 'android/**'
+      - 'client/**'
+      - 'shared/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'capacitor.config.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Install Android SDK 36
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+      - name: Build app assets
+        run: |
+          npm ci
+          npx vite build
+          npx cap sync android
+      - name: Build signed Android App Bundle
+        working-directory: android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew bundleRelease --no-daemon
+      - name: Upload Play bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: 365-daily-devotional-v5-location-pricing
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 7
