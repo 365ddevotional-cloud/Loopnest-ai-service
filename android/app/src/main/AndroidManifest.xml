@@ -50,6 +50,10 @@
     <!-- Core network permission -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Location is requested only on the music page to price downloads locally. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
     <!-- Keep CPU + audio alive while music plays in the background -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
