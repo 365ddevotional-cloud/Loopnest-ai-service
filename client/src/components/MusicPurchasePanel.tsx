@@ -8,46 +8,58 @@ import { Button } from "@/components/ui/button";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 
-export type MusicCatalog = { country: string; countryName: string; currency: string; mode: string; fiveSongOffer?: { cents: number; ready: boolean; message?: string }; singleSongOffer?: { cents: number; ready: boolean; message?: string }; countries: { code: string; name: string; currency: string }[]; products: { id: string; title: string; cents: number; slugs: string[]; ready: boolean; message?: string }[] };
-const MUSIC_COUNTRY_KEY = "365dd-music-country-v1";
-export function useMusicCatalog() {
-  const [selectedCountry, setSelectedCountryState] = useState(() => {
-    try { return localStorage.getItem(MUSIC_COUNTRY_KEY) ?? ""; } catch { return ""; }
+export type MusicCatalog = { country: string; countryName: string; currency: string; mode: string; fiveSongOffer?: { cents: number; ready: boolean; message?: string }; singleSongOffer?: { cents: number; ready: boolean; message?: string }; products: { id: string; title: string; cents: number; slugs: string[]; ready: boolean; message?: string }[] };
+let deviceCountryPromise: Promise<string | null> | null = null;
+function detectDeviceMusicCountry(): Promise<string | null> {
+  if (deviceCountryPromise) return deviceCountryPromise;
+  deviceCountryPromise = new Promise(resolve => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) { resolve(null); return; }
+    navigator.geolocation.getCurrentPosition(async position => {
+      try {
+        const params = new URLSearchParams({
+          latitude: String(position.coords.latitude),
+          longitude: String(position.coords.longitude),
+          localityLanguage: "en",
+        });
+        const response = await fetch("https://api.bigdatacloud.net/data/reverse-geocode-client?" + params.toString(), { cache: "no-store" });
+        if (!response.ok) { resolve(null); return; }
+        const result = await response.json();
+        const code = typeof result.countryCode === "string" ? result.countryCode.toUpperCase() : "";
+        resolve(/^[A-Z]{2}$/.test(code) ? code : null);
+      } catch { resolve(null); }
+    }, () => resolve(null), { enableHighAccuracy: false, timeout: 7000, maximumAge: 300000 });
   });
+  return deviceCountryPromise;
+}
+export function useMusicCatalog() {
+  const [deviceCountry, setDeviceCountry] = useState("");
+  const [locationResolved, setLocationResolved] = useState(false);
   useEffect(() => {
-    const sync = (event: Event) => setSelectedCountryState((event as CustomEvent<string>).detail ?? "");
-    window.addEventListener("music-country-change", sync);
-    return () => window.removeEventListener("music-country-change", sync);
+    // Clear a country saved by the old manual selector so pricing returns to automatic detection.
+    try { localStorage.removeItem("365dd-music-country-v1"); } catch {}
+    let active = true;
+    void detectDeviceMusicCountry().then(country => {
+      if (!active) return;
+      setDeviceCountry(country ?? "");
+      setLocationResolved(true);
+    });
+    return () => { active = false; };
   }, []);
-  const setSelectedCountry = (country: string) => {
-    try { if (country) localStorage.setItem(MUSIC_COUNTRY_KEY, country); else localStorage.removeItem(MUSIC_COUNTRY_KEY); } catch {}
-    setSelectedCountryState(country);
-    window.dispatchEvent(new CustomEvent("music-country-change", { detail: country }));
-  };
-  const query = useQuery<MusicCatalog>({ queryKey: ["/api/music-commerce/catalog", "local-price-v3", selectedCountry], staleTime: 0, retry: false,
+  const query = useQuery<MusicCatalog>({ queryKey: ["/api/music-commerce/catalog", "device-location-v1", deviceCountry], staleTime: 0, retry: false,
     refetchOnMount: "always", refetchOnWindowFocus: "always", refetchOnReconnect: "always", refetchInterval: 60000,
     queryFn: async () => {
-      const params = new URLSearchParams({ localPriceVersion: "3" });
-      if (selectedCountry) params.set("country", selectedCountry);
+      const params = new URLSearchParams({ localPriceVersion: "4" });
+      if (deviceCountry) params.set("country", deviceCountry);
       const response = await fetch("/api/music-commerce/catalog?" + params.toString(), {cache: "no-store"});
       const result = await response.json();
       if (!response.ok) throw new Error(result.message ?? "Purchase options could not be loaded.");
       return result;
     } });
-  return { ...query, data: query.isError ? undefined : query.data, selectedCountry, setSelectedCountry };
-}
-export function MusicCountryPicker({ catalog, selectedCountry, onChange }: { catalog?: MusicCatalog; selectedCountry: string; onChange: (country: string) => void }) {
-  return <label className="block space-y-1 text-sm">
-    <span className="text-muted-foreground">Country for music prices</span>
-    <select aria-label="Country for music prices" className="w-full rounded-md border bg-background p-2 text-foreground" value={selectedCountry} onChange={e => onChange(e.target.value)}>
-      <option value="">Automatic location</option>
-      {(catalog?.countries ?? []).map(country => <option key={country.code} value={country.code}>{country.name} · {country.currency}</option>)}
-    </select>
-    <span className="text-xs text-muted-foreground">Choose your country if your location was detected incorrectly.</span>
-  </label>;
+  // Wait for the phone's location decision before displaying a network-derived price.
+  return { ...query, data: query.isError || !locationResolved ? undefined : query.data, deviceCountry, locationResolved };
 }
 export default function MusicPurchasePanel({ productId, songTitle }: { productId: string; songTitle?: string }) {
-  const { data: catalog, isLoading, error, selectedCountry } = useMusicCatalog();
+  const { data: catalog, isLoading, error, deviceCountry } = useMusicCatalog();
   const { user, getIdToken, signUserOut, loading, emailVerified } = useUser();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -98,7 +110,7 @@ export default function MusicPurchasePanel({ productId, songTitle }: { productId
       }
       const response = await fetch("/api/music-commerce/checkout", { method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ productId, email: confirmedEmail.trim(), downloadPolicyAccepted: policyAccepted, expectedCountry: catalog?.country, selectedCountry: selectedCountry || undefined }) });
+        body: JSON.stringify({ productId, email: confirmedEmail.trim(), downloadPolicyAccepted: policyAccepted, expectedCountry: catalog?.country, selectedCountry: deviceCountry || undefined }) });
       if (response.status === 401) {
         await signUserOut();
         toast({ title: "Please sign in again", description: "Your selected songs have been saved." });
