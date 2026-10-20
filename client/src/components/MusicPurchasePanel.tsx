@@ -8,22 +8,46 @@ import { Button } from "@/components/ui/button";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 
-export type MusicCatalog = { country: string; countryName: string; currency: string; mode: string; fiveSongOffer?: { cents: number; ready: boolean; message?: string }; singleSongOffer?: { cents: number; ready: boolean; message?: string }; products: { id: string; title: string; cents: number; slugs: string[]; ready: boolean; message?: string }[] };
+export type MusicCatalog = { country: string; countryName: string; currency: string; mode: string; fiveSongOffer?: { cents: number; ready: boolean; message?: string }; singleSongOffer?: { cents: number; ready: boolean; message?: string }; countries: { code: string; name: string; currency: string }[]; products: { id: string; title: string; cents: number; slugs: string[]; ready: boolean; message?: string }[] };
+const MUSIC_COUNTRY_KEY = "365dd-music-country-v1";
 export function useMusicCatalog() {
-  const query = useQuery<MusicCatalog>({ queryKey: ["/api/music-commerce/catalog", "local-price-v2"], staleTime: 0, retry: false,
+  const [selectedCountry, setSelectedCountryState] = useState(() => {
+    try { return localStorage.getItem(MUSIC_COUNTRY_KEY) ?? ""; } catch { return ""; }
+  });
+  useEffect(() => {
+    const sync = (event: Event) => setSelectedCountryState((event as CustomEvent<string>).detail ?? "");
+    window.addEventListener("music-country-change", sync);
+    return () => window.removeEventListener("music-country-change", sync);
+  }, []);
+  const setSelectedCountry = (country: string) => {
+    try { if (country) localStorage.setItem(MUSIC_COUNTRY_KEY, country); else localStorage.removeItem(MUSIC_COUNTRY_KEY); } catch {}
+    setSelectedCountryState(country);
+    window.dispatchEvent(new CustomEvent("music-country-change", { detail: country }));
+  };
+  const query = useQuery<MusicCatalog>({ queryKey: ["/api/music-commerce/catalog", "local-price-v3", selectedCountry], staleTime: 0, retry: false,
     refetchOnMount: "always", refetchOnWindowFocus: "always", refetchOnReconnect: "always", refetchInterval: 60000,
     queryFn: async () => {
-      // A new URL also bypasses prices saved by an older installed worker.
-      const response = await fetch("/api/music-commerce/catalog?localPriceVersion=2", {cache: "no-store"});
+      const params = new URLSearchParams({ localPriceVersion: "3" });
+      if (selectedCountry) params.set("country", selectedCountry);
+      const response = await fetch("/api/music-commerce/catalog?" + params.toString(), {cache: "no-store"});
       const result = await response.json();
       if (!response.ok) throw new Error(result.message ?? "Purchase options could not be loaded.");
       return result;
     } });
-  // A failed refresh must never leave an old country's price on screen.
-  return { ...query, data: query.isError ? undefined : query.data };
+  return { ...query, data: query.isError ? undefined : query.data, selectedCountry, setSelectedCountry };
+}
+export function MusicCountryPicker({ catalog, selectedCountry, onChange }: { catalog?: MusicCatalog; selectedCountry: string; onChange: (country: string) => void }) {
+  return <label className="block space-y-1 text-sm">
+    <span className="text-muted-foreground">Country for music prices</span>
+    <select aria-label="Country for music prices" className="w-full rounded-md border bg-background p-2 text-foreground" value={selectedCountry} onChange={e => onChange(e.target.value)}>
+      <option value="">Automatic location</option>
+      {(catalog?.countries ?? []).map(country => <option key={country.code} value={country.code}>{country.name} · {country.currency}</option>)}
+    </select>
+    <span className="text-xs text-muted-foreground">Choose your country if your location was detected incorrectly.</span>
+  </label>;
 }
 export default function MusicPurchasePanel({ productId, songTitle }: { productId: string; songTitle?: string }) {
-  const { data: catalog, isLoading, error } = useMusicCatalog();
+  const { data: catalog, isLoading, error, selectedCountry } = useMusicCatalog();
   const { user, getIdToken, signUserOut, loading, emailVerified } = useUser();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
