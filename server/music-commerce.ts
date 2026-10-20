@@ -150,7 +150,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
         return { ...product, ...price, ready: price.ready && credentialsReady && storageReady && filesReady };
       }));
       const five = regionalMusicPrice(country, 5, prices), single = regionalMusicPrice(country, 1, prices);
-      res.json({ country, countryName: musicRegions[country].name, countries: Object.keys(prices).filter(code => !!musicRegions[code]).map(code => ({ code, name: musicRegions[code].name, currency: regionalMusicPrice(code, 1, prices).currency })), fiveSongOffer: { ...five, ready: five.ready && credentialsReady && storageReady }, singleSongOffer: { ...single, ready: single.ready && credentialsReady && storageReady }, currency: five.currency, mode: live ? "live" : key ? "test" : "unconfigured", products });
+      res.json({ country, countryName: musicRegions[country].name, fiveSongOffer: { ...five, ready: five.ready && credentialsReady && storageReady }, singleSongOffer: { ...single, ready: single.ready && credentialsReady && storageReady }, currency: five.currency, mode: live ? "live" : key ? "test" : "unconfigured", products });
     } catch (err) { respondError(res, err); }
   });
 

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { formatMusicPrice } from "../../../shared/music-regions";
-import MusicPurchasePanel, { MusicCountryPicker, useMusicCatalog } from "./MusicPurchasePanel";
+import MusicPurchasePanel, { useMusicCatalog } from "./MusicPurchasePanel";
 export default function FiveSongCollection() {
-  const { data: catalog, error: priceError, refetch: refreshPrice, isFetching: refreshingPrice, selectedCountry, setSelectedCountry } = useMusicCatalog();
+  const { data: catalog, error: priceError, refetch: refreshPrice, isFetching: refreshingPrice, locationResolved, deviceCountry } = useMusicCatalog();
   const [selected, setSelected] = useState<string[]>(() => {
     try {
       const saved: unknown = JSON.parse(sessionStorage.getItem("music-five-selection-v1") ?? "[]");
@@ -23,7 +23,9 @@ export default function FiveSongCollection() {
   return <section className="rounded-xl border p-4 space-y-3" data-testid="five-song-collection">
     <h2 className="font-serif text-2xl font-semibold">Choose any five songs — {catalog?.fiveSongOffer ? formatMusicPrice(catalog.fiveSongOffer.cents, catalog.currency) : priceError ? "Price unavailable" : "Loading price…"}</h2>
     {catalog && <p className="text-sm text-muted-foreground">Local price for {catalog.countryName} · {catalog.currency}</p>}
-    <MusicCountryPicker catalog={catalog} selectedCountry={selectedCountry} onChange={country => setSelectedCountry(country)} />
+    {!locationResolved && <p className="text-sm text-muted-foreground" role="status">Checking your device location for local pricing…</p>}
+    {locationResolved && !deviceCountry && <p className="text-xs text-muted-foreground">Location access is unavailable, so we’re using your network location.</p>}
+
     <button type="button" className="text-sm underline" disabled={refreshingPrice} onClick={() => void refreshPrice()}>{refreshingPrice ? "Checking local price…" : "Refresh local price"}</button>
     {priceError && <p role="status">{priceError.message}</p>}
     <p className="text-sm">Select five different tracks. Tracks from a bundle count individually; a three-track bundle counts as three songs.</p>
