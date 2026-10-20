@@ -34,17 +34,28 @@ function detectDeviceMusicCountry(): Promise<string | null> {
 export function useMusicCatalog() {
   const [deviceCountry, setDeviceCountry] = useState("");
   const [locationResolved, setLocationResolved] = useState(false);
+  const [locationAttempt, setLocationAttempt] = useState(0);
   useEffect(() => {
     // Clear a country saved by the old manual selector so pricing returns to automatic detection.
     try { localStorage.removeItem("365dd-music-country-v1"); } catch {}
     let active = true;
+    setLocationResolved(false);
     void detectDeviceMusicCountry().then(country => {
       if (!active) return;
       setDeviceCountry(country ?? "");
       setLocationResolved(true);
     });
     return () => { active = false; };
+  }, [locationAttempt]);
+  useEffect(() => {
+    const retry = () => {
+      deviceCountryPromise = null;
+      setLocationAttempt(attempt => attempt + 1);
+    };
+    window.addEventListener("music-device-location-retry", retry);
+    return () => window.removeEventListener("music-device-location-retry", retry);
   }, []);
+  const retryDeviceLocation = () => window.dispatchEvent(new Event("music-device-location-retry"));
   const query = useQuery<MusicCatalog>({ queryKey: ["/api/music-commerce/catalog", "device-location-v1", deviceCountry], staleTime: 0, retry: false,
     refetchOnMount: "always", refetchOnWindowFocus: "always", refetchOnReconnect: "always", refetchInterval: 60000,
     queryFn: async () => {
@@ -60,7 +71,7 @@ export function useMusicCatalog() {
       return result;
     } });
   // Wait for the phone's location decision before displaying a network-derived price.
-  return { ...query, data: query.isError || !locationResolved ? undefined : query.data, deviceCountry, locationResolved };
+  return { ...query, data: query.isError || !locationResolved ? undefined : query.data, deviceCountry, locationResolved, retryDeviceLocation };
 }
 export default function MusicPurchasePanel({ productId, songTitle }: { productId: string; songTitle?: string }) {
   const { data: catalog, isLoading, error, deviceCountry } = useMusicCatalog();
