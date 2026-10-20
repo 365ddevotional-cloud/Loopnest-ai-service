@@ -56,16 +56,11 @@ export function useMusicCatalog() {
     return () => window.removeEventListener("music-device-location-retry", retry);
   }, []);
   const retryDeviceLocation = () => window.dispatchEvent(new Event("music-device-location-retry"));
-  const query = useQuery<MusicCatalog>({ queryKey: ["/api/music-commerce/catalog", "device-location-v1", deviceCountry], staleTime: 0, retry: false,
+  const query = useQuery<MusicCatalog>({ queryKey: ["/api/music-commerce/catalog", "device-location-v2", deviceCountry], enabled: !!deviceCountry, staleTime: 0, retry: false,
     refetchOnMount: "always", refetchOnWindowFocus: "always", refetchOnReconnect: "always", refetchInterval: 60000,
     queryFn: async () => {
-      const params = new URLSearchParams({ localPriceVersion: "4" });
-      if (deviceCountry) params.set("country", deviceCountry);
-      let response = await fetch("/api/music-commerce/catalog?" + params.toString(), {cache: "no-store"});
-      if (!response.ok && deviceCountry) {
-        // If this country has no configured offer, fall back to the network lookup.
-        response = await fetch("/api/music-commerce/catalog?localPriceVersion=4", {cache: "no-store"});
-      }
+      const params = new URLSearchParams({ localPriceVersion: "4", country: deviceCountry });
+      const response = await fetch("/api/music-commerce/catalog?" + params.toString(), {cache: "no-store"});
       const result = await response.json();
       if (!response.ok) throw new Error(result.message ?? "Purchase options could not be loaded.");
       return result;
@@ -102,7 +97,7 @@ export default function MusicPurchasePanel({ productId, songTitle }: { productId
   const product = five
     ? (getMusicProduct(productId) ? { ...getMusicProduct(productId)!, ...catalog?.fiveSongOffer, ready: catalog?.fiveSongOffer?.ready === true } : undefined)
     : catalogProduct ?? (getMusicProduct(productId) ? { ...getMusicProduct(productId)!, ...catalog?.singleSongOffer, title: songTitle ?? productId, ready: catalog?.singleSongOffer?.ready === true } : undefined);
-  const priceLabel = catalog && product ? formatMusicPrice(product.cents, catalog.currency) : "Loading price…";
+  const priceLabel = catalog && product ? formatMusicPrice(product.cents, catalog.currency) : deviceCountry ? "Loading price…" : "Enable location to see local price";
   const [downloads, setDownloads] = useState<{ title: string; url: string }[]>([]);
   async function buy() {
     if (!user) { setLocation(`/sign-in?return=${encodeURIComponent(window.location.pathname)}`); return; }
