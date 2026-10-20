@@ -48,7 +48,7 @@ jobs:
       - name: Upload Play bundle
         uses: actions/upload-artifact@v4
         with:
-          name: 365-daily-devotional-v5-location-pricing
+          name: 365-daily-devotional-android-release
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 7
