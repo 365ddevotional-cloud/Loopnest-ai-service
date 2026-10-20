@@ -50,7 +50,11 @@ export function useMusicCatalog() {
     queryFn: async () => {
       const params = new URLSearchParams({ localPriceVersion: "4" });
       if (deviceCountry) params.set("country", deviceCountry);
-      const response = await fetch("/api/music-commerce/catalog?" + params.toString(), {cache: "no-store"});
+      let response = await fetch("/api/music-commerce/catalog?" + params.toString(), {cache: "no-store"});
+      if (!response.ok && deviceCountry) {
+        // If this country has no configured offer, fall back to the network lookup.
+        response = await fetch("/api/music-commerce/catalog?localPriceVersion=4", {cache: "no-store"});
+      }
       const result = await response.json();
       if (!response.ok) throw new Error(result.message ?? "Purchase options could not be loaded.");
       return result;
