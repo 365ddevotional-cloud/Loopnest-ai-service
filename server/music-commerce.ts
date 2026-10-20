@@ -158,7 +158,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
     try {
       const claims = await uidOf(req);
       // Reject client prices, quantities, currency and URLs; only a catalog ID is accepted.
-      if (!req.body || Object.keys(req.body).some(k => !["productId", "email", "downloadPolicyAccepted", "expectedCountry"].includes(k)) || typeof req.body.productId !== "string") {
+      if (!req.body || Object.keys(req.body).some(k => !["productId", "email", "downloadPolicyAccepted", "expectedCountry", "selectedCountry"].includes(k)) || typeof req.body.productId !== "string") {
         return res.status(400).json({ message: "Choose a music product." });
       }
       if (!claims.email || !claims.email_verified) return res.status(403).json({ message: "Please verify your account email before buying music." });
@@ -193,7 +193,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
         (o.productId === heavenBundleId && product.slugs.length === 1)))) {
         return res.json({ purchaseUrl: "/music/purchases" });
       }
-      const country = localCountry(req, req.body.expectedCountry);
+      const country = localCountry(req, req.body.selectedCountry);
       if (req.body.expectedCountry && req.body.expectedCountry !== country) return res.status(409).json({message: "Your location changed. Refresh to see your current local price before paying."});
       const price = regionalMusicPrice(country, product.slugs.length, prices);
       if (!price.ready) return res.status(409).json({ message: price.message });
