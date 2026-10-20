@@ -61,9 +61,9 @@ export function paymentMatchesOrder(session: any, order: MusicOrder): boolean {
 
 export function registerMusicCommerceRoutes(app: Express, services: MusicCommerceServices) {
   const now = services.now ?? Date.now;
-  const localCountry = (req: Request) => {
-    const country = (services.resolveCountry ?? musicCountryFromRequest)(req);
-    if (!country || !musicRegions[country]) throw Object.assign(new Error("We could not confirm your local music price. Please turn off any VPN and refresh, or contact support."), {status: 409});
+  const localCountry = (req: Request, selectedCountry?: unknown) => {
+    const country = typeof selectedCountry === "string" && selectedCountry ? selectedCountry : (services.resolveCountry ?? musicCountryFromRequest)(req);
+    if (!country || !musicRegions[country] || !readMusicPrices(services.env?.MUSIC_REGIONAL_PRICES_JSON ?? process.env.MUSIC_REGIONAL_PRICES_JSON)[country]) throw Object.assign(new Error("We could not confirm a configured local music price. Choose your country or contact support."), {status: 409});
     return country;
   };
   const env = services.env ?? process.env;
@@ -140,7 +140,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
     res.setHeader("Cache-Control", "private, no-store, max-age=0");
     res.setHeader("Vary", "X-Forwarded-For");
     try {
-      const country = localCountry(req);
+      const country = localCountry(req, typeof req.query.country === "string" ? req.query.country : undefined);
       const archive = await services.getArchive();
       const products = await Promise.all(musicProducts.map(async product => {
         const songs = await Promise.all(product.slugs.map(services.getSong));
@@ -150,7 +150,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
         return { ...product, ...price, ready: price.ready && credentialsReady && storageReady && filesReady };
       }));
       const five = regionalMusicPrice(country, 5, prices), single = regionalMusicPrice(country, 1, prices);
-      res.json({ country, countryName: musicRegions[country].name, fiveSongOffer: { ...five, ready: five.ready && credentialsReady && storageReady }, singleSongOffer: { ...single, ready: single.ready && credentialsReady && storageReady }, currency: five.currency, mode: live ? "live" : key ? "test" : "unconfigured", products });
+      res.json({ country, countryName: musicRegions[country].name, countries: Object.keys(prices).filter(code => !!musicRegions[code]).map(code => ({ code, name: musicRegions[code].name, currency: regionalMusicPrice(code, 1, prices).currency })), fiveSongOffer: { ...five, ready: five.ready && credentialsReady && storageReady }, singleSongOffer: { ...single, ready: single.ready && credentialsReady && storageReady }, currency: five.currency, mode: live ? "live" : key ? "test" : "unconfigured", products });
     } catch (err) { respondError(res, err); }
   });
 
@@ -158,7 +158,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
     try {
       const claims = await uidOf(req);
       // Reject client prices, quantities, currency and URLs; only a catalog ID is accepted.
-      if (!req.body || Object.keys(req.body).some(k => !["productId", "email", "downloadPolicyAccepted", "expectedCountry"].includes(k)) || typeof req.body.productId !== "string") {
+      if (!req.body || Object.keys(req.body).some(k => !["productId", "email", "downloadPolicyAccepted", "expectedCountry", "selectedCountry"].includes(k)) || typeof req.body.productId !== "string") {
         return res.status(400).json({ message: "Choose a music product." });
       }
       if (!claims.email || !claims.email_verified) return res.status(403).json({ message: "Please verify your account email before buying music." });
@@ -193,7 +193,7 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
         (o.productId === heavenBundleId && product.slugs.length === 1)))) {
         return res.json({ purchaseUrl: "/music/purchases" });
       }
-      const country = localCountry(req);
+      const country = localCountry(req, req.body.selectedCountry);
       if (req.body.expectedCountry && req.body.expectedCountry !== country) return res.status(409).json({message: "Your location changed. Refresh to see your current local price before paying."});
       const price = regionalMusicPrice(country, product.slugs.length, prices);
       if (!price.ready) return res.status(409).json({ message: price.message });

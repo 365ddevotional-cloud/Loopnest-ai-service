@@ -327,7 +327,7 @@ test('Regional checkout never reuses a USD session and rejects below-minimum sin
 
 test('country and timezone query/header spoofing cannot reveal other regional prices', async () => {
   const f = fixture({resolveCountry: () => 'NG'});
-  const response = await request(f.app).get('/api/music-commerce/catalog?country=US&timezone=America/Chicago').set('cf-ipcountry', 'US');
+  const response = await request(f.app).get('/api/music-commerce/catalog?timezone=America/Chicago').set('cf-ipcountry', 'US');
   assert.equal(response.status, 200);
   assert.equal(response.body.country, 'NG');
   assert.equal(response.body.fiveSongOffer.cents, 100000);
@@ -342,6 +342,11 @@ test('country and timezone query/header spoofing cannot reveal other regional pr
     assert.equal(result.status,400);
   }
   assert.equal(f.created.length,0);
+  const selected = await request(f.app).get('/api/music-commerce/catalog?country=US');
+  assert.equal(selected.status,200);
+  assert.equal(selected.body.country,'US');
+  assert.equal(selected.body.currency,'USD');
+  assert.equal(selected.body.fiveSongOffer.cents,299);
 });
 
 test('changed or unknown network location never creates a surprise USD charge', async () => {
