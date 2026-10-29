@@ -1,0 +1,42 @@
+import {useState,type FormEvent} from 'react';
+import {Link,useLocation,useParams} from 'wouter';
+import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
+import {useUser} from '@/contexts/UserContext';
+import {authConfigured} from '@/lib/firebase';
+import {Brand} from './Onboarding';
+import SignIn from './SignIn';
+import {platformStatus,useWorkspaceApi,type Organization} from './workspace-api';
+type Invitation={id:string;email:string;expires_at:string;accepted_at:string|null;revoked_at:string|null};
+export default function Workspaces(){
+ const {user,emailVerified,loading,signUserOut}=useUser();
+ const api=useWorkspaceApi();
+ const status=useQuery({queryKey:['platform-status'],queryFn:platformStatus});
+ const enabled=!!user&&emailVerified&&!!status.data?.workspacesEnabled;
+ const organizations=useQuery({queryKey:['workspaces',user?.uid],queryFn:()=>api<Organization[]>('/api/workspaces'),enabled});
+ if(loading||status.isLoading)return <main className="mh-auth" role="status">Opening your workspaces…</main>;
+ if(status.error)return <main className="mh-auth"><p role="alert">{status.error.message}</p><button onClick={()=>status.refetch()}>Try again</button></main>;
+ if(!status.data?.workspacesEnabled||!authConfigured)return <><Brand/><main className="mn-workspaces"><p className="mh-eyebrow">MINISTRIUM · DEVELOPMENT PREVIEW</p><h1>A place for your calling.</h1><p>The private workspace foundation is built. Live registration opens after the separate identity and database services are configured.</p><div className="mh-actions"><Link href="/start" className="mh-button">Try ministry setup →</Link><Link href="/preview">Explore the sample workspace →</Link></div><p className="mn-setup-fine">No real accounts or organizations are created in this preview.</p></main></>;
+ if(!user||!emailVerified)return <SignIn/>;
+ return <><Brand/><main className="mn-workspaces"><div className="mn-workspaces-top"><div><p className="mh-eyebrow">YOUR CHURCHES, MINISTRIES & GROUPS</p><h1>Your workspaces.</h1></div><button onClick={()=>signUserOut()}>Sign out</button></div><p>Each organization has its own people and access.</p>{organizations.isLoading?<p role="status">Loading your ministries…</p>:organizations.error?<p role="alert">{organizations.error.message}</p>:<div className="mn-org-grid">{organizations.data?.map(org=><Link key={org.id} href={`/workspace/${org.id}`} className="mn-org-card"><span className="mh-pill">{org.role}</span><h2>{org.name}</h2><p>{org.city?`${org.city}, `:''}{org.country}</p><span>Open workspace →</span></Link>)}</div>}{organizations.data?.length===0&&<div className="mh-notice">Your account is ready. Create your first church or ministry, or open an invitation from its leader.</div>}<Link href="/start" className="mh-button">Create a church, ministry or group →</Link></main></>;
+}
+export function WorkspaceDetail(){const {id}=useParams<{id:string}>();const {user}=useUser();return <WorkspaceDetailView key={`${id}:${user?.uid}`} id={id}/>;}
+function WorkspaceDetailView({id}:{id:string}){
+ const {user,emailVerified}=useUser();const api=useWorkspaceApi(),qc=useQueryClient();
+ const [email,setEmail]=useState(''),[inviteLink,setInviteLink]=useState(''),[copied,setCopied]=useState(false);
+ const org=useQuery({queryKey:['workspace',id,user?.uid],queryFn:()=>api<Organization>(`/api/workspaces/${id}`),enabled:!!user&&emailVerified});
+ const manage=org.data?.role==='owner'||org.data?.role==='admin';
+ const members=useQuery({queryKey:['workspace-members',id,user?.uid],queryFn:()=>api<{email:string;role:string}[]>(`/api/workspaces/${id}/members`),enabled:manage});
+ const invitations=useQuery({queryKey:['workspace-invitations',id,user?.uid],queryFn:()=>api<Invitation[]>(`/api/workspaces/${id}/invitations`),enabled:manage});
+ const invite=useMutation({mutationFn:()=>api<{token:string}>(`/api/workspaces/${id}/invitations`,'POST',{email}),onSuccess:async result=>{setInviteLink(`${window.location.origin}/join#${result.token}`);setCopied(false);setEmail('');await qc.invalidateQueries({queryKey:['workspace-invitations',id]});}});
+ const revoke=useMutation({mutationFn:(invitationId:string)=>api(`/api/workspaces/${id}/invitations/${invitationId}`,'DELETE'),onSuccess:async()=>{setInviteLink('');await qc.invalidateQueries({queryKey:['workspace-invitations',id]});}});
+ if(!user||!emailVerified)return <SignIn onSuccess={()=>{}}/>;
+ return <><Brand/><main className="mn-workspaces"><Link href="/workspace">← Your workspaces</Link>{org.isLoading?<p role="status">Opening workspace…</p>:org.error?<p role="alert">{org.error.message}</p>:org.data&&<><p className="mh-eyebrow">{org.data.kind==='both'?'CHURCH & MINISTRY':org.data.kind==='group'?`${org.data.groupType?.toUpperCase()} GROUP`:org.data.kind.toUpperCase()} · {org.data.role.toUpperCase()}</p><h1>{org.data.name}</h1><p>{org.data.city?`${org.data.city}, `:''}{org.data.country} · {org.data.slug}</p><div className="mh-notice">Your private workspace is established. Teaching, events, commerce, and giving will be connected in upcoming stages. Live payments remain disabled.</div>{manage&&<><section className="mh-panel"><h2>Invite your people.</h2><p>Only the invited, verified email can join. Invitations last seven days and add a member, never an administrator.</p><form className="mn-invite-form" onSubmit={(e:FormEvent)=>{e.preventDefault();invite.mutate();}}><label className="mn-field">Member’s email<input type="email" required maxLength={254} value={email} onChange={e=>setEmail(e.target.value)}/></label><button className="mh-button" disabled={invite.isPending}>{invite.isPending?'Creating…':'Create invitation'}</button></form>{invite.error&&<p role="alert">{invite.error.message}</p>}{inviteLink&&<div className="mh-notice"><label className="mn-field">Private invitation link<input readOnly value={inviteLink}/></label><p>Share privately with the invited person. Ministrium has not sent an email. The link is shown once.</p><button onClick={async()=>{try{await navigator.clipboard.writeText(inviteLink);setCopied(true);}catch{setCopied(false);}}}>{copied?'Copied':'Copy invitation link'}</button></div>}</section><section className="mh-panel"><h2>Members</h2>{members.isLoading?<p role="status">Loading members…</p>:members.error?<p role="alert">{members.error.message}</p>:members.data?.map(person=><p key={person.email}>{person.email} <span className="mh-pill">{person.role}</span></p>)}</section><section className="mh-panel"><h2>Invitations</h2>{invitations.error&&<p role="alert">{invitations.error.message}</p>}{revoke.error&&<p role="alert">{revoke.error.message}</p>}{invitations.data?.length===0&&<p>No invitations yet.</p>}{invitations.data?.map(item=><div className="mn-invitation" key={item.id}><div><strong>{item.email}</strong><p>{item.accepted_at?'Accepted':item.revoked_at?'Revoked':new Date(item.expires_at)<new Date()?'Expired':`Expires ${new Date(item.expires_at).toLocaleDateString()}`}</p></div>{!item.accepted_at&&!item.revoked_at&&new Date(item.expires_at)>new Date()&&<button disabled={revoke.isPending} onClick={()=>revoke.mutate(item.id)}>Revoke</button>}</div>)}</section></>}</>}</main></>;
+}
+export function JoinWorkspace(){
+ const {user,emailVerified}=useUser();const api=useWorkspaceApi(),qc=useQueryClient();const [,go]=useLocation();
+ const [token]=useState(()=>window.location.hash.slice(1));
+ const join=useMutation({mutationFn:()=>api<{organizationId:string}>('/api/workspaces/join','POST',{token}),onSuccess:async result=>{window.history.replaceState(null,'','/join');await qc.invalidateQueries({queryKey:['workspaces']});go(`/workspace/${result.organizationId}`);}});
+ if(!/^[a-f0-9]{64}$/.test(token))return <><Brand/><main className="mh-auth"><h1>Invitation link incomplete.</h1><p>Ask your ministry leader for a complete, private invitation link.</p><Link href="/workspace">Your workspaces →</Link></main></>;
+ if(!user||!emailVerified)return <SignIn onSuccess={()=>{}}/>;
+ return <><Brand/><main className="mh-auth"><h1>A place to belong.</h1><p>Join using your verified account: {user.email}. It must match the invited email.</p><button className="mh-button" disabled={join.isPending} onClick={()=>join.mutate()}>{join.isPending?'Joining…':'Accept invitation'}</button>{join.error&&<p role="alert">{join.error.message}</p>}<p>This adds you as a member. You can review the workspace after joining.</p></main></>;
+}
