@@ -31,3 +31,7 @@ TypeScript and production build pass. Embedded PostgreSQL tests now exercise bot
 The owner has prohibited further expenses. No Railway activation, Firebase upgrade, domain purchase, paid messaging or meeting service was performed. Live multi-user persistence still requires hosting; this milestone is code and local preview only.
 
 All 24 tests pass. Browser checks verified posting a sample conversation, posting a prayer request, marking a request answered, and scheduling a gathering. The verified prayer view is saved as `group-preview.jpg`. Sample edits are temporary and were not sent to real members.
+
+## Stage 2 activation
+
+The owner approved immediate hosting usage and applied the Railway patch. App and PostgreSQL deployments succeeded, both migrations applied, and live registration/email verification/fresh sign-in, membership privacy, email-bound invitation acceptance/replay rejection/revocation, community writes and persistence checks passed. See `stage2-live-verification.md` for exact coverage and browser limits.

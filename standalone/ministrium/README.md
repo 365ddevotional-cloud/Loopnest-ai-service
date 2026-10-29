@@ -91,12 +91,12 @@ This development branch does not modify or deploy the live 365 Daily Devotional 
 
 ## Stage 2 deployment preparation
 
-See `docs/staging-setup.md` for the deployment settings and live account verification sequence. `npm run check:staging` validates configured variable names, project matching and dedicated database separation without displaying credentials. The Dockerfile includes public Firebase build arguments and a minimal unprivileged production runtime. The hosted identity/database are not yet provisioned; this milestone does not enable real registration or incur new hosting charges.
+See `docs/staging-setup.md` for the deployment settings and live account verification sequence. `npm run check:staging` validates configured variable names, project matching and dedicated database separation without displaying credentials. The Dockerfile includes public Firebase build arguments and a minimal unprivileged production runtime. The dedicated identity/database are now provisioned and registration is live. Activation was explicitly approved by the owner; usage billing applies.
 
-The dedicated Firebase project and web app have now been registered by the owner. Public configuration is integrated and the owner supplied screenshots confirming Email/Password is enabled. Authorizing the deployed hostname and connecting a dedicated database are still required before live account testing; hosting activation is on hold.
+The dedicated Firebase project and web app have now been registered by the owner. Public configuration is integrated and the owner supplied screenshots confirming Email/Password is enabled. The dedicated database is connected and live account tests passed. See the verification record for coverage. Google OAuth and its domain setup remain outside the current email/password account scope.
 
-## Current expense constraint
+## Expense authorization and live status
 
-The owner requested no further expenses on 2026-10-29. Development and embedded PostgreSQL tests continue locally. Do not activate the staged Railway app, database or volume, upgrade Firebase, purchase a domain, or enable paid messaging/calling. Existing account bills are outside this change; no zero-cost production hosting claim is made.
+The earlier no-activation hold was superseded by explicit owner approval for the Ministrium app, dedicated PostgreSQL and volume to consume Railway credits or incur immediate usage charges. These resources are now live. Firebase upgrades, domain purchases, paid messaging and paid calling remain outside the authorized scope. See `docs/stage2-live-verification.md` for verified account tests and resource limits. No zero-cost hosting or fixed monthly bill is promised.
 
-Community requests fetch recent 50 entries on load and manual refresh, without polling. Meeting links reuse services a leader already has. There is no automatic email, SMS, or paid call creation. The new functions are implemented in source and locally verified, not live.
+Community requests fetch recent 50 entries on load and manual refresh, without polling. Meeting links reuse services a leader already has. There is no automatic email, SMS, or paid call creation. The new functions are deployed and tested through the live HTTP API. Browser walkthrough coverage is recorded separately in the verification document.

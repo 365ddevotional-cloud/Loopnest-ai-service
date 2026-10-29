@@ -1,3 +1,5 @@
+> Update: the owner activated the prepared resources on 2026-10-29. See [live verification](stage2-live-verification.md). The instructions below preserve the original setup sequence.
+
 # Stage 2 — deployment and account activation
 
 ## Verified preparation

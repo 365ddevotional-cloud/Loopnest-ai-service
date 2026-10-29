@@ -1,3 +1,5 @@
+> Historical preparation record: the owner approved immediate runtime costs and applied this patch in the dashboard on 2026-10-29. The hold below is superseded for these three resources. See [live verification](stage2-live-verification.md).
+
 # Railway pending activation — 2026-10-29
 
 The owner supplied screenshots confirming Email/Password is enabled for the dedicated Ministrium Firebase project. Google sign-in and Identity Platform upgrades are not required for the current setup. Live account flows remain untested until deployment.
