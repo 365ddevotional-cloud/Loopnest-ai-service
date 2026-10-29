@@ -11,3 +11,11 @@ The app is renamed from MinistryHarbor to Ministrium, including its directory, p
 - Responsive breakpoints are implemented. Device-specific layouts, live Firebase email flows and deployment against a hosted PostgreSQL provider are not yet verified.
 
 All preview metrics and people are synthetic. Setup demonstrations and sample edits are in-memory only. No production deployment, data migration, financial transaction, outgoing invitation or live devotional modification was performed.
+
+## Stage 2 preparation
+
+- 19 tests pass, adding real RSA-signature verification tests and deployment configuration checks.
+- Staging readiness currently reports missing dedicated identity/database settings; no live account setup is claimed complete.
+- GitHub's previous 13-test build completed successfully. Updated CI will run on the next development commit.
+- The Dockerfile is prepared but has not been built here because Docker is unavailable.
+- Registration is gated on both complete frontend identity settings and a ready backend.

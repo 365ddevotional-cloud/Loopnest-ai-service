@@ -59,6 +59,7 @@ export function registerChurchRoutes(app:Express){\n`;
   extractedRoutes=extractedRoutes.replace(/const \{ getAuth \} = await import\("firebase-admin\/auth"\);\s*const decoded = await getAuth\(\).verifyIdToken/g,'const decoded = await auth.verifyIdToken').replace('churchId, "submitted", null, uid','churchId, "submitted", undefined, uid');
   await fs.writeFile(path.join(generated,'server/church-routes.ts'),extractedRoutes);
   await fs.copyFile(path.join(appRoot,'server/firebase-admin.ts'),path.join(generated,'server/firebase-admin.ts'));
+  await fs.copyFile(path.join(appRoot,'server/firebase-verifier.mjs'),path.join(generated,'server/firebase-verifier.mjs'));
   await fs.writeFile(path.join(generated,'server/sendgrid.ts'), `// Outbound delivery stays disabled until a dedicated sender is configured.\nconst disabled=async(..._args:unknown[])=>({success:false,status:'Ministrium email delivery is not configured'});\nexport const sendChurchWelcomeEmail=disabled,sendChurchNameChangeSecurityEmail=disabled,sendChurchComplianceEmail=disabled;\nexport async function getUncachableSendGridClient():Promise<{client:any;fromEmail:string}>{throw new Error("Dedicated Ministrium email is not configured.");}\n`);
   await fs.writeFile(path.join(generated, 'routes.json'), JSON.stringify(included,null,2));
 

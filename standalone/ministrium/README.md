@@ -82,3 +82,7 @@ Invitation links carry the token in a URL fragment, not the request path or quer
 5. Validate refunds, disputes, receipts, fee reconciliation and country eligibility before opening real money collection.
 
 This development branch does not modify or deploy the live 365 Daily Devotional service.
+
+## Stage 2 deployment preparation
+
+See `docs/staging-setup.md` for the deployment settings and live account verification sequence. `npm run check:staging` validates configured variable names, project matching and dedicated database separation without displaying credentials. The Dockerfile includes public Firebase build arguments and a minimal unprivileged production runtime. The hosted identity/database are not yet provisioned; this milestone does not enable real registration or incur new hosting charges.

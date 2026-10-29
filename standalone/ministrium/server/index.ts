@@ -1,10 +1,15 @@
 import express from 'express';
 import path from 'node:path';
 import fs from 'node:fs/promises';
+import {assertWorkspaceIdentity} from './deployment-config.mjs';
 import {migrationChecksum} from './migrations.mjs';
 import {isChurchApi,isWorkspaceApi,isBlockedFinance,runtimeMode} from './policy.mjs';
 async function main(){
 const mode=runtimeMode(process.env);
+if(mode==='workspace'){
+ const identity=JSON.parse(await fs.readFile(path.resolve(process.cwd(),'dist/identity.json'),'utf8'));
+ assertWorkspaceIdentity(process.env,identity);
+}
 const app=express();
 app.disable('x-powered-by');
 app.use(express.json({limit:'256kb'}));
