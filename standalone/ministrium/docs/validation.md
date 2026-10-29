@@ -19,3 +19,7 @@ All preview metrics and people are synthetic. Setup demonstrations and sample ed
 - GitHub's previous 13-test build completed successfully. Updated CI will run on the next development commit.
 - The Dockerfile is prepared but has not been built here because Docker is unavailable.
 - Registration is gated on both complete frontend identity settings and a ready backend.
+
+## Registered Firebase web configuration
+
+The owner supplied the public web configuration for project `ministrium-425f9`. The frontend now resolves that configuration by default; alternate projects require a complete four-variable override. Backend readiness still controls account access. Hosted authentication provider settings and dedicated database connection are not verified yet.

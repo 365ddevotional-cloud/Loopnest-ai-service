@@ -46,7 +46,7 @@ The server defaults to port 8080. With no dedicated database, the landing page, 
 No cloud service is created automatically and no production data is migrated. Set up a dedicated PostgreSQL database and Firebase project first. Do not reuse devotional services or copy their secrets.
 
 1. Supply server variables from `.env.example`: `MINISTRIUM_DATABASE_URL`, `MINISTRIUM_DATABASE_CONFIRMED=standalone`, and `MINISTRIUM_FIREBASE_PROJECT_ID`.
-2. Supply the matching `VITE_MINISTRIUM_FIREBASE_*` values at build time. Enable Firebase email/password authentication and authorize the deployed hostname. These scripts do not automatically load a `.env` file into the server or migration process; export variables or use the host's environment configuration.
+2. The owner-supplied public web configuration for `ministrium-425f9` is built in through `config/firebase-web.mjs`. To use another project, supply all four matching `VITE_MINISTRIUM_FIREBASE_*` values at build time. Enable Firebase email/password authentication and authorize the deployed hostname. These scripts do not automatically load a `.env` file into the server or migration process; export variables or use the host's environment configuration.
 3. Run `npm run migrate` explicitly against that dedicated database. It creates only Ministrium's schema and version record in a transaction. Re-running is safe; changing an applied migration is rejected.
 4. Build and start. The server verifies the installed migration checksum before enabling workspace APIs.
 5. Test signup → email verification → create organization → invite → accept using the invited account. Automatic invitation email is not implemented: a leader privately shares the one-time-displayed link.
@@ -86,3 +86,5 @@ This development branch does not modify or deploy the live 365 Daily Devotional 
 ## Stage 2 deployment preparation
 
 See `docs/staging-setup.md` for the deployment settings and live account verification sequence. `npm run check:staging` validates configured variable names, project matching and dedicated database separation without displaying credentials. The Dockerfile includes public Firebase build arguments and a minimal unprivileged production runtime. The hosted identity/database are not yet provisioned; this milestone does not enable real registration or incur new hosting charges.
+
+The dedicated Firebase project and web app have now been registered by the owner. Public configuration is integrated; enabling Email/Password, authorizing the deployed hostname and connecting a dedicated database are still required before live account testing.

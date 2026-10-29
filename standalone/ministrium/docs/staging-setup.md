@@ -26,13 +26,13 @@ Use a NEW Ministrium application service and a NEW dedicated PostgreSQL database
 | Replicas | One for the pilot; shared rate limiting required before multiple replicas |
 | Account and payment state | Open accounts only after matching identity + schema; payments remain disabled |
 
-Supply the four `VITE_MINISTRIUM_FIREBASE_*` build variables and server-side variables listed in `.env.example`. Railway's Docker builds require build variables to be declared with `ARG`; the Dockerfile does this only for public Firebase client settings, never the database URL or private credentials.
+The registered Ministrium public frontend configuration is built in. Set `MINISTRIUM_FIREBASE_PROJECT_ID=ministrium-425f9` and dedicated database variables at runtime. The four `VITE_MINISTRIUM_FIREBASE_*` variables in `.env.example` may override the public frontend configuration, but all four must be supplied together. Railway's Docker builds require build variables to be declared with `ARG`; the Dockerfile does this only for public Firebase client settings, never the database URL or private credentials.
 
 Run `npm run check:staging` in a securely configured environment before deployment. This checks completeness, not connectivity. No secrets belong in GitHub, images, screenshots, logs or this document.
 
 ## Live activation sequence
 
-1. Obtain authorized Firebase access and create/choose a dedicated Ministrium development project. Do not reuse the devotional identity project.
+1. The owner created the dedicated Firebase project `ministrium-425f9` and registered its web app. Its public SDK configuration is integrated in `config/firebase-web.mjs`; no service-account credential is required for token verification.
 2. Configure email/password sign-in, authorized application hostname, verification email identity and support settings. Do not enable paid phone/SMS authentication.
 3. Review the proposed Railway resources and expected usage cost with the user before activating new billable resources. No new resources have been created or activated by this milestone.
 4. Configure the dedicated PostgreSQL connection, run the explicit migration, build with matching Firebase settings, and deploy the new app service.
