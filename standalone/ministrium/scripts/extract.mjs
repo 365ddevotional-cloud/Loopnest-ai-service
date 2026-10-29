@@ -99,7 +99,7 @@ export function registerChurchRoutes(app:Express){\n`;
     await fs.copyFile(path.join(appRoot,'client',name),path.join(generated,'client/contexts',name));
   }
   await fs.mkdir(path.join(generated,'client/lib'),{recursive:true});
-  await fs.copyFile(path.join(appRoot,'client/firebase.ts'),path.join(generated,'client/lib/firebase.ts'));
+  await fs.writeFile(path.join(generated,'client/lib/firebase.ts'),"export {auth,authConfigured} from '../../../client/firebase';\n");
   return {routes:included.length,pages:pages.length,clientFiles:copied.size};
 }
 if(process.argv[1]===fileURLToPath(import.meta.url))console.log(await extract());
