@@ -29,9 +29,11 @@ if(mode==='workspace'){
  const db=createDatabase(process.env.MINISTRIUM_DATABASE_URL);
  // Never auto-migrate or initialize the devotional database.
  try{
-  const migration=await db.query('SELECT checksum FROM ministrium.migrations WHERE version=1');
-  const sql=await fs.readFile(path.resolve(process.cwd(),'migrations/001_workspaces.sql'),'utf8');
-  if(migration.rows[0]?.checksum!==migrationChecksum(sql))throw new Error('Run or verify the explicit Ministrium migration before starting workspace mode.');
+  for(const [index,file] of ['001_workspaces.sql','002_community.sql'].entries()){
+   const migration=await db.query('SELECT checksum FROM ministrium.migrations WHERE version=$1',[index+1]);
+   const sql=await fs.readFile(path.resolve(process.cwd(),'migrations',file),'utf8');
+   if(migration.rows[0]?.checksum!==migrationChecksum(sql))throw new Error('Run or verify the explicit Ministrium migrations before starting workspace mode.');
+  }
  }catch(error){await db.close();throw error;}
  const {registerWorkspaceRoutes}=await import('./workspace-routes.mjs');
  const {auth}=await import('./firebase-admin');

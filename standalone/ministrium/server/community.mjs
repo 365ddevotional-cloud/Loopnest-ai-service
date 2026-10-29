@@ -1,0 +1,26 @@
+import {randomUUID} from 'node:crypto';
+import {z} from 'zod';
+import {WorkspaceError} from './workspaces.mjs';
+const id=z.string().uuid(), text=(min,max)=>z.string().trim().min(min).max(max);
+const message=z.object({authorName:text(1,60),body:text(1,2000)}).strict();
+const prayer=z.object({authorName:text(1,60),title:text(2,120),body:text(1,2000)}).strict();
+const gathering=z.object({title:text(2,120),startsAt:z.string().datetime({offset:true}),timezone:text(1,100).refine(value=>{try{new Intl.DateTimeFormat('en',{timeZone:value});return true;}catch{return false;}}),meetingUrl:z.string().trim().max(2000).url().refine(value=>{try{const url=new URL(value);return url.protocol==='https:'&&!url.username&&!url.password;}catch{return false;}}).nullable().default(null)}).strict();
+function parse(schema,value){const result=schema.safeParse(value);if(!result.success)throw new WorkspaceError(400,'Check the submitted fields and try again.');return result.data;}
+async function access(tx,organizationId,user,manage=false){
+ if(!user?.uid)throw new WorkspaceError(401,'Sign in to continue.');
+ const {rows}=await tx.query('SELECT role FROM ministrium.memberships WHERE organization_id=$1 AND uid=$2 FOR SHARE',[organizationId,user.uid]);
+ if(!rows.length||(manage&&!['owner','admin'].includes(rows[0].role)))throw new WorkspaceError(404,'Community unavailable to your account.');
+ return rows[0].role;
+}
+export function createCommunityService(db){
+ const scoped=(user,organizationId,work,manage=false)=>{const orgId=parse(id,organizationId);return db.transaction(async tx=>work(tx,orgId,await access(tx,orgId,user,manage)));};
+ return {
+  messages:(user,orgId)=>scoped(user,orgId,async(tx,org)=>(await tx.query('SELECT id,author_uid AS "authorUid",author_name AS "authorName",body,created_at AS "createdAt" FROM ministrium.messages WHERE organization_id=$1 ORDER BY created_at DESC,id LIMIT 50',[org])).rows.reverse()),
+  postMessage:(user,orgId,input)=>{const data=parse(message,input);return scoped(user,orgId,async(tx,org)=>(await tx.query('INSERT INTO ministrium.messages(id,organization_id,author_uid,author_name,body) VALUES ($1,$2,$3,$4,$5) RETURNING id,author_uid AS "authorUid",author_name AS "authorName",body,created_at AS "createdAt"',[randomUUID(),org,user.uid,data.authorName,data.body])).rows[0]);},
+  prayers:(user,orgId)=>scoped(user,orgId,async(tx,org)=>(await tx.query('SELECT id,author_uid AS "authorUid",author_name AS "authorName",title,body,answered,created_at AS "createdAt" FROM ministrium.prayer_requests WHERE organization_id=$1 ORDER BY created_at DESC,id LIMIT 50',[org])).rows),
+  postPrayer:(user,orgId,input)=>{const data=parse(prayer,input);return scoped(user,orgId,async(tx,org)=>(await tx.query('INSERT INTO ministrium.prayer_requests(id,organization_id,author_uid,author_name,title,body) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id,author_uid AS "authorUid",author_name AS "authorName",title,body,answered,created_at AS "createdAt"',[randomUUID(),org,user.uid,data.authorName,data.title,data.body])).rows[0]);},
+  answerPrayer:(user,orgId,prayerId,input)=>{const requestId=parse(id,prayerId),data=parse(z.object({answered:z.boolean()}).strict(),input);return scoped(user,orgId,async(tx,org,role)=>{const {rows}=await tx.query('UPDATE ministrium.prayer_requests SET answered=$1 WHERE id=$2 AND organization_id=$3 AND (author_uid=$4 OR $5) RETURNING id,answered',[data.answered,requestId,org,user.uid,['owner','admin'].includes(role)]);if(!rows.length)throw new WorkspaceError(404,'Prayer request unavailable.');return rows[0];});},
+  gatherings:(user,orgId)=>scoped(user,orgId,async(tx,org)=>(await tx.query("SELECT id,title,starts_at AS \"startsAt\",timezone,meeting_url AS \"meetingUrl\" FROM ministrium.gatherings WHERE organization_id=$1 AND starts_at>now()-interval '1 day' ORDER BY starts_at,id LIMIT 50",[org])).rows),
+  schedule:(user,orgId,input)=>{const data=parse(gathering,input);return scoped(user,orgId,async(tx,org)=>(await tx.query('INSERT INTO ministrium.gatherings(id,organization_id,created_by,title,starts_at,timezone,meeting_url) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id,title,starts_at AS "startsAt",timezone,meeting_url AS "meetingUrl"',[randomUUID(),org,user.uid,data.title,data.startsAt,data.timezone,data.meetingUrl])).rows[0],true);},
+ };
+}

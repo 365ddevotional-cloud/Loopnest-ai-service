@@ -1,7 +1,9 @@
+import {createCommunityService} from './community.mjs';
 import {WorkspaceError, createWorkspaceService} from './workspaces.mjs';
 
 export function registerWorkspaceRoutes(app, db, verifyToken) {
   const service=createWorkspaceService(db);
+  const community=createCommunityService(db);
   // Bounded, process-local pilot limiter. Use a shared limiter before multiple replicas.
   const windows=new Map();
   const wrap=handler=>async(req,res,next)=>{
@@ -23,6 +25,13 @@ export function registerWorkspaceRoutes(app, db, verifyToken) {
       next(error);
     }
   };
+  app.get('/api/workspaces/:id/messages',wrap(async(req,res,user)=>res.json(await community.messages(user,req.params.id))));
+  app.post('/api/workspaces/:id/messages',wrap(async(req,res,user)=>res.status(201).json(await community.postMessage(user,req.params.id,req.body))));
+  app.get('/api/workspaces/:id/prayers',wrap(async(req,res,user)=>res.json(await community.prayers(user,req.params.id))));
+  app.post('/api/workspaces/:id/prayers',wrap(async(req,res,user)=>res.status(201).json(await community.postPrayer(user,req.params.id,req.body))));
+  app.patch('/api/workspaces/:id/prayers/:prayerId',wrap(async(req,res,user)=>res.json(await community.answerPrayer(user,req.params.id,req.params.prayerId,req.body))));
+  app.get('/api/workspaces/:id/gatherings',wrap(async(req,res,user)=>res.json(await community.gatherings(user,req.params.id))));
+  app.post('/api/workspaces/:id/gatherings',wrap(async(req,res,user)=>res.status(201).json(await community.schedule(user,req.params.id,req.body))));
   app.get('/api/workspaces',wrap(async(_req,res,user)=>res.json(await service.list(user))));
   app.post('/api/workspaces',wrap(async(req,res,user)=>res.status(201).json(await service.create(user,req.body))));
   app.post('/api/workspaces/join',wrap(async(req,res,user)=>{

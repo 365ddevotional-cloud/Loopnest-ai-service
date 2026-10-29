@@ -14,6 +14,7 @@ const input=(slug)=>({name:'Grace Community',slug,kind:'both',country:'US',city:
 before(async()=>{
  pg=new PGlite();
  await pg.exec(await readFile(new URL('../migrations/001_workspaces.sql',import.meta.url),'utf8'));
+ await pg.exec(await readFile(new URL('../migrations/002_community.sql',import.meta.url),'utf8'));
  service=createWorkspaceService(pg);
  const app=express();app.use(express.json());
  registerWorkspaceRoutes(app,pg,async token=>{
@@ -108,4 +109,17 @@ test('family, prayer and discipleship groups stand alone and remain private',asy
  }
  await assert.rejects(service.create(leader,{...input('missing-purpose'),kind:'group'}),{status:400});
  await assert.rejects(service.create(leader,{...input('incorrect-purpose'),groupType:'family'}),{status:400});
+});
+
+
+test('community HTTP routes require verified membership and bind authors to tokens',async()=>{
+ const org=(await service.list(owner))[0];
+ const path=`${base}/api/workspaces/${org.id}/messages`;
+ assert.equal((await fetch(path)).status,401);
+ assert.equal((await fetch(path,{headers:{Authorization:'Bearer outsider'}})).status,404);
+ const response=await fetch(path,{method:'POST',headers:{Authorization:'Bearer owner','Content-Type':'application/json'},body:JSON.stringify({authorName:'Leader',body:'Welcome to the circle.'})});
+ assert.equal(response.status,201);assert.equal((await response.json()).authorUid,owner.uid);
+ const list=await fetch(path,{headers:{Authorization:'Bearer owner'}});
+ assert.equal(list.headers.get('cache-control'),'no-store');
+ assert.equal((await list.json())[0].body,'Welcome to the circle.');
 });

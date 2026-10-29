@@ -23,3 +23,11 @@ All preview metrics and people are synthetic. Setup demonstrations and sample ed
 ## Registered Firebase web configuration
 
 The owner supplied the public web configuration for project `ministrium-425f9`. The frontend now resolves that configuration by default; alternate projects require a complete four-variable override. Backend readiness still controls account access. Hosted authentication provider settings and dedicated database connection are not verified yet.
+
+## Community milestone — expense hold
+
+TypeScript and production build pass. Embedded PostgreSQL tests now exercise both migration versions, membership-only conversations, token-bound author identity, prayer author/leader permissions, cross-workspace isolation, scheduling permissions, time-zone validation and safe HTTPS meeting links. HTTP tests verify membership and verified identity at the new conversation boundary.
+
+The owner has prohibited further expenses. No Railway activation, Firebase upgrade, domain purchase, paid messaging or meeting service was performed. Live multi-user persistence still requires hosting; this milestone is code and local preview only.
+
+All 24 tests pass. Browser checks verified posting a sample conversation, posting a prayer request, marking a request answered, and scheduling a gathering. The verified prayer view is saved as `group-preview.jpg`. Sample edits are temporary and were not sent to real members.

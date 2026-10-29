@@ -14,18 +14,19 @@ Ministrium is a standalone church and ministry platform extracted from Church Mo
 - Transactional organization + owner creation, unique addresses, and a five-organization pilot quota per creator.
 - Random invitation tokens stored only as SHA-256 hashes, expiring in seven days, consumed atomically once. New invitations create members; they cannot assign administrators.
 - Dedicated Firebase identity verification with required verified email; query cache and private invitation state are isolated on account/organization changes.
-- Explicit, checksum-checked migration for the `ministrium` PostgreSQL namespace. No migration runs on server startup.
+- Private community conversations, prayer requests and leader-managed gathering schedules, with a sample family group at `/group-preview`.
+- Explicit, checksum-checked versioned migrations for the `ministrium` PostgreSQL namespace. No migration runs on server startup.
 - PostgreSQL-backed tests through PGlite, HTTP API tests and a scoped GitHub Actions workflow.
 
 ### Staged or unavailable
 
 The extracted 29 legacy church pages and 141 inherited route registrations remain in `source/` as migration reference. **None of the legacy handlers are registered in the runtime** until their features and tenant checks are migrated. Their database definitions are not applied. The runtime imports only the new Ministrium workspace service, not the devotional database/storage/startup.
 
-Teaching, events, departments, messaging, prayer and public church pages still require integration with the new workspace model. The sample dashboard illustrates these areas without persisting data. There is no live product catalogue, checkout, order delivery, settlement, subscription, outbound email or file upload. Giving, inherited payout configuration and all live financial endpoints remain blocked. Native app-store packages and offline operation are not included.
+Teaching, departments, public church pages and the legacy event system still require integration with the new workspace model. The sample dashboard illustrates these areas without persisting data. There is no live product catalogue, checkout, order delivery, settlement, subscription, outbound email or file upload. Giving, inherited payout configuration and all live financial endpoints remain blocked. Native app-store packages and offline operation are not included.
 
 ## Private groups
 
-Family prayer, prayer circles and discipleship groups have a distinct `group` workspace type with a required purpose (`family`, `prayer` or `discipleship`). They do not have to register as churches or ministries. This milestone creates their private workspace and invitation access only. Group conversations, prayer schedules, calls and discipleship lessons are future integrations. Members can join from different locations; the base country does not restrict membership. Linking a group to a church/ministry is planned and not implemented.
+Family prayer, prayer circles and discipleship groups have a distinct `group` workspace type with a required purpose (`family`, `prayer` or `discipleship`). They do not have to register as churches or ministries. Private workspaces include member conversations, prayer requests with author/leader answered status, and leader-scheduled gatherings. Meeting times display in each viewer’s time zone. Leaders may share an existing HTTPS meeting link; built-in voice/video and discipleship lessons are future integrations. Members can join from different locations; the base country does not restrict membership. Linking a group to a church/ministry is planned and not implemented.
 
 ## Run the preview
 
@@ -47,8 +48,8 @@ No cloud service is created automatically and no production data is migrated. Se
 
 1. Supply server variables from `.env.example`: `MINISTRIUM_DATABASE_URL`, `MINISTRIUM_DATABASE_CONFIRMED=standalone`, and `MINISTRIUM_FIREBASE_PROJECT_ID`.
 2. The owner-supplied public web configuration for `ministrium-425f9` is built in through `config/firebase-web.mjs`. To use another project, supply all four matching `VITE_MINISTRIUM_FIREBASE_*` values at build time. Enable Firebase email/password authentication and authorize the deployed hostname. These scripts do not automatically load a `.env` file into the server or migration process; export variables or use the host's environment configuration.
-3. Run `npm run migrate` explicitly against that dedicated database. It creates only Ministrium's schema and version record in a transaction. Re-running is safe; changing an applied migration is rejected.
-4. Build and start. The server verifies the installed migration checksum before enabling workspace APIs.
+3. Run `npm run migrate` explicitly against that dedicated database. It applies migrations 001 and 002, each in its own transaction, creating only Ministrium tables and version records. Re-running is safe; changing an applied migration is rejected.
+4. Build and start. The server verifies both installed migration checksums before enabling workspace APIs.
 5. Test signup → email verification → create organization → invite → accept using the invited account. Automatic invitation email is not implemented: a leader privately shares the one-time-displayed link.
 
 The runtime never falls back to `DATABASE_URL`, and never rewrites it. A matching inherited and dedicated URL is rejected. The confirmation variable is an operational guard, not proof of database ownership. The connection pool is limited to five connections. Database SSL must be configured according to the chosen provider; TLS verification is never disabled by the code.
@@ -66,6 +67,11 @@ All new APIs require `Authorization: Bearer <verified Firebase ID token>` and re
 | `GET/POST /api/workspaces/:id/invitations` | Organization owner/admin |
 | `DELETE /api/workspaces/:id/invitations/:invitationId` | Owner/admin of the same organization |
 | `POST /api/workspaces/join` | Matching invited, verified email and valid unused token |
+| `GET/POST /api/workspaces/:id/messages` | Workspace member |
+| `GET/POST /api/workspaces/:id/prayers` | Workspace member |
+| `PATCH /api/workspaces/:id/prayers/:prayerId` | Request author or workspace owner/admin |
+| `GET /api/workspaces/:id/gatherings` | Workspace member |
+| `POST /api/workspaces/:id/gatherings` | Workspace owner/admin |
 
 Invitation links carry the token in a URL fragment, not the request path or query. Response headers disable referrer transmission. Never log or publish private invitation links. Token verification reads public Google signing certificates; no service-account private key is required. The process-local pilot limiter allows 60 authenticated workspace requests per minute per account. Use a shared rate limiter before running multiple replicas.
 
@@ -87,4 +93,10 @@ This development branch does not modify or deploy the live 365 Daily Devotional 
 
 See `docs/staging-setup.md` for the deployment settings and live account verification sequence. `npm run check:staging` validates configured variable names, project matching and dedicated database separation without displaying credentials. The Dockerfile includes public Firebase build arguments and a minimal unprivileged production runtime. The hosted identity/database are not yet provisioned; this milestone does not enable real registration or incur new hosting charges.
 
-The dedicated Firebase project and web app have now been registered by the owner. Public configuration is integrated; enabling Email/Password, authorizing the deployed hostname and connecting a dedicated database are still required before live account testing.
+The dedicated Firebase project and web app have now been registered by the owner. Public configuration is integrated and the owner supplied screenshots confirming Email/Password is enabled. Authorizing the deployed hostname and connecting a dedicated database are still required before live account testing; hosting activation is on hold.
+
+## Current expense constraint
+
+The owner requested no further expenses on 2026-10-29. Development and embedded PostgreSQL tests continue locally. Do not activate the staged Railway app, database or volume, upgrade Firebase, purchase a domain, or enable paid messaging/calling. Existing account bills are outside this change; no zero-cost production hosting claim is made.
+
+Community requests fetch recent 50 entries on load and manual refresh, without polling. Meeting links reuse services a leader already has. There is no automatic email, SMS, or paid call creation. The new functions are implemented in source and locally verified, not live.

@@ -16,9 +16,13 @@ Pending patch: `a75a27cf-b862-47bb-93f1-532c98222cc3`. Read-back confirmed `STAG
 
 App source is pinned to tested commit `9f17439bed0a37fdde5e55d39d6ebdcd4728cc5e`; GitHub Actions completed successfully. The dedicated database URL is supplied through a Railway service reference. Password values are not recorded here. The explicit Ministrium migration is configured as the pre-deploy command against the new database only.
 
-## Remaining activation work
+## Activation on hold — no further expenses
 
-- Obtain approval for starting new usage-billed resources and agree a monitoring budget. No fixed monthly quote is verified.
+The owner’s latest instruction supersedes earlier hosting plans: **do not activate any new paid resources.** The staged patch remains unapplied; its pinned commit does not include the newer community milestone. Continue code and local preview work only. No new billing budget is authorized.
+
+## Work needed only if the owner later changes the expense constraint
+
+- Reassess hosting against the owner’s expense constraint before any resource activation. No fixed monthly quote is verified.
 - Re-read the pending patch immediately before applying; stop if unrelated changes appear.
 - Activate the new resources and wait for database and app deployment success.
 - Apply small runtime resource limits after the service instances exist. The attempt to stage resource limits was rejected with `Service Instance not found`; no resource cap is currently configured. Do not claim one or promise a billing ceiling.
