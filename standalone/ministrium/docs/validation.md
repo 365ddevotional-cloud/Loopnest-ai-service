@@ -45,3 +45,12 @@ Stage 3 deployment reached SUCCESS (`7c8f7eab-e0e7-4090-b0b8-a58018bb9393`); mig
 ## Stage 4 — private group study and gatherings
 
 TypeScript, production build and all 40 tests pass. Browser sample checks cover lessons, personal completion/reflection save, archive/restore, meeting edits/cancellation/restore and Chicago/Lagos viewing. See `stage4-private-groups.md` and `roadmap.md` for scope and the remaining stages. Live activation is recorded after success.
+
+
+### Stage 4 live activation (2026-10-30)
+
+- Source `39180238ec6a42214bdee6ae5452e6c9ab14a547`; Railway `dcbbba5f-11c4-4168-84c0-0fed9fea3b38` reached SUCCESS. Migration 4 applied; earlier checksums current.
+- All 40 automated tests, TypeScript and production build pass.
+- 33 real HTTP checks with two synthetic verified accounts passed, including lesson/draft isolation, private progress, stale writes, archive/restore, gatherings and fresh-sign-in persistence.
+- Live sample browser reflection/completion checked separately; screenshot `stage4-live-groups.jpg`. A manual signed-in browser walkthrough of every account screen is not claimed.
+- Original devotional deployment unchanged; live payments remain disabled. See `stage4-private-groups.md` and `roadmap.md`.

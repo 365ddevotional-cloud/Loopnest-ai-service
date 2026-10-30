@@ -23,4 +23,14 @@ Current membership, group type and leadership role are checked in transactions. 
 
 TypeScript and production build pass. All 40 tests pass, including group-only access, draft privacy, cross-group isolation, private progress/reflections, stale saves, lesson archive/restore, removal cleanup, meeting edit/cancellation/restore and Chicago/Lagos/daylight-saving conversions. Browser sample checks cover lesson creation, completion and reflection save, archive/restore, viewing a gathering in another time zone, meeting edits and cancellation/restore.
 
-Live activation is recorded after deployment and real verified-account HTTP checks. Browser sample checks are separate from a manual signed-in walkthrough of every real account screen. Stage 5 sales and commissions and Stage 7 launch remain pending.
+## Live activation — 2026-10-30
+
+Source commit `39180238ec6a42214bdee6ae5452e6c9ab14a547` deployed successfully in Railway deployment `dcbbba5f-11c4-4168-84c0-0fed9fea3b38`. Predeploy logs confirm migrations 1–3 already current and migration 4 applied. Runtime reports workspace mode with live payments disabled.
+
+Two synthetic verified Firebase accounts passed 33 live HTTP checks: authentication, published lesson visibility, private drafts, separate-group isolation, leader-only authoring, member-only reflections/completion, forged UID rejection, stale save/edit conflicts, lesson archive/restore preserving progress, meeting timestamps, leader edits, cancellation/restore and persistence after fresh sign-in. These use only synthetic test data in explicitly named test workspaces.
+
+The live browser sample at https://ministrium-production.up.railway.app/study-preview was opened and its reflection/completion controls checked. Screenshot: `stage4-live-groups.jpg`. The preview is temporary and clearly labeled; the real account persistence checks were HTTP checks, not a manual signed-in browser walkthrough of every account screen.
+
+The original 365 Daily Devotional deployment remains `fd83ae17-5f51-40cd-8144-cd081269ffd7`. Its code and services were not changed. No extra hosting service, storage bucket, paid provider or subscription was provisioned for Stage 4. Existing hosting usage still applies.
+
+Stage 4 is complete within this scope. Stage 5 sales and commissions and Stage 7 launch remain pending.

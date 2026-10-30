@@ -7,7 +7,7 @@ This is the original agreed seven-stage sequence. Stage 4 completes private grou
 | 1 | Standalone foundation and extraction | Complete |
 | 2 | Real accounts, separate identity/database, verification and invitations | Live; `stage2-live-verification.md` |
 | 3 | Existing church and ministry tools with workspace privacy | Live; `stage3-ministry-tools.md` |
-| 4 | Private family/prayer/discipleship groups, conversations, prayer, time-zone-aware gatherings and study materials | `stage4-private-groups.md` |
+| 4 | Private family/prayer/discipleship groups, conversations, prayer, time-zone-aware gatherings and study materials | Live; `stage4-private-groups.md` |
 | 5 | Sales, checkout, orders, protected delivery, commissions, refunds and reconciliation | Pending |
 | 6 | Platform administration and broader testing | Pending |
 | 7 | Small pilot, launch and app-store distribution | Pending |
