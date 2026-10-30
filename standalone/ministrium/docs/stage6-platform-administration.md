@@ -31,3 +31,9 @@ The configured owner still needs to sign in normally with the verified owner ema
 ## Remaining stages
 
 Stage 5 still requires a dedicated Stripe test configuration, review/approval of the commission model and real sandbox checkout, refund, dispute and commission reconciliation. Live-money processing is not enabled. Stage 7 pilot, legal/product review and app-store distribution are not complete.
+
+## Production deployment — 2026-10-30
+
+Stage 6 source `a8b1906d61fc9ad332b5f8f0a25646fcf412e0fe` reached Railway SUCCESS in deployment `b76040fa-06b1-4ed8-9d89-49bf7f5ebc13`. Migration 6 was applied on the initial Stage 6 rollout; the follow-up font-selector deployment also reached SUCCESS. Live checks returned HTTP 200 for `/api/health` and `/admin-preview`, and HTTP 401 for `/api/platform-admin/access` without a verified account. Health reports workspace mode and `paymentsEnabled:false`. The original devotional remains on deployment `fd83ae17-5f51-40cd-8144-cd081269ffd7`.
+
+The configured owner must still sign in with the verified owner email to bind the owner record to the Firebase UID. No owner credentials were used during deployment.
