@@ -67,3 +67,15 @@ body{background:var(--mh-paper);color:var(--mh-ink);font-family:'DM Sans',sans-s
 .mh-footer-brand{display:inline-flex;align-items:center;gap:9px;font:600 14px 'Cinzel',Georgia,serif;letter-spacing:.055em;color:#251c19}
 .mh-footer-brand img{width:25px;height:25px;border-radius:8px;border:1px solid #b89a5b}
 @media(max-width:650px){.mh-wordmark{gap:9px}.mh-wordmark img{width:40px;height:40px}.mh-wordmark-type strong{font-size:17px}.mh-wordmark-type small{font-size:6px;letter-spacing:.1em}.mh-workspace aside .mh-wordmark img{width:32px;height:32px}}
+
+/* Accessible, understated sign-in alternatives. */
+.mh-google-button{width:100%;min-height:48px;display:flex;align-items:center;justify-content:center;gap:12px;margin:0 0 18px;padding:12px 18px;border:1px solid #d8cfbf;border-radius:7px;background:#fffdf9;color:#292422;font:600 14px 'DM Sans',sans-serif;cursor:pointer;transition:background .15s ease,border-color .15s ease,box-shadow .15s ease}
+.mh-google-button:hover{background:#fff8ed;border-color:#b89a5b;box-shadow:0 2px 8px #211b1910}
+.mh-google-button:focus-visible,.mh-auth button:focus-visible,.mh-auth a:focus-visible{outline:2px solid #9f3a34;outline-offset:3px}
+.mh-google-button:disabled{opacity:.65;cursor:wait}
+.mh-auth-divider{display:flex;align-items:center;gap:13px;margin:2px 0 20px;color:#82796e;font-size:12px}
+.mh-auth-divider::before,.mh-auth-divider::after{content:'';height:1px;flex:1;background:#e5ddd0}
+.mh-auth form .mh-forgot-link{display:block;margin:-4px 0 15px auto;padding:4px 0;border:0;background:transparent;color:#8e4038;font:600 12px 'DM Sans',sans-serif;text-align:right;cursor:pointer}
+.mh-auth form .mh-forgot-link:hover,.mh-auth form .mh-auth-toggle:hover{text-decoration:underline;text-underline-offset:3px}
+.mh-auth form .mh-auth-toggle{display:block;margin:14px auto 0;padding:6px;border:0;background:transparent;color:#514941;font:500 13px 'DM Sans',sans-serif;cursor:pointer}
+.mh-auth-message{padding:12px 14px;border:1px solid #e5c8b8;border-radius:7px;background:#fff8f0;color:#743a2d;font-size:13px;line-height:1.55}
