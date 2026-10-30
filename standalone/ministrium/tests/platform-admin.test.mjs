@@ -1,0 +1,72 @@
+import {workspaceMigrations} from '../server/migration-list.mjs';
+import test,{before,after} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {randomUUID} from 'node:crypto';
+import {PGlite} from '@electric-sql/pglite';
+import {applyWorkspaceMigration} from '../server/migrations.mjs';
+import {createWorkspaceService} from '../server/workspaces.mjs';
+import {createCommunityService} from '../server/community.mjs';
+import {createGroupStudy} from '../server/group-study.mjs';
+import {createMinistryTools} from '../server/ministry-tools.mjs';
+import {createCommerce} from '../server/commerce.mjs';
+import {createPlatformAdmin} from '../server/platform-admin.mjs';
+import testExpress from 'express';
+import {registerWorkspaceRoutes} from '../server/workspace-routes.mjs';
+const owner={uid:'owner',email:'owner@example.com',email_verified:true},member={uid:'member',email:'member@example.com',email_verified:true},outsider={uid:'outsider',email:'outsider@example.com',email_verified:true},unverified={uid:'unverified',email:'owner@example.com',email_verified:false};
+let db,workspaces,community,study,tools,commerce,admin,church,group,other,server,base;
+before(async()=>{
+ db=new PGlite();for(const [i,name]of workspaceMigrations.entries())await applyWorkspaceMigration(db,await readFile(new URL(`../migrations/${name}`,import.meta.url),'utf8'),i+1);
+ workspaces=createWorkspaceService(db);community=createCommunityService(db);study=createGroupStudy(db);tools=createMinistryTools(db);commerce=createCommerce(db);
+ church=await workspaces.create(owner,{name:'Test ministry',slug:'platform-admin-test',kind:'ministry',country:'US'});group=await workspaces.create(owner,{name:'Private family',slug:'platform-admin-family',kind:'group',groupType:'family',country:'US'});other=await workspaces.create(outsider,{name:'Other church',slug:'platform-admin-other',kind:'church',country:'US'});
+ const inv=await workspaces.invite(owner,group.id,{email:member.email});await workspaces.join(member,inv.token);
+ admin=createPlatformAdmin(db,{ownerEmail:owner.email},commerce.status);
+ const app=testExpress();app.use(testExpress.json());registerWorkspaceRoutes(app,db,async token=>({owner,member,outsider,unverified}[token]??(()=>{throw Error('bad token');})()),commerce,admin);app.use((e,_q,res,_n)=>res.status(500).json({message:'Request failed'}));server=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});base=`http://127.0.0.1:${server.address().port}`;
+});
+after(async()=>{await new Promise(resolve=>server.close(resolve));await db.close();});
+test('owner is permanently bound by verified email and all platform routes reject others',async()=>{
+ assert.equal((await admin.access(owner)).isAdmin,true);assert.equal((await admin.access(outsider)).isAdmin,false);
+ await assert.rejects(admin.overview(outsider),{status:403});await assert.rejects(admin.access(unverified),{status:401});
+ assert.equal((await admin.access({...owner,email:'changed@example.com'})).isAdmin,true);
+ const second=createPlatformAdmin(db,{ownerEmail:'owner@example.com'});assert.equal((await second.access({...owner,uid:'different-uid'})).isAdmin,false);
+ const blocked=await fetch(`${base}/api/platform-admin/overview`,{headers:{Authorization:'Bearer outsider'}});assert.equal(blocked.status,403);assert.equal(blocked.headers.get('cache-control'),'no-store');
+ const unverifiedResponse=await fetch(`${base}/api/platform-admin/access`,{headers:{Authorization:'Bearer unverified'}});assert.equal(unverifiedResponse.status,401);
+ const forged=await fetch(`${base}/api/platform-admin/overview`,{headers:{Authorization:'Bearer outsider','X-Platform-Admin':'true'}});assert.equal(forged.status,403);
+});
+test('reports require an explicit share and member access, deduplicate and never return private reflections',async()=>{
+ const msg=await community.postMessage(member,group.id,{authorName:'Member',body:'A visible group message for review.'});
+ const baseInput={organizationId:group.id,targetType:'message',targetId:msg.id,reason:'This message appears to violate our group expectations.'};
+ assert.throws(()=>admin.submitReport(member,{...baseInput,shareReportedItem:false}),{status:400});
+ await assert.rejects(admin.submitReport(outsider,{...baseInput,shareReportedItem:true}),{status:404});
+ const submitted=await admin.submitReport(member,{...baseInput,shareReportedItem:true});const duplicate=await admin.submitReport(member,{...baseInput,shareReportedItem:true});assert.equal(duplicate.id,submitted.id);
+ assert.equal((await admin.myReports(member)).length,1);assert.equal((await admin.myReports(owner)).length,0);
+ const queue=await admin.reports(owner);assert.equal(queue.items[0].excerpt,'A visible group message for review.');assert.equal('reporterUid' in queue.items[0],false);
+ const lesson=await study.create(owner,group.id,{title:'Private reflections test',position:1,body:'Lesson content',reflectionPrompt:'What is on your heart?',resourceUrl:null,published:true});
+ await study.saveProgress(member,group.id,lesson.id,{completed:true,reflection:'A private personal reflection.',version:0});
+ const lessonReport=await admin.submitReport(member,{...baseInput,targetType:'lesson',targetId:lesson.id,shareReportedItem:true});assert.ok(lessonReport.id);
+ assert.equal(JSON.stringify(await admin.reports(owner)).includes('A private personal reflection.'),false);
+ const noStore=await fetch(`${base}/api/moderation/reports`,{headers:{Authorization:'Bearer member'}});assert.equal(noStore.status,200);assert.equal(noStore.headers.get('cache-control'),'no-store');assert.equal(JSON.stringify(await noStore.json()).includes('A visible group message'),false);
+});
+test('status changes are versioned, audited, reversible and pause new community/workspace activity',async()=>{
+ const draft=await community.postMessage(owner,church.id,{authorName:'Owner',body:'Existing visible conversation.'});
+ const listing=await workspaces.list(owner);assert.equal(listing.find(x=>x.id===church.id).suspended,false);
+ const result=await admin.suspend(owner,church.id,{version:1,suspended:true,reason:'Pausing while we review member safety reports.',confirm:true});assert.equal(result.suspended,true);
+ await assert.rejects(admin.suspend(owner,church.id,{version:1,suspended:false,reason:'A stale attempt should not work.',confirm:true}),{status:409});
+ await assert.rejects(community.messages(owner,church.id),{status:404});await assert.rejects(community.postMessage(owner,church.id,{authorName:'Owner',body:'Should be blocked.'}),{status:404});await assert.rejects(workspaces.invite(owner,church.id,{email:'new@example.com'}),{status:404});
+ assert.equal((await workspaces.list(owner)).find(x=>x.id===church.id).suspended,true);
+ const next=await admin.suspend(owner,church.id,{version:2,suspended:false,reason:'Review complete; restoring ordinary ministry activity.',confirm:true});assert.equal(next.suspended,false);
+ assert.equal((await community.messages(owner,church.id)).some(x=>x.id===draft.id),true);
+ const audit=await admin.audit(owner);assert.ok(audit.items.some(x=>x.action==='workspace_suspended'));assert.ok(audit.items.some(x=>x.action==='workspace_restored'));
+});
+test('payments remain disabled and workspace commerce moderation checks stay server-side',async()=>{
+ const product=await commerce.createProduct(owner,church.id,{title:'Public guide',description:'Public description only.',priceCents:500,content:'Protected buyer content',published:true});
+ assert.equal((await commerce.catalogue(member,church.id)).products.length,1);
+ const currentVersion=(await db.query('SELECT moderation_version FROM ministrium.organizations WHERE id=$1',[church.id])).rows[0].moderation_version;await admin.suspend(owner,church.id,{version:currentVersion,suspended:true,reason:'Pausing workspace for moderation review.',confirm:true});
+ await assert.rejects(commerce.catalogue(member,church.id),{status:404});await assert.rejects(commerce.checkout(member,{organizationId:church.id,productId:product.id,requestKey:randomUUID()}),{status:503});
+ assert.equal(commerce.status().livePaymentsEnabled,false);assert.equal((await commerce.orders(member)).length,0);
+});
+test('admin cannot access a different workspace by guessing content ids',async()=>{
+ const message=await community.postMessage(outsider,other.id,{authorName:'Other',body:'Different organization content.'});
+ await assert.rejects(admin.submitReport(owner,{organizationId:church.id,targetType:'message',targetId:message.id,reason:'Attempting a cross-workspace report.',shareReportedItem:true}),{status:404});
+ assert.equal((await admin.reports(owner)).items.some(x=>x.excerpt==='A private personal reflection.'),false);
+});
