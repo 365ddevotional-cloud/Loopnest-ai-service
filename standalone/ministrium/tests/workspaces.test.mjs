@@ -1,3 +1,4 @@
+import {workspaceMigrations} from '../server/migration-list.mjs';
 import test,{before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -13,8 +14,7 @@ const member={uid:'member',email:'member@example.com',email_verified:true};
 const input=(slug)=>({name:'Grace Community',slug,kind:'both',country:'US',city:'Houston'});
 before(async()=>{
  pg=new PGlite();
- await pg.exec(await readFile(new URL('../migrations/001_workspaces.sql',import.meta.url),'utf8'));
- await pg.exec(await readFile(new URL('../migrations/002_community.sql',import.meta.url),'utf8'));
+ for(const name of workspaceMigrations)await pg.exec(await readFile(new URL(`../migrations/${name}`,import.meta.url),'utf8'));
  service=createWorkspaceService(pg);
  const app=express();app.use(express.json());
  registerWorkspaceRoutes(app,pg,async token=>{

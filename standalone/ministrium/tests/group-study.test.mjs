@@ -1,3 +1,4 @@
+import {workspaceMigrations} from '../server/migration-list.mjs';
 import test,{before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -14,7 +15,7 @@ const owner={uid:'study-owner',email:'study-owner@example.com',email_verified:tr
 const content=(position=1)=>({title:'Learning together',position,body:'Read the passage together.',scripture:'John 15:1–11',reflectionPrompt:'How can you encourage someone?',published:true});
 before(async()=>{
  db=new PGlite();
- for(const [index,file]of ['001_workspaces.sql','002_community.sql','003_ministry_tools.sql','004_private_group_study.sql'].entries()){
+ for(const [index,file]of workspaceMigrations.entries()){
   const sql=await readFile(new URL(`../migrations/${file}`,import.meta.url),'utf8');assert.equal((await applyWorkspaceMigration(db,sql,index+1)).applied,true);assert.equal((await applyWorkspaceMigration(db,sql,index+1)).applied,false);
  }
  groups=createWorkspaceService(db);study=createGroupStudy(db);

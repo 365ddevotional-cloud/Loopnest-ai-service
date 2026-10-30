@@ -1,3 +1,4 @@
+import {workspaceMigrations} from '../server/migration-list.mjs';
 import test,{before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -27,7 +28,7 @@ const provider={
  refund:async()=>{refundCalls++;return {status:'succeeded'};},
 };
 before(async()=>{
- db=new PGlite();for(const [i,name]of ['001_workspaces.sql','002_community.sql','003_ministry_tools.sql','004_private_group_study.sql','005_commerce.sql'].entries())await applyWorkspaceMigration(db,await readFile(new URL(`../migrations/${name}`,import.meta.url),'utf8'),i+1);
+ db=new PGlite();for(const [i,name]of workspaceMigrations.entries())await applyWorkspaceMigration(db,await readFile(new URL(`../migrations/${name}`,import.meta.url),'utf8'),i+1);
  const groups=createWorkspaceService(db);workspace=await groups.create(owner,{name:'Test ministry',slug:'test-ministry-shop',kind:'ministry',country:'US'});other=await groups.create(outsider,{name:'Other ministry',slug:'other-ministry-shop',kind:'church',country:'US'});group=await groups.create(owner,{name:'Free family',slug:'free-family-shop',kind:'group',groupType:'family',country:'US'});const inv=await groups.invite(owner,workspace.id,{email:member.email});await groups.join(member,inv.token);
  commerce=createCommerce(db,config,provider);const app=express();app.use(express.json());registerWorkspaceRoutes(app,db,async token=>{const users={owner,member,buyer,outsider};if(!users[token])throw new Error('Invalid token');return users[token];},commerce);app.use((e,_q,res,_n)=>res.status(500).json({message:'Request failed'}));server=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});base=`http://127.0.0.1:${server.address().port}`;
 });

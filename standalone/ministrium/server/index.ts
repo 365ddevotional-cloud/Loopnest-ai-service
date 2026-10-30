@@ -2,11 +2,13 @@ import express from 'express';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import {assertWorkspaceIdentity} from './deployment-config.mjs';
+import {workspaceMigrations} from './migration-list.mjs';
 import {migrationChecksum} from './migrations.mjs';
 import {isChurchApi,isWorkspaceApi,isBlockedFinance,runtimeMode} from './policy.mjs';
 import {commerceConfiguration,createStripeProvider} from './payment-provider.mjs';
 import {createCommerce} from './commerce.mjs';
 import {registerPaymentWebhook} from './commerce-routes.mjs';
+import {createPlatformAdmin,platformOwnerConfig} from './platform-admin.mjs';
 async function main(){
 const mode=runtimeMode(process.env);
 if(mode==='workspace'){
@@ -15,6 +17,7 @@ if(mode==='workspace'){
 }
 const app=express();
 const commerceConfig=commerceConfiguration(process.env);
+const ownerConfig=platformOwnerConfig(process.env);
 const paymentProvider=createStripeProvider(commerceConfig);
 let commerce:ReturnType<typeof createCommerce>|null=null;
 app.disable('x-powered-by');
@@ -37,7 +40,7 @@ if(mode==='workspace'){
  const db=createDatabase(process.env.MINISTRIUM_DATABASE_URL);
  // Never auto-migrate or initialize the devotional database.
  try{
-  for(const [index,file] of ['001_workspaces.sql','002_community.sql','003_ministry_tools.sql','004_private_group_study.sql','005_commerce.sql'].entries()){
+  for(const [index,file] of workspaceMigrations.entries()){
    const migration=await db.query('SELECT checksum FROM ministrium.migrations WHERE version=$1',[index+1]);
    const sql=await fs.readFile(path.resolve(process.cwd(),'migrations',file),'utf8');
    if(migration.rows[0]?.checksum!==migrationChecksum(sql))throw new Error('Run or verify the explicit Ministrium migrations before starting workspace mode.');
@@ -46,7 +49,8 @@ if(mode==='workspace'){
  const {registerWorkspaceRoutes}=await import('./workspace-routes.mjs');
  const {auth}=await import('./firebase-admin');
  commerce=createCommerce(db,commerceConfig,paymentProvider);
- registerWorkspaceRoutes(app,db,(token:string)=>auth.verifyIdToken(token),commerce);
+ const platformAdmin=createPlatformAdmin(db,ownerConfig,commerce.status);
+ registerWorkspaceRoutes(app,db,(token:string)=>auth.verifyIdToken(token),commerce,platformAdmin);
 }
 app.use('/api',(_req,res)=>res.status(404).json({message:'Endpoint not found.'}));
 const publicDir=path.resolve(process.cwd(),'dist/public');

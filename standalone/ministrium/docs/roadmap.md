@@ -9,7 +9,9 @@ This is the original agreed seven-stage sequence. Stage 4 completes private grou
 | 3 | Existing church and ministry tools with workspace privacy | Live; `stage3-ministry-tools.md` |
 | 4 | Private family/prayer/discipleship groups, conversations, prayer, time-zone-aware gatherings and study materials | Live; `stage4-private-groups.md` |
 | 5 | Sales, checkout, orders, protected delivery, commissions, refunds and reconciliation | Deployed for text-resource pilot; Stripe sandbox setup and real payment verification pending; `stage5-commerce.md` |
-| 6 | Platform administration and broader testing | Pending |
+| 6 | Platform administration and broader testing | Implemented and live; `stage6-platform-administration.md` |
 | 7 | Small pilot, launch and app-store distribution | Pending |
 
 Basic family prayer/group tools remain free to group users. They do not require seller onboarding or a subscription. This does not mean that the owner's existing hosting has no usage costs. Revenue decisions and payment activation belong to Stage 5; no real-money collection is enabled by Stage 4.
+
+Stage 6 adds a verified, single-owner platform console, explicit member-submitted content reports, reversible workspace suspension, and an administrative audit trail. It does not expose private reflections or let church leaders administer the platform. Stage 5 payment verification is still pending; Stage 7 pilot and launch remain future work.

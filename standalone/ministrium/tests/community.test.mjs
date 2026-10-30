@@ -1,3 +1,4 @@
+import {workspaceMigrations} from '../server/migration-list.mjs';
 import test,{before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -9,7 +10,7 @@ let db,community,org,second;
 const owner={uid:'leader',email:'leader@example.com'},member={uid:'participant',email:'participant@example.com'},outsider={uid:'other',email:'other@example.com'};
 before(async()=>{
  db=new PGlite();
- for(const [index,name]of ['001_workspaces.sql','002_community.sql','003_ministry_tools.sql','004_private_group_study.sql'].entries()){
+ for(const [index,name]of workspaceMigrations.entries()){
   const sql=await readFile(new URL(`../migrations/${name}`,import.meta.url),'utf8');
   assert.equal((await applyWorkspaceMigration(db,sql,index+1)).applied,true);
   assert.equal((await applyWorkspaceMigration(db,sql,index+1)).applied,false);

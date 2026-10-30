@@ -1,6 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import {WorkspaceError} from './workspaces.mjs';
+import {workspaceIsActive} from './workspace-status.mjs';
 const id=z.string().uuid(), text=(min,max)=>z.string().trim().min(min).max(max);
 const message=z.object({authorName:text(1,60),body:text(1,2000)}).strict();
 const prayer=z.object({authorName:text(1,60),title:text(2,120),body:text(1,2000)}).strict();
@@ -10,7 +11,7 @@ async function access(tx,organizationId,user,manage=false){
  if(!user?.uid)throw new WorkspaceError(401,'Sign in to continue.');
  await tx.query('SELECT id FROM ministrium.organizations WHERE id=$1 FOR UPDATE',[organizationId]);
  const {rows}=await tx.query('SELECT role FROM ministrium.memberships WHERE organization_id=$1 AND uid=$2 FOR SHARE',[organizationId,user.uid]);
- if(!rows.length||(manage&&!['owner','admin'].includes(rows[0].role)))throw new WorkspaceError(404,'Community unavailable to your account.');
+ if(!await workspaceIsActive(tx,organizationId)||!rows.length||(manage&&!['owner','admin'].includes(rows[0].role)))throw new WorkspaceError(404,'Community unavailable to your account.');
  return rows[0].role;
 }
 export function createCommunityService(db){

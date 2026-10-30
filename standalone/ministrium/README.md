@@ -18,6 +18,7 @@ Ministrium is a standalone church and ministry platform extracted from Church Mo
 - Private-group lessons, personal reflections/progress, and versioned gathering edits/cancellation with time-zone viewing. See `docs/stage4-private-groups.md`; sample at `/study-preview`.
 - Workspace teaching, private sermon study/bookmarks, announcements, events, departments, owner-managed leadership and membership audit. See `docs/stage3-ministry-tools.md`; sample at `/tools-preview`.
 - Explicit, checksum-checked versioned migrations for the `ministrium` PostgreSQL namespace. No migration runs on server startup.
+- Platform-owner console for aggregate readiness, workspaces, user-submitted content reports, reversible suspensions, and an audit trail. Report excerpts are explicit opt-in and never include private personal reflections. See `docs/stage6-platform-administration.md`.
 - PostgreSQL-backed tests through PGlite, HTTP API tests and a scoped GitHub Actions workflow.
 
 ### Staged or unavailable
@@ -50,9 +51,10 @@ No cloud service is created automatically and no production data is migrated. Se
 
 1. Supply server variables from `.env.example`: `MINISTRIUM_DATABASE_URL`, `MINISTRIUM_DATABASE_CONFIRMED=standalone`, and `MINISTRIUM_FIREBASE_PROJECT_ID`.
 2. The owner-supplied public web configuration for `ministrium-425f9` is built in through `config/firebase-web.mjs`. To use another project, supply all four matching `VITE_MINISTRIUM_FIREBASE_*` values at build time. Enable Firebase email/password authentication and authorize the deployed hostname. These scripts do not automatically load a `.env` file into the server or migration process; export variables or use the host's environment configuration.
-3. Run `npm run migrate` explicitly against that dedicated database. It applies migrations 001 through 005, each in its own transaction, creating only Ministrium tables and version records. Re-running is safe; changing an applied migration is rejected.
-4. Build and start. The server verifies all installed migration checksums before enabling workspace APIs.
-5. Test signup → email verification → create organization → invite → accept using the invited account. Automatic invitation email is not implemented: a leader privately shares the one-time-displayed link.
+3. Set `MINISTRIUM_PLATFORM_OWNER_EMAIL` to the one verified owner email in the private server environment. The first verified sign-in with that exact address binds the platform-owner role permanently to its Firebase UID. Changing the variable does not transfer the role.
+4. Run `npm run migrate` explicitly against that dedicated database. It applies migrations 001 through 006, each in its own transaction, creating only Ministrium tables and version records. Re-running is safe; changing an applied migration is rejected.
+5. Build and start. The server verifies all installed migration checksums before enabling workspace APIs.
+6. Test signup → email verification → create organization → invite → accept using the invited account. Automatic invitation email is not implemented: a leader privately shares the one-time-displayed link.
 
 The runtime never falls back to `DATABASE_URL`, and never rewrites it. A matching inherited and dedicated URL is rejected. The confirmation variable is an operational guard, not proof of database ownership. The connection pool is limited to five connections. Database SSL must be configured according to the chosen provider; TLS verification is never disabled by the code.
 

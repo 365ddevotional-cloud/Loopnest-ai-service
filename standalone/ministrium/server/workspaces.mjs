@@ -1,5 +1,6 @@
 import {createHash, randomBytes, randomUUID} from 'node:crypto';
 import {z} from 'zod';
+import {workspaceIsActive} from './workspace-status.mjs';
 
 export class WorkspaceError extends Error {
   constructor(status, message) { super(message); this.status = status; }
@@ -36,7 +37,7 @@ async function saveIdentity(tx, user) {
 async function membership(tx, id, user, manage = false) {
   await tx.query('SELECT id FROM ministrium.organizations WHERE id=$1 FOR UPDATE',[id]);
   const {rows} = await tx.query('SELECT role FROM ministrium.memberships WHERE organization_id=$1 AND uid=$2',[id,user.uid]);
-  if (!rows.length || (manage && !['owner','admin'].includes(rows[0].role))) throw new WorkspaceError(404,'Workspace not found or unavailable to your account.');
+  if (!await workspaceIsActive(tx,id) || !rows.length || (manage && !['owner','admin'].includes(rows[0].role))) throw new WorkspaceError(404,'Workspace not found or unavailable to your account.');
   return rows[0].role;
 }
 
@@ -44,7 +45,7 @@ export function createWorkspaceService(db) {
   return {
     async list(principal) {
       const user=identity(principal);
-      return (await db.query('SELECT o.id,o.name,o.slug,o.kind,o.group_type AS "groupType",o.country,o.city,m.role FROM ministrium.organizations o JOIN ministrium.memberships m ON m.organization_id=o.id WHERE m.uid=$1 ORDER BY o.created_at DESC',[user.uid])).rows;
+      return (await db.query('SELECT o.id,o.name,o.slug,o.kind,o.group_type AS "groupType",o.country,o.city,(o.suspended_at IS NOT NULL) AS suspended,m.role FROM ministrium.organizations o JOIN ministrium.memberships m ON m.organization_id=o.id WHERE m.uid=$1 ORDER BY o.created_at DESC',[user.uid])).rows;
     },
     async create(principal, input) {
       const user=identity(principal), data=parse(organizationInput,input);
@@ -108,10 +109,11 @@ export function createWorkspaceService(db) {
     async join(principal, tokenValue) {
       const user=identity(principal), token=parse(tokenInput,tokenValue);
       return db.transaction(async tx=>{
-        await saveIdentity(tx,user);
         const candidate=(await tx.query('SELECT organization_id FROM ministrium.invitations WHERE token_hash=$1',[hash(token)])).rows[0];
         if(!candidate)throw new WorkspaceError(404,'Invitation unavailable.');
         await tx.query('SELECT id FROM ministrium.organizations WHERE id=$1 FOR UPDATE',[candidate.organization_id]);
+        if(!await workspaceIsActive(tx,candidate.organization_id))throw new WorkspaceError(404,'Workspace unavailable.');
+        await saveIdentity(tx,user);
         // Atomic consumption prevents replay and simultaneous double use.
         const {rows}=await tx.query('UPDATE ministrium.invitations SET accepted_by=$1,accepted_at=now() WHERE token_hash=$2 AND email=$3 AND expires_at>now() AND accepted_at IS NULL AND revoked_at IS NULL RETURNING organization_id',[user.uid,hash(token),user.email]);
         if(!rows.length)throw new WorkspaceError(404,'Invitation unavailable. Check the invited email, expiry, or ask for a new invitation.');

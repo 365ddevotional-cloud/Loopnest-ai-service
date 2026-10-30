@@ -1,3 +1,4 @@
+import {workspaceMigrations} from '../server/migration-list.mjs';
 import test,{before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -12,7 +13,7 @@ const owner={uid:'tools-owner',email:'tools-owner@example.com',email_verified:tr
 const field=(kind,title='Test resource')=>({kind,title,body:'Ministry details',...(kind==='event'?{startsAt:new Date(Date.now()+86400000).toISOString()}:{} )});
 before(async()=>{
  db=new PGlite();
- for(const [version,file] of ['001_workspaces.sql','002_community.sql','003_ministry_tools.sql'].entries()){
+ for(const [version,file] of workspaceMigrations.entries()){
   const sql=await readFile(new URL(`../migrations/${file}`,import.meta.url),'utf8');assert.equal((await applyWorkspaceMigration(db,sql,version+1)).applied,true);assert.equal((await applyWorkspaceMigration(db,sql,version+1)).applied,false);
  }
  workspaces=createWorkspaceService(db);service=createMinistryTools(db);

@@ -1,6 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import {WorkspaceError} from './workspaces.mjs';
+import {workspaceIsActive} from './workspace-status.mjs';
 const text=(min,max)=>z.string().trim().min(min).max(max),uuid=z.string().uuid();
 const kind=z.enum(['sermon','announcement','event','department']);
 const safeLink=z.string().max(2000).refine(value=>{try{const url=new URL(value);return url.protocol==='https:'&&!url.username&&!url.password;}catch{return false;}}).nullable().default(null);
@@ -14,7 +15,7 @@ export function createMinistryTools(db){
   // This serializes permission changes with reads/writes and avoids stale roles.
   await tx.query('SELECT id FROM ministrium.organizations WHERE id=$1 FOR UPDATE',[org]);
   const role=(await tx.query('SELECT role FROM ministrium.memberships WHERE organization_id=$1 AND uid=$2',[org,user.uid])).rows[0]?.role;
-  if(!role||(level==='leader'&&!['owner','admin'].includes(role))||(level==='owner'&&role!=='owner'))throw new WorkspaceError(404,'Workspace unavailable to your account.');
+  if(!await workspaceIsActive(tx,org)||!role||(level==='leader'&&!['owner','admin'].includes(role))||(level==='owner'&&role!=='owner'))throw new WorkspaceError(404,'Workspace unavailable to your account.');
   return fn(tx,org,role);
  });}
  async function resource(tx,org,id,role,expectedKind){const row=(await tx.query('SELECT kind FROM ministrium.resources WHERE organization_id=$1 AND id=$2 AND archived=false AND (published=true OR $3)',[org,parse(uuid,id),role!=='member'])).rows[0];if(!row||(expectedKind&&row.kind!==expectedKind))throw new WorkspaceError(404,'Resource unavailable.');return row;}

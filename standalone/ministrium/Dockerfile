@@ -18,7 +18,7 @@ COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/migrations ./migrations
 COPY --from=build --chown=node:node /app/package.json ./package.json
 COPY --from=build --chown=node:node /app/scripts/migrate.mjs ./scripts/migrate.mjs
-COPY --from=build --chown=node:node /app/server/database.mjs /app/server/policy.mjs /app/server/migrations.mjs ./server/
+COPY --from=build --chown=node:node /app/server/database.mjs /app/server/policy.mjs /app/server/migrations.mjs /app/server/migration-list.mjs ./server/
 USER node
 EXPOSE 8080
 CMD ["node","dist/server.cjs"]

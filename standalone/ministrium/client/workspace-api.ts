@@ -1,5 +1,5 @@
 import {useUser} from '@/contexts/UserContext';
-export type Organization={id:string;name:string;slug:string;kind:'church'|'ministry'|'both'|'group';groupType:'family'|'prayer'|'discipleship'|null;country:string;city:string;role:'owner'|'admin'|'member'};
+export type Organization={id:string;name:string;slug:string;kind:'church'|'ministry'|'both'|'group';groupType:'family'|'prayer'|'discipleship'|null;country:string;city:string;role:'owner'|'admin'|'member';suspended?:boolean};
 export type OrganizationDraft=Pick<Organization,'name'|'slug'|'kind'|'groupType'|'country'|'city'>;
 export type PlatformStatus={mode:'preview'|'workspace';workspacesEnabled:boolean;accountsEnabled:boolean};
 export function useWorkspaceApi(){

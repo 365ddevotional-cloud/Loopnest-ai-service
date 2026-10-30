@@ -9,9 +9,9 @@ function parse(schema,value){const r=schema.safeParse(value);if(!r.success)throw
 const detailColumns='id,title,position,scripture,body,reflection_prompt AS "reflectionPrompt",resource_url AS "resourceUrl",published,archived,version';
 export function createGroupStudy(db){
  async function scoped(user,orgId,manage,fn){const org=parse(uuid,orgId);if(!user?.uid)throw new WorkspaceError(401,'Sign in to continue.');return db.transaction(async tx=>{
-  const workspace=(await tx.query('SELECT kind FROM ministrium.organizations WHERE id=$1 FOR UPDATE',[org])).rows[0];
+  const workspace=(await tx.query('SELECT kind,suspended_at FROM ministrium.organizations WHERE id=$1 FOR UPDATE',[org])).rows[0];
   const role=(await tx.query('SELECT role FROM ministrium.memberships WHERE organization_id=$1 AND uid=$2',[org,user.uid])).rows[0]?.role;
-  if(workspace?.kind!=='group'||!role||(manage&&!['owner','admin'].includes(role)))throw new WorkspaceError(404,'Private group unavailable to your account.');
+  if(workspace?.kind!=='group'||workspace.suspended_at||!role||(manage&&!['owner','admin'].includes(role)))throw new WorkspaceError(404,'Private group unavailable to your account.');
   return fn(tx,org,role);
  });}
  async function visible(tx,org,id,role){const row=(await tx.query(`SELECT ${detailColumns} FROM ministrium.group_lessons WHERE organization_id=$1 AND id=$2 AND archived=false AND (published=true OR $3)`,[org,parse(uuid,id),role!=='member'])).rows[0];if(!row)throw new WorkspaceError(404,'Lesson unavailable.');return row;}
