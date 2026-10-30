@@ -5,7 +5,7 @@
 @tailwind utilities;
 
 :root {
-  /* Professional Sunrise-Inspired Palette */
+  /* Ministrium: warm neutral surfaces with confident red, yellow and neon orange accents. */
   --background: 40 33% 96%;           /* Warm Ivory */
   --foreground: 20 15% 22%;           /* Soft Charcoal */
   
@@ -17,21 +17,21 @@
   --popover-foreground: 20 15% 22%;
   --popover-border: 30 20% 82%;
   
-  --primary: 12 45% 34%;              /* Deep Fig/Burgundy */
+  --primary: 5 78% 44%;               /* Ministrium red */
   --primary-foreground: 40 33% 96%;
-  --primary-border: hsl(12 45% 28%);
+  --primary-border: hsl(5 78% 36%);
   
-  --secondary: 152 16% 36%;           /* Sage Green */
-  --secondary-foreground: 40 33% 96%;
-  --secondary-border: hsl(152 16% 30%);
+  --secondary: 22 100% 55%;            /* Neon orange */
+  --secondary-foreground: 20 15% 12%;
+  --secondary-border: hsl(22 100% 45%);
   
   --muted: 35 15% 88%;
   --muted-foreground: 20 10% 45%;
   --muted-border: hsl(35 15% 78%);
   
-  --accent: 34 46% 52%;               /* Antique Gold */
+  --accent: 49 100% 52%;               /* Bright yellow */
   --accent-foreground: 20 15% 15%;
-  --accent-border: hsl(34 46% 42%);
+  --accent-border: hsl(49 100% 42%);
   
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
@@ -39,7 +39,7 @@
 
   --border: 30 20% 82%;
   --input: 30 20% 85%;
-  --ring: 12 45% 34%;
+  --ring: 5 78% 44%;
 
   --radius: 0.5rem;
   
@@ -47,20 +47,20 @@
   --font-sans: 'DM Sans', sans-serif;
   
   /* Chart Colors - Colorful and Harmonious */
-  --chart-1: 12 45% 34%;              /* Deep Fig */
-  --chart-2: 152 16% 36%;             /* Sage */
-  --chart-3: 34 46% 52%;              /* Gold */
-  --chart-4: 10 49% 58%;              /* Coral */
-  --chart-5: 200 35% 45%;             /* Dusty Blue */
+  --chart-1: 5 78% 44%;
+  --chart-2: 22 100% 55%;
+  --chart-3: 49 100% 52%;
+  --chart-4: 350 68% 55%;
+  --chart-5: 200 35% 45%;
   
   /* Sidebar */
   --sidebar: 20 18% 18%;              /* Dark Espresso */
   --sidebar-foreground: 40 20% 92%;
   --sidebar-border: 20 15% 25%;
-  --sidebar-ring: 34 46% 52%;
-  --sidebar-primary: 34 46% 52%;
+  --sidebar-ring: 49 100% 52%;
+  --sidebar-primary: 49 100% 52%;
   --sidebar-primary-foreground: 20 15% 15%;
-  --sidebar-primary-border: hsl(34 46% 42%);
+  --sidebar-primary-border: hsl(49 100% 42%);
   --sidebar-accent: 20 18% 25%;
   --sidebar-accent-foreground: 40 20% 92%;
   --sidebar-accent-border: hsl(20 15% 30%);
@@ -78,19 +78,19 @@
   --popover-foreground: 0 0% 100%;
   --popover-border: 217 25% 25%;
   
-  --primary: 24 95% 53%;                /* Bright orange-copper #f97316 */
+  --primary: 5 78% 56%;
   --primary-foreground: 0 0% 100%;
-  --primary-border: hsl(24 95% 43%);
+  --primary-border: hsl(5 78% 46%);
   
-  --secondary: 152 30% 55%;             /* Brighter sage */
-  --secondary-foreground: 0 0% 100%;
+  --secondary: 22 100% 58%;
+  --secondary-foreground: 222 47% 11%;
   --secondary-border: hsl(152 30% 45%);
   
   --muted: 217 20% 22%;                 /* Slate muted */
   --muted-foreground: 220 13% 75%;      /* Bright soft gray */
   --muted-border: hsl(217 20% 32%);
   
-  --accent: 34 80% 55%;                 /* Bright gold */
+  --accent: 49 100% 58%;
   --accent-foreground: 222 47% 11%;
   --accent-border: hsl(34 80% 45%);
   
@@ -100,21 +100,21 @@
 
   --border: 217 25% 25%;                /* Slate border */
   --input: 217 25% 20%;
-  --ring: 24 95% 53%;
+  --ring: 22 100% 58%;
   
-  --chart-1: 24 95% 53%;
-  --chart-2: 152 35% 55%;
-  --chart-3: 34 80% 55%;
+  --chart-1: 5 78% 56%;
+  --chart-2: 22 100% 58%;
+  --chart-3: 49 100% 58%;
   --chart-4: 10 60% 65%;
   --chart-5: 200 50% 55%;
   
   --sidebar: 222 47% 8%;
   --sidebar-foreground: 0 0% 95%;
   --sidebar-border: 217 25% 18%;
-  --sidebar-ring: 24 95% 53%;
-  --sidebar-primary: 24 95% 53%;
+  --sidebar-ring: 22 100% 58%;
+  --sidebar-primary: 22 100% 58%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-primary-border: hsl(24 95% 43%);
+  --sidebar-primary-border: hsl(22 100% 48%);
   --sidebar-accent: 222 40% 16%;
   --sidebar-accent-foreground: 0 0% 95%;
   --sidebar-accent-border: hsl(217 25% 22%);

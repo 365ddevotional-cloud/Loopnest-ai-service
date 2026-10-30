@@ -15,3 +15,38 @@
 .mh-landing h1,.mh-landing h2,.mh-page-heading h1,.mh-care-card h2,.mh-auth h1,.mh-work-main h1,.mh-work-main h2,.mn-admin-title h1{font-family:'Anton','DM Sans',sans-serif;font-weight:400;letter-spacing:.005em}
 .mh-button,.mh-workspace aside nav button{font-family:'DM Sans',sans-serif;font-weight:700}
 .mn-admin h1,.mn-admin h2{font-family:'Anton','DM Sans',sans-serif;font-weight:400;letter-spacing:.005em}
+
+/* Ministrium brand system: editorial serif, clear sans, and selective Anton display. */
+:root{--mh-green:#211b19;--mh-ink:#292422;--mh-paper:#f7f3eb;--mh-gold:#ffd629;--mh-red:#cf2638;--mh-orange:#ff5a1f}
+body{background:var(--mh-paper);color:var(--mh-ink);font-family:'DM Sans',sans-serif}
+.mh-landing h1,.mh-landing h2,.mh-page-heading h1,.mh-work-main h1,.mh-work-main h2,.mh-care-card h2,.mh-auth h1,.mn-admin-title h1,.mn-tools-heading h2,.mn-community-heading h2,.mn-resource-card h3,.mn-resource-editor h3,.mn-lesson-reader h2,.mn-prayers h3,.mn-gatherings h3,.mn-org-card h2{font-family:'Libre Caslon Display',Georgia,serif;font-weight:400;letter-spacing:-.025em}
+.mh-hero h1,.mh-invite h2{font-family:'Anton','DM Sans',sans-serif;font-weight:400;letter-spacing:.005em}
+.mh-button{background:var(--mh-orange);color:#211b19!important;font-weight:700;box-shadow:0 3px 0 #db3f0c;transition:transform .16s ease,background .16s ease,box-shadow .16s ease}
+.mh-button:hover{background:#ff713c;transform:translateY(-1px);box-shadow:0 4px 0 #db3f0c}
+.mh-button:disabled{background:#c9c3b9;color:#605a54!important;box-shadow:none}
+.mh-hero h1 em,.mh-eyebrow,.mh-strip>span,.mh-card-bottom{color:#9d3326}
+.mh-arch{background:#211b19;color:#fff8e7;box-shadow:0 10px 0 var(--mh-red)}
+.mh-arch em,.mh-card-bottom>span:last-child,.mh-care-symbol{color:var(--mh-gold)}
+.mh-strip,.mh-invite{background:#fff1b8;border-color:#efcf50}
+.mh-workspace{background:#f7f3eb}
+.mh-workspace aside{background:#f1ece2;border-color:#e1d7c8}
+.mh-work-main>header{background:#fffaf2;border-color:#e7ddce}
+.mh-workspace aside nav button.active,.mn-tools-nav button[aria-pressed=true],.mn-community-nav button[aria-selected=true],.mn-admin-nav button[aria-pressed=true]{background:var(--mh-red);color:#fff}
+.mh-workspace aside nav button.active{box-shadow:inset 3px 0 0 var(--mh-gold)}
+.mh-care-card{background:#211b19;border-top:4px solid var(--mh-orange)}
+.mh-care-card .mh-pill{background:#ffd629;color:#32220e}
+.mh-care-card button{color:#ffd629}
+.mh-panel,.mh-stats article,.mn-resource-card,.mn-resource-editor,.mn-people-list article,.mn-community-panel,.mn-lesson-card,.mn-lesson-reader,.mn-shop-card{border-color:#e5ddd0;box-shadow:0 5px 18px #382a1a0a}
+.mh-status,.mh-count,.mh-pill{background:#fff0a8;color:#553b06}
+.mh-panel td button,.mn-resource-actions button,.mn-resource-top button,.mn-workspaces a:not(.mh-button){color:#b52232}
+.mn-field input:focus,.mn-field select:focus,.mn-community-form textarea:focus{outline:2px solid var(--mh-orange);outline-offset:2px}
+.mn-kinds input{accent-color:var(--mh-red)}
+.mn-kinds label.selected{border-color:var(--mh-red);background:#fff3d5}
+.mn-community article.mine,.mn-messages article.mine{background:#fff1bf}
+.mn-prayer-top,.mn-resource-meta,.mn-tools-entry span{color:#6c4b32}
+.mn-group-free{background:#fff1bf;border-left-color:var(--mh-orange);color:#38271b}
+.mn-study-progress progress{accent-color:var(--mh-orange)}
+.mn-resource-cover{background:var(--mh-red);color:#fff8e7}
+.mn-products article:nth-child(2) .mh-product-cover{background:#211b19;color:#ffd629}
+.mn-products article:nth-child(3) .mh-product-cover{background:#ffd629;color:#34261a}
+::selection{background:#ffd629;color:#211b19}
