@@ -52,3 +52,14 @@ Complete a real sandbox seller onboarding, paid/declined/delayed checkout, signe
 ## Verification
 
 TypeScript, production build and all 54 automated tests pass before deployment. Tests cover strict input/role/scope checks, private content, price/commission spoofing, repeat checkout keys, inactive seller capability, payment mismatches, raw signature verification, webhook replays, refund/dispute access and version/archive behavior. Local sample browser checks cover creation, pricing, archive/restore and simulated sale/refund. Live non-payment checks and deployment IDs are appended after successful activation of this code, without treating those as payment verification.
+
+
+## Deployed code and live non-payment checks — 2026-10-30
+
+Source `21eb9802678dc3ad1540d7db898e0394ae1e475e` reached Railway SUCCESS in deployment `7e98ca48-a144-4420-b7c9-6c342f77bd17`. Migrations 1–4 were already current; migration 5 applied. Runtime remains workspace mode with live payments disabled.
+
+All 54 automated tests pass, with TypeScript and production build successful. Two synthetic Firebase accounts were verified from actual received messages. They passed 28 live API checks covering catalogue persistence after fresh sign-in, hidden paid content/drafts, nonmember browsing, leader/member/cross-workspace authorization, free group exclusions, edit versions, archive/restore and disabled checkout/onboarding/webhook safeguards. No payment or commission was processed. A manual signed-in browser walkthrough of all account screens is not claimed.
+
+Local browser checks covered creating/pricing an original sample resource, archiving/restoring it, simulated sale/refund and an actual sample text download (content verified). The deployed `/commerce-preview` loaded and its explicitly simulated order state was checked. Screenshot: `stage5-live-shop.jpg`. These sample checks are not real Stripe checkout verification.
+
+The original devotional deployment remains `fd83ae17-5f51-40cd-8144-cd081269ffd7`. No services, volumes, buckets, subscriptions or financial accounts were provisioned. Existing Ministrium hosting usage continues. Stage 5 remains awaiting secure sandbox setup, confirmed fee/model and real provider payment/refund/commission tests.

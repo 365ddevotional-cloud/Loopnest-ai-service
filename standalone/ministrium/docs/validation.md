@@ -54,3 +54,12 @@ TypeScript, production build and all 40 tests pass. Browser sample checks cover 
 - 33 real HTTP checks with two synthetic verified accounts passed, including lesson/draft isolation, private progress, stale writes, archive/restore, gatherings and fresh-sign-in persistence.
 - Live sample browser reflection/completion checked separately; screenshot `stage4-live-groups.jpg`. A manual signed-in browser walkthrough of every account screen is not claimed.
 - Original devotional deployment unchanged; live payments remain disabled. See `stage4-private-groups.md` and `roadmap.md`.
+
+
+### Stage 5 sales implementation (2026-10-30)
+
+- Source `21eb9802678dc3ad1540d7db898e0394ae1e475e`; Railway deployment `7e98ca48-a144-4420-b7c9-6c342f77bd17` reached SUCCESS. Only migration 5 was applied.
+- TypeScript, production build and all 54 automated tests pass. Payment-provider fixtures and real Stripe signature verification are tested locally.
+- Two synthetic verified accounts passed 28 live catalogue/permissions/disabled-payment checks. No Stripe sandbox purchase, real charge or payout was processed.
+- Browser sample authoring/archive/simulated sale/refund and sample download verified; deployed sample screenshot `stage5-live-shop.jpg`.
+- Original devotional unchanged. Sandbox key, Connect webhook setup, rate/model confirmation and real Stripe end-to-end payment verification remain required before Stage 5 is complete. See `stage5-commerce.md`.
