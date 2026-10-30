@@ -15,6 +15,7 @@ Ministrium is a standalone church and ministry platform extracted from Church Mo
 - Random invitation tokens stored only as SHA-256 hashes, expiring in seven days, consumed atomically once. New invitations create members; they cannot assign administrators.
 - Dedicated Firebase identity verification with required verified email; query cache and private invitation state are isolated on account/organization changes.
 - Private community conversations, prayer requests and leader-managed gathering schedules, with a sample family group at `/group-preview`.
+- Private-group lessons, personal reflections/progress, and versioned gathering edits/cancellation with time-zone viewing. See `docs/stage4-private-groups.md`; sample at `/study-preview`.
 - Workspace teaching, private sermon study/bookmarks, announcements, events, departments, owner-managed leadership and membership audit. See `docs/stage3-ministry-tools.md`; sample at `/tools-preview`.
 - Explicit, checksum-checked versioned migrations for the `ministrium` PostgreSQL namespace. No migration runs on server startup.
 - PostgreSQL-backed tests through PGlite, HTTP API tests and a scoped GitHub Actions workflow.
@@ -27,7 +28,7 @@ Teaching, announcements, events and departments now use the separate workspace m
 
 ## Private groups
 
-Family prayer, prayer circles and discipleship groups have a distinct `group` workspace type with a required purpose (`family`, `prayer` or `discipleship`). They do not have to register as churches or ministries. Private workspaces include member conversations, prayer requests with author/leader answered status, and leader-scheduled gatherings. Meeting times display in each viewer’s time zone. Leaders may share an existing HTTPS meeting link; built-in voice/video and discipleship lessons are future integrations. Members can join from different locations; the base country does not restrict membership. Linking a group to a church/ministry is planned and not implemented.
+Family prayer, prayer circles and discipleship groups have a distinct `group` workspace type with a required purpose (`family`, `prayer` or `discipleship`). They do not have to register as churches or ministries. Private workspaces include member conversations, prayer requests with author/leader answered status, and leader-scheduled gatherings. Meeting times display in each viewer’s time zone. Leaders may share an existing HTTPS meeting link; built-in voice/video remains a future integration. Group study now supports ordered lessons, private reflections and completion records at `/workspace/:id/study`. Members can join from different locations; the base country does not restrict membership. Linking a group to a church/ministry is planned and not implemented.
 
 ## Run the preview
 
@@ -49,7 +50,7 @@ No cloud service is created automatically and no production data is migrated. Se
 
 1. Supply server variables from `.env.example`: `MINISTRIUM_DATABASE_URL`, `MINISTRIUM_DATABASE_CONFIRMED=standalone`, and `MINISTRIUM_FIREBASE_PROJECT_ID`.
 2. The owner-supplied public web configuration for `ministrium-425f9` is built in through `config/firebase-web.mjs`. To use another project, supply all four matching `VITE_MINISTRIUM_FIREBASE_*` values at build time. Enable Firebase email/password authentication and authorize the deployed hostname. These scripts do not automatically load a `.env` file into the server or migration process; export variables or use the host's environment configuration.
-3. Run `npm run migrate` explicitly against that dedicated database. It applies migrations 001, 002 and 003, each in its own transaction, creating only Ministrium tables and version records. Re-running is safe; changing an applied migration is rejected.
+3. Run `npm run migrate` explicitly against that dedicated database. It applies migrations 001 through 004, each in its own transaction, creating only Ministrium tables and version records. Re-running is safe; changing an applied migration is rejected.
 4. Build and start. The server verifies all installed migration checksums before enabling workspace APIs.
 5. Test signup → email verification → create organization → invite → accept using the invited account. Automatic invitation email is not implemented: a leader privately shares the one-time-displayed link.
 
@@ -80,13 +81,9 @@ Invitation links carry the token in a URL fragment, not the request path or quer
 
 `npm run extract` regenerates the legacy snapshot from the parent repository two directories above. It is not part of normal builds and must be used only while this folder resides inside that repository. It does not replace the new workspace database or handlers. Review generated changes before committing. Do not run the parent's `db:push` for this app.
 
-## Next milestones
+## Delivery roadmap
 
-1. Expand account lifecycle and public ministry pages after the verified dedicated account foundation.
-2. Extend the connected teaching, event, department and community tools with richer discipleship lessons and pastoral care workflows.
-3. Implement authorized uploads and dedicated email delivery.
-4. Build products, orders, protected resource delivery and an event ledger, then connected-account payments with transparent platform fees.
-5. Validate refunds, disputes, receipts, fee reconciliation and country eligibility before opening real money collection.
+See `docs/roadmap.md` for the original seven stages: foundation, accounts, ministry tools, private groups, sales/commissions, administration/testing, then pilot/launch. Stage 4 is private groups; sales belong to Stage 5 and launch to Stage 7.
 
 This development branch does not modify or deploy the live 365 Daily Devotional service.
 

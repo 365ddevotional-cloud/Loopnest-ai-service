@@ -29,7 +29,7 @@ if(mode==='workspace'){
  const db=createDatabase(process.env.MINISTRIUM_DATABASE_URL);
  // Never auto-migrate or initialize the devotional database.
  try{
-  for(const [index,file] of ['001_workspaces.sql','002_community.sql','003_ministry_tools.sql'].entries()){
+  for(const [index,file] of ['001_workspaces.sql','002_community.sql','003_ministry_tools.sql','004_private_group_study.sql'].entries()){
    const migration=await db.query('SELECT checksum FROM ministrium.migrations WHERE version=$1',[index+1]);
    const sql=await fs.readFile(path.resolve(process.cwd(),'migrations',file),'utf8');
    if(migration.rows[0]?.checksum!==migrationChecksum(sql))throw new Error('Run or verify the explicit Ministrium migrations before starting workspace mode.');

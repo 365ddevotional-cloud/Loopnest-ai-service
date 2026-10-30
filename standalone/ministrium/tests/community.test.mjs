@@ -9,7 +9,7 @@ let db,community,org,second;
 const owner={uid:'leader',email:'leader@example.com'},member={uid:'participant',email:'participant@example.com'},outsider={uid:'other',email:'other@example.com'};
 before(async()=>{
  db=new PGlite();
- for(const [index,name]of ['001_workspaces.sql','002_community.sql'].entries()){
+ for(const [index,name]of ['001_workspaces.sql','002_community.sql','003_ministry_tools.sql','004_private_group_study.sql'].entries()){
   const sql=await readFile(new URL(`../migrations/${name}`,import.meta.url),'utf8');
   assert.equal((await applyWorkspaceMigration(db,sql,index+1)).applied,true);
   assert.equal((await applyWorkspaceMigration(db,sql,index+1)).applied,false);
@@ -48,4 +48,21 @@ test('gatherings require leaders and valid time zones and safe existing meeting 
  assert.equal((await community.gatherings(member,org.id))[0].meetingUrl,input.meetingUrl);
  assert.deepEqual(await community.gatherings(outsider,second.id),[]);
  await assert.rejects(community.gatherings(outsider,org.id),{status:404});
+});
+
+
+test('gathering changes are leader-only, versioned and safely cancelled or restored',async()=>{
+ const expected=new Date(Date.now()+86400000).toISOString(),offset=new Date(new Date(expected).getTime()+3600000).toISOString().replace('Z','+01:00');
+ const data={title:'Across time zones',startsAt:offset,timezone:'Africa/Lagos',meetingUrl:null};
+ const meeting=await community.schedule(owner,org.id,data);assert.equal(new Date(meeting.startsAt).toISOString(),expected);
+ await assert.rejects(community.updateGathering(member,org.id,meeting.id,{version:1,data}),{status:404});
+ await assert.rejects(community.updateGathering(outsider,second.id,meeting.id,{version:1,data}),{status:409});
+ const changed=await community.updateGathering(owner,org.id,meeting.id,{version:1,data:{...data,title:'Updated gathering'}});assert.equal(changed.version,2);
+ await assert.rejects(community.updateGathering(owner,org.id,meeting.id,{version:1,data}),{status:409});
+ await community.cancelGathering(owner,org.id,meeting.id,{version:2,cancelled:true});
+ assert.equal((await community.gatherings(member,org.id)).some(x=>x.id===meeting.id),false);
+ await assert.rejects(community.gatherings(member,org.id,true),{status:404});
+ assert.equal((await community.gatherings(owner,org.id,true)).find(x=>x.id===meeting.id).cancelled,true);
+ await community.cancelGathering(owner,org.id,meeting.id,{version:3,cancelled:false});
+ assert.equal((await community.gatherings(member,org.id)).find(x=>x.id===meeting.id).version,4);
 });

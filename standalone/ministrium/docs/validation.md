@@ -41,3 +41,7 @@ The owner approved immediate hosting usage and applied the Railway patch. App an
 All 32 tests, TypeScript and production build pass. Browser sample checks verify teaching creation, recoverable archive, notes/bookmark editor, event creation, draft announcements, department membership and leadership review. See `stage3-ministry-tools.md` for API coverage, source adaptation and remaining scope. Live activation is recorded separately after success.
 
 Stage 3 deployment reached SUCCESS (`7c8f7eab-e0e7-4090-b0b8-a58018bb9393`); migration 3 applied. Live verified-account HTTP checks passed for the four content types, drafts, study privacy, versioned editing, archive/restore, teams, owner-only role management, audit and removal. The deployed sample page also rendered correctly. See `stage3-ministry-tools.md` for precise coverage.
+
+## Stage 4 — private group study and gatherings
+
+TypeScript, production build and all 40 tests pass. Browser sample checks cover lessons, personal completion/reflection save, archive/restore, meeting edits/cancellation/restore and Chicago/Lagos viewing. See `stage4-private-groups.md` and `roadmap.md` for scope and the remaining stages. Live activation is recorded after success.

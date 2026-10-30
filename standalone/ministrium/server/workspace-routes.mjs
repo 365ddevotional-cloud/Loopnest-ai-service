@@ -1,3 +1,4 @@
+import {createGroupStudy} from './group-study.mjs';
 import {createMinistryTools} from './ministry-tools.mjs';
 import {createCommunityService} from './community.mjs';
 import {WorkspaceError, createWorkspaceService} from './workspaces.mjs';
@@ -26,6 +27,14 @@ export function registerWorkspaceRoutes(app, db, verifyToken) {
       next(error);
     }
   };
+  const study=createGroupStudy(db);
+  app.get('/api/workspaces/:id/lessons',wrap(async(req,res,user)=>res.json(await study.list(user,req.params.id,req.query.archived==='true'))));
+  app.post('/api/workspaces/:id/lessons',wrap(async(req,res,user)=>res.status(201).json(await study.create(user,req.params.id,req.body))));
+  app.get('/api/workspaces/:id/lessons/:lessonId',wrap(async(req,res,user)=>res.json(await study.detail(user,req.params.id,req.params.lessonId))));
+  app.put('/api/workspaces/:id/lessons/:lessonId',wrap(async(req,res,user)=>res.json(await study.update(user,req.params.id,req.params.lessonId,req.body))));
+  app.post('/api/workspaces/:id/lessons/:lessonId/archive',wrap(async(req,res,user)=>res.json(await study.archive(user,req.params.id,req.params.lessonId,req.body))));
+  app.get('/api/workspaces/:id/lessons/:lessonId/progress',wrap(async(req,res,user)=>res.json(await study.progress(user,req.params.id,req.params.lessonId))));
+  app.put('/api/workspaces/:id/lessons/:lessonId/progress',wrap(async(req,res,user)=>res.json(await study.saveProgress(user,req.params.id,req.params.lessonId,req.body))));
   const tools=createMinistryTools(db);
   app.get('/api/workspaces/:id/resources',wrap(async(req,res,user)=>res.json(await tools.list(user,req.params.id,req.query.kind,req.query.archived==='true'))));
   app.post('/api/workspaces/:id/resources',wrap(async(req,res,user)=>res.status(201).json(await tools.create(user,req.params.id,req.body))));
@@ -44,8 +53,10 @@ export function registerWorkspaceRoutes(app, db, verifyToken) {
   app.get('/api/workspaces/:id/prayers',wrap(async(req,res,user)=>res.json(await community.prayers(user,req.params.id))));
   app.post('/api/workspaces/:id/prayers',wrap(async(req,res,user)=>res.status(201).json(await community.postPrayer(user,req.params.id,req.body))));
   app.patch('/api/workspaces/:id/prayers/:prayerId',wrap(async(req,res,user)=>res.json(await community.answerPrayer(user,req.params.id,req.params.prayerId,req.body))));
-  app.get('/api/workspaces/:id/gatherings',wrap(async(req,res,user)=>res.json(await community.gatherings(user,req.params.id))));
+  app.get('/api/workspaces/:id/gatherings',wrap(async(req,res,user)=>res.json(await community.gatherings(user,req.params.id,req.query.includeCancelled==='true'))));
   app.post('/api/workspaces/:id/gatherings',wrap(async(req,res,user)=>res.status(201).json(await community.schedule(user,req.params.id,req.body))));
+  app.put('/api/workspaces/:id/gatherings/:gatheringId',wrap(async(req,res,user)=>res.json(await community.updateGathering(user,req.params.id,req.params.gatheringId,req.body))));
+  app.post('/api/workspaces/:id/gatherings/:gatheringId/cancellation',wrap(async(req,res,user)=>res.json(await community.cancelGathering(user,req.params.id,req.params.gatheringId,req.body))));
   app.get('/api/workspaces',wrap(async(_req,res,user)=>res.json(await service.list(user))));
   app.post('/api/workspaces',wrap(async(req,res,user)=>res.status(201).json(await service.create(user,req.body))));
   app.post('/api/workspaces/join',wrap(async(req,res,user)=>{
