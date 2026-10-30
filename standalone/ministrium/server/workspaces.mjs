@@ -34,6 +34,7 @@ async function saveIdentity(tx, user) {
   await tx.query('INSERT INTO ministrium.identities(uid,email) VALUES ($1,$2) ON CONFLICT(uid) DO UPDATE SET email=EXCLUDED.email',[user.uid,user.email]);
 }
 async function membership(tx, id, user, manage = false) {
+  await tx.query('SELECT id FROM ministrium.organizations WHERE id=$1 FOR UPDATE',[id]);
   const {rows} = await tx.query('SELECT role FROM ministrium.memberships WHERE organization_id=$1 AND uid=$2',[id,user.uid]);
   if (!rows.length || (manage && !['owner','admin'].includes(rows[0].role))) throw new WorkspaceError(404,'Workspace not found or unavailable to your account.');
   return rows[0].role;
@@ -108,6 +109,9 @@ export function createWorkspaceService(db) {
       const user=identity(principal), token=parse(tokenInput,tokenValue);
       return db.transaction(async tx=>{
         await saveIdentity(tx,user);
+        const candidate=(await tx.query('SELECT organization_id FROM ministrium.invitations WHERE token_hash=$1',[hash(token)])).rows[0];
+        if(!candidate)throw new WorkspaceError(404,'Invitation unavailable.');
+        await tx.query('SELECT id FROM ministrium.organizations WHERE id=$1 FOR UPDATE',[candidate.organization_id]);
         // Atomic consumption prevents replay and simultaneous double use.
         const {rows}=await tx.query('UPDATE ministrium.invitations SET accepted_by=$1,accepted_at=now() WHERE token_hash=$2 AND email=$3 AND expires_at>now() AND accepted_at IS NULL AND revoked_at IS NULL RETURNING organization_id',[user.uid,hash(token),user.email]);
         if(!rows.length)throw new WorkspaceError(404,'Invitation unavailable. Check the invited email, expiry, or ask for a new invitation.');

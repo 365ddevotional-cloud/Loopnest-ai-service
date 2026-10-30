@@ -8,6 +8,7 @@ const gathering=z.object({title:text(2,120),startsAt:z.string().datetime({offset
 function parse(schema,value){const result=schema.safeParse(value);if(!result.success)throw new WorkspaceError(400,'Check the submitted fields and try again.');return result.data;}
 async function access(tx,organizationId,user,manage=false){
  if(!user?.uid)throw new WorkspaceError(401,'Sign in to continue.');
+ await tx.query('SELECT id FROM ministrium.organizations WHERE id=$1 FOR UPDATE',[organizationId]);
  const {rows}=await tx.query('SELECT role FROM ministrium.memberships WHERE organization_id=$1 AND uid=$2 FOR SHARE',[organizationId,user.uid]);
  if(!rows.length||(manage&&!['owner','admin'].includes(rows[0].role)))throw new WorkspaceError(404,'Community unavailable to your account.');
  return rows[0].role;

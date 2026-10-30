@@ -1,3 +1,4 @@
+import {createMinistryTools} from './ministry-tools.mjs';
 import {createCommunityService} from './community.mjs';
 import {WorkspaceError, createWorkspaceService} from './workspaces.mjs';
 
@@ -25,6 +26,19 @@ export function registerWorkspaceRoutes(app, db, verifyToken) {
       next(error);
     }
   };
+  const tools=createMinistryTools(db);
+  app.get('/api/workspaces/:id/resources',wrap(async(req,res,user)=>res.json(await tools.list(user,req.params.id,req.query.kind,req.query.archived==='true'))));
+  app.post('/api/workspaces/:id/resources',wrap(async(req,res,user)=>res.status(201).json(await tools.create(user,req.params.id,req.body))));
+  app.put('/api/workspaces/:id/resources/:resourceId',wrap(async(req,res,user)=>res.json(await tools.update(user,req.params.id,req.params.resourceId,req.body))));
+  app.post('/api/workspaces/:id/resources/:resourceId/archive',wrap(async(req,res,user)=>res.json(await tools.archive(user,req.params.id,req.params.resourceId,req.body))));
+  app.post('/api/workspaces/:id/resources/:resourceId/restore',wrap(async(req,res,user)=>res.json(await tools.restore(user,req.params.id,req.params.resourceId,req.body))));
+  app.get('/api/workspaces/:id/sermons/:resourceId/study',wrap(async(req,res,user)=>res.json(await tools.study(user,req.params.id,req.params.resourceId))));
+  app.put('/api/workspaces/:id/sermons/:resourceId/study',wrap(async(req,res,user)=>res.json(await tools.saveStudy(user,req.params.id,req.params.resourceId,req.body))));
+  app.put('/api/workspaces/:id/departments/:resourceId/membership',wrap(async(req,res,user)=>res.json(await tools.joinDepartment(user,req.params.id,req.params.resourceId,req.body))));
+  app.get('/api/workspaces/:id/departments/:resourceId/members',wrap(async(req,res,user)=>res.json(await tools.departmentMembers(user,req.params.id,req.params.resourceId))));
+  app.get('/api/workspaces/:id/people',wrap(async(req,res,user)=>res.json(await tools.members(user,req.params.id))));
+  app.patch('/api/workspaces/:id/people/:uid',wrap(async(req,res,user)=>res.json(await tools.changeMember(user,req.params.id,req.params.uid,req.body))));
+  app.get('/api/workspaces/:id/leadership-audit',wrap(async(req,res,user)=>res.json(await tools.audit(user,req.params.id))));
   app.get('/api/workspaces/:id/messages',wrap(async(req,res,user)=>res.json(await community.messages(user,req.params.id))));
   app.post('/api/workspaces/:id/messages',wrap(async(req,res,user)=>res.status(201).json(await community.postMessage(user,req.params.id,req.body))));
   app.get('/api/workspaces/:id/prayers',wrap(async(req,res,user)=>res.json(await community.prayers(user,req.params.id))));

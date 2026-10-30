@@ -15,6 +15,7 @@ Ministrium is a standalone church and ministry platform extracted from Church Mo
 - Random invitation tokens stored only as SHA-256 hashes, expiring in seven days, consumed atomically once. New invitations create members; they cannot assign administrators.
 - Dedicated Firebase identity verification with required verified email; query cache and private invitation state are isolated on account/organization changes.
 - Private community conversations, prayer requests and leader-managed gathering schedules, with a sample family group at `/group-preview`.
+- Workspace teaching, private sermon study/bookmarks, announcements, events, departments, owner-managed leadership and membership audit. See `docs/stage3-ministry-tools.md`; sample at `/tools-preview`.
 - Explicit, checksum-checked versioned migrations for the `ministrium` PostgreSQL namespace. No migration runs on server startup.
 - PostgreSQL-backed tests through PGlite, HTTP API tests and a scoped GitHub Actions workflow.
 
@@ -22,7 +23,7 @@ Ministrium is a standalone church and ministry platform extracted from Church Mo
 
 The extracted 29 legacy church pages and 141 inherited route registrations remain in `source/` as migration reference. **None of the legacy handlers are registered in the runtime** until their features and tenant checks are migrated. Their database definitions are not applied. The runtime imports only the new Ministrium workspace service, not the devotional database/storage/startup.
 
-Teaching, departments, public church pages and the legacy event system still require integration with the new workspace model. The sample dashboard illustrates these areas without persisting data. There is no live product catalogue, checkout, order delivery, settlement, subscription, outbound email or file upload. Giving, inherited payout configuration and all live financial endpoints remain blocked. Native app-store packages and offline operation are not included.
+Teaching, announcements, events and departments now use the separate workspace model through `/workspace/:id/tools`. Public church pages and remaining specialized legacy screens are still staged. The sample dashboard remains synthetic. There is no live product catalogue, checkout, order delivery, settlement, subscription, outbound email or file upload. Giving, inherited payout configuration and all live financial endpoints remain blocked. Native app-store packages and offline operation are not included.
 
 ## Private groups
 
@@ -48,8 +49,8 @@ No cloud service is created automatically and no production data is migrated. Se
 
 1. Supply server variables from `.env.example`: `MINISTRIUM_DATABASE_URL`, `MINISTRIUM_DATABASE_CONFIRMED=standalone`, and `MINISTRIUM_FIREBASE_PROJECT_ID`.
 2. The owner-supplied public web configuration for `ministrium-425f9` is built in through `config/firebase-web.mjs`. To use another project, supply all four matching `VITE_MINISTRIUM_FIREBASE_*` values at build time. Enable Firebase email/password authentication and authorize the deployed hostname. These scripts do not automatically load a `.env` file into the server or migration process; export variables or use the host's environment configuration.
-3. Run `npm run migrate` explicitly against that dedicated database. It applies migrations 001 and 002, each in its own transaction, creating only Ministrium tables and version records. Re-running is safe; changing an applied migration is rejected.
-4. Build and start. The server verifies both installed migration checksums before enabling workspace APIs.
+3. Run `npm run migrate` explicitly against that dedicated database. It applies migrations 001, 002 and 003, each in its own transaction, creating only Ministrium tables and version records. Re-running is safe; changing an applied migration is rejected.
+4. Build and start. The server verifies all installed migration checksums before enabling workspace APIs.
 5. Test signup → email verification → create organization → invite → accept using the invited account. Automatic invitation email is not implemented: a leader privately shares the one-time-displayed link.
 
 The runtime never falls back to `DATABASE_URL`, and never rewrites it. A matching inherited and dedicated URL is rejected. The confirmation variable is an operational guard, not proof of database ownership. The connection pool is limited to five connections. Database SSL must be configured according to the chosen provider; TLS verification is never disabled by the code.
@@ -81,8 +82,8 @@ Invitation links carry the token in a URL fragment, not the request path or quer
 
 ## Next milestones
 
-1. Configure separate staging identity/database and verify real email/token flows; test deployment on the target PostgreSQL provider.
-2. Integrate existing teaching, events, groups and care tools with the new tenant model; add organization administration and account lifecycle controls.
+1. Expand account lifecycle and public ministry pages after the verified dedicated account foundation.
+2. Extend the connected teaching, event, department and community tools with richer discipleship lessons and pastoral care workflows.
 3. Implement authorized uploads and dedicated email delivery.
 4. Build products, orders, protected resource delivery and an event ledger, then connected-account payments with transparent platform fees.
 5. Validate refunds, disputes, receipts, fee reconciliation and country eligibility before opening real money collection.

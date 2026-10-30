@@ -35,3 +35,7 @@ All 24 tests pass. Browser checks verified posting a sample conversation, postin
 ## Stage 2 activation
 
 The owner approved immediate hosting usage and applied the Railway patch. App and PostgreSQL deployments succeeded, both migrations applied, and live registration/email verification/fresh sign-in, membership privacy, email-bound invitation acceptance/replay rejection/revocation, community writes and persistence checks passed. See `stage2-live-verification.md` for exact coverage and browser limits.
+
+## Stage 3 — connected ministry tools
+
+All 32 tests, TypeScript and production build pass. Browser sample checks verify teaching creation, recoverable archive, notes/bookmark editor, event creation, draft announcements, department membership and leadership review. See `stage3-ministry-tools.md` for API coverage, source adaptation and remaining scope. Live activation is recorded separately after success.
