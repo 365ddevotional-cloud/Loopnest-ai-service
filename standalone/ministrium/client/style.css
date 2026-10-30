@@ -14,3 +14,4 @@
 /* Confident, condensed display type inspired by the supplied streaming UI reference. */
 .mh-landing h1,.mh-landing h2,.mh-page-heading h1,.mh-care-card h2,.mh-auth h1,.mh-work-main h1,.mh-work-main h2,.mn-admin-title h1{font-family:'Anton','DM Sans',sans-serif;font-weight:400;letter-spacing:.005em}
 .mh-button,.mh-workspace aside nav button{font-family:'DM Sans',sans-serif;font-weight:700}
+.mn-admin h1,.mn-admin h2{font-family:'Anton','DM Sans',sans-serif;font-weight:400;letter-spacing:.005em}
