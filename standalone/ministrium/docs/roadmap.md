@@ -8,7 +8,7 @@ This is the original agreed seven-stage sequence. Stage 4 completes private grou
 | 2 | Real accounts, separate identity/database, verification and invitations | Live; `stage2-live-verification.md` |
 | 3 | Existing church and ministry tools with workspace privacy | Live; `stage3-ministry-tools.md` |
 | 4 | Private family/prayer/discipleship groups, conversations, prayer, time-zone-aware gatherings and study materials | Live; `stage4-private-groups.md` |
-| 5 | Sales, checkout, orders, protected delivery, commissions, refunds and reconciliation | Pending |
+| 5 | Sales, checkout, orders, protected delivery, commissions, refunds and reconciliation | Implemented for text-resource pilot; Stripe sandbox setup and real payment verification pending; `stage5-commerce.md` |
 | 6 | Platform administration and broader testing | Pending |
 | 7 | Small pilot, launch and app-store distribution | Pending |
 

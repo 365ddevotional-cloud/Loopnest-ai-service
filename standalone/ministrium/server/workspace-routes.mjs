@@ -2,8 +2,10 @@ import {createGroupStudy} from './group-study.mjs';
 import {createMinistryTools} from './ministry-tools.mjs';
 import {createCommunityService} from './community.mjs';
 import {WorkspaceError, createWorkspaceService} from './workspaces.mjs';
+import {registerCommerceRoutes} from './commerce-routes.mjs';
 
-export function registerWorkspaceRoutes(app, db, verifyToken) {
+/** @param {any} app @param {any} db @param {any} verifyToken @param {any} commerce */
+export function registerWorkspaceRoutes(app, db, verifyToken, commerce=null) {
   const service=createWorkspaceService(db);
   const community=createCommunityService(db);
   // Bounded, process-local pilot limiter. Use a shared limiter before multiple replicas.
@@ -27,6 +29,7 @@ export function registerWorkspaceRoutes(app, db, verifyToken) {
       next(error);
     }
   };
+  if(commerce)registerCommerceRoutes(app,commerce,wrap);
   const study=createGroupStudy(db);
   app.get('/api/workspaces/:id/lessons',wrap(async(req,res,user)=>res.json(await study.list(user,req.params.id,req.query.archived==='true'))));
   app.post('/api/workspaces/:id/lessons',wrap(async(req,res,user)=>res.status(201).json(await study.create(user,req.params.id,req.body))));

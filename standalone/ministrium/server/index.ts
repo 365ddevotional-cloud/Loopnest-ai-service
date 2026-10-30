@@ -4,6 +4,9 @@ import fs from 'node:fs/promises';
 import {assertWorkspaceIdentity} from './deployment-config.mjs';
 import {migrationChecksum} from './migrations.mjs';
 import {isChurchApi,isWorkspaceApi,isBlockedFinance,runtimeMode} from './policy.mjs';
+import {commerceConfiguration,createStripeProvider} from './payment-provider.mjs';
+import {createCommerce} from './commerce.mjs';
+import {registerPaymentWebhook} from './commerce-routes.mjs';
 async function main(){
 const mode=runtimeMode(process.env);
 if(mode==='workspace'){
@@ -11,7 +14,12 @@ if(mode==='workspace'){
  assertWorkspaceIdentity(process.env,identity);
 }
 const app=express();
+const commerceConfig=commerceConfiguration(process.env);
+const paymentProvider=createStripeProvider(commerceConfig);
+let commerce:ReturnType<typeof createCommerce>|null=null;
 app.disable('x-powered-by');
+app.use((_req,res,next)=>{res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://*.stripe.com; frame-src https://ministrium-425f9.firebaseapp.com https://*.stripe.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self' https://*.stripe.com");next();});
+registerPaymentWebhook(app,()=>commerce,paymentProvider);
 app.use(express.json({limit:'256kb'}));
 app.use((_req,res,next)=>{res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Content-Type-Options','nosniff');next();});
 app.get('/api/health',(_req,res)=>res.json({ok:true,app:'Ministrium',version:'0.2.0',mode,paymentsEnabled:false}));
@@ -29,7 +37,7 @@ if(mode==='workspace'){
  const db=createDatabase(process.env.MINISTRIUM_DATABASE_URL);
  // Never auto-migrate or initialize the devotional database.
  try{
-  for(const [index,file] of ['001_workspaces.sql','002_community.sql','003_ministry_tools.sql','004_private_group_study.sql'].entries()){
+  for(const [index,file] of ['001_workspaces.sql','002_community.sql','003_ministry_tools.sql','004_private_group_study.sql','005_commerce.sql'].entries()){
    const migration=await db.query('SELECT checksum FROM ministrium.migrations WHERE version=$1',[index+1]);
    const sql=await fs.readFile(path.resolve(process.cwd(),'migrations',file),'utf8');
    if(migration.rows[0]?.checksum!==migrationChecksum(sql))throw new Error('Run or verify the explicit Ministrium migrations before starting workspace mode.');
@@ -37,13 +45,14 @@ if(mode==='workspace'){
  }catch(error){await db.close();throw error;}
  const {registerWorkspaceRoutes}=await import('./workspace-routes.mjs');
  const {auth}=await import('./firebase-admin');
- registerWorkspaceRoutes(app,db,(token:string)=>auth.verifyIdToken(token));
+ commerce=createCommerce(db,commerceConfig,paymentProvider);
+ registerWorkspaceRoutes(app,db,(token:string)=>auth.verifyIdToken(token),commerce);
 }
 app.use('/api',(_req,res)=>res.status(404).json({message:'Endpoint not found.'}));
 const publicDir=path.resolve(process.cwd(),'dist/public');
 app.use(express.static(publicDir,{index:false}));
 app.get('*',(_req,res)=>res.sendFile(path.join(publicDir,'index.html')));
-app.use((error:Error,_req:express.Request,res:express.Response,_next:express.NextFunction)=>{console.error('Ministrium request failed:',error.message);res.status(500).json({message:'Unable to complete this request.'});});
+app.use((error:Error,_req:express.Request,res:express.Response,_next:express.NextFunction)=>{console.error('Ministrium request failed:',error.name);res.status(500).json({message:'Unable to complete this request.'});});
 const port=process.env.PORT===undefined?8080:Number(process.env.PORT);
 const server=app.listen(port,'0.0.0.0',()=>{const address=server.address();console.log(`Ministrium listening on ${typeof address==='object'&&address?address.port:port} (${mode}; live payments disabled)`);});
 }

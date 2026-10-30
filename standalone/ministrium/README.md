@@ -24,7 +24,7 @@ Ministrium is a standalone church and ministry platform extracted from Church Mo
 
 The extracted 29 legacy church pages and 141 inherited route registrations remain in `source/` as migration reference. **None of the legacy handlers are registered in the runtime** until their features and tenant checks are migrated. Their database definitions are not applied. The runtime imports only the new Ministrium workspace service, not the devotional database/storage/startup.
 
-Teaching, announcements, events and departments now use the separate workspace model through `/workspace/:id/tools`. Public church pages and remaining specialized legacy screens are still staged. The sample dashboard remains synthetic. There is no live product catalogue, checkout, order delivery, settlement, subscription, outbound email or file upload. Giving, inherited payout configuration and all live financial endpoints remain blocked. Native app-store packages and offline operation are not included.
+Teaching, announcements, events and departments now use the separate workspace model through `/workspace/:id/tools`. Public church pages and remaining specialized legacy screens are still staged. The sample dashboard remains synthetic. The resource catalogue and purchase library support a digital-text sales pilot. Stripe sandbox runtime setup and real provider checkout verification are pending; live-money collection remains unsupported. Settlement/payout confirmation, subscriptions, outbound email and file uploads are not enabled. Giving, inherited payout configuration and all live financial endpoints remain blocked. Native app-store packages and offline operation are not included.
 
 ## Private groups
 
@@ -50,7 +50,7 @@ No cloud service is created automatically and no production data is migrated. Se
 
 1. Supply server variables from `.env.example`: `MINISTRIUM_DATABASE_URL`, `MINISTRIUM_DATABASE_CONFIRMED=standalone`, and `MINISTRIUM_FIREBASE_PROJECT_ID`.
 2. The owner-supplied public web configuration for `ministrium-425f9` is built in through `config/firebase-web.mjs`. To use another project, supply all four matching `VITE_MINISTRIUM_FIREBASE_*` values at build time. Enable Firebase email/password authentication and authorize the deployed hostname. These scripts do not automatically load a `.env` file into the server or migration process; export variables or use the host's environment configuration.
-3. Run `npm run migrate` explicitly against that dedicated database. It applies migrations 001 through 004, each in its own transaction, creating only Ministrium tables and version records. Re-running is safe; changing an applied migration is rejected.
+3. Run `npm run migrate` explicitly against that dedicated database. It applies migrations 001 through 005, each in its own transaction, creating only Ministrium tables and version records. Re-running is safe; changing an applied migration is rejected.
 4. Build and start. The server verifies all installed migration checksums before enabling workspace APIs.
 5. Test signup → email verification → create organization → invite → accept using the invited account. Automatic invitation email is not implemented: a leader privately shares the one-time-displayed link.
 
@@ -98,3 +98,6 @@ The dedicated Firebase project and web app have now been registered by the owner
 The earlier no-activation hold was superseded by explicit owner approval for the Ministrium app, dedicated PostgreSQL and volume to consume Railway credits or incur immediate usage charges. These resources are now live. Firebase upgrades, domain purchases, paid messaging and paid calling remain outside the authorized scope. See `docs/stage2-live-verification.md` for verified account tests and resource limits. No zero-cost hosting or fixed monthly bill is promised.
 
 Community requests fetch recent 50 entries on load and manual refresh, without polling. Meeting links reuse services a leader already has. There is no automatic email, SMS, or paid call creation. The new functions are deployed and tested through the live HTTP API. Browser walkthrough coverage is recorded separately in the verification document.
+
+
+Stage 5 implementation and activation limits: `docs/stage5-commerce.md`. The interactive `/commerce-preview` is a temporary demonstration; it does not process a Stripe payment.

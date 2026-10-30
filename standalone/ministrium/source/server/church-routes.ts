@@ -1718,7 +1718,6 @@ app.post("/api/churches/slug/:slug/giving/create-session", async (req, res) => {
       const baseUrl = `${protocol}://${host}`;
       const description = `${categoryName} — ${church.name}${!isAnonymous && donorName ? ` — From: ${donorName}` : ""}${note ? ` — "${note}"` : ""}`;
       const session = await stripeClient.checkout.sessions.create({
-        payment_method_types: ["card"],
         mode: "payment",
         line_items: [{
           price_data: {

@@ -3,7 +3,7 @@ export function isChurchApi(path) {
 }
 
 export function isWorkspaceApi(path) {
-  return /^\/api\/workspaces(?:\/|$)/.test(path);
+  return /^\/api\/(?:workspaces|commerce)(?:\/|$)/.test(path);
 }
 
 export function isBlockedFinance(path, method = 'GET') {

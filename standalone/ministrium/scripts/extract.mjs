@@ -57,6 +57,8 @@ function requireAdmin(_req:Request,res:Response){return res.status(503).json({me
 export function registerChurchRoutes(app:Express){\n`;
   let extractedRoutes = imports + selected.map(s=>s.getText(source)).join('\n') + '\n}\n';
   extractedRoutes=extractedRoutes.replace(/const \{ getAuth \} = await import\("firebase-admin\/auth"\);\s*const decoded = await getAuth\(\).verifyIdToken/g,'const decoded = await auth.verifyIdToken').replace('churchId, "submitted", null, uid','churchId, "submitted", undefined, uid');
+  // The staged legacy payment route is blocked; omit its obsolete Stripe allowlist for SDK 23 compatibility.
+  extractedRoutes=extractedRoutes.replace(/\s*payment_method_types: \[\"card\"\],/g,'');
   await fs.writeFile(path.join(generated,'server/church-routes.ts'),extractedRoutes);
   await fs.copyFile(path.join(appRoot,'server/firebase-admin.ts'),path.join(generated,'server/firebase-admin.ts'));
   await fs.copyFile(path.join(appRoot,'server/firebase-verifier.mjs'),path.join(generated,'server/firebase-verifier.mjs'));
