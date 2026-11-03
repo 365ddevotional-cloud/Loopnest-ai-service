@@ -16,6 +16,7 @@ import { useAudioReader } from "@/hooks/useAudioReader";
 import { useI18n } from "@/hooks/useI18n";
 import { useDevotionalAccount } from "@/hooks/useDevotionalAccount";
 import { splitPrayerCounselingInvitation } from "@/lib/prayerCounselingInvitation";
+import { devotionalShareUrl } from "@/share/shareContent";
 
 const fontSizeClasses = {
   "small": {
@@ -192,6 +193,7 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
             <ShareButton
               title={devotional.title}
               text={fullShareText}
+              url={devotionalShareUrl(devotional.date, window.location.search)}
               className="rounded-full text-xs font-bold tracking-wide uppercase shadow-md"
               variant="accent"
             />

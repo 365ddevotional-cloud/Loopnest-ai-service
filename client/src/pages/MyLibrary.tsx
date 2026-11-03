@@ -9,6 +9,7 @@ import { Loader2, BookMarked, Heart, Download, Play, ExternalLink, Trash2, Music
 import { Link } from "wouter";
 import type { Song, Devotional, PrayerRequest } from "@shared/schema";
 import { ShareButton } from "@/components/ShareButton";
+import { devotionalShareUrl } from "@/share/shareContent";
 import { format, parseISO } from "date-fns";
 import { useState, useEffect } from "react";
 
@@ -601,6 +602,7 @@ function SavedDevotionalCard({
         <ShareButton
           title={dev.title}
           text={`${dev.title}\n${dev.scriptureReference}\n\n${dev.content}`}
+          url={devotionalShareUrl(dev.date, window.location.search)}
           className="text-xs h-8 px-3 gap-1"
         />
         <Button
