@@ -10,6 +10,14 @@ import {createCommerce} from './commerce.mjs';
 import {registerPaymentWebhook} from './commerce-routes.mjs';
 import {createPlatformAdmin,platformOwnerConfig} from './platform-admin.mjs';
 async function main(){
+if(process.env.COVENANTHUB_MERGED_ORIGIN){
+ const {registerMergedHandoff}=await import('./merged-handoff.mjs');
+ const handoff=express();registerMergedHandoff(handoff,process.env.COVENANTHUB_MERGED_ORIGIN);
+ const port=process.env.PORT===undefined?8080:Number(process.env.PORT);
+ handoff.listen(port,'0.0.0.0',()=>console.log('Ministry handoff to Covenant Hub ready; source writes disabled.'));
+ return;
+}
+
 const mode=runtimeMode(process.env);
 if(mode==='workspace'){
  const identity=JSON.parse(await fs.readFile(path.resolve(process.cwd(),'dist/identity.json'),'utf8'));
