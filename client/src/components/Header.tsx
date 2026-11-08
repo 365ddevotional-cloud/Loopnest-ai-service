@@ -28,6 +28,8 @@ import { TranslationSelector } from "@/components/TranslationSelector";
 import { SettingsModal, MobileSettingsSection } from "@/components/SettingsModal";
 import { LanguageSwitcher, MobileLanguageSwitcher } from "@/components/LanguageSwitcher";
 
+const GOOGLE_PLAY_URL = "https://play.google.com/store/apps/details?id=app.replit.attachment_parser__365ddevotional.twa";
+
 function MobileTranslationSelector() {
   const { translation, setTranslation } = useTranslation();
   const { t: mt } = useI18n();
@@ -292,12 +294,12 @@ export function Header() {
           </span>
         </button>
         <a
-          href="https://play.google.com/store/search?q=365%20Daily%20Devotional&c=apps"
+          href={GOOGLE_PLAY_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="hidden lg:inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-orange-600 px-3 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-orange-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
           data-testid="header-continue-to-app"
-          aria-label="Continue to App — find 365 Daily Devotional on Google Play"
+          aria-label="Continue to App — install 365 Daily Devotional from Google Play"
         >
           <Smartphone className="h-4 w-4" />
           <span>Continue to App</span>
@@ -532,7 +534,7 @@ export function Header() {
               <MobileNavItem onClick={() => navigateWithTransition("/promotions")} icon={ShoppingBag} label="Promotions" />
               <MobileNavItem onClick={() => navigateWithTransition("/updates")} icon={Sparkles} label="What\u0027s New" />
               <MobileNavItem onClick={() => navigateWithTransition("/discipleship")} icon={GraduationCap} label="Discipleship" />
-              <a href="https://play.google.com/store/search?q=365%20Daily%20Devotional&c=apps" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-lg bg-orange-600 p-3 font-semibold text-white" data-testid="mobile-continue-to-app"><Smartphone className="h-5 w-5"/>Continue to App</a>
+              <a href={GOOGLE_PLAY_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-lg bg-orange-600 p-3 font-semibold text-white" data-testid="mobile-continue-to-app"><Smartphone className="h-5 w-5"/>Continue to App</a>
               {/* Sign In / Account — first item */}
               {appUser && appEmailVerified ? (
                 <div className="flex flex-col gap-1 border border-primary/10 rounded-xl overflow-hidden">
