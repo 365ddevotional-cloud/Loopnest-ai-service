@@ -29,6 +29,8 @@ const CATEGORY_OPTIONS = [
   { value: "guidance", label: "Guidance" },
   { value: "family", label: "Family" },
   { value: "salvation", label: "Salvation" },
+  { value: "spiritual_growth", label: "Spiritual Growth" },
+  { value: "habit_recovery", label: "Habit Recovery" },
   { value: "other", label: "Other" },
 ];
 
