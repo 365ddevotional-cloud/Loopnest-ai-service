@@ -122,6 +122,8 @@ export const PRAYER_CATEGORIES = [
   "guidance",
   "family",
   "salvation",
+  "spiritual_growth",
+  "habit_recovery",
   "other"
 ] as const;
 
