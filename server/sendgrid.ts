@@ -735,7 +735,7 @@ export async function sendContactAutoReply(
 export async function sendNewCounselingAdminAlert(requestId: number, priority: string): Promise<boolean> {
   try {
     const { client, fromEmail } = await getUncachableSendGridClient();
-    const to = process.env.PRAYER_ADMIN_ALERT_EMAIL;
+    const to = process.env.PRAYER_ADMIN_ALERT_EMAIL || "365ddevotional@gmail.com";
     if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
       console.warn("[PrayerAlert] PRAYER_ADMIN_ALERT_EMAIL not configured; skipping alert");
       return false;
