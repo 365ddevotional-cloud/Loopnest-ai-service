@@ -2,7 +2,7 @@ import { registerAdminAuth } from "./admin-auth";
 import { registerMusicCommerceRoutes } from "./music-commerce";
 import { ensureAudienceAnalyticsTables, recordBrowserVisit, recordAudienceSongEvent, getAudienceAnalytics, savePlayStoreVisit } from "./audience-analytics";
 import { ensureMusicOrdersTable, musicOrderStorage } from "./music-commerce-storage";
-import { getMusicDownloadUrl } from "./replit_integrations/object_storage/routes";
+import { getMusicDownloadUrl, readLegacyPrayerAttachment } from "./replit_integrations/object_storage/routes";
 import { getDownloadAccess } from "./download-access";
 import { defaultMusicPricing, musicPricingSchema } from "@shared/music-pricing";
 import type { Express, Request, Response, NextFunction } from "express";
@@ -11,6 +11,7 @@ import fs from "fs";
 import path from "path";
 import { storage } from "./storage";
 import { startPrayerEmailVerification, confirmPrayerEmailVerification, isPrayerOwner, isVerifiedPrayerEmail, rememberSubmittedPrayer } from "./prayer-access";
+import { parsePrayerSubmission, type PrayerFile } from "./prayer-attachments";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { OAuth2Client } from "google-auth-library";
@@ -23,7 +24,7 @@ import { seedAllDevotionals } from "./seed-devotionals";
 import { getOrCreateTranslation, isAllowedLanguage, getCachedTranslationsForLanguage } from "./translationService";
 import { getCurrentPromise, getNextPromise, advancePromise, resetRotation, toggleEnabled, getTotalPromises, startPromiseScheduler } from "./promiseEngine";
 import { generateAIEncouragement } from "./inbox-ai";
-import { promiseAmens, INBOX_CATEGORIES, insertDonationConfirmationSchema, churchTransactions, prayerRequests, ministryAnnouncements, ministryAnnouncementInput, DISCIPLESHIP_STAGES, DISCIPLESHIP_NEXT_STAGES } from "@shared/schema";
+import { promiseAmens, INBOX_CATEGORIES, insertDonationConfirmationSchema, churchTransactions, prayerRequests, prayerAttachments, prayerAttachmentFiles, ministryAnnouncements, ministryAnnouncementInput, DISCIPLESHIP_STAGES, DISCIPLESHIP_NEXT_STAGES } from "@shared/schema";
 import { db } from "./db";
 import { and, eq, sql, desc, gte, gt, isNull, lte, or } from "drizzle-orm";
 
@@ -896,7 +897,7 @@ export async function registerRoutes(
   app.post("/api/prayer-access/verify-code", confirmPrayerEmailVerification);
 
   // Prayer Request Routes
-  app.post(api.prayerRequests.create.path, async (req, res) => {
+  app.post(api.prayerRequests.create.path, parsePrayerSubmission, async (req, res) => {
     try {
       const input = api.prayerRequests.create.input.parse(req.body);
       
@@ -932,7 +933,7 @@ export async function registerRoutes(
         firebaseUid,
       };
       
-      const prayerRequest = await storage.createPrayerRequest(sanitizedInput);
+      const prayerRequest = await storage.createPrayerRequest(sanitizedInput, res.locals.prayerFiles as PrayerFile[] | undefined);
       rememberSubmittedPrayer(req, prayerRequest.id);
       try {
         const template = await storage.getAutoReplyTemplate(prayerRequest.priority);
@@ -951,7 +952,8 @@ export async function registerRoutes(
           field: err.errors[0].path.join("."),
         });
       }
-      throw err;
+      console.error("[Prayer] Request could not be saved");
+      res.status(503).json({ message: "The prayer request could not be saved. Please try again." });
     }
   });
 
@@ -1304,58 +1306,50 @@ export async function registerRoutes(
   // Object Storage Routes
   registerObjectStorageRoutes(app);
 
-  // Prayer Attachment Routes (accessible to admin and users who own the request)
+  // Resolve files through an authorized download route, including historical uploads.
   app.get("/api/prayer-requests/:id/attachments", async (req, res) => {
     const id = Number(req.params.id);
-    if (isNaN(id)) {
+    if (!Number.isSafeInteger(id) || id < 1) return res.status(400).json({ message: "Invalid ID" });
+
+    try {
+      const request = await storage.getPrayerRequest(id);
+      if (!request || !isPrayerOwner(req, request)) return res.status(403).json({ message: "Verified access required" });
+
+      const attachments = await storage.getAttachmentsForRequest(id);
+      res.set("Cache-Control", "private, no-store").json(attachments.map(attachment => ({
+        ...attachment,
+        objectPath: `/api/prayer-requests/${id}/attachments/${attachment.id}/download`,
+      })));
+    } catch {
+      res.status(503).json({ message: "Could not load attachments" });
+    }
+  });
+
+  app.get("/api/prayer-requests/:id/attachments/:attachmentId/download", async (req, res) => {
+    const requestId = Number(req.params.id);
+    const attachmentId = Number(req.params.attachmentId);
+    if (!Number.isSafeInteger(requestId) || requestId < 1 || !Number.isSafeInteger(attachmentId) || attachmentId < 1) {
       return res.status(400).json({ message: "Invalid ID" });
     }
 
-    const request = await storage.getPrayerRequest(id);
-    if (!request || !isPrayerOwner(req, request)) return res.status(403).json({ message: "Verified access required" });
-
-    const attachments = await storage.getAttachmentsForRequest(id);
-    res.json(attachments);
-  });
-
-  app.post("/api/prayer-requests/:id/attachments", async (req, res) => {
     try {
-      const requestId = Number(req.params.id);
-      if (isNaN(requestId)) {
-        return res.status(400).json({ message: "Invalid ID" });
-      }
-      const ownerRequest = await storage.getPrayerRequest(requestId);
-      if (!ownerRequest || !isPrayerOwner(req, ownerRequest)) return res.status(403).json({ message: "Verified access required" });
-      const { fileName, fileSize, contentType, objectPath } = req.body;
-      
-      if (!fileName || !fileSize || !contentType || !objectPath) {
-        return res.status(400).json({ message: "Missing required fields" });
-      }
-      
-      // Validate file size (5MB limit)
-      const MAX_FILE_SIZE = 5 * 1024 * 1024;
-      if (fileSize > MAX_FILE_SIZE) {
-        return res.status(400).json({ message: "File size exceeds 5MB limit" });
-      }
-      
-      // Validate file type
-      const ALLOWED_TYPES = ["image/jpeg", "image/png", "application/pdf"];
-      if (!ALLOWED_TYPES.includes(contentType)) {
-        return res.status(400).json({ message: "Invalid file type. Allowed: jpg, png, pdf" });
-      }
-      
-      const attachment = await storage.createPrayerAttachment({
-        requestId,
-        fileName,
-        fileSize,
-        contentType,
-        objectPath,
-      });
-      
-      res.status(201).json(attachment);
-    } catch (err) {
-      console.error("Error creating attachment:", err);
-      res.status(500).json({ message: "Failed to save attachment" });
+      const request = await storage.getPrayerRequest(requestId);
+      if (!request || !isPrayerOwner(req, request)) return res.status(403).json({ message: "Verified access required" });
+
+      const [attachment] = await db.select({
+        fileName: prayerAttachments.fileName,
+        objectPath: prayerAttachments.objectPath,
+        bytes: prayerAttachmentFiles.bytes,
+      }).from(prayerAttachments)
+        .leftJoin(prayerAttachmentFiles, eq(prayerAttachmentFiles.attachmentId, prayerAttachments.id))
+        .where(and(eq(prayerAttachments.id, attachmentId), eq(prayerAttachments.requestId, requestId)));
+      if (!attachment) return res.status(404).json({ message: "Attachment not found" });
+
+      const bytes = attachment.bytes ?? await readLegacyPrayerAttachment(attachment.objectPath);
+      res.attachment(attachment.fileName).type("application/octet-stream")
+        .set("Cache-Control", "private, no-store").set("X-Content-Type-Options", "nosniff").send(bytes);
+    } catch {
+      res.status(503).json({ message: "Could not download the attachment" });
     }
   });
 

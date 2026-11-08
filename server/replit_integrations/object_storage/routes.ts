@@ -2,6 +2,10 @@ import type { Express } from "express";
 import { randomUUID } from "crypto";
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { eq } from "drizzle-orm";
+import { prayerAttachments } from "@shared/schema";
+import { db } from "../../db";
+import { MAX_PRAYER_ATTACHMENT_SIZE } from "../../prayer-attachments";
 
 function getR2Client() {
   const accountId = process.env.R2_ACCOUNT_ID;
@@ -57,6 +61,24 @@ export async function getMusicDownloadUrl(objectPath: string, title: string, ext
     ResponseContentDisposition: `attachment; filename="${safeTitle || "Song"} - from 365 Daily Devotional.${extension}"`,
     ResponseContentType: "application/octet-stream",
   }), { expiresIn: Math.min(900, Math.max(1, Math.floor(expiresInSeconds))) });
+}
+
+export async function readLegacyPrayerAttachment(objectPath: string) {
+  if (!/^\/objects\/uploads\/[a-f0-9-]{36}$/i.test(objectPath)) {
+    throw new Error("Unsupported legacy attachment path");
+  }
+  const bucket = process.env.R2_BUCKET_NAME;
+  if (!bucket) throw new Error("Legacy attachment storage is unavailable");
+
+  const result = await getR2Client().send(new GetObjectCommand({
+    Bucket: bucket,
+    Key: `.private${objectPath.slice("/objects".length)}`,
+  }), { abortSignal: AbortSignal.timeout(15_000) });
+  if (!result.Body || !result.ContentLength || result.ContentLength > MAX_PRAYER_ATTACHMENT_SIZE) {
+    if (result.Body && "destroy" in result.Body) result.Body.destroy();
+    throw new Error("Invalid legacy attachment size");
+  }
+  return Buffer.from(await result.Body.transformToByteArray());
 }
 
 export function registerObjectStorageRoutes(app: Express): void {
@@ -117,12 +139,20 @@ export function registerObjectStorageRoutes(app: Express): void {
 
     const objectPath = req.params.objectPath;
 
-    if (!objectPath?.startsWith("uploads/")) {
+    if (!objectPath?.startsWith("uploads/") || objectPath.split("/").some(part => !part || part === "." || part === "..")) {
       return res.status(404).json({ error: "Object not found" });
     }
 
+    try {
+      const [attachment] = await db.select({ id: prayerAttachments.id }).from(prayerAttachments)
+        .where(eq(prayerAttachments.objectPath, `/objects/${objectPath}`)).limit(1);
+      if (attachment) return res.status(404).set("Cache-Control", "no-store").json({ error: "Object not found" });
+    } catch {
+      return res.status(503).json({ error: "Media storage is temporarily unavailable" });
+    }
+
     const r2ObjectUrl =
-      `${r2BaseUrl.replace(/\/$/, "")}/.private/${objectPath}`;
+      `${r2BaseUrl.replace(/\/$/, "")}/.private/${objectPath.split("/").map(encodeURIComponent).join("/")}`;
 
     return res.redirect(302, r2ObjectUrl);
   });

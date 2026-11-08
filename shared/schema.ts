@@ -1,4 +1,4 @@
-import { pgTable, text, serial, date, timestamp, boolean, integer, unique, jsonb, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, date, timestamp, boolean, integer, unique, jsonb, real, customType } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -279,6 +279,11 @@ export const prayerAttachments = pgTable("prayer_attachments", {
   contentType: text("content_type").notNull(),
   objectPath: text("object_path").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const prayerAttachmentFiles = pgTable("prayer_attachment_files", {
+  attachmentId: integer("attachment_id").primaryKey().references(() => prayerAttachments.id, { onDelete: "cascade" }),
+  bytes: customType<{ data: Buffer }>({ dataType: () => "bytea" })("bytes").notNull(),
 });
 
 export const insertPrayerAttachmentSchema = createInsertSchema(prayerAttachments).omit({
