@@ -94,6 +94,9 @@ function ShopCatalog() {
         <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-200">
           Discover books for spiritual growth, worship music, and resources for everyday faith.
         </p>
+        {prices && !Object.values(prices.products).some(price => price.ready) && (
+          <p className="mt-4 text-sm text-orange-200">The catalog is open for browsing. Checkout is currently unavailable in your region.</p>
+        )}
         <Link href="/shop/purchases" className="mt-5 inline-flex rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Shop purchases</Link>
       </header>
 

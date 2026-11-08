@@ -1,6 +1,6 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
-import { rm, readFile } from "fs/promises";
+import { rm, readFile, mkdir, copyFile, readdir } from "fs/promises";
 
 // Keep connect-pg-simple external: it reads table.sql relative to its package at runtime.
 // Bundling it moves __dirname into dist and breaks first-time session table creation.
@@ -38,6 +38,12 @@ async function buildAll() {
 
   console.log("building client...");
   await viteBuild();
+
+  const shopMigrations = (await readdir("migrations"))
+    .filter(file => /^20261108_ministry_shop(?:_orders|_sales_controls)?\.sql$/.test(file));
+  if (shopMigrations.length !== 3) throw new Error("Shop migration files are incomplete");
+  await mkdir("dist/shop-migrations", { recursive: true });
+  await Promise.all(shopMigrations.map(file => copyFile(`migrations/${file}`, `dist/shop-migrations/${file}`)));
 
   console.log("building server...");
   const pkg = JSON.parse(await readFile("package.json", "utf-8"));
