@@ -1179,6 +1179,14 @@ function PrayerInbox() {
     },
   });
 
+  const updateDiscipleshipMutation = useMutation({
+    mutationFn: async ({ requestId, status }: { requestId: number; status: string }) => apiRequest("PATCH", `/api/prayer-requests/${requestId}/discipleship`, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests"] });
+      if (selectedRequest && updateDiscipleshipMutation.variables) setSelectedRequest({ ...selectedRequest, discipleshipFollowUpStatus: updateDiscipleshipMutation.variables.status });
+    },
+  });
+
   const filteredRequests = requests.filter((r) => {
     const query = searchQuery.toLowerCase().trim();
     const matchesSearch = !query || 
@@ -1195,6 +1203,7 @@ function PrayerInbox() {
     if (filter === "answered") return r.status === "answered";
     if (filter === "urgent") return r.priority?.includes("urgent");
     if (filter === "counseling") return r.priority?.includes("counseling");
+    if (filter === "discipleship") return r.discipleshipOptIn;
     if (filter === "anonymous") return r.isAnonymous;
     if (CATEGORY_LABELS[filter]) return r.category === filter;
     return true;
@@ -1259,6 +1268,7 @@ function PrayerInbox() {
               <SelectItem value="answered">Answered</SelectItem>
               <SelectItem value="urgent">Urgent Only</SelectItem>
               <SelectItem value="counseling">Counseling Only</SelectItem>
+              <SelectItem value="discipleship">Discipleship Follow-up Requested</SelectItem>
               <SelectItem value="anonymous">Anonymous</SelectItem>
               <SelectItem value="healing">Category: Healing</SelectItem>
               <SelectItem value="marriage">Category: Marriage</SelectItem>
@@ -1401,6 +1411,18 @@ function PrayerInbox() {
               </div>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
+              {selectedRequest.discipleshipOptIn && (
+                <div className="rounded-lg border p-3 space-y-2">
+                  <p className="font-medium">Discipleship follow-up requested (subscriber opted in)</p>
+                  <Select value={selectedRequest.discipleshipFollowUpStatus || "requested"} onValueChange={(status) => updateDiscipleshipMutation.mutate({ requestId: selectedRequest.id, status })}>
+                    <SelectTrigger><SelectValue placeholder="Follow-up status" /></SelectTrigger>
+                    <SelectContent>
+                      {["requested", "contacted", "enrolled", "declined", "completed"].map(status => <SelectItem key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Contact only through the subscriber-provided email. Do not publish counseling details.</p>
+                </div>
+              )}
               <div className="bg-muted/30 p-4 rounded-lg">
                 <p className="text-foreground whitespace-pre-wrap">{selectedRequest.message}</p>
               </div>
