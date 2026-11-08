@@ -86,15 +86,19 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
             <div className="grid gap-5 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:gap-7">
               <ProductArtwork key={product.id} product={product} detail />
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{product.kind}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{product.requiredFileCount ? "Two-book set" : product.kind}</p>
                 <h1 className="mb-2 mt-1 break-words text-2xl font-bold tracking-tight text-teal-900 dark:text-teal-200 sm:text-3xl">{product.title}</h1>
                 <ProductViews total={views?.[product.id]} />
                 {price && <p className="mt-2 text-xl font-bold text-orange-800 dark:text-orange-300">{formatMusicPrice(price.amount, price.currency)}</p>}
-                {product.kind !== "Membership" && <ShopCheckout key={product.id} productId={product.id} price={price} />}
+                {product.kind !== "Membership" && (
+                  product.sourcePrice
+                    ? <ShopCheckout key={product.id} productId={product.id} price={price} />
+                    : <p className="mt-3 text-sm font-semibold text-orange-800 dark:text-orange-300">Coming soon. Pricing and downloads are being prepared.</p>
+                )}
               </div>
             </div>
             <div className="mt-6 border-t border-border pt-5">
-              <h2 className="text-lg font-bold">{product.kind === "Book" ? "About this book" : product.kind === "Music" ? "About this release" : "About this membership"}</h2>
+              <h2 className="text-lg font-bold">{product.requiredFileCount ? "About this set" : product.kind === "Book" ? "About this book" : product.kind === "Music" ? "About this release" : "About this membership"}</h2>
               <div className="mt-3 space-y-3 break-words text-sm leading-relaxed text-muted-foreground sm:text-base">
                 {description?.length
                   ? description.map((paragraph, index) => <p key={index}>{paragraph}</p>)
@@ -166,10 +170,11 @@ function ShopCatalog() {
               <li key={product.id}>
                 <Link href={`/shop/${product.id}`} className="flex h-full min-w-0 flex-col rounded-xl border border-border bg-card p-2.5 font-sans shadow-sm transition-colors hover:border-teal-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:p-3">
                   <ProductArtwork product={product} />
-                  <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{product.kind}</p>
+                  <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{product.requiredFileCount ? "Two-book set" : product.kind}</p>
                   <h3 title={product.title} className="mb-2 mt-0.5 line-clamp-2 break-words text-sm font-bold leading-snug text-teal-900 dark:text-teal-200 sm:text-base">{product.title}</h3>
                   <div className="mt-auto flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
                     {price && <span className="text-sm font-bold tabular-nums text-orange-800 dark:text-orange-300">{formatMusicPrice(price.amount, price.currency)}</span>}
+                    {product.kind !== "Membership" && !product.sourcePrice && <span className="text-xs font-semibold text-orange-800 dark:text-orange-300">Coming soon</span>}
                     <ProductViews total={views?.[product.id]} />
                   </div>
                 </Link>
