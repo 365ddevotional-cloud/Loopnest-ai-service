@@ -9,7 +9,7 @@ import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { useState } from "react";
 import {
   Form,
@@ -48,6 +48,7 @@ const partnershipTypes = [
 export default function Partnership() {
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
+  const fromShop = new URLSearchParams(useSearch()).get("source") === "ministry-shop";
 
   const form = useForm<PartnershipFormValues>({
     resolver: zodResolver(partnershipFormSchema),
@@ -55,7 +56,7 @@ export default function Partnership() {
       fullName: "",
       organization: "",
       email: "",
-      partnershipType: "",
+      partnershipType: fromShop ? "resource_distribution" : "",
       message: "",
     },
   });
