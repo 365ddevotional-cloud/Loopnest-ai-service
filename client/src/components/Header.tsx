@@ -252,7 +252,7 @@ export function Header() {
     { href: "/daily-promise", label: "God's Promises", icon: Sparkles, external: false },
     { href: "/music", label: "SpiritTone Music", icon: Music2, external: false },
     { href: "https://www.youtube.com/@365DailyDevotional", label: "YouTube", icon: SiYoutube, external: true },
-    { href: "https://payhip.com/SpiritToneRecords", label: "Shop", icon: ShoppingBag, external: true },
+    { href: "/shop", label: "Shop", icon: ShoppingBag, external: false },
     { href: "/prayer-counseling", label: t("prayerCounseling"), icon: MessageCircleHeart, external: false },
     { href: "/inbox", label: "Inbox", icon: Inbox, external: false },
     { href: "/testimonies", label: "Testimonies", icon: Star, external: false },
@@ -645,11 +645,10 @@ export function Header() {
                   data-testid="link-youtube-nav-mobile"
                 />
                 <MobileNavItem
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={() => navigateWithTransition("/shop")}
+                  isActive={location === "/shop"}
                   icon={ShoppingBag}
                   label="Shop"
-                  href="https://payhip.com/SpiritToneRecords"
-                  external
                   data-testid="link-shop-nav-mobile"
                 />
                 <MobileNavItem

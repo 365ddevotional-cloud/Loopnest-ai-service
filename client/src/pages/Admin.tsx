@@ -1,3 +1,4 @@
+import MinistryShopAdmin from "@/components/MinistryShopAdmin";
 import { SongLanguagePicker } from "@/components/SongLanguagePicker";
 import { SONG_LANGUAGES, songLanguageCategories, serializeSongLanguages } from "@shared/song-languages";
 import { MinistryLogoPicker } from "@/components/MinistryLogoPicker";
@@ -16,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2, Upload, Gift, Video, Building2, DollarSign, Menu, ExternalLink, Youtube, Settings2, Check } from "lucide-react";
+import { ShieldCheck, Inbox, MessageSquare, Send, Loader2, CheckCircle, CheckCheck, XCircle, RefreshCw, AlertTriangle, User, Paperclip, FileText, Image, Download, Smartphone, Search, Sparkles, Archive, Calendar, Edit, Eye, Trash2, Clock, X, Copy, Telescope, GraduationCap, Plus, Star, ThumbsUp, Flag, Heart, BarChart3, TrendingUp, Music, Music2, CheckCircle2, Upload, Gift, Video, Building2, DollarSign, Menu, ExternalLink, Youtube, Settings2, Check, ShoppingBag } from "lucide-react";
 import { useUpload } from "@/hooks/use-upload";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -2726,6 +2727,7 @@ export default function Admin() {
     { value: "devotionals",            label: "Create New",         icon: ShieldCheck,   count: 0 },
     { value: "promises",               label: "Promises",           icon: Sparkles,      count: 0 },
     { value: "songs",                  label: "Music Management",              icon: Music,         count: 0 },
+    { value: "ministry-shop",           label: "Shop",              icon: ShoppingBag,   count: 0 },
     { value: "donations",              label: "Donations",          icon: Gift,          count: 0 },
     { value: "churches",               label: "Churches",           icon: Building2,     count: 0 },
     { value: "church-oversight",       label: "Oversight",          icon: TrendingUp,    count: 0 },
@@ -2977,6 +2979,10 @@ export default function Admin() {
 
         <TabsContent value="songs">
           <SongsAdmin />
+        </TabsContent>
+
+        <TabsContent value="ministry-shop">
+          <MinistryShopAdmin />
         </TabsContent>
 
         <TabsContent value="donations">

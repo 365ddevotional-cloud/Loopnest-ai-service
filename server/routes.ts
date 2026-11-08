@@ -1,3 +1,6 @@
+import { ensureMinistryShopTables } from "./ministry-shop-migrations";
+import { registerMinistryShopCommerce } from "./ministry-shop-commerce";
+import { registerMinistryShopRoutes } from "./ministry-shop";
 import { registerAdminAuth } from "./admin-auth";
 import { registerMusicCommerceRoutes } from "./music-commerce";
 import { ensureAudienceAnalyticsTables, recordBrowserVisit, recordAudienceSongEvent, getAudienceAnalytics, savePlayStoreVisit } from "./audience-analytics";
@@ -184,6 +187,11 @@ export async function registerRoutes(
     requireAdmin,
   });
   registerAdminAuth(app, ADMIN_PASSWORD);
+  // The shop can fail closed without preventing the rest of the app from starting.
+  try { await ensureMinistryShopTables(); }
+  catch { console.error("[Ministry Shop] Shop tables could not be prepared."); }
+  registerMinistryShopRoutes(app);
+  registerMinistryShopCommerce(app, async token => (await import("./firebase-admin")).auth.verifyIdToken(token), requireAdmin);
 
   // PUBLIC DEBUG ENDPOINT - Returns current server state for diagnosing production issues
   // This endpoint bypasses all caching and returns raw server data
