@@ -1,0 +1,4 @@
+.generated/
+dist/
+.env
+node_modules/

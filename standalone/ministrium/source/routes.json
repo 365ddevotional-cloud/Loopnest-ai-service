@@ -1,0 +1,566 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/church-invite/:code"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/my"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/join"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/members/:memberId/approve"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/members/:memberId/decline"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/slug/:slug"
+  },
+  {
+    "method": "GET",
+    "path": "/api/public/churches/:slug"
+  },
+  {
+    "method": "GET",
+    "path": "/api/public/churches/:slug/sermons"
+  },
+  {
+    "method": "GET",
+    "path": "/api/public/churches/:slug/events"
+  },
+  {
+    "method": "POST",
+    "path": "/api/public/churches/:slug/prayer"
+  },
+  {
+    "method": "POST",
+    "path": "/api/public/churches/:slug/contact"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/slug/:slug/my-role"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/churches/:id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/members"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/churches/:id/members/:memberId"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/churches/:id/members/:memberId"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/my-profile"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/churches/:id/my-profile"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/churches/:id/my-profile/photo"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/churches/:id/my-profile/photo"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/members/:memberId/public-profile"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/invitations"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/invitations"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/churches/:id/invitations/:invId"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/churches/:id/settings"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/profile"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/profile"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/members/:targetUid/profile"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/directory"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/conversations"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/conversations"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/conversations/:convId"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/conversations/:convId/messages"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/churches/:id/conversations/:convId"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/conversations/:convId/participants"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/unread-count"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/sermons"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/sermons"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/churches/:id/sermons/:sermonId"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/churches/:id/sermons/:sermonId"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/dashboard"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/pastor-notes"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/pastor-notes"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/churches/:id/pastor-notes/:noteId"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/announcements"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/announcements"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/churches/:id/announcements/:annId"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/churches/:id/announcements/:annId"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/groups"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/groups"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/churches/:id/groups/:groupId"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/churches/:id/groups/:groupId"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/groups/:groupId/join"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/churches/:id/groups/:groupId/leave"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/prayer"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/prayer"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/prayer/:prayerId/pray"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/churches/:id/prayer/:prayerId/status"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/churches/:id/prayer/:prayerId"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/activity"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/members/pending-count"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/departments/:deptId/archive"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/deletion-request"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/deletion-request"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/audit-logs"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/church-deletion-requests"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/admin/church-deletion-requests/:id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/churches"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/admin/churches/:id/status"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/submit-for-review"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:churchId/compliance-cases/:caseId/respond"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:churchId/compliance-cases"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:churchId/appeal"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:churchId/appeal"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:churchId/policy-ack"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:churchId/platform-thread"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:churchId/platform-thread/start"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:churchId/platform-thread/messages"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:churchId/platform-thread/mark-read"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:churchId/platform-thread/reply"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/logo"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/churches/:id/branding"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/sermons/:sermonId/bookmark"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/bookmarks"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/sermons/:sermonId/note"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/churches/:id/sermons/:sermonId/note"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/giving/reports"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/giving/export-csv"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/giving/settings"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/giving/settings"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/slug/:slug/giving"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/giving/categories"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/giving/categories"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/churches/:id/giving/categories/:catId"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/churches/:id/giving/categories/:catId"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/payout-config"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/payout-config"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/giving/transactions"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/slug/:slug/giving/create-session"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/slug/:slug/giving/confirm"
+  },
+  {
+    "method": "POST",
+    "path": "/api/church-giving-webhook"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:churchId/departments"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:churchId/departments"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/departments/:deptId"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/churches/departments/:deptId"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/departments/:deptId/logo"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/churches/departments/:deptId/logo"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/churches/departments/:deptId"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/departments/:deptId/members"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/departments/:deptId/members"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/churches/departments/:deptId/members/:memberId"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/churches/departments/:deptId/members/:memberId/role"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/departments/join"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/departments/:deptId/posts"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/departments/:deptId/posts"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/churches/departments/:deptId/posts/:postId"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/churches/departments/:deptId/posts/:postId/pin"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/departments/:deptId/events"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/departments/:deptId/events"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/churches/departments/:deptId/events/:eventId"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/churches/departments/:deptId/events/:eventId"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/departments/:deptId/tasks"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/departments/:deptId/tasks"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/churches/departments/:deptId/tasks/:taskId"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/churches/departments/:deptId/tasks/:taskId"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/departments/:deptId/attendance"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/departments/:deptId/attendance"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/churches/departments/:deptId/attendance/:sessionId"
+  },
+  {
+    "method": "GET",
+    "path": "/api/churches/:id/giving/my-history"
+  },
+  {
+    "method": "POST",
+    "path": "/api/churches/:id/giving/seed-categories"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/giving/stats"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/giving/platform-settings"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/admin/giving/platform-settings"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/giving/transactions"
+  },
+  {
+    "method": "GET",
+    "path": "/api/user/profile"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/user/profile"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/user/profile"
+  },
+  {
+    "method": "GET",
+    "path": "/api/user/profile/picture"
+  },
+  {
+    "method": "POST",
+    "path": "/api/user/activity"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/church-oversight"
+  }
+]
