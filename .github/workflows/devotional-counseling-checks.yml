@@ -8,6 +8,7 @@ on:
       - 'client/src/components/MinistryAnnouncementsAdmin.tsx'
       - 'client/src/pages/Admin.tsx'
       - 'server/routes.ts'
+      - 'server/prayer-privacy-release-gate.test.ts'
       - 'server/sendgrid.ts'
       - 'shared/schema.ts'
       - 'migrations/20261108_optional_discipleship.sql'
@@ -27,3 +28,5 @@ jobs:
       - run: npm run build
       - run: npm run test:music-commerce
       - run: npm run test:sharing
+      - name: Privacy release gate (must pass before merge)
+        run: node --import tsx --test server/prayer-privacy-release-gate.test.ts
