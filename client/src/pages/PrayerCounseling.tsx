@@ -63,6 +63,7 @@ export default function PrayerCounseling() {
     priority: "prayer_normal",
     category: "other",
     privacy: "private",
+    discipleshipOptIn: false,
   });
 
   const { data: autoReplyTemplate } = useQuery<AutoReplyTemplate>({
@@ -119,6 +120,7 @@ export default function PrayerCounseling() {
         priority: data.priority,
         category: data.category,
         privacy: data.privacy || "private",
+        discipleshipOptIn: data.discipleshipOptIn,
       };
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (user) {
@@ -214,6 +216,10 @@ export default function PrayerCounseling() {
       return;
     }
 
+    if (formData.discipleshipOptIn && !formData.email.trim()) {
+      toast({ title: "Please provide an email for discipleship follow-up", variant: "destructive" });
+      return;
+    }
     mutation.mutate(formData);
   };
 
@@ -456,6 +462,14 @@ export default function PrayerCounseling() {
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">Default is Private. Your email, phone, and personal details are never shared publicly.</p>
+          </div>
+
+          <div className="flex items-start gap-3 rounded-lg border p-4">
+            <Checkbox id="discipleshipOptIn" checked={formData.discipleshipOptIn} onCheckedChange={(checked) => setFormData({ ...formData, discipleshipOptIn: checked === true, privacy: checked === true ? "private" : formData.privacy })} />
+            <div className="space-y-1">
+              <Label htmlFor="discipleshipOptIn">I would like to receive personal discipleship follow-up (optional)</Label>
+              <p className="text-xs text-muted-foreground">A ministry representative may contact me using the email I provide. This is optional and can be withdrawn by contacting the ministry. My request will remain private when I opt in.</p>
+            </div>
           </div>
 
           <div className="space-y-2">
