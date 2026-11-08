@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { useRoute } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { useUser } from "@/contexts/UserContext";
 import { reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { auth } from "@/lib/firebase";

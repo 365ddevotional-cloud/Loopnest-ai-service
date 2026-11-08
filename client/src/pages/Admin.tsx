@@ -6725,14 +6725,13 @@ function AppAnalyticsAdmin() {
 }
 
 function ChurchModerationAdmin() {
-  const { password } = useAuth();
   const { toast } = useToast();
 
   const { data: churches, isLoading, refetch } = useQuery<ChurchModData[]>({
     queryKey: ["/api/admin/churches"],
     queryFn: () =>
       fetch("/api/admin/churches", {
-        headers: { Authorization: `Bearer ${password}` },
+        headers: {  },
       }).then(r => r.ok ? r.json() : Promise.reject()),
   });
 
@@ -6740,7 +6739,7 @@ function ChurchModerationAdmin() {
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
       const r = await fetch(`/api/admin/churches/${id}/status`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${password}` },
+        headers: { "Content-Type": "application/json",  },
         body: JSON.stringify({ status }),
       });
       if (!r.ok) throw new Error((await r.json()).message);
