@@ -2,10 +2,22 @@ import { musicRegions, type MusicPrices } from "./music-regions";
 
 export const shopBundleId = "x29Tw";
 
+const littleHeartsPrices: Partial<Record<string, number>> = {
+  US: 1800,
+  NG: 500000,
+  GH: 4500,
+};
+
 export function ministryShopPrice(product: { id: string; kind: string; sourcePrice: string }, country: string, prices: MusicPrices) {
   const region = musicRegions[country];
+  if (!region || product.kind === "Membership") return null;
+  if (product.id === "littleheartsbibleset") {
+    const amount = littleHeartsPrices[country];
+    return amount ? { amount, currency: region.currency, country, stripeSupported: region.stripe } : null;
+  }
+
   const local = prices[country];
-  if (!region || !local || product.kind === "Membership") return null;
+  if (!local) return null;
 
   // Five singles must cost at least 25% more than Media's regional five-track offer.
   const songPrice = Math.max(Math.ceil(local.five / 4), Math.ceil(local.single * 1.1), country === "US" ? 99 : 0);

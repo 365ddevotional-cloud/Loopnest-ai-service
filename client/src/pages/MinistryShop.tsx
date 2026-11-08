@@ -174,7 +174,7 @@ function ShopCatalog() {
                   <h3 title={product.title} className="mb-2 mt-0.5 line-clamp-2 break-words text-sm font-bold leading-snug text-teal-900 dark:text-teal-200 sm:text-base">{product.title}</h3>
                   <div className="mt-auto flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
                     {price && <span className="text-sm font-bold tabular-nums text-orange-800 dark:text-orange-300">{formatMusicPrice(price.amount, price.currency)}</span>}
-                    {product.kind !== "Membership" && !product.sourcePrice && <span className="text-xs font-semibold text-orange-800 dark:text-orange-300">Coming soon</span>}
+                    {product.requiredFileCount && !price?.ready && <span className="text-xs font-semibold text-orange-800 dark:text-orange-300">Coming soon</span>}
                     <ProductViews total={views?.[product.id]} />
                   </div>
                 </Link>
