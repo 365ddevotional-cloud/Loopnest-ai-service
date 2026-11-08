@@ -4,6 +4,7 @@ on:
     paths:
       - 'client/src/pages/PrayerCounseling.tsx'
       - 'client/src/pages/Home.tsx'
+      - 'client/src/components/Header.tsx'
       - 'client/src/components/MinistryDiscovery.tsx'
       - 'client/src/components/MinistryAnnouncementsAdmin.tsx'
       - 'client/src/pages/Admin.tsx'
