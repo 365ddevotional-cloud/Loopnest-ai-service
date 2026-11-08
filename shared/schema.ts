@@ -104,6 +104,31 @@ export type UpdateDevotionalRequest = Partial<InsertDevotional>;
 // Response Types
 export type DevotionalResponse = Devotional;
 
+
+// Ministry-owned announcements and resource promotions; no third-party advertising.
+export const ministryAnnouncements = pgTable("ministry_announcements", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  category: text("category").notNull().default("whats_new"),
+  destinationUrl: text("destination_url").notNull(),
+  buttonLabel: text("button_label").notNull().default("Learn More"),
+  isPublished: boolean("is_published").notNull().default(false),
+  startsAt: timestamp("starts_at", { withTimezone: true }),
+  endsAt: timestamp("ends_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export const ministryAnnouncementInput = z.object({
+  title: z.string().trim().min(3).max(120),
+  description: z.string().trim().min(3).max(500),
+  category: z.enum(["whats_new", "book", "music", "discipleship", "feature"]),
+  destinationUrl: z.string().trim().min(1).max(500).refine(url => url.startsWith("/") && !url.startsWith("//") && !url.includes("\\") && !url.includes("://"), "Use an internal app path"),
+  buttonLabel: z.string().trim().min(2).max(40),
+  isPublished: z.boolean().default(false),
+  startsAt: z.string().datetime().nullable().optional(),
+  endsAt: z.string().datetime().nullable().optional(),
+});
+
 // Prayer Request Priority Types
 export const PRAYER_PRIORITIES = [
   "prayer_normal",
