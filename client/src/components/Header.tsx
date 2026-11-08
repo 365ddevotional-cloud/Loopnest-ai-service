@@ -15,6 +15,7 @@ import { useMenuTransition } from "@/contexts/MenuTransitionContext";
 import { BIBLE_TRANSLATIONS, type BibleTranslation } from "@shared/schema";
 import { useI18n } from "@/hooks/useI18n";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
@@ -263,6 +264,9 @@ export function Header() {
     : { href: "/admin-login", label: t("login"), icon: LogIn, external: false };
 
   const visibleNavItems = [...navItems, adminNavItem];
+  // Keep primary navigation readable on a laptop; secondary links stay one click away.
+  const primaryNavItems = visibleNavItems.filter(item => ["/", "/archive", "/bible", "/music", "/prayer-counseling"].includes(item.href));
+  const secondaryNavItems = visibleNavItems.filter(item => !primaryNavItems.includes(item));
 
   const toggleGroup = (group: string) => {
     setOpenGroup(prev => prev === group ? null : group);
@@ -362,7 +366,7 @@ export function Header() {
             <HelpCircle className="w-4 h-4" />
             {t("howToUse")}
           </button>
-          {visibleNavItems.map((item) => {
+          {primaryNavItems.map((item) => {
             const isActive = !item.external && location === item.href;
             if (item.external) {
               return (
@@ -396,6 +400,15 @@ export function Header() {
               </button>
             );
           })}
+          <button onClick={() => navigateWithTransition("/promotions")} className="shrink-0 rounded-lg px-3 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-500/10" data-testid="nav-promotions">Promotions</button>
+          <button onClick={() => navigateWithTransition("/updates")} className="shrink-0 rounded-lg px-3 py-2 text-sm font-medium hover:bg-primary/5" data-testid="nav-whats-new">What's New</button>
+          <button onClick={() => navigateWithTransition("/discipleship")} className="shrink-0 rounded-lg px-3 py-2 text-sm font-medium hover:bg-primary/5" data-testid="nav-discipleship">Discipleship</button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild><Button variant="ghost" size="sm" className="shrink-0" data-testid="nav-more">More <ChevronDown className="ml-1 h-4 w-4" /></Button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="max-h-[70vh] overflow-y-auto">
+              {secondaryNavItems.map(item => <DropdownMenuItem key={item.href} onSelect={() => { if (item.external) window.open(item.href, "_blank", "noopener,noreferrer"); else navigateWithTransition(item.href); }}>{item.label}</DropdownMenuItem>)}
+            </DropdownMenuContent>
+          </DropdownMenu>
           {isAdmin && (
             <button
               onClick={handleLogout}
@@ -516,6 +529,9 @@ export function Header() {
             </SheetHeader>
             
             <nav className="flex flex-col gap-2 pb-6">
+              <MobileNavItem onClick={() => navigateWithTransition("/promotions")} icon={ShoppingBag} label="Promotions" />
+              <MobileNavItem onClick={() => navigateWithTransition("/updates")} icon={Sparkles} label="What\u0027s New" />
+              <MobileNavItem onClick={() => navigateWithTransition("/discipleship")} icon={GraduationCap} label="Discipleship" />
               <a href="https://play.google.com/store/search?q=365%20Daily%20Devotional&c=apps" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-lg bg-orange-600 p-3 font-semibold text-white" data-testid="mobile-continue-to-app"><Smartphone className="h-5 w-5"/>Continue to App</a>
               {/* Sign In / Account — first item */}
               {appUser && appEmailVerified ? (
