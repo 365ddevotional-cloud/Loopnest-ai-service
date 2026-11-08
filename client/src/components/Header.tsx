@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff, Book, GraduationCap, Star, HandHeart, Sparkles, Inbox, Music2, Library, UserCircle, Building2, ChevronDown } from "lucide-react";
+import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff, Book, GraduationCap, Star, HandHeart, Sparkles, Inbox, Music2, Library, UserCircle, Building2, ChevronDown, Smartphone } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import { GameConsoleIcon } from "@/interactive/GameConsoleIcon";
 import { SiYoutube } from "react-icons/si";
@@ -270,23 +270,37 @@ export function Header() {
 
   return (
     <header className="sticky top-2 z-50 w-full bg-gradient-to-r from-background/98 via-background/95 to-background/98 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 border-b border-primary/15 shadow-sm mt-2">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-center lg:justify-between gap-4 relative">
-        {/* Logo */}
-        <button 
+      <div className="container mx-auto px-3 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2 relative">
+        {/* Always-visible ministry identity: full-size still logo beside the name. */}
+        <button
           onClick={() => navigateWithTransition("/")}
-          className="flex items-center gap-3 group"
+          className="flex min-w-0 items-center gap-2 sm:gap-3 group"
+          data-testid="header-devotional-brand"
         >
-          <MinistryLogo
-            seed={location} animated={!isStillLogoRoute(location)}
-            className="w-12 h-12 object-contain transition-transform group-hover:scale-105"
+          <img
+            src="/365-logo.jpeg"
+            alt="365 Daily Devotional ministry logo"
+            className="h-12 w-12 sm:h-14 sm:w-14 shrink-0 rounded-md object-contain"
+            onError={(event) => { event.currentTarget.src = "/branding/365-jesus-christ-is-lord.gif"; }}
           />
-          <span className="font-serif text-2xl font-semibold text-primary tracking-wide">
+          <span className="font-serif text-xl sm:text-2xl font-bold text-primary tracking-wide leading-tight">
             {t("dailyDevotionalShort")}
           </span>
         </button>
+        <a
+          href="https://play.google.com/store/search?q=365%20Daily%20Devotional&c=apps"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-orange-600 px-3 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-orange-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+          data-testid="header-continue-to-app"
+          aria-label="Continue to App — find 365 Daily Devotional on Google Play"
+        >
+          <Smartphone className="h-4 w-4" />
+          <span>Continue to App</span>
+        </a>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden lg:flex items-center gap-1">
+        {/* Desktop Navigation — separate scrollable row so the brand and app button remain visible. */}
+        <nav className="hidden lg:flex order-3 w-full items-center gap-1 overflow-x-auto whitespace-nowrap pb-1">
           {/* Sign In / authenticated account — always first */}
           {appUser && appEmailVerified ? (
             <>
