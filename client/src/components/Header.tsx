@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff, Book, GraduationCap, Star, HandHeart, Sparkles, Inbox, Music2, Library, UserCircle, Building2, ChevronDown } from "lucide-react";
+import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff, Book, GraduationCap, Star, HandHeart, Sparkles, Inbox, Music2, Library, UserCircle, Building2, ChevronDown, Smartphone } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import { GameConsoleIcon } from "@/interactive/GameConsoleIcon";
 import { SiYoutube } from "react-icons/si";
@@ -285,7 +285,27 @@ export function Header() {
           </span>
         </button>
 
-        {/* Desktop Navigation */}
+        {/* Prominent app discovery action. Store search is safer than an unverified package URL. */}
+        <a
+          href="https://play.google.com/store/search?q=365%20Daily%20Devotional&c=apps"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Continue to app — find 365 Daily Devotional on Google Play"
+          data-testid="header-continue-to-app"
+          className="hidden lg:inline-flex items-center gap-2 rounded-full border border-orange-400/40 bg-orange-500/10 px-3 py-2 text-sm font-semibold text-foreground hover:bg-orange-500/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+        >
+          <Smartphone className="h-4 w-4 text-orange-500" />
+          Continue to App
+        </a>
+        <a
+          href="https://play.google.com/store/search?q=365%20Daily%20Devotional&c=apps"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Find the 365 Daily Devotional Android app"
+          className="lg:hidden absolute right-2 top-1/2 -translate-y-1/2 rounded-lg border border-orange-400/40 bg-orange-500/10 p-2"
+          data-testid="header-mobile-get-app"
+        ><Smartphone className="h-5 w-5 text-orange-500" /></a>
+                {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center gap-1">
           {/* Sign In / authenticated account — always first */}
           {appUser && appEmailVerified ? (
