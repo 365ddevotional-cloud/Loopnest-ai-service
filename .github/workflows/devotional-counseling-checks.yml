@@ -1,0 +1,25 @@
+name: Devotional counseling safety checks
+on:
+  pull_request:
+    paths:
+      - 'client/src/pages/PrayerCounseling.tsx'
+      - 'client/src/pages/Admin.tsx'
+      - 'server/routes.ts'
+      - 'server/sendgrid.ts'
+      - 'shared/schema.ts'
+      - 'migrations/20261108_optional_discipleship.sql'
+      - '.github/workflows/devotional-counseling-checks.yml'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
+      - run: npm run test:music-commerce
+      - run: npm run test:sharing
