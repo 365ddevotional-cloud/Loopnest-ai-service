@@ -295,7 +295,7 @@ export default function SignIn() {
               </div>
 
               <Button
-                variant="link"
+                variant="ghost"
                 size="sm"
                 className="text-xs text-muted-foreground"
                 onClick={() => {
@@ -311,7 +311,7 @@ export default function SignIn() {
               </Button>
 
               <Button
-                variant="link"
+                variant="ghost"
                 size="sm"
                 className="text-xs text-muted-foreground"
                 onClick={handleCancelVerification}
