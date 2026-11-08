@@ -13,6 +13,20 @@ export const musicPurchaseOrders = pgTable("music_purchase_orders", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Legacy chat integration types, retained for TypeScript compatibility.
+export const conversations = pgTable("conversations", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull().references(() => conversations.id),
+  role: text("role").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Bible Translation Types
 export const BIBLE_TRANSLATIONS = ["KJV", "WEB", "ASV", "DRB"] as const;
 export type BibleTranslation = typeof BIBLE_TRANSLATIONS[number];
