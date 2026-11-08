@@ -242,6 +242,7 @@ export default function PrayerCounseling() {
       priority: "prayer_normal",
       category: "other",
       privacy: "private",
+      discipleshipOptIn: false,
     });
   };
 
