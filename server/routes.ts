@@ -867,10 +867,11 @@ export async function registerRoutes(
     if (!parsed.success) return res.status(400).json({ message: "Invalid announcement details" });
     const input = parsed.data;
     try {
+      const { startsAt: rawStartsAt, endsAt: rawEndsAt, ...fields } = input;
       const [updated] = await db.update(ministryAnnouncements).set({
-        ...input,
-        ...(input.startsAt !== undefined ? { startsAt: input.startsAt ? new Date(input.startsAt) : null } : {}),
-        ...(input.endsAt !== undefined ? { endsAt: input.endsAt ? new Date(input.endsAt) : null } : {}),
+        ...fields,
+        ...(rawStartsAt !== undefined ? { startsAt: rawStartsAt ? new Date(rawStartsAt) : null } : {}),
+        ...(rawEndsAt !== undefined ? { endsAt: rawEndsAt ? new Date(rawEndsAt) : null } : {}),
       }).where(eq(ministryAnnouncements.id, id)).returning();
       if (!updated) return res.status(404).json({ message: "Announcement not found" });
       res.json(updated);
