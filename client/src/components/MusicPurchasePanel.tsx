@@ -31,7 +31,7 @@ function detectDeviceMusicCountry(): Promise<string | null> {
   });
   return deviceCountryPromise;
 }
-export function useMusicCatalog() {
+export function useDeviceMusicCountry() {
   const [deviceCountry, setDeviceCountry] = useState("");
   const [locationResolved, setLocationResolved] = useState(false);
   const [locationAttempt, setLocationAttempt] = useState(0);
@@ -56,6 +56,11 @@ export function useMusicCatalog() {
     return () => window.removeEventListener("music-device-location-retry", retry);
   }, []);
   const retryDeviceLocation = () => window.dispatchEvent(new Event("music-device-location-retry"));
+  return { deviceCountry, locationResolved, retryDeviceLocation };
+}
+
+export function useMusicCatalog() {
+  const { deviceCountry, locationResolved, retryDeviceLocation } = useDeviceMusicCountry();
   const query = useQuery<MusicCatalog>({ queryKey: ["/api/music-commerce/catalog", "device-location-v2", deviceCountry], enabled: !!deviceCountry, staleTime: 0, retry: false,
     refetchOnMount: "always", refetchOnWindowFocus: "always", refetchOnReconnect: "always", refetchInterval: 60000,
     queryFn: async () => {

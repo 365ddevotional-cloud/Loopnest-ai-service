@@ -44,7 +44,7 @@ function videoDownloadPath(url: unknown): string | null {
   return validBundleArchive(path) ? path : null;
 }
 
-export function paymentMatchesOrder(session: any, order: MusicOrder): boolean {
+export function paymentMatchesOrder(session: any, order: MusicOrder, app = "365-music-v1"): boolean {
   const intent = session.payment_intent;
   const charge = typeof intent === "object" && intent?.latest_charge;
   return order.status !== "revoked" && order.status !== "expired" &&
@@ -52,7 +52,7 @@ export function paymentMatchesOrder(session: any, order: MusicOrder): boolean {
     session.status === "complete" && session.payment_status === "paid" &&
     session.currency === (order.currency ?? "USD").toLowerCase() && session.amount_total === order.amountCents &&
     session.client_reference_id === order.uid &&
-    session.metadata?.app === "365-music-v1" &&
+    session.metadata?.app === app &&
     session.metadata?.productId === order.productId &&
     session.metadata?.uid === order.uid &&
     intent?.status === "succeeded" && charge?.paid === true &&

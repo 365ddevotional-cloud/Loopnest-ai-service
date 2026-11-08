@@ -1,3 +1,4 @@
+import { registerMinistryShopCommerce } from "./ministry-shop-commerce";
 import { registerMinistryShopRoutes } from "./ministry-shop";
 import { registerAdminAuth } from "./admin-auth";
 import { registerMusicCommerceRoutes } from "./music-commerce";
@@ -186,6 +187,7 @@ export async function registerRoutes(
   });
   registerAdminAuth(app, ADMIN_PASSWORD);
   registerMinistryShopRoutes(app);
+  registerMinistryShopCommerce(app, async token => (await import("./firebase-admin")).auth.verifyIdToken(token));
 
   // PUBLIC DEBUG ENDPOINT - Returns current server state for diagnosing production issues
   // This endpoint bypasses all caching and returns raw server data
