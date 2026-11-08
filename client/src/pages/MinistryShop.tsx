@@ -26,16 +26,20 @@ function ProductViews({ total }: { total?: number }) {
 function ProductArtwork({ product, detail = false }: { product: (typeof catalog)[number]; detail?: boolean }) {
   const Icon = icons[product.kind as keyof typeof icons];
   const [failed, setFailed] = useState(false);
+  const isLittleHeartsSet = product.id === "littleheartsbibleset";
+  const frame = isLittleHeartsSet
+    ? "aspect-[10/7] w-full rounded-lg"
+    : detail ? "aspect-square w-full max-w-72 rounded-xl" : "aspect-[4/3] w-full rounded-lg";
 
   return (
-    <div className={`flex items-center justify-center overflow-hidden bg-muted/60 text-muted-foreground ${detail ? "aspect-square w-full max-w-72 rounded-xl" : "aspect-[4/3] w-full rounded-lg"}`}>
+    <div className={`flex items-center justify-center overflow-hidden bg-muted/60 text-muted-foreground ${frame}`}>
       {!failed ? (
         <img
-          src={`/shop-art/${product.id}.webp`}
+          src={`/shop-art/${product.id}.webp${isLittleHeartsSet ? "?v=2" : ""}`}
           alt={detail ? `${product.title} artwork` : ""}
           loading={detail ? "eager" : "lazy"}
           decoding="async"
-          className={`h-full w-full ${detail || product.kind === "Book" ? "object-contain p-1.5" : "object-cover"}`}
+          className={`h-full w-full ${isLittleHeartsSet ? "object-contain" : detail || product.kind === "Book" ? "object-contain p-1.5" : "object-cover"}`}
           onError={() => setFailed(true)}
         />
       ) : <Icon className="size-9" aria-hidden="true" />}
@@ -133,7 +137,7 @@ function ShopCatalog() {
 
       <header className="rounded-xl bg-gradient-to-br from-slate-950 to-teal-950 px-4 py-3 text-white sm:px-5 sm:py-4">
         <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-          <h1 className="flex items-center gap-2 font-sans text-lg font-bold tracking-tight sm:text-2xl">
+          <h1 className="flex items-center gap-2 font-sans text-lg font-bold tracking-tight text-white sm:text-2xl">
             <ShoppingBag size={17} className="shrink-0 text-orange-300" aria-hidden="true" /> 365 Ministry Shop
           </h1>
           <Link href="/shop/purchases" className="inline-flex min-h-9 items-center rounded-md px-1.5 text-xs font-semibold text-white underline decoration-white/40 underline-offset-4 hover:bg-white/10 sm:text-sm">Shop purchases</Link>
