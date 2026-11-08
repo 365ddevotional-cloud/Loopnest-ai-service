@@ -291,7 +291,7 @@ export function Header() {
           href="https://play.google.com/store/search?q=365%20Daily%20Devotional&c=apps"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-orange-600 px-3 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-orange-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+          className="hidden lg:inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-orange-600 px-3 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-orange-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
           data-testid="header-continue-to-app"
           aria-label="Continue to App — find 365 Daily Devotional on Google Play"
         >
@@ -516,6 +516,7 @@ export function Header() {
             </SheetHeader>
             
             <nav className="flex flex-col gap-2 pb-6">
+              <a href="https://play.google.com/store/search?q=365%20Daily%20Devotional&c=apps" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-lg bg-orange-600 p-3 font-semibold text-white" data-testid="mobile-continue-to-app"><Smartphone className="h-5 w-5"/>Continue to App</a>
               {/* Sign In / Account — first item */}
               {appUser && appEmailVerified ? (
                 <div className="flex flex-col gap-1 border border-primary/10 rounded-xl overflow-hidden">
