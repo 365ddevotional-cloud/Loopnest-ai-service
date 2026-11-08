@@ -14,7 +14,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { OAuth2Client } from "google-auth-library";
 import { randomBytes } from "crypto";
-import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification, sendDonationThankYouEmail, sendChurchNameChangeSecurityEmail, sendChurchWelcomeEmail, sendChurchComplianceEmail } from "./sendgrid";
+import { sendPrayerReplyNotification, sendNewCounselingAdminAlert, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification, sendDonationThankYouEmail, sendChurchNameChangeSecurityEmail, sendChurchWelcomeEmail, sendChurchComplianceEmail } from "./sendgrid";
 import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { getTodayDateString, isFutureDate, isPastDate, getDayOfYear } from "./date-utils";
@@ -852,10 +852,16 @@ export async function registerRoutes(
         }
       }
 
+      if (input.discipleshipOptIn && (!input.email || !z.string().email().safeParse(input.email).success)) {
+        return res.status(400).json({ message: "A valid email is required for discipleship follow-up", field: "email" });
+      }
+
       // Ensure smsEnabled is false if no valid phone number
       const sanitizedInput = {
         ...input,
         smsEnabled: input.smsEnabled && !!input.phoneNumber && isValidE164PhoneNumber(input.phoneNumber),
+        privacy: input.discipleshipOptIn ? "private" : input.privacy,
+        discipleshipFollowUpStatus: input.discipleshipOptIn ? "requested" : "not_requested",
         ...(firebaseUid ? { firebaseUid } : {}),
       };
       
@@ -868,6 +874,8 @@ export async function registerRoutes(
         }
       } catch (error) { console.error("Could not save the automated prayer encouragement:", error); }
       res.status(201).json(prayerRequest);
+      // Alert contains no counseling text, sender details or sensitive category.
+      void sendNewCounselingAdminAlert(prayerRequest.id, prayerRequest.priority).catch(() => undefined);
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({
@@ -877,6 +885,19 @@ export async function registerRoutes(
       }
       throw err;
     }
+  });
+
+  // Admin-managed discipleship follow-up; never editable through a public request endpoint.
+  app.patch("/api/prayer-requests/:id/discipleship", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id < 1) return res.status(400).json({ message: "Invalid ID" });
+    const status = z.enum(["requested", "contacted", "enrolled", "declined", "completed"]).safeParse(req.body?.status);
+    if (!status.success) return res.status(400).json({ message: "Invalid follow-up status" });
+    const request = await storage.getPrayerRequest(id);
+    if (!request) return res.status(404).json({ message: "Request not found" });
+    if (!request.discipleshipOptIn) return res.status(409).json({ message: "Subscriber did not opt in" });
+    const [updated] = await db.update(prayerRequests).set({ discipleshipFollowUpStatus: status.data }).where(eq(prayerRequests.id, id)).returning();
+    res.json(updated);
   });
 
   // Prayer request list (Admin only)
