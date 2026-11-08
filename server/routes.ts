@@ -1706,7 +1706,7 @@ export async function registerRoutes(
     try {
       const { auth } = await import("./firebase-admin");
       const claims = await auth.verifyIdToken(header.slice(7));
-      return res.json(getDownloadAccess(claims));
+      return res.json(getDownloadAccess({ email: claims.email, email_verified: claims.email_verified }));
     } catch {
       return res.status(401).json({ message: "Your session has expired. Please sign in again." });
     }
@@ -3583,8 +3583,8 @@ export async function registerRoutes(
       const uid = req.headers.authorization?.startsWith("Bearer ")
         ? await (async () => {
             try {
-              const { getAuth } = await import("firebase-admin/auth");
-              const decoded = await getAuth().verifyIdToken(req.headers.authorization!.slice(7));
+              const { auth } = await import("./firebase-admin");
+              const decoded = await auth.verifyIdToken(req.headers.authorization!.slice(7));
               return decoded.uid;
             } catch { return null; }
           })()
@@ -4816,7 +4816,7 @@ export async function registerRoutes(
       const church = await storage.getChurch(churchId);
       if (!church) return res.status(404).json({ message: "Church not found" });
       if (church.platformStatus !== "draft") return res.status(400).json({ message: `Cannot submit for review from status: ${church.platformStatus}` });
-      const updated = await storage.updateChurchPlatformStatus(churchId, "submitted", null, uid);
+      const updated = await storage.updateChurchPlatformStatus(churchId, "submitted", undefined, uid);
       // Persist submission timestamp
       await storage.updateChurch(churchId, { submittedForReviewAt: new Date() } as any);
       storage.createAuditLog({ churchId, action: "submitted_for_review", actorUid: uid }).catch(() => {});
