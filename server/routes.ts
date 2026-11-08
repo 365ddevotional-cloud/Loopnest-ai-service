@@ -22,7 +22,7 @@ import { seedAllDevotionals } from "./seed-devotionals";
 import { getOrCreateTranslation, isAllowedLanguage, getCachedTranslationsForLanguage } from "./translationService";
 import { getCurrentPromise, getNextPromise, advancePromise, resetRotation, toggleEnabled, getTotalPromises, startPromiseScheduler } from "./promiseEngine";
 import { generateAIEncouragement } from "./inbox-ai";
-import { promiseAmens, INBOX_CATEGORIES, insertDonationConfirmationSchema, churchTransactions, prayerRequests } from "@shared/schema";
+import { promiseAmens, INBOX_CATEGORIES, insertDonationConfirmationSchema, churchTransactions, prayerRequests, ministryAnnouncements, ministryAnnouncementInput } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, desc, gte } from "drizzle-orm";
 
@@ -826,6 +826,55 @@ export async function registerRoutes(
     }
     
     res.json(passage);
+  });
+
+  // Ministry-owned announcements: public read-only, administrator-managed writes.
+  // The table migration must be applied before enabling this feature in production.
+  app.get("/api/ministry-announcements", async (_req, res) => {
+    try {
+      const now = new Date();
+      const rows = await db.select().from(ministryAnnouncements).where(eq(ministryAnnouncements.isPublished, true)).orderBy(desc(ministryAnnouncements.createdAt)).limit(30);
+      res.json(rows.filter(row => (!row.startsAt || row.startsAt <= now) && (!row.endsAt || row.endsAt > now)));
+    } catch (error) {
+      console.error("[Announcements] Public read failed", error);
+      res.json([]); // Fail closed; the devotional itself must still load.
+    }
+  });
+  app.get("/api/admin/ministry-announcements", requireAdmin, async (_req, res) => {
+    try { res.json(await db.select().from(ministryAnnouncements).orderBy(desc(ministryAnnouncements.createdAt)).limit(100)); }
+    catch { res.status(503).json({ message: "Announcements are not available yet" }); }
+  });
+  app.post("/api/admin/ministry-announcements", requireAdmin, async (req, res) => {
+    const parsed = ministryAnnouncementInput.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid announcement details" });
+    const input = parsed.data;
+    const startsAt = input.startsAt ? new Date(input.startsAt) : null;
+    const endsAt = input.endsAt ? new Date(input.endsAt) : null;
+    if (startsAt && endsAt && startsAt >= endsAt) return res.status(400).json({ message: "End must follow start" });
+    try {
+      const [created] = await db.insert(ministryAnnouncements).values({
+        title: input.title, description: input.description, category: input.category,
+        destinationUrl: input.destinationUrl, buttonLabel: input.buttonLabel,
+        isPublished: input.isPublished, startsAt, endsAt,
+      }).returning();
+      res.status(201).json(created);
+    } catch { res.status(503).json({ message: "Announcements are not available yet" }); }
+  });
+  app.patch("/api/admin/ministry-announcements/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id < 1) return res.status(400).json({ message: "Invalid ID" });
+    const parsed = ministryAnnouncementInput.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid announcement details" });
+    const input = parsed.data;
+    try {
+      const [updated] = await db.update(ministryAnnouncements).set({
+        ...input,
+        ...(input.startsAt !== undefined ? { startsAt: input.startsAt ? new Date(input.startsAt) : null } : {}),
+        ...(input.endsAt !== undefined ? { endsAt: input.endsAt ? new Date(input.endsAt) : null } : {}),
+      }).where(eq(ministryAnnouncements.id, id)).returning();
+      if (!updated) return res.status(404).json({ message: "Announcement not found" });
+      res.json(updated);
+    } catch { res.status(503).json({ message: "Announcements are not available yet" }); }
   });
 
   // Prayer Request Routes
