@@ -22,7 +22,7 @@ import { seedAllDevotionals } from "./seed-devotionals";
 import { getOrCreateTranslation, isAllowedLanguage, getCachedTranslationsForLanguage } from "./translationService";
 import { getCurrentPromise, getNextPromise, advancePromise, resetRotation, toggleEnabled, getTotalPromises, startPromiseScheduler } from "./promiseEngine";
 import { generateAIEncouragement } from "./inbox-ai";
-import { promiseAmens, INBOX_CATEGORIES, insertDonationConfirmationSchema, churchTransactions } from "@shared/schema";
+import { promiseAmens, INBOX_CATEGORIES, insertDonationConfirmationSchema, churchTransactions, prayerRequests } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, desc, gte } from "drizzle-orm";
 
