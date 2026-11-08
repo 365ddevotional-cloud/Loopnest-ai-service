@@ -25,6 +25,7 @@ import { useState, useEffect, useRef, Component, type FormEvent } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { format, parseISO } from "date-fns";
 import { useLocation } from "wouter";
+import { DISCIPLESHIP_NEXT_STAGES } from "@shared/schema";
 import type { PrayerRequest, ThreadMessage, PrayerReply, PrayerAttachment, Devotional, SundaySchoolLesson, InboxThread, InboxMessage, Song, SongTestimony, GivingMethod, DonationConfirmation, SongCollection } from "@shared/schema";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -1182,10 +1183,12 @@ function PrayerInbox() {
 
   const updateDiscipleshipMutation = useMutation({
     mutationFn: async ({ requestId, status }: { requestId: number; status: string }) => apiRequest("PATCH", `/api/prayer-requests/${requestId}/discipleship`, { status }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests"] });
-      if (selectedRequest && updateDiscipleshipMutation.variables) setSelectedRequest({ ...selectedRequest, discipleshipFollowUpStatus: updateDiscipleshipMutation.variables.status });
+    onSuccess: async (response, { requestId }) => {
+      const updated: PrayerRequest = await response.json();
+      setSelectedRequest(current => current?.id === requestId ? updated : current);
+      await queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests"] });
     },
+    onError: () => toast({ title: "Could not update follow-up", description: "Refresh the request and try again.", variant: "destructive" }),
   });
 
   const filteredRequests = requests.filter((r) => {
@@ -1415,10 +1418,10 @@ function PrayerInbox() {
               {selectedRequest.discipleshipOptIn && (
                 <div className="rounded-lg border p-3 space-y-2">
                   <p className="font-medium">Discipleship follow-up requested (subscriber opted in)</p>
-                  <Select value={selectedRequest.discipleshipFollowUpStatus || "requested"} onValueChange={(status) => updateDiscipleshipMutation.mutate({ requestId: selectedRequest.id, status })}>
+                  <Select disabled={updateDiscipleshipMutation.isPending} value={selectedRequest.discipleshipFollowUpStatus} onValueChange={(status) => updateDiscipleshipMutation.mutate({ requestId: selectedRequest.id, status })}>
                     <SelectTrigger><SelectValue placeholder="Follow-up status" /></SelectTrigger>
                     <SelectContent>
-                      {["requested", "contacted", "enrolled", "declined", "completed"].map(status => <SelectItem key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</SelectItem>)}
+                      {[selectedRequest.discipleshipFollowUpStatus, ...(DISCIPLESHIP_NEXT_STAGES[selectedRequest.discipleshipFollowUpStatus] ?? [])].map(status => <SelectItem key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</SelectItem>)}
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">Contact only through the subscriber-provided email. Do not publish counseling details.</p>

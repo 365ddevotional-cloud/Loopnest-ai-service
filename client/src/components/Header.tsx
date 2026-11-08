@@ -15,6 +15,7 @@ import { useMenuTransition } from "@/contexts/MenuTransitionContext";
 import { BIBLE_TRANSLATIONS, type BibleTranslation } from "@shared/schema";
 import { useI18n } from "@/hooks/useI18n";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
@@ -26,6 +27,8 @@ import { Switch } from "@/components/ui/switch";
 import { TranslationSelector } from "@/components/TranslationSelector";
 import { SettingsModal, MobileSettingsSection } from "@/components/SettingsModal";
 import { LanguageSwitcher, MobileLanguageSwitcher } from "@/components/LanguageSwitcher";
+
+const GOOGLE_PLAY_URL = "https://play.google.com/store/apps/details?id=app.replit.attachment_parser__365ddevotional.twa";
 
 function MobileTranslationSelector() {
   const { translation, setTranslation } = useTranslation();
@@ -263,6 +266,9 @@ export function Header() {
     : { href: "/admin-login", label: t("login"), icon: LogIn, external: false };
 
   const visibleNavItems = [...navItems, adminNavItem];
+  // Keep primary navigation readable on a laptop; secondary links stay one click away.
+  const primaryNavItems = visibleNavItems.filter(item => ["/", "/archive", "/bible", "/music", "/prayer-counseling"].includes(item.href));
+  const secondaryNavItems = visibleNavItems.filter(item => !primaryNavItems.includes(item));
 
   const toggleGroup = (group: string) => {
     setOpenGroup(prev => prev === group ? null : group);
@@ -270,43 +276,37 @@ export function Header() {
 
   return (
     <header className="sticky top-2 z-50 w-full bg-gradient-to-r from-background/98 via-background/95 to-background/98 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 border-b border-primary/15 shadow-sm mt-2">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-center lg:justify-between gap-4 relative">
-        {/* Logo */}
-        <button 
+      <div className="container mx-auto px-3 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2 relative">
+        {/* Always-visible ministry identity: full-size still logo beside the name. */}
+        <button
           onClick={() => navigateWithTransition("/")}
-          className="flex items-center gap-3 group"
+          className="flex min-w-0 items-center gap-2 sm:gap-3 group"
+          data-testid="header-devotional-brand"
         >
-          <MinistryLogo
-            seed={location} animated={!isStillLogoRoute(location)}
-            className="w-12 h-12 object-contain transition-transform group-hover:scale-105"
+          <img
+            src="/365-logo.jpeg"
+            alt="365 Daily Devotional ministry logo"
+            className="h-12 w-12 sm:h-14 sm:w-14 shrink-0 rounded-md object-contain"
+            onError={(event) => { event.currentTarget.src = "/branding/365-jesus-christ-is-lord.gif"; }}
           />
-          <span className="font-serif text-2xl font-semibold text-primary tracking-wide">
+          <span className="font-serif text-xl sm:text-2xl font-bold text-primary tracking-wide leading-tight">
             {t("dailyDevotionalShort")}
           </span>
         </button>
-
-        {/* Prominent app discovery action. Store search is safer than an unverified package URL. */}
         <a
-          href="https://play.google.com/store/search?q=365%20Daily%20Devotional&c=apps"
+          href={GOOGLE_PLAY_URL}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="Continue to app — find 365 Daily Devotional on Google Play"
+          className="hidden lg:inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-orange-600 px-3 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-orange-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
           data-testid="header-continue-to-app"
-          className="hidden lg:inline-flex items-center gap-2 rounded-full border border-orange-400/40 bg-orange-500/10 px-3 py-2 text-sm font-semibold text-foreground hover:bg-orange-500/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+          aria-label="Continue to App — install 365 Daily Devotional from Google Play"
         >
-          <Smartphone className="h-4 w-4 text-orange-500" />
-          Continue to App
+          <Smartphone className="h-4 w-4" />
+          <span>Continue to App</span>
         </a>
-        <a
-          href="https://play.google.com/store/search?q=365%20Daily%20Devotional&c=apps"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Find the 365 Daily Devotional Android app"
-          className="lg:hidden absolute right-2 top-1/2 -translate-y-1/2 rounded-lg border border-orange-400/40 bg-orange-500/10 p-2"
-          data-testid="header-mobile-get-app"
-        ><Smartphone className="h-5 w-5 text-orange-500" /></a>
-                {/* Desktop Navigation */}
-        <nav className="hidden lg:flex items-center gap-1">
+
+        {/* Desktop Navigation — separate scrollable row so the brand and app button remain visible. */}
+        <nav className="hidden lg:flex order-3 w-full items-center gap-1 overflow-x-auto whitespace-nowrap pb-1">
           {/* Sign In / authenticated account — always first */}
           {appUser && appEmailVerified ? (
             <>
@@ -368,7 +368,7 @@ export function Header() {
             <HelpCircle className="w-4 h-4" />
             {t("howToUse")}
           </button>
-          {visibleNavItems.map((item) => {
+          {primaryNavItems.map((item) => {
             const isActive = !item.external && location === item.href;
             if (item.external) {
               return (
@@ -402,6 +402,15 @@ export function Header() {
               </button>
             );
           })}
+          <button onClick={() => navigateWithTransition("/promotions")} className="shrink-0 rounded-lg px-3 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-500/10" data-testid="nav-promotions">Promotions</button>
+          <button onClick={() => navigateWithTransition("/updates")} className="shrink-0 rounded-lg px-3 py-2 text-sm font-medium hover:bg-primary/5" data-testid="nav-whats-new">What's New</button>
+          <button onClick={() => navigateWithTransition("/discipleship")} className="shrink-0 rounded-lg px-3 py-2 text-sm font-medium hover:bg-primary/5" data-testid="nav-discipleship">Discipleship</button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild><Button variant="ghost" size="sm" className="shrink-0" data-testid="nav-more">More <ChevronDown className="ml-1 h-4 w-4" /></Button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="max-h-[70vh] overflow-y-auto">
+              {secondaryNavItems.map(item => <DropdownMenuItem key={item.href} onSelect={() => { if (item.external) window.open(item.href, "_blank", "noopener,noreferrer"); else navigateWithTransition(item.href); }}>{item.label}</DropdownMenuItem>)}
+            </DropdownMenuContent>
+          </DropdownMenu>
           {isAdmin && (
             <button
               onClick={handleLogout}
@@ -522,6 +531,10 @@ export function Header() {
             </SheetHeader>
             
             <nav className="flex flex-col gap-2 pb-6">
+              <MobileNavItem onClick={() => navigateWithTransition("/promotions")} icon={ShoppingBag} label="Promotions" />
+              <MobileNavItem onClick={() => navigateWithTransition("/updates")} icon={Sparkles} label="What\u0027s New" />
+              <MobileNavItem onClick={() => navigateWithTransition("/discipleship")} icon={GraduationCap} label="Discipleship" />
+              <a href={GOOGLE_PLAY_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-lg bg-orange-600 p-3 font-semibold text-white" data-testid="mobile-continue-to-app"><Smartphone className="h-5 w-5"/>Continue to App</a>
               {/* Sign In / Account — first item */}
               {appUser && appEmailVerified ? (
                 <div className="flex flex-col gap-1 border border-primary/10 rounded-xl overflow-hidden">

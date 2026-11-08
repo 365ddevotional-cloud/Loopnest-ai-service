@@ -1,3 +1,4 @@
+import { WhatsNewSection } from "@/components/MinistryDiscovery";
 import { Helmet } from "react-helmet-async";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,8 @@ export default function Updates() {
         <h1 className="font-serif text-3xl md:text-5xl font-bold text-foreground">A simpler start to your daily devotional</h1>
         <p className="text-lg text-muted-foreground leading-relaxed">Take a few moments with God's Word today. Read a Scripture-based message, reflect on prayer points, and carry that encouragement into your day.</p>
       </header>
+
+      <WhatsNewSection />
 
       <section className="rounded-xl border border-primary/20 bg-card p-5 md:p-8 space-y-4 leading-relaxed">
         <p>365 Daily Devotional brings today's message, Bible reading, past devotionals, prayer requests, and worship music together in one place. You can begin reading without creating an account.</p>

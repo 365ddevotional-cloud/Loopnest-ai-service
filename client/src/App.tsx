@@ -32,6 +32,8 @@ import Archive from "@/pages/Archive";
 import AdminLogin from "@/pages/AdminLogin";
 import About from "@/pages/About";
 import Updates from "@/pages/Updates";
+import Promotions from "@/pages/Promotions";
+import Discipleship from "@/pages/Discipleship";
 import Donate from "@/pages/Donate";
 import DonationSuccess from "@/pages/DonationSuccess";
 import PrayerCounseling from "@/pages/PrayerCounseling";
@@ -212,6 +214,8 @@ const Router = memo(function Router() {
       <Route path="/admin"><Suspense fallback={<FeaturePageFallback />}><Admin /></Suspense></Route>
       <Route path="/about" component={About} />
       <Route path="/updates" component={Updates} />
+      <Route path="/promotions" component={Promotions} />
+      <Route path="/discipleship" component={Discipleship} />
       <Route path="/donate" component={Donate} />
       <Route path="/donation-success" component={DonationSuccess} />
       <Route path="/prayer-counseling" component={PrayerCounseling} />

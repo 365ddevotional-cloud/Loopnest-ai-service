@@ -862,7 +862,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(prayerRequests)
-      .where(ilike(prayerRequests.email, email))
+      .where(eq(sql<string>`lower(btrim(${prayerRequests.email}))`, email.trim().toLowerCase()))
       .orderBy(desc(prayerRequests.createdAt));
   }
 

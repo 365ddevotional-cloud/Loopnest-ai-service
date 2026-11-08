@@ -1,6 +1,6 @@
 import { useTodayDevotional } from "@/hooks/use-devotionals";
 import { DevotionalCard } from "@/components/DevotionalCard";
-import { MinistryDiscoveryCard, WhatsNewSection } from "@/components/MinistryDiscovery";
+import { MinistryDiscoveryCard } from "@/components/MinistryDiscovery";
 import { DailyBibleVerse } from "@/components/DailyBibleVerse";
 import { SongOfTheWeek, SongMiniCard } from "@/components/SongOfTheWeek";
 import { Loader2, BookX, WifiOff } from "lucide-react";
@@ -119,7 +119,6 @@ export default function Home() {
         <DevotionalCard devotional={devotional} />
       </motion.div>
       <MinistryDiscoveryCard />
-      <WhatsNewSection />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

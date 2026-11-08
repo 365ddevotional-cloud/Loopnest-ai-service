@@ -13,8 +13,7 @@ export const musicPurchaseOrders = pgTable("music_purchase_orders", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-
-/** Legacy Replit chat integration tables. No data migration or creation is run automatically. */
+// Legacy chat integration types, retained for TypeScript compatibility.
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -136,8 +135,8 @@ export const ministryAnnouncements = pgTable("ministry_announcements", {
 export const ministryAnnouncementInput = z.object({
   title: z.string().trim().min(3).max(120),
   description: z.string().trim().min(3).max(500),
-  category: z.enum(["whats_new", "book", "music", "discipleship", "feature"]),
-  destinationUrl: z.string().trim().min(1).max(500).refine(url => url.startsWith("/") && !url.startsWith("//") && !url.includes("\\") && !url.includes("://"), "Use an internal app path"),
+  category: z.enum(["whats_new", "book", "music", "discipleship", "feature", "product"]),
+  destinationUrl: z.string().trim().min(1).max(500).refine(url => url.startsWith("/") && !url.startsWith("//") && !url.includes("\\") && !url.includes("://") && !/[\u0000-\u001f\u007f]/.test(url), "Use an internal app path"),
   buttonLabel: z.string().trim().min(2).max(40),
   isPublished: z.boolean().default(false),
   startsAt: z.string().datetime().nullable().optional(),
@@ -168,6 +167,16 @@ export const PRAYER_CATEGORIES = [
 ] as const;
 
 export const prayerCategorySchema = z.enum(PRAYER_CATEGORIES);
+
+export const DISCIPLESHIP_STAGES = ["requested", "contacted", "enrolled", "declined", "completed"] as const;
+type DiscipleshipStage = typeof DISCIPLESHIP_STAGES[number];
+export const DISCIPLESHIP_NEXT_STAGES: Readonly<Record<string, readonly DiscipleshipStage[]>> = {
+  requested: ["contacted"],
+  contacted: ["enrolled", "declined"],
+  enrolled: ["declined", "completed"],
+  declined: [],
+  completed: [],
+};
 
 // Prayer Requests Table
 export const prayerRequests = pgTable("prayer_requests", {

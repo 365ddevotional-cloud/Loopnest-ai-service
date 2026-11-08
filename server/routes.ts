@@ -23,9 +23,9 @@ import { seedAllDevotionals } from "./seed-devotionals";
 import { getOrCreateTranslation, isAllowedLanguage, getCachedTranslationsForLanguage } from "./translationService";
 import { getCurrentPromise, getNextPromise, advancePromise, resetRotation, toggleEnabled, getTotalPromises, startPromiseScheduler } from "./promiseEngine";
 import { generateAIEncouragement } from "./inbox-ai";
-import { promiseAmens, INBOX_CATEGORIES, insertDonationConfirmationSchema, churchTransactions, prayerRequests, ministryAnnouncements, ministryAnnouncementInput } from "@shared/schema";
+import { promiseAmens, INBOX_CATEGORIES, insertDonationConfirmationSchema, churchTransactions, prayerRequests, ministryAnnouncements, ministryAnnouncementInput, DISCIPLESHIP_STAGES, DISCIPLESHIP_NEXT_STAGES } from "@shared/schema";
 import { db } from "./db";
-import { eq, sql, desc, gte } from "drizzle-orm";
+import { and, eq, sql, desc, gte, gt, isNull, lte, or } from "drizzle-orm";
 
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
@@ -834,8 +834,12 @@ export async function registerRoutes(
   app.get("/api/ministry-announcements", async (_req, res) => {
     try {
       const now = new Date();
-      const rows = await db.select().from(ministryAnnouncements).where(eq(ministryAnnouncements.isPublished, true)).orderBy(desc(ministryAnnouncements.createdAt)).limit(30);
-      res.json(rows.filter(row => (!row.startsAt || row.startsAt <= now) && (!row.endsAt || row.endsAt > now)));
+      const rows = await db.select().from(ministryAnnouncements).where(and(
+        eq(ministryAnnouncements.isPublished, true),
+        or(isNull(ministryAnnouncements.startsAt), lte(ministryAnnouncements.startsAt, now)),
+        or(isNull(ministryAnnouncements.endsAt), gt(ministryAnnouncements.endsAt, now)),
+      )).orderBy(desc(ministryAnnouncements.createdAt), desc(ministryAnnouncements.id)).limit(30);
+      res.json(rows);
     } catch (error) {
       console.error("[Announcements] Public read failed", error);
       res.json([]); // Fail closed; the devotional itself must still load.
@@ -868,14 +872,22 @@ export async function registerRoutes(
     if (!parsed.success) return res.status(400).json({ message: "Invalid announcement details" });
     const input = parsed.data;
     try {
-      const { startsAt: rawStartsAt, endsAt: rawEndsAt, ...fields } = input;
-      const [updated] = await db.update(ministryAnnouncements).set({
-        ...fields,
-        ...(rawStartsAt !== undefined ? { startsAt: rawStartsAt ? new Date(rawStartsAt) : null } : {}),
-        ...(rawEndsAt !== undefined ? { endsAt: rawEndsAt ? new Date(rawEndsAt) : null } : {}),
-      }).where(eq(ministryAnnouncements.id, id)).returning();
-      if (!updated) return res.status(404).json({ message: "Announcement not found" });
-      res.json(updated);
+      const result = await db.transaction(async tx => {
+        const [current] = await tx.select().from(ministryAnnouncements)
+          .where(eq(ministryAnnouncements.id, id)).for("update");
+        if (!current) return { status: 404, body: { message: "Announcement not found" } };
+
+        const { startsAt, endsAt, ...fields } = input;
+        const start = startsAt === undefined ? current.startsAt : startsAt ? new Date(startsAt) : null;
+        const end = endsAt === undefined ? current.endsAt : endsAt ? new Date(endsAt) : null;
+        if (start && end && start >= end) return { status: 400, body: { message: "End must follow start" } };
+
+        const [updated] = await tx.update(ministryAnnouncements)
+          .set({ ...fields, startsAt: start, endsAt: end })
+          .where(eq(ministryAnnouncements.id, id)).returning();
+        return { status: 200, body: updated };
+      });
+      res.status(result.status).json(result.body);
     } catch { res.status(503).json({ message: "Announcements are not available yet" }); }
   });
 
@@ -917,7 +929,7 @@ export async function registerRoutes(
         smsEnabled: input.smsEnabled && !!input.phoneNumber && isValidE164PhoneNumber(input.phoneNumber),
         privacy: input.discipleshipOptIn ? "private" : input.privacy,
         discipleshipFollowUpStatus: input.discipleshipOptIn ? "requested" : "not_requested",
-        ...(firebaseUid ? { firebaseUid } : {}),
+        firebaseUid,
       };
       
       const prayerRequest = await storage.createPrayerRequest(sanitizedInput);
@@ -947,12 +959,21 @@ export async function registerRoutes(
   app.patch("/api/prayer-requests/:id/discipleship", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isSafeInteger(id) || id < 1) return res.status(400).json({ message: "Invalid ID" });
-    const status = z.enum(["requested", "contacted", "enrolled", "declined", "completed"]).safeParse(req.body?.status);
+    const status = z.enum(DISCIPLESHIP_STAGES).safeParse(req.body?.status);
     if (!status.success) return res.status(400).json({ message: "Invalid follow-up status" });
     const request = await storage.getPrayerRequest(id);
     if (!request) return res.status(404).json({ message: "Request not found" });
     if (!request.discipleshipOptIn) return res.status(409).json({ message: "Subscriber did not opt in" });
-    const [updated] = await db.update(prayerRequests).set({ discipleshipFollowUpStatus: status.data }).where(eq(prayerRequests.id, id)).returning();
+    if (request.discipleshipFollowUpStatus === status.data) return res.json(request);
+    if (!DISCIPLESHIP_NEXT_STAGES[request.discipleshipFollowUpStatus]?.includes(status.data)) {
+      return res.status(409).json({ message: "This follow-up stage cannot be selected yet" });
+    }
+    const [updated] = await db.update(prayerRequests).set({ discipleshipFollowUpStatus: status.data }).where(and(
+      eq(prayerRequests.id, id),
+      eq(prayerRequests.discipleshipOptIn, true),
+      eq(prayerRequests.discipleshipFollowUpStatus, request.discipleshipFollowUpStatus),
+    )).returning();
+    if (!updated) return res.status(409).json({ message: "The follow-up status changed. Refresh and try again." });
     res.json(updated);
   });
 
@@ -1019,7 +1040,7 @@ export async function registerRoutes(
     }
   });
 
-  // Get thread messages (accessible to admin and users who own the request via email query param)
+  // Get thread messages for administrators and verified request owners
   app.get(api.prayerRequests.getThread.path, async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) {
@@ -1093,8 +1114,8 @@ export async function registerRoutes(
 
   // User-facing: Get prayer requests by email
   app.get("/api/my-prayer-requests", async (req, res) => {
-    const email = req.query.email as string;
-    if (!email || !isVerifiedPrayerEmail(req, email)) return res.status(403).json({ message: "Verify your email to view requests" });
+    const email = req.query.email;
+    if (typeof email !== "string" || !isVerifiedPrayerEmail(req, email)) return res.status(403).json({ message: "Verify your email to view requests" });
     try {
       const requests = await storage.getPrayerRequestsByEmail(email);
       const enriched = await Promise.all(
@@ -2521,6 +2542,8 @@ export async function registerRoutes(
     const id = Number(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
     try {
+      const request = await storage.getPrayerRequest(id);
+      if (!request || !isPrayerOwner(req, request)) return res.status(403).json({ message: "Verified access required" });
       const followUps = await storage.getFollowUpsForRequest(id);
       res.json(followUps);
     } catch (err) {
