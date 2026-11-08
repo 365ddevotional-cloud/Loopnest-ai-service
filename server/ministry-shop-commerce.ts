@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { Express, Request, Response } from "express";
+import type { Express, Request, RequestHandler, Response } from "express";
 import Stripe from "stripe";
 import { GetObjectCommand, HeadObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -11,6 +11,7 @@ import { paymentMatchesOrder } from "./music-commerce";
 import { musicCountryFromRequest } from "./music-location";
 import { musicRegions, readMusicPrices } from "./music-regions";
 import { ministryShopPrice, shopBundleId } from "./ministry-shop-pricing";
+import { registerMinistryShopAdmin, type ShopAsset as Asset } from "./ministry-shop-admin";
 
 const appTag = "365-ministry-shop-v1";
 const base = "https://365dailydevotional.com";
@@ -24,7 +25,6 @@ const checkoutInput = z.object({
 }).strict();
 const sessionInput = z.object({ sessionId: z.string().regex(/^cs_(test|live)_[A-Za-z0-9_]+$/) }).strict();
 
-type Asset = { object_key: string; file_name: string; content_type: string; size_bytes: string };
 type Order = {
   session_id: string; firebase_uid: string; product_id: string; amount: number; currency: string;
   status: string; payment_intent_id: string | null; assets: Asset[]; download_expires_at: Date | null;
@@ -49,7 +49,7 @@ function canSell(id: string, assets: Asset[]) {
     new RegExp(`^ministry-shop/${id}/[a-f0-9]{64}$`).test(asset.object_key));
 }
 
-export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyToken) {
+export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyToken, requireAdmin: RequestHandler) {
   const env = process.env;
   const bucket = env.SHOP_R2_PRIVATE_BUCKET;
   const r2 = env.R2_ACCOUNT_ID && env.R2_BUCKET_NAME && bucket && bucket !== env.R2_BUCKET_NAME &&
@@ -65,6 +65,13 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
   const enabled = env.SHOP_CHECKOUT_ENABLED === "true" && !!secret && !!stripe && !!r2 &&
     (env.NODE_ENV !== "production" || /^(sk|rk)_live_/.test(key ?? ""));
   const prices = () => readMusicPrices(env.MUSIC_REGIONAL_PRICES_JSON);
+  registerMinistryShopAdmin(app, requireAdmin, {
+    checkoutConfigured: enabled,
+    storageConfigured: !!r2,
+    stripeConfigured: !!stripe,
+    webhookConfigured: !!secret,
+    countries: [...countries].filter(code => musicRegions[code]?.stripe),
+  }, canSell);
 
   async function viewer(req: Request) {
     const header = req.get("authorization");
@@ -113,7 +120,9 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
       if (!local[country]) return res.json({ products: {} });
       const purchasable = new Set<string>();
       if (enabled && countries.has(country)) {
-        const { rows } = await db.execute<Asset & {product_id: string}>(sql`SELECT * FROM ministry_shop_assets`);
+        const { rows } = await db.execute<Asset & {product_id: string}>(sql`SELECT assets.* FROM ministry_shop_assets assets
+          WHERE NOT EXISTS (SELECT 1 FROM ministry_shop_sales_controls control
+            WHERE control.product_id = assets.product_id AND control.paused)`);
         const groups = new Map<string, Asset[]>();
         for (const asset of rows) {
           const group = groups.get(asset.product_id) ?? [];
@@ -144,6 +153,10 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
       if (price.amount !== amount || price.currency !== currency) issue(409, "The local price changed. Refresh before paying.");
       const user = await viewer(req);
       if (!user.email || !user.email_verified) issue(403, "Verify your account email before checking out.");
+      const sales = await db.execute<{ paused: boolean }>(sql`SELECT paused FROM ministry_shop_sales_controls
+        WHERE product_id=${productId}`);
+      if (sales.rows[0]?.paused) issue(409, "New sales for this product are paused.");
+
       const { rows: assets } = await db.execute<Asset>(sql`SELECT object_key, file_name, content_type, size_bytes
         FROM ministry_shop_assets WHERE product_id=${productId} ORDER BY object_key`);
       if (!canSell(productId, assets)) issue(409, "The original download for this product is not ready.");
