@@ -10,6 +10,7 @@ import type { Server } from "http";
 import fs from "fs";
 import path from "path";
 import { storage } from "./storage";
+import { startPrayerEmailVerification, confirmPrayerEmailVerification, isPrayerOwner, isVerifiedPrayerEmail, rememberSubmittedPrayer } from "./prayer-access";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { OAuth2Client } from "google-auth-library";
@@ -878,6 +879,10 @@ export async function registerRoutes(
     } catch { res.status(503).json({ message: "Announcements are not available yet" }); }
   });
 
+  // Verified email access for existing guest prayer and counseling requests.
+  app.post("/api/prayer-access/send-code", startPrayerEmailVerification);
+  app.post("/api/prayer-access/verify-code", confirmPrayerEmailVerification);
+
   // Prayer Request Routes
   app.post(api.prayerRequests.create.path, async (req, res) => {
     try {
@@ -916,6 +921,7 @@ export async function registerRoutes(
       };
       
       const prayerRequest = await storage.createPrayerRequest(sanitizedInput);
+      rememberSubmittedPrayer(req, prayerRequest.id);
       try {
         const template = await storage.getAutoReplyTemplate(prayerRequest.priority);
         if (template) {
@@ -976,6 +982,7 @@ export async function registerRoutes(
     if (!request) {
       return res.status(404).json({ message: "Prayer request not found" });
     }
+    if (!isPrayerOwner(req, request)) return res.status(403).json({ message: "Verified access required" });
     res.json(request);
   });
 
@@ -1019,16 +1026,8 @@ export async function registerRoutes(
       return res.status(400).json({ message: "Invalid ID" });
     }
 
-    if (!req.session?.isAdmin) {
-      const email = req.query.email as string;
-      if (!email) {
-        return res.status(401).json({ message: "Email required to view conversation" });
-      }
-      const request = await storage.getPrayerRequest(id);
-      if (!request || request.email?.toLowerCase() !== email.toLowerCase()) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-    }
+    const request = await storage.getPrayerRequest(id);
+    if (!request || !isPrayerOwner(req, request)) return res.status(403).json({ message: "Verified access required" });
 
     const messages = await storage.getThreadMessages(id);
     res.json(messages);
@@ -1043,10 +1042,10 @@ export async function registerRoutes(
       }
       const { message, senderType } = req.body;
       
-      // Only admins can send as "admin"
-      if (senderType === "admin" && !req.session?.isAdmin) {
-        return res.status(401).json({ message: "Unauthorized: Admin access required" });
-      }
+      if (typeof message !== "string" || !message.trim() || message.length > 10000 || !["admin", "user"].includes(senderType)) return res.status(400).json({ message: "Invalid message" });
+      if (senderType === "admin" && !req.session?.isAdmin) return res.status(403).json({ message: "Admin access required" });
+      const ownerRequest = await storage.getPrayerRequest(id);
+      if (!ownerRequest || (senderType !== "admin" && !isPrayerOwner(req, ownerRequest))) return res.status(403).json({ message: "Verified access required" });
       
       const threadMessage = await storage.createThreadMessage({
         requestId: id,
@@ -1095,9 +1094,7 @@ export async function registerRoutes(
   // User-facing: Get prayer requests by email
   app.get("/api/my-prayer-requests", async (req, res) => {
     const email = req.query.email as string;
-    if (!email || !email.includes("@")) {
-      return res.status(400).json({ message: "Valid email is required" });
-    }
+    if (!email || !isVerifiedPrayerEmail(req, email)) return res.status(403).json({ message: "Verify your email to view requests" });
     try {
       const requests = await storage.getPrayerRequestsByEmail(email);
       const enriched = await Promise.all(
@@ -1122,13 +1119,9 @@ export async function registerRoutes(
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID" });
     }
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ message: "Email is required" });
-    }
     try {
       const request = await storage.getPrayerRequest(id);
-      if (!request || request.email?.toLowerCase() !== email.toLowerCase()) {
+      if (!request || !isPrayerOwner(req, request)) {
         return res.status(403).json({ message: "Access denied" });
       }
       const markedCount = await storage.markAdminMessagesRead(id);
@@ -1297,16 +1290,8 @@ export async function registerRoutes(
       return res.status(400).json({ message: "Invalid ID" });
     }
 
-    if (!req.session?.isAdmin) {
-      const email = req.query.email as string;
-      if (!email) {
-        return res.status(401).json({ message: "Email required to view attachments" });
-      }
-      const request = await storage.getPrayerRequest(id);
-      if (!request || request.email?.toLowerCase() !== email.toLowerCase()) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-    }
+    const request = await storage.getPrayerRequest(id);
+    if (!request || !isPrayerOwner(req, request)) return res.status(403).json({ message: "Verified access required" });
 
     const attachments = await storage.getAttachmentsForRequest(id);
     res.json(attachments);
@@ -1318,6 +1303,8 @@ export async function registerRoutes(
       if (isNaN(requestId)) {
         return res.status(400).json({ message: "Invalid ID" });
       }
+      const ownerRequest = await storage.getPrayerRequest(requestId);
+      if (!ownerRequest || !isPrayerOwner(req, ownerRequest)) return res.status(403).json({ message: "Verified access required" });
       const { fileName, fileSize, contentType, objectPath } = req.body;
       
       if (!fileName || !fileSize || !contentType || !objectPath) {
