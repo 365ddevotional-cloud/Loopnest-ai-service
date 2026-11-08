@@ -14,18 +14,46 @@ const icons = { Book: BookOpen, Music: Headphones, Membership: Sparkles };
 
 const viewKey = ["/api/ministry-shop/views"] as const;
 
-function ProductViews({ total, compact = false }: { total?: number; compact?: boolean }) {
+function ProductViews({ total }: { total?: number }) {
   if (total === undefined) return null;
   return (
-    <span className={compact ? "inline-flex items-center gap-1 text-[11px] leading-tight text-muted-foreground" : "mt-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground"}>
-      <Eye size={compact ? 12 : 14} aria-hidden="true" /> {total.toLocaleString()} {total === 1 ? "visit" : "visits"}
+    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+      <Eye size={13} aria-hidden="true" /> {total.toLocaleString()} {total === 1 ? "visit" : "visits"}
     </span>
+  );
+}
+
+function ProductArtwork({ product, detail = false }: { product: (typeof catalog)[number]; detail?: boolean }) {
+  const Icon = icons[product.kind as keyof typeof icons];
+  const [failed, setFailed] = useState(false);
+
+  return (
+    <div className={`flex items-center justify-center overflow-hidden bg-muted/60 text-muted-foreground ${detail ? "aspect-square w-full max-w-72 rounded-xl" : "aspect-[4/3] w-full rounded-lg"}`}>
+      {!failed ? (
+        <img
+          src={`/shop-art/${product.id}.webp`}
+          alt={detail ? `${product.title} artwork` : ""}
+          loading={detail ? "eager" : "lazy"}
+          decoding="async"
+          className={`h-full w-full ${detail || product.kind === "Book" ? "object-contain p-1.5" : "object-cover"}`}
+          onError={() => setFailed(true)}
+        />
+      ) : <Icon className="size-9" aria-hidden="true" />}
+    </div>
   );
 }
 
 function ProductDetail({ id, views, price }: { id: string; views?: Record<string, number>; price?: { amount: number; currency: string; country: string; ready: boolean } }) {
   const product = catalog.find(item => item.id === id);
   const queryClient = useQueryClient();
+  const { data: descriptions, isPending } = useQuery({
+    queryKey: ["ministry-shop-descriptions"],
+    queryFn: async (): Promise<Record<string, string[]>> => (await import("@/data/ministry-shop-content.json")).default,
+    enabled: !!product,
+    staleTime: Infinity,
+    retry: false,
+  });
+  const description = descriptions?.[id];
 
   useEffect(() => {
     if (!product) return;
@@ -49,17 +77,30 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
   }, [product, queryClient]);
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10">
+    <main className="mx-auto max-w-4xl py-3 sm:px-4 sm:py-6">
       <Link href="/shop" className="text-sm font-semibold text-primary hover:underline">← Back to 365 Ministry Shop</Link>
-      <section className="mt-5 rounded-3xl border border-border bg-card p-6 sm:p-10">
+      <section className="mt-4 rounded-2xl border border-border bg-card p-4 sm:p-7">
         {product ? (
           <>
             <Helmet><title>{product.title} | 365 Ministry Shop</title></Helmet>
-            <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">{product.kind}</p>
-            <h1 className="mt-2 font-serif text-3xl font-bold">{product.title}</h1>
-            <ProductViews total={views?.[product.id]} />
-            {price && <p className="mt-4 text-xl font-semibold">{formatMusicPrice(price.amount, price.currency)}</p>}
-            {product.kind !== "Membership" && <ShopCheckout key={product.id} productId={product.id} price={price} />}
+            <div className="grid gap-5 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:gap-7">
+              <ProductArtwork key={product.id} product={product} detail />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{product.kind}</p>
+                <h1 className="mb-2 mt-1 break-words text-2xl font-bold tracking-tight text-teal-900 dark:text-teal-200 sm:text-3xl">{product.title}</h1>
+                <ProductViews total={views?.[product.id]} />
+                {price && <p className="mt-2 text-xl font-bold text-orange-800 dark:text-orange-300">{formatMusicPrice(price.amount, price.currency)}</p>}
+                {product.kind !== "Membership" && <ShopCheckout key={product.id} productId={product.id} price={price} />}
+              </div>
+            </div>
+            <div className="mt-6 border-t border-border pt-5">
+              <h2 className="text-lg font-bold">{product.kind === "Book" ? "About this book" : product.kind === "Music" ? "About this release" : "About this membership"}</h2>
+              <div className="mt-3 space-y-3 break-words text-sm leading-relaxed text-muted-foreground sm:text-base">
+                {description?.length
+                  ? description.map((paragraph, index) => <p key={index}>{paragraph}</p>)
+                  : <p>{isPending ? "Loading description…" : "The description is currently unavailable."}</p>}
+              </div>
+            </div>
           </>
         ) : <h1 className="font-serif text-3xl font-bold">Product not found</h1>}
       </section>
@@ -80,13 +121,13 @@ function ShopCatalog() {
   if (params) return <ProductDetail id={params.productId} views={views} price={prices?.products[params.productId]} />;
 
   return (
-    <main className="mx-auto max-w-6xl space-y-3 px-3 py-3 sm:space-y-5 sm:px-5 sm:py-6">
+    <main className="mx-auto max-w-6xl space-y-4 py-3 sm:space-y-5 sm:px-5 sm:py-6">
       <Helmet>
         <title>365 Ministry Shop | 365 Daily Devotional</title>
         <meta name="description" content="Browse books, worship music and digital resources from 365 Daily Devotional." />
       </Helmet>
 
-      <header className="rounded-xl bg-gradient-to-br from-slate-950 to-teal-950 px-3 py-2.5 text-white sm:px-5 sm:py-4">
+      <header className="rounded-xl bg-gradient-to-br from-slate-950 to-teal-950 px-4 py-3 text-white sm:px-5 sm:py-4">
         <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
           <h1 className="flex items-center gap-2 font-sans text-lg font-bold tracking-tight sm:text-2xl">
             <ShoppingBag size={17} className="shrink-0 text-orange-300" aria-hidden="true" /> 365 Ministry Shop
@@ -118,21 +159,18 @@ function ShopCatalog() {
           {products.length ? `${products.length} ${products.length === 1 ? "item" : "items"}` : "No matching items. Try a different title or category."}
         </p>
         {locationResolved && !prices?.country && <button type="button" className="mb-2 text-xs text-primary underline" onClick={retryDeviceLocation}>Refresh local pricing</button>}
-        <ul className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
           {products.map(product => {
-            const Icon = icons[product.kind as keyof typeof icons];
             const price = prices?.products[product.id];
             return (
               <li key={product.id}>
-                <Link href={`/shop/${product.id}`} className="block h-full rounded-lg border border-border bg-card p-1.5 font-sans hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:p-2.5">
-                  <div className={`flex h-8 items-center justify-center gap-1 rounded-md text-[10px] font-semibold sm:h-12 sm:gap-2 sm:text-xs ${product.kind === "Book" ? "bg-orange-100 text-orange-900 dark:bg-orange-950 dark:text-orange-200" : "bg-teal-100 text-teal-900 dark:bg-teal-950 dark:text-teal-200"}`}>
-                    <Icon className="size-3.5 shrink-0 sm:size-5" aria-hidden="true" />
-                    {product.kind}
-                  </div>
-                  <h3 title={product.title} className="mt-1 line-clamp-2 min-h-8 break-words text-[13px] font-bold leading-4 text-teal-900 dark:text-teal-200 sm:min-h-10 sm:text-sm sm:leading-5">{product.title}</h3>
-                  <div className="mt-0.5 flex min-h-8 flex-col items-start">
-                    {price && <span className="text-[13px] font-bold leading-4 tabular-nums text-orange-800 dark:text-orange-300 sm:text-sm">{formatMusicPrice(price.amount, price.currency)}</span>}
-                    <ProductViews total={views?.[product.id]} compact />
+                <Link href={`/shop/${product.id}`} className="flex h-full min-w-0 flex-col rounded-xl border border-border bg-card p-2.5 font-sans shadow-sm transition-colors hover:border-teal-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:p-3">
+                  <ProductArtwork product={product} />
+                  <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{product.kind}</p>
+                  <h3 title={product.title} className="mb-2 mt-0.5 line-clamp-2 break-words text-sm font-bold leading-snug text-teal-900 dark:text-teal-200 sm:text-base">{product.title}</h3>
+                  <div className="mt-auto flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+                    {price && <span className="text-sm font-bold tabular-nums text-orange-800 dark:text-orange-300">{formatMusicPrice(price.amount, price.currency)}</span>}
+                    <ProductViews total={views?.[product.id]} />
                   </div>
                 </Link>
               </li>
