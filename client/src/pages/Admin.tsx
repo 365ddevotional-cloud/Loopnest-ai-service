@@ -4,6 +4,7 @@ import { MinistryLogoPicker } from "@/components/MinistryLogoPicker";
 import { resolveUploadLogo } from "@/lib/ministry-logo";
 import MusicPricingAdmin from "@/components/MusicPricingAdmin";
 import { FormattedPrayerMessage } from "@/components/FormattedPrayerMessage";
+import { MinistryAnnouncementsAdmin } from "@/components/MinistryAnnouncementsAdmin";
 import { pastePrayerReply } from "@/lib/prayer-reply-paste";
 import { CreateDevotionalForm } from "@/components/CreateDevotionalForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -2877,6 +2878,7 @@ export default function Admin() {
         </TabsList>
 
         <TabsContent value="inbox">
+          <MinistryAnnouncementsAdmin />
           <Card className="border-primary/10 shadow-lg shadow-primary/5">
             <CardHeader className="bg-muted/30 border-b border-border">
               <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
