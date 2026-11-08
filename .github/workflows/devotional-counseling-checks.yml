@@ -25,7 +25,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
-        continue-on-error: true # Existing unrelated baseline TS errors; build and regression tests must still run.
       - run: npm run build
       - run: npm run test:music-commerce
       - run: npm run test:sharing
