@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { Link } from "wouter";
-import { BookOpen, Headphones, Search, ShoppingBag, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useRoute } from "wouter";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { BookOpen, Eye, Headphones, Search, ShoppingBag, Sparkles } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,12 +10,70 @@ import catalog from "@/data/ministry-shop-catalog.json";
 const filters = ["All", "Book", "Music", "Membership"] as const;
 const icons = { Book: BookOpen, Music: Headphones, Membership: Sparkles };
 
+const viewKey = ["/api/ministry-shop/views"] as const;
+
+function ProductViews({ total }: { total?: number }) {
+  if (total === undefined) return null;
+  return (
+    <span className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+      <Eye size={14} aria-hidden="true" /> {total.toLocaleString()} {total === 1 ? "visit" : "visits"}
+    </span>
+  );
+}
+
+function ProductDetail({ id, views }: { id: string; views?: Record<string, number> }) {
+  const product = catalog.find(item => item.id === id);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!product) return;
+    try {
+      let browserId = localStorage.getItem("audience-browser-id");
+      if (!browserId) {
+        browserId = crypto.randomUUID();
+        localStorage.setItem("audience-browser-id", browserId);
+      }
+      void fetch(`/api/ministry-shop/${encodeURIComponent(product.id)}/visit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ browserId }),
+        keepalive: true,
+      }).then(response => {
+        if (response.ok) void queryClient.invalidateQueries({ queryKey: viewKey });
+      }).catch(() => {});
+    } catch {
+      // Browsing must still work when local storage is disabled.
+    }
+  }, [product, queryClient]);
+
+  return (
+    <main className="mx-auto max-w-3xl px-4 py-10">
+      <Link href="/shop" className="text-sm font-semibold text-primary hover:underline">← Back to Ministry Shop</Link>
+      <section className="mt-5 rounded-3xl border border-border bg-card p-6 sm:p-10">
+        {product ? (
+          <>
+            <Helmet><title>{product.title} | Ministry Shop</title></Helmet>
+            <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">{product.kind}</p>
+            <h1 className="mt-2 font-serif text-3xl font-bold">{product.title}</h1>
+            <ProductViews total={views?.[product.id]} />
+            <p className="mt-4 text-muted-foreground">Purchases and downloads are being prepared.</p>
+          </>
+        ) : <h1 className="font-serif text-3xl font-bold">Product not found</h1>}
+      </section>
+    </main>
+  );
+}
+
 export default function MinistryShop() {
+  const [, params] = useRoute("/shop/:productId");
+  const { data: views } = useQuery<Record<string, number>>({ queryKey: viewKey, retry: false });
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const products = catalog.filter(item => (filter === "All" || item.kind === filter) &&
     item.title.toLocaleLowerCase().includes(normalizedQuery));
+
+  if (params) return <ProductDetail id={params.productId} views={views} />;
 
   return (
     <main className="mx-auto max-w-6xl space-y-9 px-4 py-8 sm:py-12">
@@ -57,14 +116,17 @@ export default function MinistryShop() {
           {products.map(product => {
             const Icon = icons[product.kind as keyof typeof icons];
             return (
-              <li key={product.id} className="flex items-start gap-4 rounded-2xl border border-border bg-card p-4">
+              <li key={product.id}>
+                <Link href={`/shop/${product.id}`} className="flex h-full items-start gap-4 rounded-2xl border border-border bg-card p-4 hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
                 <span className="rounded-xl bg-orange-500/10 p-2.5 text-orange-700 dark:text-orange-300">
                   <Icon size={19} aria-hidden="true" />
                 </span>
                 <div className="min-w-0">
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{product.kind}</p>
                   <h3 className="mt-1 break-words font-semibold leading-snug">{product.title}</h3>
+                  <ProductViews total={views?.[product.id]} />
                 </div>
+                </Link>
               </li>
             );
           })}

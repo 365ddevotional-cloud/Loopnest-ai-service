@@ -1,3 +1,4 @@
+import { registerMinistryShopRoutes } from "./ministry-shop";
 import { registerAdminAuth } from "./admin-auth";
 import { registerMusicCommerceRoutes } from "./music-commerce";
 import { ensureAudienceAnalyticsTables, recordBrowserVisit, recordAudienceSongEvent, getAudienceAnalytics, savePlayStoreVisit } from "./audience-analytics";
@@ -184,6 +185,7 @@ export async function registerRoutes(
     requireAdmin,
   });
   registerAdminAuth(app, ADMIN_PASSWORD);
+  registerMinistryShopRoutes(app);
 
   // PUBLIC DEBUG ENDPOINT - Returns current server state for diagnosing production issues
   // This endpoint bypasses all caching and returns raw server data

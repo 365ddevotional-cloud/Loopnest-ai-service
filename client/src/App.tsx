@@ -216,6 +216,7 @@ const Router = memo(function Router() {
       <Route path="/about" component={About} />
       <Route path="/updates" component={Updates} />
       <Route path="/promotions" component={Promotions} />
+      <Route path="/shop/:productId"><Suspense fallback={<FeaturePageFallback />}><MinistryShop /></Suspense></Route>
       <Route path="/shop"><Suspense fallback={<FeaturePageFallback />}><MinistryShop /></Suspense></Route>
       <Route path="/discipleship" component={Discipleship} />
       <Route path="/donate" component={Donate} />
