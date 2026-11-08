@@ -30,6 +30,9 @@ export default function MyPrayerRequests() {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [searchedEmail, setSearchedEmail] = useState("");
+  const [pendingEmail, setPendingEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [verificationBusy, setVerificationBusy] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<PrayerRequest | null>(null);
   const [followUpMessage, setFollowUpMessage] = useState("");
 
@@ -107,14 +110,35 @@ export default function MyPrayerRequests() {
     },
   });
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !email.includes("@")) {
       toast({ title: "Please enter a valid email address", variant: "destructive" });
       return;
     }
-    setSearchedEmail(email);
-    setSelectedRequest(null);
+    setVerificationBusy(true);
+    try {
+      const response = await fetch("/api/prayer-access/send-code", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({email:email.trim()}) });
+      if (!response.ok) throw new Error((await response.json()).message || "Could not send verification code");
+      setPendingEmail(email.trim());
+      setSearchedEmail("");
+      setSelectedRequest(null);
+      toast({title:"Verification code sent",description:"Check your email and enter the six-digit code."});
+    } catch(err) {toast({title:"Verification unavailable",description:err instanceof Error?err.message:"Please try again",variant:"destructive"});}
+    finally {setVerificationBusy(false);}
+  };
+
+  const verifyCode = async () => {
+    setVerificationBusy(true);
+    try {
+      const response=await fetch("/api/prayer-access/verify-code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:pendingEmail,code})});
+      if(!response.ok) throw new Error("Invalid or expired code");
+      setSearchedEmail(pendingEmail);
+      setPendingEmail("");
+      setCode("");
+      toast({title:"Email verified",description:"You can now view your private requests."});
+    } catch(err) {toast({title:"Verification failed",description:err instanceof Error?err.message:"Try again",variant:"destructive"});}
+    finally {setVerificationBusy(false);}
   };
 
   const handleSendFollowUp = () => {
@@ -136,7 +160,7 @@ export default function MyPrayerRequests() {
         <CardContent className="p-6">
           <form onSubmit={handleSearch} className="flex items-end gap-4 flex-wrap">
             <div className="flex-1 min-w-[200px] space-y-2">
-              <Label htmlFor="email">Enter your email to view your requests</Label>
+              <Label htmlFor="email">Enter your email to receive a secure verification code</Label>
               <Input
                 id="email"
                 type="email"
@@ -146,18 +170,19 @@ export default function MyPrayerRequests() {
                 data-testid="input-search-email"
               />
             </div>
-            <Button type="submit" disabled={isLoading} data-testid="button-search">
+            <Button type="submit" disabled={verificationBusy} data-testid="button-search">
               {isLoading ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <Search className="w-4 h-4 mr-2" />
               )}
-              Find My Requests
+              Send Verification Code
             </Button>
           </form>
         </CardContent>
       </Card>
 
+      {pendingEmail && <Card className="mb-6 p-5 space-y-3"><p className="font-semibold">Verify your email</p><p className="text-sm text-muted-foreground">Enter the six-digit code sent to {pendingEmail}. It expires in ten minutes.</p><Input aria-label="Six-digit verification code" inputMode="numeric" maxLength={6} value={code} onChange={e=>setCode(e.target.value.replace(/\\D/g,""))} placeholder="123456"/><Button disabled={verificationBusy || code.length!==6} onClick={verifyCode}>Verify and View Requests</Button></Card>}
       {searchedEmail && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-4">
