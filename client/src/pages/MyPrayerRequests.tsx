@@ -182,7 +182,7 @@ export default function MyPrayerRequests() {
         </CardContent>
       </Card>
 
-      {pendingEmail && <Card className="mb-6 p-5 space-y-3"><p className="font-semibold">Verify your email</p><p className="text-sm text-muted-foreground">Enter the six-digit code sent to {pendingEmail}. It expires in ten minutes.</p><Input aria-label="Six-digit verification code" inputMode="numeric" maxLength={6} value={code} onChange={e=>setCode(e.target.value.replace(/\\D/g,""))} placeholder="123456"/><Button disabled={verificationBusy || code.length!==6} onClick={verifyCode}>Verify and View Requests</Button></Card>}
+      {pendingEmail && <Card className="mb-6 p-5 space-y-3"><p className="font-semibold">Verify your email</p><p className="text-sm text-muted-foreground">Enter the six-digit code sent to {pendingEmail}. It expires in ten minutes.</p><Input aria-label="Six-digit verification code" inputMode="numeric" maxLength={6} value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,""))} placeholder="123456"/><Button disabled={verificationBusy || code.length!==6} onClick={verifyCode}>Verify and View Requests</Button></Card>}
       {searchedEmail && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-4">
