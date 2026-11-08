@@ -159,7 +159,7 @@ export const insertPrayerRequestSchema = createInsertSchema(prayerRequests).omit
   createdAt: true,
 }).extend({
   category: prayerCategorySchema.optional().default("other"),
-  discipleshipOptIn: z.boolean().optional().default(false),
+  discipleshipOptIn: z.boolean().optional(),
 });
 
 export type PrayerRequest = typeof prayerRequests.$inferSelect;
