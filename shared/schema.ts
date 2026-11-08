@@ -148,6 +148,8 @@ export const prayerRequests = pgTable("prayer_requests", {
   answeredAt: timestamp("answered_at"),
   answerNote: text("answer_note"),
   privacy: text("privacy").default("private"),
+  discipleshipOptIn: boolean("discipleship_opt_in").notNull().default(false),
+  discipleshipFollowUpStatus: text("discipleship_follow_up_status").notNull().default("not_requested"),
 });
 
 export const insertPrayerRequestSchema = createInsertSchema(prayerRequests).omit({
@@ -157,6 +159,7 @@ export const insertPrayerRequestSchema = createInsertSchema(prayerRequests).omit
   createdAt: true,
 }).extend({
   category: prayerCategorySchema.optional().default("other"),
+  discipleshipOptIn: z.boolean().optional().default(false),
 });
 
 export type PrayerRequest = typeof prayerRequests.$inferSelect;
