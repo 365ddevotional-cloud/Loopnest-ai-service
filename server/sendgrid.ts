@@ -729,3 +729,29 @@ export async function sendContactAutoReply(
     return false;
   }
 }
+
+
+/** Privacy-preserving admin alert. Never include the request message, category, name or email. */
+export async function sendNewCounselingAdminAlert(requestId: number, priority: string): Promise<boolean> {
+  try {
+    const { client, fromEmail } = await getUncachableSendGridClient();
+    const to = process.env.PRAYER_ADMIN_ALERT_EMAIL;
+    if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+      console.warn("[PrayerAlert] PRAYER_ADMIN_ALERT_EMAIL not configured; skipping alert");
+      return false;
+    }
+    const kind = priority.startsWith("counseling") ? "Counseling" : "Prayer";
+    const urgent = priority.endsWith("urgent") ? "URGENT " : "";
+    const url = "https://365dailydevotional.com/admin";
+    await client.send({
+      to, from: fromEmail,
+      subject: `${urgent}${kind} request received (#${requestId})`,
+      text: `A new ${kind.toLowerCase()} request (#${requestId}) is awaiting review. Sign in to the ministry administration dashboard: ${url}. No private message content is included in this email.`,
+      html: `<p>A new ${kind.toLowerCase()} request (#${requestId}) is awaiting review.</p><p><a href="${url}">Sign in to the ministry administration dashboard</a> to review it securely.</p><p>No confidential request details are included in this email.</p>`,
+    });
+    return true;
+  } catch (error) {
+    console.error("[PrayerAlert] Delivery failed", error instanceof Error ? error.message : "Unknown error");
+    return false;
+  }
+}
