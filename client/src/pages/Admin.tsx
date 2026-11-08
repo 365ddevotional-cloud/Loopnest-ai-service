@@ -52,6 +52,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   guidance: "Guidance",
   family: "Family",
   salvation: "Salvation",
+  spiritual_growth: "Spiritual Growth",
+  habit_recovery: "Habit Recovery",
   other: "Other",
 };
 
@@ -63,6 +65,8 @@ const CATEGORY_OPTIONS = [
   { value: "guidance", label: "Guidance" },
   { value: "family", label: "Family" },
   { value: "salvation", label: "Salvation" },
+  { value: "spiritual_growth", label: "Spiritual Growth" },
+  { value: "habit_recovery", label: "Habit Recovery" },
   { value: "other", label: "Other" },
 ];
 
@@ -1263,6 +1267,8 @@ function PrayerInbox() {
               <SelectItem value="guidance">Category: Guidance</SelectItem>
               <SelectItem value="family">Category: Family</SelectItem>
               <SelectItem value="salvation">Category: Salvation</SelectItem>
+              <SelectItem value="spiritual_growth">Category: Spiritual Growth</SelectItem>
+              <SelectItem value="habit_recovery">Category: Habit Recovery</SelectItem>
               <SelectItem value="other">Category: Other</SelectItem>
             </SelectContent>
           </Select>
