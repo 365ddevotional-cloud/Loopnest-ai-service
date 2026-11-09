@@ -2,17 +2,17 @@ import { musicRegions, type MusicPrices } from "./music-regions";
 
 export const shopBundleId = "x29Tw";
 
-const littleHeartsPrices: Partial<Record<string, number>> = {
-  US: 1800,
-  NG: 500000,
-  GH: 4500,
+const littleHeartsVolumePrices: Partial<Record<string, number>> = {
+  US: 899,
+  NG: 250000,
+  GH: 2250,
 };
 
-export function ministryShopPrice(product: { id: string; kind: string; sourcePrice: string }, country: string, prices: MusicPrices) {
+export function ministryShopPrice(product: { id: string; kind: string; sourcePrice: string; replacedBy?: string[] }, country: string, prices: MusicPrices) {
   const region = musicRegions[country];
-  if (!region || product.kind === "Membership") return null;
-  if (product.id === "littleheartsbibleset") {
-    const amount = littleHeartsPrices[country];
+  if (!region || product.kind === "Membership" || product.replacedBy) return null;
+  if (product.id === "littleheartsoldtestament" || product.id === "littleheartsnewtestament") {
+    const amount = littleHeartsVolumePrices[country];
     return amount ? { amount, currency: region.currency, country, stripeSupported: region.stripe } : null;
   }
 

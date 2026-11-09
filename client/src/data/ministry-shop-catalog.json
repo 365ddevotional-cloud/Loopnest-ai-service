@@ -1,5 +1,7 @@
 [
-  {"id":"littleheartsbibleset","title":"Little Hearts Bible Tales - Old & New Testament Set","kind":"Book","sourcePrice":"$18.00","requiredFileCount":2},
+  {"id":"littleheartsoldtestament","title":"Little Hearts Bible Tales - Old Testament","kind":"Book","sourcePrice":"$8.99","requiredFileCount":1},
+  {"id":"littleheartsnewtestament","title":"Little Hearts Bible Tales - New Testament","kind":"Book","sourcePrice":"$8.99","requiredFileCount":1},
+  {"id":"littleheartsbibleset","title":"Little Hearts Bible Tales - Old & New Testament Set","kind":"Book","sourcePrice":"$18.00","requiredFileCount":2,"replacedBy":["littleheartsoldtestament","littleheartsnewtestament"]},
   {"id":"unx3y","title":"Life's Hack-Creating a Better","kind":"Book","sourcePrice":"$5.00"},
   {"id":"tRDg7","title":"Faith Formations: Living by Faith and Accessing Peace in a Noisy World","kind":"Book","sourcePrice":"$3.99"},
   {"id":"OzmMJ","title":"Power_Of_Prayer.pdf","kind":"Book","sourcePrice":"$3.99"},
