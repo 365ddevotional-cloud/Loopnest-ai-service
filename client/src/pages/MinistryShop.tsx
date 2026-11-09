@@ -7,6 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatShopPrice, MinistryShopPurchases, ShopCheckout, useShopPrices } from "@/components/MinistryShopCheckout";
 import catalog from "@/data/ministry-shop-catalog.json";
+import bookPreviewData from "@/data/ministry-shop-book-previews.json";
+
+const bookPreviews: Record<string, { section: string; quote: string; excerpt: string; exercise: string }> = bookPreviewData;
+const audioPreviews = import.meta.glob<string>("/src/assets/shop-previews/*.mp3", {
+  eager: true, import: "default", query: "?url",
+});
 
 const filters = ["All", "Book", "Music", "Membership"] as const;
 const icons = { Book: BookOpen, Music: Headphones, Membership: Sparkles };
@@ -43,6 +49,53 @@ function ProductArtwork({ product, detail = false }: { product: (typeof catalog)
         />
       ) : <Icon className="size-9" aria-hidden="true" />}
     </div>
+  );
+}
+
+function ProductPreview({ product }: { product: (typeof catalog)[number] }) {
+  const [audioFailed, setAudioFailed] = useState(false);
+  const book = product.kind === "Book" ? bookPreviews[product.id] : undefined;
+  if (book) {
+    return (
+      <section className="mt-4 rounded-xl border border-border bg-muted/30 p-4" aria-label="Book preview">
+        <h2 className="flex items-center gap-2 text-sm font-semibold">
+          <BookOpen size={16} aria-hidden="true" /> Read a sample
+        </h2>
+        <blockquote className="mt-2 border-l-2 border-orange-500 pl-3 text-base font-medium">“{book.quote}”</blockquote>
+        <details className="mt-3 text-sm leading-relaxed">
+          <summary className="min-h-8 cursor-pointer font-semibold text-primary">Read the excerpt</summary>
+          <div className="mt-2 space-y-2">
+            <p className="font-semibold">{book.section}</p>
+            <p>{book.excerpt}</p>
+            <p><strong className="mr-1">Try this.</strong> {book.exercise}</p>
+          </div>
+        </details>
+      </section>
+    );
+  }
+
+  const audio = product.kind === "Music" ? audioPreviews[`/src/assets/shop-previews/${product.id}.mp3`] : undefined;
+  if (!audio) return null;
+  return (
+    <section className="mt-4 rounded-xl border border-border bg-muted/30 p-4" aria-label="Song preview">
+      <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+        <Headphones size={16} aria-hidden="true" /> 30-second sample
+      </h2>
+      {audioFailed ? (
+        <p role="status" className="text-sm text-muted-foreground">The sample is temporarily unavailable.</p>
+      ) : (
+        <audio
+          controls
+          preload="none"
+          aria-label={`Play a sample of ${product.title}`}
+          className="w-full"
+          src={audio}
+          onError={() => setAudioFailed(true)}
+        >
+          Your browser does not support this audio player.
+        </audio>
+      )}
+    </section>
   );
 }
 
@@ -110,6 +163,7 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
                 <h1 className="mb-2 mt-1 break-words text-2xl font-bold tracking-tight text-teal-900 dark:text-teal-200 sm:text-3xl">{product.title}</h1>
                 <ProductViews total={views?.[product.id]} />
                 {price && <p className="mt-2 text-xl font-bold text-orange-800 dark:text-orange-300">{formatShopPrice(price)}</p>}
+                <ProductPreview key={product.id} product={product} />
                 {product.kind !== "Membership" && (
                   product.sourcePrice
                     ? <ShopCheckout key={product.id} productId={product.id} price={price} />
