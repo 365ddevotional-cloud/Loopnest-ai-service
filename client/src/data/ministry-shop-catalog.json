@@ -1,6 +1,9 @@
 [
   {"id":"homeschoolingwithpurpose","title":"Homeschooling With Purpose","kind":"Book","sourcePrice":"$4.99","requiredFileCount":1},
   {"id":"servantleadershipforministryteams","title":"Servant Leadership for Ministry Teams","kind":"Book","sourcePrice":"$3.99","requiredFileCount":1},
+  {"id":"praywithconfidence","title":"Pray With Confidence","kind":"Book","sourcePrice":"$3.99","requiredFileCount":1},
+  {"id":"forgivingwithwisdom","title":"Forgiving With Wisdom","kind":"Book","sourcePrice":"$3.99","requiredFileCount":1},
+  {"id":"practicingthanksgiving","title":"Practicing Thanksgiving","kind":"Book","sourcePrice":"$3.99","requiredFileCount":1},
   {"id":"littleheartsoldtestament","title":"Little Hearts Bible Tales - Old Testament","kind":"Book","sourcePrice":"$8.99","requiredFileCount":1},
   {"id":"littleheartsnewtestament","title":"Little Hearts Bible Tales - New Testament","kind":"Book","sourcePrice":"$8.99","requiredFileCount":1},
   {"id":"littleheartsbibleset","title":"Little Hearts Bible Tales - Old & New Testament Set","kind":"Book","sourcePrice":"$18.00","requiredFileCount":2,"replacedBy":["littleheartsoldtestament","littleheartsnewtestament"]},
