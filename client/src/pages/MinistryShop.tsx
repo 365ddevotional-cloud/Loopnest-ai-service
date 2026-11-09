@@ -5,8 +5,7 @@ import { BookOpen, Eye, Headphones, Search, ShoppingBag, Sparkles } from "lucide
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatMusicPrice } from "@shared/music-regions";
-import { MinistryShopPurchases, ShopCheckout, useShopPrices } from "@/components/MinistryShopCheckout";
+import { formatShopPrice, MinistryShopPurchases, ShopCheckout, useShopPrices } from "@/components/MinistryShopCheckout";
 import catalog from "@/data/ministry-shop-catalog.json";
 
 const filters = ["All", "Book", "Music", "Membership"] as const;
@@ -107,7 +106,7 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{product.kind}</p>
                 <h1 className="mb-2 mt-1 break-words text-2xl font-bold tracking-tight text-teal-900 dark:text-teal-200 sm:text-3xl">{product.title}</h1>
                 <ProductViews total={views?.[product.id]} />
-                {price && <p className="mt-2 text-xl font-bold text-orange-800 dark:text-orange-300">{formatMusicPrice(price.amount, price.currency)}</p>}
+                {price && <p className="mt-2 text-xl font-bold text-orange-800 dark:text-orange-300">{formatShopPrice(price)}</p>}
                 {product.kind !== "Membership" && (
                   product.sourcePrice
                     ? <ShopCheckout key={product.id} productId={product.id} price={price} />
@@ -191,7 +190,7 @@ function ShopCatalog() {
                   <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{product.kind}</p>
                   <h3 title={product.title} className="mb-2 mt-0.5 line-clamp-2 break-words text-sm font-bold leading-snug text-teal-900 dark:text-teal-200 sm:text-base">{product.title}</h3>
                   <div className="mt-auto flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
-                    {price && <span className="text-sm font-bold tabular-nums text-orange-800 dark:text-orange-300">{formatMusicPrice(price.amount, price.currency)}</span>}
+                    {price && <span className="text-sm font-bold tabular-nums text-orange-800 dark:text-orange-300">{formatShopPrice(price)}</span>}
                     {product.requiredFileCount && !price?.ready && <span className="text-xs font-semibold text-orange-800 dark:text-orange-300">Checkout unavailable</span>}
                     <ProductViews total={views?.[product.id]} />
                   </div>

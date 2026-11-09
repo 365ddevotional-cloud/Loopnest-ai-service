@@ -6,8 +6,13 @@ import { useUser } from "@/contexts/UserContext";
 import { formatMusicPrice } from "@shared/music-regions";
 import { useDeviceMusicCountry } from "./MusicPurchasePanel";
 
-type Price = { amount: number; currency: string; country: string; ready: boolean };
+type Price = { amount: number; currency: string; country: string; ready: boolean; usdFallback?: boolean };
 type ShopPrices = { country?: string; products: Record<string, Price> };
+
+export function formatShopPrice(price: Price) {
+  const amount = formatMusicPrice(price.amount, price.currency);
+  return price.usdFallback ? `${amount} USD` : amount;
+}
 
 const inAndroidApp = () => typeof window !== "undefined" && (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.() === true;
 
@@ -56,15 +61,22 @@ export function ShopCheckout({ productId, price }: { productId: string; price?: 
 
   if (inAndroidApp()) return <p className="mt-4 text-sm text-muted-foreground">Browse the collection here. Your completed purchases are available in Shop purchases.</p>;
   if (!price?.ready) return <p className="mt-4 text-sm text-muted-foreground">Checkout is currently unavailable for this item in your currency.</p>;
-  if (!user) return <Button asChild className="mt-4"><Link href="/signin">Sign in to buy</Link></Button>;
+  const currencyNotice = price.usdFallback && <p className="text-sm text-muted-foreground">Your card will be charged in US dollars. Your bank may charge a currency conversion fee.</p>;
+  if (!user) return (
+    <div className="mt-4 space-y-2">
+      {currencyNotice}
+      <Button asChild><Link href="/signin">Sign in to buy</Link></Button>
+    </div>
+  );
   return (
     <div className="mt-5 space-y-3">
+      {currencyNotice}
       <label className="flex items-start gap-2 text-sm text-muted-foreground">
         <input className="mt-1" type="checkbox" checked={accepted} onChange={event => setAccepted(event.target.checked)} />
         I understand that my download window is two hours from payment.
       </label>
       <Button disabled={!accepted || purchase.isPending} onClick={() => purchase.mutate()}>
-        {purchase.isPending ? "Opening Stripe…" : `Buy for ${formatMusicPrice(price.amount, price.currency)}`}
+        {purchase.isPending ? "Opening Stripe…" : `Buy for ${formatShopPrice(price)}`}
       </Button>
       {purchase.error && <p role="alert" className="text-sm text-destructive">{purchase.error.message}</p>}
     </div>

@@ -10,7 +10,7 @@ import { db } from "./db";
 import { paymentMatchesOrder } from "./music-commerce";
 import { musicCountryFromRequest } from "./music-location";
 import { musicRegions, readMusicPrices } from "./music-regions";
-import { ministryShopPrice, shopBundleId } from "./ministry-shop-pricing";
+import { ministryShopPrice, shopBundleId, supportsMinistryShopStripe } from "./ministry-shop-pricing";
 import { registerMinistryShopAdmin, type ShopAsset as Asset } from "./ministry-shop-admin";
 
 const appTag = "365-ministry-shop-v1";
@@ -71,7 +71,7 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
     storageConfigured: !!r2,
     stripeConfigured: !!stripe,
     webhookConfigured: !!secret,
-    countries: [...countries].filter(code => musicRegions[code]?.stripe),
+    countries: [...countries].filter(supportsMinistryShopStripe),
   }, canSell);
 
   async function viewer(req: Request) {
@@ -151,6 +151,7 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
       const item = byId.get(productId);
       const price = item && ministryShopPrice(item, country, prices());
       if (!item || !price?.stripeSupported || !countries.has(country)) issue(409, "Stripe checkout is unavailable for this product and currency.");
+      if (price.usdFallback && !detected) issue(409, "We couldn't confirm your country for this price. Refresh before paying.");
       if (price.amount !== amount || price.currency !== currency) issue(409, "The local price changed. Refresh before paying.");
       const user = await viewer(req);
       if (!user.email || !user.email_verified) issue(403, "Verify your account email before checking out.");

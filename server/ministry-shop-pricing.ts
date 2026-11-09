@@ -5,8 +5,17 @@ export const shopBundleId = "x29Tw";
 const littleHeartsVolumePrices: Partial<Record<string, number>> = {
   US: 899,
   NG: 250000,
-  GH: 2250,
 };
+
+const littleHeartsUsdFallbackPrices: Partial<Record<string, number>> = {
+  GH: 189,
+  KW: 655,
+  OM: 525,
+};
+
+export function supportsMinistryShopStripe(country: string) {
+  return !!(musicRegions[country]?.stripe || littleHeartsUsdFallbackPrices[country]);
+}
 
 export function ministryShopPrice(product: { id: string; kind: string; sourcePrice: string; replacedBy?: string[] }, country: string, prices: MusicPrices) {
   const region = musicRegions[country];
@@ -20,6 +29,8 @@ export function ministryShopPrice(product: { id: string; kind: string; sourcePri
   if (!source) return null;
   const sourceCents = Number(source[1]) * 100 + Number(source[2]);
   const isLittleHeartsVolume = product.id === "littleheartsoldtestament" || product.id === "littleheartsnewtestament";
+  const usdFallback = isLittleHeartsVolume ? littleHeartsUsdFallbackPrices[country] : undefined;
+  if (usdFallback) return { amount: usdFallback, currency: "USD", country, stripeSupported: true, usdFallback: true };
   let amount = product.kind === "Music" && product.id !== shopBundleId
     ? songPrice
     : Math.ceil(sourceCents * local.single / prices.US.single);
