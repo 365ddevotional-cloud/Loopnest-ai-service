@@ -25,7 +25,10 @@ function ProductViews({ total }: { total?: number }) {
 function ProductArtwork({ product, detail = false }: { product: (typeof catalog)[number]; detail?: boolean }) {
   const Icon = icons[product.kind as keyof typeof icons];
   const [failed, setFailed] = useState(false);
-  const frame = detail ? "aspect-square w-full max-w-72 rounded-xl" : "aspect-[4/3] w-full rounded-lg";
+  const detailAspect = product.kind === "Book" ? "aspect-[2/3]" : "aspect-square";
+  const frame = detail
+    ? `w-full max-w-md self-start justify-self-center rounded-xl ${detailAspect}`
+    : "aspect-[4/3] w-full rounded-lg";
 
   return (
     <div className={`flex items-center justify-center overflow-hidden bg-muted/60 text-muted-foreground ${frame}`}>
@@ -94,13 +97,13 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
   }
 
   return (
-    <main className="mx-auto max-w-4xl py-3 sm:px-4 sm:py-6">
+    <main className="mx-auto max-w-6xl py-3 sm:px-4 sm:py-6">
       <Link href="/shop" className="text-sm font-semibold text-primary hover:underline">← Back to 365 Ministry Shop</Link>
       <section className="mt-4 rounded-2xl border border-border bg-card p-4 sm:p-7">
         {product ? (
           <>
             <Helmet><title>{product.title} | 365 Ministry Shop</title></Helmet>
-            <div className="grid gap-5 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:gap-7">
+            <div className="grid gap-5 md:grid-cols-2 md:gap-8">
               <ProductArtwork key={product.id} product={product} detail />
               <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{product.kind}</p>
