@@ -27,8 +27,7 @@ import { Switch } from "@/components/ui/switch";
 import { TranslationSelector } from "@/components/TranslationSelector";
 import { SettingsModal, MobileSettingsSection } from "@/components/SettingsModal";
 import { LanguageSwitcher, MobileLanguageSwitcher } from "@/components/LanguageSwitcher";
-
-const GOOGLE_PLAY_URL = "https://play.google.com/store/apps/details?id=app.replit.attachment_parser__365ddevotional.twa";
+import { GOOGLE_PLAY_URL } from "@/lib/google-play";
 
 function MobileTranslationSelector() {
   const { translation, setTranslation } = useTranslation();

@@ -1,3 +1,4 @@
+import { GooglePlayReviewLink } from "@/components/GooglePlayReviewLink";
 import { songLanguageCategories } from "@shared/song-languages";
 import FiveSongCollection from "@/components/FiveSongCollection";
 import MusicPurchasePanel from "@/components/MusicPurchasePanel";
@@ -330,6 +331,7 @@ export default function Music() {
         <p className="text-muted-foreground text-sm max-w-md mx-auto">
           Scripture-based devotional music to uplift, encourage, and strengthen your faith.
         </p>
+        <GooglePlayReviewLink />
       </div>
 
       <FiveSongCollection />

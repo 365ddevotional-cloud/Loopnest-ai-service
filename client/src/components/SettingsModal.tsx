@@ -1,3 +1,4 @@
+import { GooglePlayReviewLink } from "@/components/GooglePlayReviewLink";
 import { Settings, Type, Moon, Sun, Monitor, Volume2 } from "lucide-react";
 import {
   Dialog,
@@ -48,6 +49,9 @@ export function MobileSettingsSection() {
   
   return (
     <>
+      <div className="mt-4 border-t border-primary/10 px-4 pt-4">
+        <GooglePlayReviewLink />
+      </div>
       <div className="mt-4 border-t border-primary/10 pt-4">
         <div className="px-4 pb-2">
           <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -203,6 +207,7 @@ export function SettingsModal() {
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          <GooglePlayReviewLink />
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Type className="w-4 h-4 text-primary" />
