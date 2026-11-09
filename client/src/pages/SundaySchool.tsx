@@ -1,3 +1,4 @@
+import { GooglePlayReviewLink } from "@/components/GooglePlayReviewLink";
 import { useQuery } from "@tanstack/react-query";
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -209,6 +210,7 @@ export default function SundaySchool() {
           <p className="text-muted-foreground max-w-xl mx-auto">
             Weekly lessons designed to deepen your understanding of Scripture and strengthen your walk with God.
           </p>
+          <GooglePlayReviewLink />
         </div>
 
         {upcomingLessons.length > 0 && (
