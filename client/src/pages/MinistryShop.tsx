@@ -199,7 +199,7 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
                 <h1 className="mb-2 mt-1 break-words text-2xl font-bold tracking-tight text-teal-900 dark:text-teal-200 sm:text-3xl">{product.title}</h1>
                 <ProductViews total={views?.[product.id]} />
                 {price && <p className="mt-2 text-xl font-bold text-orange-800 dark:text-orange-300">{formatShopPrice(price)}</p>}
-                <ProductPreview key={product.id} product={product} />
+                <ProductPreview key={`preview-${product.id}`} product={product} />
                 {product.kind !== "Membership" && (
                   product.sourcePrice
                     ? <ShopCheckout key={product.id} productId={product.id} price={price} />
