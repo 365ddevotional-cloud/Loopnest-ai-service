@@ -1,3 +1,4 @@
+import { isAndroidReader } from "@/lib/android-reader";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -701,12 +702,12 @@ export function SongOfTheWeek() {
 
               <Link
                 href={`/music/${song.slug}`}
-                aria-label={`Buy and download ${song.title}`}
-                data-testid="button-buy-download-song"
+                aria-label={isAndroidReader() ? `View ${song.title}` : `Buy and download ${song.title}`}
+                data-testid={isAndroidReader() ? "button-view-song" : "button-buy-download-song"}
                 className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors text-sm text-muted-foreground hover:text-foreground font-medium active:scale-95"
               >
                 <Download className="w-4 h-4" />
-                Buy &amp; Download
+                {isAndroidReader() ? "Song details" : "Buy & Download"}
               </Link>
             </div>
           </div>

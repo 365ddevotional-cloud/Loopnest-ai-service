@@ -398,3 +398,16 @@ test('network country lookup handles IPv4/IPv6 and trusted proxy chain without t
   assert.equal(ipv6.body.country,'US');
   assert.equal((await request(app).get('/')).body.country,null);
 });
+
+test("Android readers can download an existing purchase but cannot start paid checkout", async () => {
+  const f = fixture();
+  const android = "Mozilla/5.0 (Linux; Android 16; Pixel 8 Build/Example; wv) AppleWebKit/537.36";
+  assert.equal((await f.checkout().set("User-Agent", android)).status, 403);
+  assert.equal((await f.checkout().set("X-365-Android-Reader", "1")).status, 403);
+  assert.equal(f.created.length, 0);
+  assert.equal((await f.checkout().set("User-Agent", "Mozilla/5.0 (Linux; Android 16) Chrome/140.0 Mobile Safari/537.36")).status, 200);
+  f.pay();
+  assert.equal((await f.post("download", { sessionId: "cs_test_1" }).set("User-Agent", android)).status, 200);
+  assert.equal((await f.checkout("heaven-reigns-original", "owner").set("User-Agent", android)).status, 200);
+  assert.equal(f.created.length, 1);
+});

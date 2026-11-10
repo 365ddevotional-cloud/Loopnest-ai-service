@@ -1,3 +1,4 @@
+import { isAndroidReader } from "@/lib/android-reader";
 import { GooglePlayReviewLink } from "@/components/GooglePlayReviewLink";
 import { songLanguageCategories } from "@shared/song-languages";
 import FiveSongCollection from "@/components/FiveSongCollection";
@@ -334,7 +335,7 @@ export default function Music() {
         <GooglePlayReviewLink />
       </div>
 
-      <FiveSongCollection />
+      {isAndroidReader() ? <Link href="/music/purchases" className="text-sm underline">My Music Purchases</Link> : <FiveSongCollection />}
 
       {/* Continue Listening */}
       {continueListening.length > 0 && (
