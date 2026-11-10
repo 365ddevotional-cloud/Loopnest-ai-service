@@ -52,8 +52,66 @@ function ProductArtwork({ product, detail = false }: { product: (typeof catalog)
   );
 }
 
-function ProductPreview({ product }: { product: (typeof catalog)[number] }) {
+const praisePackTracks = [
+  "Dance for the Miracle (Remastered)",
+  "Oluwa Too Sure",
+  "Praise Explosion",
+  "Testimonio Vibe!",
+  "You Never Fail",
+];
+
+function SongPreview({ product }: { product: (typeof catalog)[number] }) {
+  const [selected, setSelected] = useState(0);
   const [audioFailed, setAudioFailed] = useState(false);
+  const titles = product.id === "x29Tw" ? praisePackTracks : [product.title];
+  const tracks = titles.flatMap((title, index) => {
+    const name = product.id === "x29Tw" ? `${product.id}-${index + 1}` : product.id;
+    const src = audioPreviews[`/src/assets/shop-previews/${name}.mp3`];
+    return src ? [{ title, src }] : [];
+  });
+  const track = tracks[selected];
+  if (!track) return null;
+
+  return (
+    <section className="mt-4 rounded-xl border border-border bg-muted/30 p-4" aria-label="Song preview">
+      <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+        <Headphones size={16} aria-hidden="true" /> {tracks.length > 1 ? "30-second samples" : "30-second sample"}
+      </h2>
+      {tracks.length > 1 && (
+        <label className="mb-3 block text-sm font-medium">
+          Choose a track
+          <select
+            className="mt-1 min-h-10 w-full rounded-md border border-input bg-background px-2"
+            value={selected}
+            onChange={event => {
+              setSelected(Number(event.target.value));
+              setAudioFailed(false);
+            }}
+          >
+            {tracks.map((item, index) => <option key={item.src} value={index}>{item.title}</option>)}
+          </select>
+        </label>
+      )}
+      {audioFailed ? (
+        <p role="status" className="text-sm text-muted-foreground">The sample is temporarily unavailable.</p>
+      ) : (
+        <audio
+          key={track.src}
+          controls
+          preload="none"
+          aria-label={`Play a sample of ${track.title}`}
+          className="w-full"
+          src={track.src}
+          onError={() => setAudioFailed(true)}
+        >
+          Your browser does not support this audio player.
+        </audio>
+      )}
+    </section>
+  );
+}
+
+function ProductPreview({ product }: { product: (typeof catalog)[number] }) {
   const book = product.kind === "Book" ? bookPreviews[product.id] : undefined;
   if (book) {
     return (
@@ -74,29 +132,7 @@ function ProductPreview({ product }: { product: (typeof catalog)[number] }) {
     );
   }
 
-  const audio = product.kind === "Music" ? audioPreviews[`/src/assets/shop-previews/${product.id}.mp3`] : undefined;
-  if (!audio) return null;
-  return (
-    <section className="mt-4 rounded-xl border border-border bg-muted/30 p-4" aria-label="Song preview">
-      <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-        <Headphones size={16} aria-hidden="true" /> 30-second sample
-      </h2>
-      {audioFailed ? (
-        <p role="status" className="text-sm text-muted-foreground">The sample is temporarily unavailable.</p>
-      ) : (
-        <audio
-          controls
-          preload="none"
-          aria-label={`Play a sample of ${product.title}`}
-          className="w-full"
-          src={audio}
-          onError={() => setAudioFailed(true)}
-        >
-          Your browser does not support this audio player.
-        </audio>
-      )}
-    </section>
-  );
+  return product.kind === "Music" ? <SongPreview product={product} /> : null;
 }
 
 function ProductDetail({ id, views, price }: { id: string; views?: Record<string, number>; price?: { amount: number; currency: string; country: string; ready: boolean } }) {
