@@ -174,7 +174,9 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
       <main className="mx-auto max-w-4xl space-y-4 py-6">
         <Link href="/shop" className="text-sm font-semibold text-primary hover:underline">← Back to 365 Ministry Shop</Link>
         <h1 className="text-2xl font-bold">{product.title}</h1>
-        <p>The Old and New Testament volumes are now listed separately.</p>
+        <p>{product.kind === "Music"
+          ? "The available recording is listed below. Open it to listen to the sample."
+          : "The Old and New Testament volumes are now listed separately."}</p>
         <ul className="space-y-2">
           {catalog.filter(item => replacements.includes(item.id)).map(item => (
             <li key={item.id}><Link href={`/shop/${item.id}`} className="text-primary underline">{item.title}</Link></li>
