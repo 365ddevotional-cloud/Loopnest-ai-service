@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,7 @@ async function shopRequest<T>(path: string, token?: string, body?: object): Prom
 }
 
 export function ShopCheckout({ productId, price }: { productId: string; price?: Price }) {
-  const { user, getIdToken } = useUser();
+  const { user, emailVerified, getIdToken } = useUser();
   const [accepted, setAccepted] = useState(false);
   const purchase = useMutation({
     mutationFn: async () => {
@@ -62,10 +62,10 @@ export function ShopCheckout({ productId, price }: { productId: string; price?: 
   if (inAndroidApp()) return <p className="mt-4 text-sm text-muted-foreground">Browse the collection here. Your completed purchases are available in Shop purchases.</p>;
   if (!price?.ready) return <p className="mt-4 text-sm text-muted-foreground">Checkout is currently unavailable for this item in your currency.</p>;
   const currencyNotice = price.usdFallback && <p className="text-sm text-muted-foreground">Your card will be charged in US dollars. Your bank may charge a currency conversion fee.</p>;
-  if (!user) return (
+  if (!user || !emailVerified) return (
     <div className="mt-4 space-y-2">
       {currencyNotice}
-      <Button asChild><Link href="/signin">Sign in to buy</Link></Button>
+      <Button asChild><Link href={`/signin?return=${encodeURIComponent(`/shop/${productId}`)}`}>{user ? "Verify email to buy" : "Sign in to buy"}</Link></Button>
     </div>
   );
   return (
@@ -83,59 +83,79 @@ export function ShopCheckout({ productId, price }: { productId: string; price?: 
   );
 }
 
+type ShopPurchase = { sessionId: string; title: string; status: string; downloadExpiresAt: string | null };
+
 export function MinistryShopPurchases() {
-  const { user, getIdToken } = useUser();
-  const [selection, setSelection] = useState<string>();
-  const [links, setLinks] = useState<{ name: string; url: string }[]>([]);
-  const [error, setError] = useState("");
-  const [working, setWorking] = useState(false);
-  useEffect(() => {
-    setSelection(undefined);
-    setLinks([]);
-    setError("");
-  }, [user?.uid]);
-  const purchases = useQuery<{sessionId: string; title: string; status: string}[]>({
-    queryKey: ["ministry-shop-purchases", user?.uid],
-    enabled: !!user,
+  const { user, loading } = useUser();
+  const returnTo = window.location.pathname + window.location.search;
+  const returnedSession = new URLSearchParams(window.location.search).get("session_id");
+
+  return (
+    <main className="mx-auto max-w-3xl space-y-5 px-4 py-10">
+      <Link href="/shop" className="text-sm font-semibold text-primary hover:underline">← Back to 365 Ministry Shop</Link>
+      <h1 className="font-serif text-3xl font-bold">Shop purchases</h1>
+      {loading ? <p>Loading account…</p> : user ? (
+        <ShopPurchaseList key={user.uid} uid={user.uid} returnedSession={returnedSession} />
+      ) : (
+        <Button asChild><Link href={`/signin?return=${encodeURIComponent(returnTo)}`}>Sign in to view purchases</Link></Button>
+      )}
+    </main>
+  );
+}
+
+function ShopPurchaseList({ uid, returnedSession }: { uid: string; returnedSession: string | null }) {
+  const { getIdToken } = useUser();
+  const purchases = useQuery<ShopPurchase[]>({
+    queryKey: ["ministry-shop-purchases", uid],
     queryFn: async () => {
       const token = await getIdToken();
       if (!token) throw new Error("Sign in to see your shop purchases.");
       return shopRequest("/api/ministry-shop/purchases", token);
     },
   });
-  async function openDownloads(sessionId: string) {
-    setWorking(true);
-    setLinks([]);
-    setError("");
-    setSelection(sessionId);
-    try {
+  const download = useMutation({
+    mutationFn: async (sessionId: string) => {
       const token = await getIdToken();
       if (!token) throw new Error("Sign in to access downloads.");
-      const result = await shopRequest<{files: typeof links}>("/api/ministry-shop/download", token, { sessionId });
-      setLinks(result.files);
-    } catch (cause) { setError((cause as Error).message); }
-    finally { setWorking(false); }
-  }
+      return shopRequest<{ files: { name: string; url: string }[] }>("/api/ministry-shop/download", token, { sessionId });
+    },
+  });
+  const orders = purchases.data ?? [];
+  const returnedOrder = orders.find(order => order.sessionId === returnedSession);
+  const visibleOrders = returnedOrder ? [returnedOrder, ...orders.filter(order => order !== returnedOrder)] : orders;
+
   return (
-    <main className="mx-auto max-w-3xl space-y-5 px-4 py-10">
-      <Link href="/shop" className="text-sm font-semibold text-primary hover:underline">← Back to 365 Ministry Shop</Link>
-      <h1 className="font-serif text-3xl font-bold">Shop purchases</h1>
-      {!user && <Button asChild><Link href="/signin">Sign in</Link></Button>}
-      {user && purchases.isLoading && <p>Loading purchases…</p>}
+    <>
+      {purchases.isLoading && <p>Loading purchases…</p>}
       {purchases.error && <p role="alert">{purchases.error.message}</p>}
-      {purchases.data?.length === 0 && <p className="text-muted-foreground">There are no shop purchases in your download window.</p>}
-      {purchases.data?.map(order => (
-        <section className="space-y-3 rounded-xl border p-4" key={order.sessionId}>
-          <h2 className="font-semibold">{order.title}</h2>
-          <Button variant="outline" disabled={working} onClick={() => void openDownloads(order.sessionId)}>
-            {working && selection === order.sessionId ? "Checking payment…" : "Get download links"}
-          </Button>
-          {selection === order.sessionId && error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-          {selection === order.sessionId && links.length > 0 && <ul className="space-y-1">
-            {links.map(file => <li key={file.url}><a href={file.url} className="text-primary underline">{file.name}</a></li>)}
-          </ul>}
-        </section>
-      ))}
-    </main>
+      {purchases.data && !returnedOrder && returnedSession && (
+        <p className="text-muted-foreground">This order is not listed. Use the account you checked out with, or refresh purchases if you just paid.</p>
+      )}
+      {purchases.data && !visibleOrders.length && <p className="text-muted-foreground">There are no shop purchases on this account.</p>}
+      {(purchases.error || (returnedSession && !returnedOrder && purchases.data)) && (
+        <Button variant="outline" disabled={purchases.isFetching} onClick={() => void purchases.refetch()}>Refresh purchases</Button>
+      )}
+      {visibleOrders.map(order => {
+        const expired = !!order.downloadExpiresAt && Date.parse(order.downloadExpiresAt) <= Date.now();
+        const selected = download.variables === order.sessionId;
+        return (
+          <section className="space-y-3 rounded-xl border p-4" key={order.sessionId}>
+            <h2 className="font-semibold">{order.title}</h2>
+            {expired ? <p className="text-sm text-muted-foreground">Your two-hour download window has ended.</p> : (
+              <>
+                {order.status === "pending" && <p className="text-sm text-muted-foreground">If you just paid, check your payment to get your files.</p>}
+                <Button variant="outline" disabled={download.isPending} onClick={() => download.mutate(order.sessionId)}>
+                  {selected && download.isPending ? "Checking payment…" : "Get download links"}
+                </Button>
+                {selected && download.error && <p role="alert" className="text-sm text-destructive">{download.error.message}</p>}
+                {selected && download.data && <ul className="space-y-1">
+                  {download.data.files.map(file => <li key={file.url}><a href={file.url} className="text-primary underline">{file.name}</a></li>)}
+                </ul>}
+              </>
+            )}
+          </section>
+        );
+      })}
+    </>
   );
 }
