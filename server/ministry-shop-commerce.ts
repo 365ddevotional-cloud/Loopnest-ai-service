@@ -1,3 +1,4 @@
+import { isAndroidReaderRequest } from "./android-reader";
 import { createHash } from "node:crypto";
 import type { Express, Request, RequestHandler, Response } from "express";
 import Stripe from "stripe";
@@ -151,6 +152,7 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
   app.post("/api/ministry-shop/checkout", async (req, res) => {
     res.setHeader("Cache-Control", "private, no-store");
     try {
+      if (isAndroidReaderRequest(req)) issue(403, "Purchasing is unavailable in this app.");
       const parsed = checkoutInput.safeParse(req.body);
       if (!parsed.success) issue(400, "Review the local price and accept the download policy.");
       if (!enabled || !stripe || !r2 || !bucket) issue(503, "Shop checkout is not open yet.");

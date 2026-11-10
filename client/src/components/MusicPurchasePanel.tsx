@@ -1,3 +1,4 @@
+import { isAndroidReader } from "@/lib/android-reader";
 import { formatMusicPrice } from "../../../shared/music-regions";
 import { auth } from "@/lib/firebase";
 import { getMusicProduct } from "../../../shared/music-products";
@@ -32,10 +33,12 @@ function detectDeviceMusicCountry(): Promise<string | null> {
   return deviceCountryPromise;
 }
 export function useDeviceMusicCountry() {
+  const androidReader = isAndroidReader();
   const [deviceCountry, setDeviceCountry] = useState("");
   const [locationResolved, setLocationResolved] = useState(false);
   const [locationAttempt, setLocationAttempt] = useState(0);
   useEffect(() => {
+    if (androidReader) { setLocationResolved(true); return; }
     // Clear a country saved by the old manual selector so pricing returns to automatic detection.
     try { localStorage.removeItem("365dd-music-country-v1"); } catch {}
     let active = true;
@@ -46,7 +49,7 @@ export function useDeviceMusicCountry() {
       setLocationResolved(true);
     });
     return () => { active = false; };
-  }, [locationAttempt]);
+  }, [androidReader, locationAttempt]);
   useEffect(() => {
     const retry = () => {
       deviceCountryPromise = null;
@@ -74,6 +77,7 @@ export function useMusicCatalog() {
   return { ...query, data: query.isError || !locationResolved ? undefined : query.data, deviceCountry, locationResolved, retryDeviceLocation };
 }
 export default function MusicPurchasePanel({ productId, songTitle }: { productId: string; songTitle?: string }) {
+  const androidReader = isAndroidReader();
   const { data: catalog, isLoading, error, deviceCountry } = useMusicCatalog();
   const { user, getIdToken, signUserOut, loading, emailVerified } = useUser();
   const [, setLocation] = useLocation();
@@ -105,9 +109,11 @@ export default function MusicPurchasePanel({ productId, songTitle }: { productId
   const priceLabel = catalog && product ? formatMusicPrice(product.cents, catalog.currency) : deviceCountry ? "Loading price…" : "Enable location to see local price";
   const [downloads, setDownloads] = useState<{ title: string; url: string }[]>([]);
   async function buy() {
+    if (androidReader && !freeAccess) return;
     if (!user) { setLocation(`/sign-in?return=${encodeURIComponent(window.location.pathname)}`); return; }
     if (!emailVerified) { setLocation(`/sign-in?return=${encodeURIComponent(window.location.pathname)}`); return; }
-    if (!confirmedEmail.trim() || confirmedEmail.trim().toLowerCase() !== user.email?.toLowerCase()) {
+    const accountEmail = androidReader ? user.email ?? "" : confirmedEmail.trim();
+    if (!accountEmail || accountEmail.toLowerCase() !== user.email?.toLowerCase()) {
       toast({ title: "Confirm your email", description: "Enter the email of your signed-in account, or choose Use another account.", variant: "destructive" });
       return;
     }
@@ -124,8 +130,8 @@ export default function MusicPurchasePanel({ productId, songTitle }: { productId
         return;
       }
       const response = await fetch("/api/music-commerce/checkout", { method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ productId, email: confirmedEmail.trim(), downloadPolicyAccepted: policyAccepted, expectedCountry: catalog?.country, selectedCountry: deviceCountry || undefined }) });
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(androidReader ? { "X-365-Android-Reader": "1" } : {}) },
+        body: JSON.stringify({ productId, email: accountEmail, downloadPolicyAccepted: policyAccepted, expectedCountry: catalog?.country, selectedCountry: deviceCountry || undefined }) });
       if (response.status === 401) {
         await signUserOut();
         toast({ title: "Please sign in again", description: "Your selected songs have been saved." });
@@ -137,6 +143,7 @@ export default function MusicPurchasePanel({ productId, songTitle }: { productId
       if (result.purchaseUrl === "/music/purchases") { setLocation(result.purchaseUrl); return; }
       if (result.downloads) { setDownloads(result.downloads); return; }
       if (result.downloadUrl) { window.location.assign(result.downloadUrl); return; }
+      if (androidReader) throw new Error("Purchasing is unavailable in this app.");
       const url = new URL(result.checkoutUrl);
       if (url.protocol !== "https:" || url.hostname !== "checkout.stripe.com") throw new Error("Checkout could not be opened.");
       window.location.assign(url.href);
@@ -152,6 +159,11 @@ export default function MusicPurchasePanel({ productId, songTitle }: { productId
     }
     finally { setBusy(false); }
   }
+  if (androidReader) return <div className="flex flex-wrap items-center gap-3">
+    {freeAccess && emailVerified && <Button disabled={busy} onClick={buy}>{busy ? "Preparing…" : "Download Free"}</Button>}
+    <Link href="/music/purchases" className="text-sm underline">My Music Purchases</Link>
+    {downloads.map(file => <a key={file.url} href={file.url} className="block underline">Download {file.title}</a>)}
+  </div>;
   return <section className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3" data-testid={`purchase-${productId}`}>
     {catalog && <p className="text-sm text-muted-foreground">Local price for {catalog.countryName}</p>}
     <h3 className="font-semibold">{five ? "Download your five songs" : productId === "heaven-reigns-bundle" ? "Download all three tracks" : video ? `Download ${songTitle ?? "this song"} video (MP4)` : `Download ${songTitle ?? product?.title ?? "this track"}`} — {priceLabel}</h3>

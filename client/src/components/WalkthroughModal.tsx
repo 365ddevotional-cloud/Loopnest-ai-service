@@ -18,7 +18,7 @@ const slides = [
     description: "Open Prayer & Counseling to send a request. Read the form's privacy choices before submitting personal details.",
     path: "/prayer-counseling", action: "Open Prayer & Counseling" },
   { icon: Music2, title: "Listen to worship music",
-    description: "Visit Music to listen to songs. Purchases and downloads use your verified account email and show the price before checkout.",
+    description: "Visit Music to listen to songs and open My Music Purchases to find your available downloads.",
     path: "/music", action: "Explore Music" },
 ];
 

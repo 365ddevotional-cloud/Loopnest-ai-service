@@ -1,3 +1,4 @@
+import { isAndroidReaderRequest } from "./android-reader";
 import { regionalMusicPrice, musicRegions, readMusicPrices } from "./music-regions";
 import { musicCountryFromRequest } from "./music-location";
 import type { Express, Request, Response, NextFunction } from "express";
@@ -157,6 +158,9 @@ export function registerMusicCommerceRoutes(app: Express, services: MusicCommerc
   app.post("/api/music-commerce/checkout", async (req, res) => {
     try {
       const claims = await uidOf(req);
+      if (isAndroidReaderRequest(req) && !getDownloadAccess(claims).lifetimeFreeDownloads) {
+        return res.status(403).json({ message: "Purchasing is unavailable in this app." });
+      }
       // Reject client prices, quantities, currency and URLs; only a catalog ID is accepted.
       if (!req.body || Object.keys(req.body).some(k => !["productId", "email", "downloadPolicyAccepted", "expectedCountry", "selectedCountry"].includes(k)) || typeof req.body.productId !== "string") {
         return res.status(400).json({ message: "Choose a music product." });

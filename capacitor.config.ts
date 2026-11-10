@@ -10,6 +10,7 @@ const config: CapacitorConfig = {
     cleartext: false,
   },
   android: {
+    appendUserAgent: '365DevotionalAndroid',
     allowMixedContent: false,
     captureInput: true,
     webContentsDebuggingEnabled: false,

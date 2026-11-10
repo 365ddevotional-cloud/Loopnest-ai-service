@@ -1,3 +1,4 @@
+import { isAndroidReader } from "@/lib/android-reader";
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -14,13 +15,12 @@ export function formatShopPrice(price: Price) {
   return price.usdFallback ? `${amount} USD` : amount;
 }
 
-const inAndroidApp = () => typeof window !== "undefined" && (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.() === true;
-
 export function useShopPrices() {
+  const androidReader = isAndroidReader();
   const { deviceCountry, locationResolved, retryDeviceLocation } = useDeviceMusicCountry();
   const query = useQuery<ShopPrices>({
     queryKey: ["ministry-shop-prices", deviceCountry],
-    enabled: locationResolved,
+    enabled: locationResolved && !androidReader,
     staleTime: 60_000,
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -48,7 +48,7 @@ export function ShopCheckout({ productId, price }: { productId: string; price?: 
   const purchase = useMutation({
     mutationFn: async () => {
       const token = await getIdToken();
-      if (!token || !price || !accepted || inAndroidApp()) throw new Error("Checkout is unavailable.");
+      if (!token || !price || !accepted || isAndroidReader()) throw new Error("Checkout is unavailable.");
       return shopRequest<{checkoutUrl?: string; purchaseUrl?: string}>("/api/ministry-shop/checkout", token, {
         productId, country: price.country, amount: price.amount, currency: price.currency, acceptedDownloadPolicy: accepted,
       });
@@ -59,7 +59,7 @@ export function ShopCheckout({ productId, price }: { productId: string; price?: 
     },
   });
 
-  if (inAndroidApp()) return <p className="mt-4 text-sm text-muted-foreground">Browse the collection here. Your completed purchases are available in Shop purchases.</p>;
+  if (isAndroidReader()) return <p className="mt-4 text-sm text-muted-foreground">Browse the collection here. Your completed purchases are available in Shop purchases.</p>;
   if (!price?.ready) return <p className="mt-4 text-sm text-muted-foreground">Checkout is currently unavailable for this item in your currency.</p>;
   const currencyNotice = price.usdFallback && <p className="text-sm text-muted-foreground">Your card will be charged in US dollars. Your bank may charge a currency conversion fee.</p>;
   if (!user || !emailVerified) return (
