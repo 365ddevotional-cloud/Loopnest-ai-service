@@ -81,6 +81,15 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
     catch { return issue(401, "Please sign in again."); }
   }
 
+  async function verifyStoredAssets(assets: Asset[]) {
+    if (!r2 || !bucket) issue(503, "Shop storage is unavailable.");
+    await Promise.all(assets.map(async asset => {
+      const object = await r2.send(new HeadObjectCommand({ Bucket: bucket, Key: asset.object_key }));
+      if (object.ContentLength !== Number(asset.size_bytes) ||
+          object.Metadata?.sha256 !== asset.object_key.split("/").pop()) throw new Error("Stored file differs from catalog.");
+    }));
+  }
+
   async function orderFor(sessionId: string) {
     const result = await db.execute<Order>(sql`SELECT * FROM ministry_shop_orders WHERE session_id = ${sessionId}`);
     return result.rows[0];
@@ -162,11 +171,7 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
       const { rows: assets } = await db.execute<Asset>(sql`SELECT object_key, file_name, content_type, size_bytes
         FROM ministry_shop_assets WHERE product_id=${productId} ORDER BY object_key`);
       if (!canSell(productId, assets)) issue(409, "The original download for this product is not ready.");
-      await Promise.all(assets.map(async asset => {
-        const object = await r2.send(new HeadObjectCommand({ Bucket: bucket, Key: asset.object_key }));
-        if (object.ContentLength !== Number(asset.size_bytes) ||
-            object.Metadata?.sha256 !== asset.object_key.split("/").pop()) throw new Error("Stored file differs from catalog.");
-      }));
+      await verifyStoredAssets(assets);
       const { rows: existingOrders } = await db.execute<Pick<Order, "session_id" | "status">>(sql`
         SELECT session_id, status FROM ministry_shop_orders
         WHERE firebase_uid=${user.uid} AND product_id=${productId} AND amount=${amount} AND currency=${currency}
@@ -209,8 +214,13 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
       const user = await viewer(req);
       const { rows } = await db.execute<Order>(sql`SELECT session_id, product_id, status, download_expires_at
         FROM ministry_shop_orders WHERE firebase_uid=${user.uid} AND status IN ('paid','pending')
-        AND (download_expires_at IS NULL OR download_expires_at > now()) ORDER BY created_at DESC LIMIT 100`);
-      res.json(rows.map(row => ({ sessionId: row.session_id, title: byId.get(row.product_id)?.title ?? "Shop purchase", status: row.status })));
+        ORDER BY created_at DESC LIMIT 100`);
+      res.json(rows.map(row => ({
+        sessionId: row.session_id,
+        title: byId.get(row.product_id)?.title ?? "Shop purchase",
+        status: row.status,
+        downloadExpiresAt: row.download_expires_at,
+      })));
     } catch (error) { sendError(res, error); }
   });
 
@@ -222,8 +232,12 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
       if (!parsed.success) issue(400, "Invalid purchase reference.");
       const order = await orderFor(parsed.data.sessionId);
       if (!order || order.firebase_uid !== user.uid) issue(404, "Purchase not found.");
+      if (order.download_expires_at && new Date(order.download_expires_at).getTime() <= Date.now()) {
+        issue(410, "Your two-hour download window has ended.");
+      }
       if (!r2 || !bucket || !canSell(order.product_id, order.assets)) issue(503, "The original download is unavailable.");
       const paid = await confirm(order);
+      await verifyStoredAssets(paid.assets);
       const seconds = Math.min(900, Math.floor((new Date(paid.download_expires_at!).getTime() - Date.now()) / 1000));
       if (seconds < 1) issue(410, "Your two-hour download window has ended.");
       const files = await Promise.all(paid.assets.map(async asset => ({
