@@ -71,6 +71,5 @@ export interface GameEngineProps {
   affirmations?: string[];
   colorThemes?: readonly ColorTheme[];
   onBack?: () => void;
-  onDonate?: () => void;
   brandText?: string;
 }

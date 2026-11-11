@@ -147,7 +147,6 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
     { label: t("cm_groups"), path: `/church/${slug}/groups`, icon: Users },
     { label: t("cm_departments"), path: `/church/${slug}/departments`, icon: Building2 },
     { label: t("cm_prayer"), path: `/church/${slug}/prayer`, icon: Heart },
-    { label: t("cm_giving"), path: `/church/${slug}/giving`, icon: HandCoins },
     { label: t("cm_messages"), path: `/church/${slug}/messages`, icon: MessageSquare, badge: unreadMessages > 0 ? unreadMessages : 0 },
     ...(isLeader || church?.memberDirectoryEnabled ? [{ label: t("cm_members"), path: `/church/${slug}/members`, icon: Users, badge: livePendingCount > 0 ? livePendingCount : 0 }] : []),
     { label: t("cm_sermonNotes"), path: `/church/${slug}/pastor-notes`, icon: BookText },

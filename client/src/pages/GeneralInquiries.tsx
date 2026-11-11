@@ -79,12 +79,6 @@ const helpTopics = [
     question: null,
     answer: "Explore resources that support your spiritual growth. Purchases are optional."
   },
-  {
-    icon: Gift,
-    title: "Donations",
-    question: null,
-    answer: "Giving is optional and never required to access devotionals."
-  },
 ];
 
 const topicOptions = [

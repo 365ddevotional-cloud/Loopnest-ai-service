@@ -64,12 +64,6 @@ const ONBOARDING_ITEMS: OnboardingItem[] = [
     action: { type: "route", path: "/music" },
   },
   {
-    icon: Gift,
-    title: "Donate",
-    description: "Support the mission of sharing God's Word by donating through the app. Contributions help expand access to biblical encouragement worldwide.",
-    action: { type: "route", path: "/donate" },
-  },
-  {
     icon: Shield,
     title: "Admin Dashboard",
     description: "Authorized admins can securely log in to create devotionals, edit present and future devotionals, manage prayer requests, and maintain app content.",

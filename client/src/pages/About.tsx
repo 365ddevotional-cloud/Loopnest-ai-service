@@ -57,20 +57,6 @@ export default function About() {
           
           <Separator className="bg-primary/10" />
 
-          <div className="text-center space-y-4">
-            <h3 className="font-bold text-foreground">Support This Kingdom Work</h3>
-            <p>
-              If 365 Daily Devotional has been a blessing to you, consider supporting this Kingdom work. Your support helps us continue providing daily devotionals, prayers, and faith-building resources to people around the world.
-            </p>
-            <div className="pt-4">
-              <Link href="/donate">
-                <Button size="lg" data-testid="button-donate">Donate</Button>
-              </Link>
-            </div>
-          </div>
-
-          <Separator className="bg-primary/10" />
-
           <div id="youtube" className="text-center space-y-4">
             <h3 className="font-bold text-foreground">YouTube Channel</h3>
             <p>

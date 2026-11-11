@@ -38,7 +38,6 @@ export default function GamePage() {
       themeMode={themeMode}
       audioTrack={config.audioTrack}
       onBack={() => navigate("/")}
-      onDonate={() => navigate("/donate")}
     />
   );
 }

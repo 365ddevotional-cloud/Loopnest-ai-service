@@ -83,19 +83,6 @@ export default function TermsOfUse() {
 
           <Separator className="bg-primary/10" />
 
-          <section className="space-y-4">
-            <h2 className="font-serif text-xl font-bold text-primary">Donations</h2>
-            <p>
-              Donations to 365 Daily Devotional are entirely <strong>voluntary and optional</strong>. All features 
-              of the app are available without making any donations. Donations support the continued development 
-              and ministry of this platform.
-            </p>
-            <p>
-              Donations are non-refundable unless required by applicable law.
-            </p>
-          </section>
-
-          <Separator className="bg-primary/10" />
 
           <section className="space-y-4">
             <h2 className="font-serif text-xl font-bold text-primary">Intellectual Property</h2>

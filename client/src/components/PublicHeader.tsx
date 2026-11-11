@@ -112,21 +112,6 @@ export default function PublicHeader() {
             YouTube
           </a>
 
-          <Link href="/donate">
-            <span
-              data-testid="link-public-nav-donate"
-              style={{
-                color: "#555",
-                textDecoration: "none",
-                cursor: "pointer",
-                transition: "color 0.2s ease",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#000")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
-            >
-              Donate
-            </span>
-          </Link>
         </nav>
       </div>
     </header>

@@ -21,14 +21,6 @@ import MusicSettings from "@/components/MusicSettings";
 import PlaybackModeBar from "@/components/PlaybackModeBar";
 import MusicVisualizer from "@/components/MusicVisualizer";
 import type { Song } from "@shared/schema";
-import { ConfirmationModal } from "./Donate";
-import {
-  PAYPAL_LINK,
-  CASHAPP_TAG,
-  CASHAPP_LINK,
-  VENMO_LINK,
-  OPAY_ACCOUNT_NUMBER,
-} from "@/lib/donationConstants";
 
 const LOCAL_FAV_KEY = "spirittone-song-favorites";
 
@@ -46,218 +38,6 @@ function formatTime(sec: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-function SupportModal({ open, onClose, songTitle, onHaveDonated }: {
-  open: boolean;
-  onClose: () => void;
-  songTitle: string;
-  onHaveDonated: () => void;
-}) {
-  const { toast } = useToast();
-  const [frequency, setFrequency] = useState<"once" | "monthly">("once");
-  const [opayCopied, setOpayCopied] = useState(false);
-
-  const handleCopyOpay = async () => {
-    try {
-      await navigator.clipboard.writeText(OPAY_ACCOUNT_NUMBER);
-      setOpayCopied(true);
-      toast({ title: "Account number copied." });
-      setTimeout(() => setOpayCopied(false), 2500);
-    } catch {
-      toast({ title: "Account number: " + OPAY_ACCOUNT_NUMBER });
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="font-serif text-2xl text-primary flex items-center gap-2">
-            <Gift className="w-6 h-6" />
-            Support the Ministry
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-5 py-1">
-
-          {/* Intro box */}
-          <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/30 p-5 space-y-2">
-            <p className="text-base font-semibold text-foreground leading-snug">Were you blessed by this song?</p>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Your voluntary support helps SpiritTone Records and 365 Daily Devotional continue producing
-              Scripture-based songs, devotionals, Bible teaching, prayer resources, and counseling encouragement.
-            </p>
-            <p className="text-sm font-bold text-amber-700 dark:text-amber-400">
-              Giving is optional. You receive the same song access whether or not you give.
-            </p>
-          </div>
-
-          {/* Frequency toggle */}
-          <div className="flex justify-center">
-            <div className="inline-flex bg-muted/50 rounded-xl p-1 border border-primary/10 gap-1">
-              <button type="button" onClick={() => setFrequency("once")}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${frequency === "once" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
-                data-testid="support-give-once">
-                <Heart className="w-4 h-4" /> Give Once
-              </button>
-              <button type="button" onClick={() => setFrequency("monthly")}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${frequency === "monthly" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
-                data-testid="support-give-monthly">
-                <Calendar className="w-4 h-4" /> Support Monthly
-              </button>
-            </div>
-          </div>
-
-          {/* Monthly message */}
-          {frequency === "monthly" && (
-            <div className="bg-primary/5 border border-primary/20 rounded-xl px-5 py-4 text-center">
-              <p className="text-base text-foreground leading-relaxed">
-                Thank you for choosing to support 365 Daily Devotional every month. Your faithful partnership
-                helps us continue sharing God's Word around the world.
-              </p>
-            </div>
-          )}
-
-          {/* PayPal */}
-          <div className="rounded-xl border border-[#003087]/30 bg-[#003087]/5 overflow-hidden">
-            <div className="flex items-center gap-3 px-5 py-3 border-b border-[#003087]/20">
-              <SiPaypal className="w-6 h-6 text-[#003087] flex-shrink-0" />
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Worldwide</p>
-                <p className="text-base font-bold text-foreground">PayPal</p>
-              </div>
-            </div>
-            <div className="px-5 py-4 space-y-3 text-center">
-              {frequency === "monthly" && (
-                <p className="text-sm text-muted-foreground leading-relaxed bg-white/60 dark:bg-black/20 rounded-lg px-3 py-2">
-                  After donating, log in to PayPal and select <strong>Set up recurring payments</strong> to give monthly.
-                </p>
-              )}
-              <a href={PAYPAL_LINK} target="_blank" rel="noopener noreferrer" className="block"
-                data-testid="support-paypal-link">
-                <Button size="lg" className="w-full gap-2 text-base font-bold bg-[#003087] hover:bg-[#002574] text-white border-0 h-12">
-                  <SiPaypal className="w-5 h-5" />
-                  Donate with PayPal
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
-              </a>
-            </div>
-          </div>
-
-          {/* Cash App */}
-          <div className="rounded-xl border border-[#00D632]/30 bg-[#00D632]/5 overflow-hidden">
-            <div className="flex items-center gap-3 px-5 py-3 border-b border-[#00D632]/20">
-              <SiCashapp className="w-6 h-6 text-[#00D632] flex-shrink-0" />
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">USA</p>
-                <p className="text-base font-bold text-foreground">Cash App</p>
-              </div>
-            </div>
-            <div className="px-5 py-4 space-y-3 text-center">
-              <p className="font-mono text-lg font-bold text-foreground tracking-wide">{CASHAPP_TAG}</p>
-              {frequency === "monthly" && (
-                <p className="text-sm text-muted-foreground leading-relaxed bg-white/60 dark:bg-black/20 rounded-lg px-3 py-2">
-                  In Cash App, tap <strong>Pay</strong>, enter your amount, then select{" "}
-                  <strong>Make it recurring</strong> before sending.
-                </p>
-              )}
-              <a href={CASHAPP_LINK} target="_blank" rel="noopener noreferrer" className="block"
-                data-testid="support-cashapp-link">
-                <Button size="lg" className="w-full gap-2 text-base font-bold bg-[#00D632] hover:bg-[#00b82a] text-black border-0 h-12">
-                  <SiCashapp className="w-5 h-5" />
-                  Donate with Cash App
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
-              </a>
-            </div>
-          </div>
-
-          {/* Venmo */}
-          <div className="rounded-xl border border-[#008CFF]/30 bg-[#008CFF]/5 overflow-hidden">
-            <div className="flex items-center gap-3 px-5 py-3 border-b border-[#008CFF]/20">
-              <SiVenmo className="w-6 h-6 text-[#008CFF] flex-shrink-0" />
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">🇺🇸 United States</p>
-                <p className="text-base font-bold text-foreground">Venmo</p>
-              </div>
-            </div>
-            <div className="px-5 py-4 space-y-3 text-center">
-              <p className="font-mono text-lg font-bold text-foreground tracking-wide">@dailydevotional</p>
-              {frequency === "monthly" && (
-                <p className="text-sm text-muted-foreground leading-relaxed bg-white/60 dark:bg-black/20 rounded-lg px-3 py-2">
-                  In the Venmo app, enter your support amount, tap <strong>Schedule</strong>, select <strong>Monthly</strong>, and choose your preferred payment date.
-                </p>
-              )}
-              <a href={VENMO_LINK} target="_blank" rel="noopener noreferrer" className="block"
-                data-testid="support-venmo-link">
-                <Button size="lg" className="w-full gap-2 text-base font-bold bg-[#008CFF] hover:bg-[#0079e0] text-white border-0 h-12">
-                  <SiVenmo className="w-5 h-5" />
-                  {frequency === "monthly" ? "Set Up Monthly Support on Venmo" : "Donate with Venmo"}
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
-              </a>
-            </div>
-          </div>
-
-          {/* OPay */}
-          <div className="rounded-xl border border-green-600/30 bg-green-600/5 overflow-hidden">
-            <div className="flex items-center gap-3 px-5 py-3 border-b border-green-600/20">
-              <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-xs font-bold">₦</span>
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">🇳🇬 Nigeria</p>
-                <p className="text-base font-bold text-foreground">Bank Transfer (OPay)</p>
-              </div>
-            </div>
-            <div className="px-5 py-4 space-y-3">
-              <div className="bg-white/60 dark:bg-black/20 rounded-lg divide-y divide-border/50 overflow-hidden text-sm">
-                <div className="flex justify-between px-3 py-2.5">
-                  <span className="text-muted-foreground font-medium">Account Name</span>
-                  <span className="font-bold text-foreground">MOSES AFOLABI</span>
-                </div>
-                <div className="flex justify-between px-3 py-2.5">
-                  <span className="text-muted-foreground font-medium">Bank</span>
-                  <span className="font-bold text-foreground">OPay</span>
-                </div>
-                <div className="flex justify-between px-3 py-2.5">
-                  <span className="text-muted-foreground font-medium">Account No.</span>
-                  <span className="font-mono font-bold text-foreground text-base tracking-widest">{OPAY_ACCOUNT_NUMBER}</span>
-                </div>
-              </div>
-              {frequency === "monthly" && (
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  You may save these account details and send your chosen support each month. Where available,
-                  you may also create a monthly standing instruction through your banking app.
-                </p>
-              )}
-              <Button size="lg" variant="outline"
-                className="w-full gap-2 text-base font-bold border-green-600/40 hover:bg-green-600/5 h-12"
-                onClick={handleCopyOpay} data-testid="support-copy-opay">
-                {opayCopied ? <><Check className="w-5 h-5 text-green-600" /> Account number copied</> : <><Copy className="w-5 h-5" /> Copy Account Number</>}
-              </Button>
-            </div>
-          </div>
-
-          {/* I Have Donated */}
-          <div className="rounded-xl border border-primary/20 bg-primary/5 px-5 py-4 text-center space-y-3">
-            <p className="text-sm font-medium text-foreground">Already donated? Let us know!</p>
-            <Button size="lg" variant="outline"
-              className="gap-2 text-base font-bold border-primary/30 hover:border-primary/60 hover:bg-primary/5 h-12"
-              onClick={onHaveDonated} data-testid="support-have-donated">
-              <Send className="w-4 h-4" />
-              I Have Donated
-            </Button>
-          </div>
-
-          <p className="text-xs text-muted-foreground/60 text-center">
-            No card information is collected by this app. All giving links open in your browser or payment app.
-          </p>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export default function SongDetail() {
   const [, params] = useRoute("/music/:slug");
   const slug = params?.slug;
@@ -265,8 +45,6 @@ export default function SongDetail() {
   const { toast } = useToast();
   const { user, emailVerified, getIdToken } = useUser();
   const isSignedIn = !!user && emailVerified;
-  const [showSupport, setShowSupport] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
   const [showMusicSettings, setShowMusicSettings] = useState(false);
   const [localFav, setLocalFav] = useState(false);
@@ -828,16 +606,6 @@ export default function SongDetail() {
           </Button>
         )}
 
-        {/* Support the Ministry — voluntary only */}
-        <Button
-          size="sm"
-          className="bg-amber-600 hover:bg-amber-700 text-white"
-          onClick={() => setShowSupport(true)}
-          data-testid="button-support-ministry-song"
-        >
-          <Gift className="w-4 h-4 mr-1.5" />
-          Support the Ministry
-        </Button>
       </div>
 
       {paidRelease && <MusicPurchasePanel productId={heavenTrackSlugs.includes(song.slug) ? song.slug : `single:${song.slug}`} songTitle={song.title} />}
@@ -937,19 +705,6 @@ export default function SongDetail() {
       {song.copyrightNotice && (
         <p className="text-xs text-muted-foreground/60 text-center pt-2">{song.copyrightNotice}</p>
       )}
-
-      {/* Support Modal */}
-      <SupportModal
-        open={showSupport}
-        onClose={() => setShowSupport(false)}
-        songTitle={song.title}
-        onHaveDonated={() => { setShowSupport(false); setConfirmOpen(true); }}
-      />
-      <ConfirmationModal
-        open={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
-        defaultGivingType="One-Time Donation"
-      />
 
     </div>
   );

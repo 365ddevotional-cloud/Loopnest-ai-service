@@ -141,9 +141,6 @@ export default function ChurchPublicHome() {
                 <Link href={`${base}/watch`} className="px-6 py-3 text-sm font-semibold rounded-xl border-2 border-white text-white flex items-center gap-2">
                   <Play className="w-4 h-4" /> {t("cm_pub_watchOnline")}
                 </Link>
-                <Link href={`${base}/give-online`} className="px-6 py-3 text-sm font-semibold rounded-xl text-white" style={{ backgroundColor: "rgba(255,255,255,0.2)" }}>
-                  {t("cm_pub_give")}
-                </Link>
               </div>
               {church.address && (
                 <p className="mt-6 text-sm flex items-center justify-center gap-1.5 text-white/70">
@@ -398,25 +395,6 @@ export default function ChurchPublicHome() {
                   </button>
                 </form>
               )}
-            </div>
-          </section>
-        )}
-
-        {/* ── GIVE ONLINE ────────────────────────────────────── */}
-        {isEnabled("give") && (
-          <section className="py-16" style={{ background: `linear-gradient(135deg, ${primary} 0%, ${primary}cc 100%)` }}>
-            <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-              <p className="text-xs font-semibold uppercase tracking-widest mb-2 text-white/70">{t("cm_pub_supportMinistry")}</p>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">{t("cm_pub_giveOnline")}</h2>
-              <p className="text-white/80 mb-8 max-w-xl mx-auto">
-                {t("cm_pub_giveDesc")}
-              </p>
-              <Link href={`${base}/give-online`}
-                className="inline-flex items-center gap-2 px-8 py-3.5 text-sm font-semibold rounded-xl bg-white"
-                style={{ color: primary }}
-                data-testid="button-give-online">
-                <Heart className="w-4 h-4" /> {t("cm_pub_giveNow")}
-              </Link>
             </div>
           </section>
         )}
