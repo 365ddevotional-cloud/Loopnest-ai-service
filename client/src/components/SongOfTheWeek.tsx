@@ -271,45 +271,6 @@ function TestimonyModal({ song, open, onClose }: { song: Song; open: boolean; on
 
 // ── Support Modal ─────────────────────────────────────────────────────────────
 
-function SupportModal({ song, open, onClose }: { song: Song; open: boolean; onClose: () => void }) {
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="font-serif text-lg text-primary">Support the Ministry</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 mt-2 text-sm text-foreground leading-relaxed">
-          <p>
-            Were you blessed by this song?
-          </p>
-          <p className="text-muted-foreground">
-            Your support helps <strong>SpiritTone Records</strong> and <strong>365 Daily Devotional</strong> continue
-            producing Scripture-based devotionals, worship music, Bible teaching, prayer resources, and counseling
-            encouragement — while keeping the main ministry content freely available.
-          </p>
-          <p className="text-xs text-muted-foreground italic">
-            Support is entirely voluntary. No donation unlocks any content. No amounts are tax-deductible unless
-            your jurisdiction and the ministry's status confirm it.
-          </p>
-          <div className="space-y-2 pt-2">
-            <Button
-              className="w-full bg-primary hover:bg-primary/90"
-              onClick={() => { onClose(); window.location.href = "/donate"; }}
-              data-testid="button-support-donate"
-            >
-              <HandHeart className="w-4 h-4 mr-2" />
-              Give a Voluntary Gift
-            </Button>
-          </div>
-        </div>
-        <Button variant="outline" className="mt-2 w-full" onClick={onClose}>Maybe Later</Button>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ── Main Component ────────────────────────────────────────────────────────────
-
 export function SongOfTheWeek() {
   const { toast } = useToast();
   const { data: song, isLoading } = useQuery<Song>({
@@ -324,7 +285,6 @@ export function SongOfTheWeek() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
   const [showTestimony, setShowTestimony] = useState(false);
-  const [showSupport, setShowSupport] = useState(false);
 
   useEffect(() => {
     if (song) {
@@ -689,16 +649,7 @@ export function SongOfTheWeek() {
 
           {/* ── Action Buttons Row 2 ── */}
           <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => setShowSupport(true)}
-                aria-label="Support the Ministry"
-                data-testid="button-support"
-                className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-amber-300/60 bg-amber-50 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors text-sm text-amber-700 dark:text-amber-400 font-medium active:scale-95"
-              >
-                <HandHeart className="w-4 h-4" />
-                Support the Ministry
-              </button>
+            <div className="grid gap-2">
 
               <Link
                 href={`/music/${song.slug}`}
@@ -724,7 +675,6 @@ export function SongOfTheWeek() {
       {/* ── Modals ── */}
       <LyricsModal song={song} open={showLyrics} onClose={() => setShowLyrics(false)} />
       <TestimonyModal song={song} open={showTestimony} onClose={() => setShowTestimony(false)} />
-      <SupportModal song={song} open={showSupport} onClose={() => setShowSupport(false)} />
     </>
   );
 }

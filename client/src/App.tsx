@@ -34,8 +34,6 @@ import About from "@/pages/About";
 import Updates from "@/pages/Updates";
 import Promotions from "@/pages/Promotions";
 import Discipleship from "@/pages/Discipleship";
-import Donate from "@/pages/Donate";
-import DonationSuccess from "@/pages/DonationSuccess";
 import PrayerCounseling from "@/pages/PrayerCounseling";
 import MyPrayerRequests from "@/pages/MyPrayerRequests";
 import SingleDevotional from "@/pages/SingleDevotional";
@@ -87,7 +85,6 @@ const ChurchSermons = lazy(() => import("@/pages/ChurchSermons"));
 const ChurchAnnouncements = lazy(() => import("@/pages/ChurchAnnouncements"));
 const ChurchGroups = lazy(() => import("@/pages/ChurchGroups"));
 const ChurchPrayer = lazy(() => import("@/pages/ChurchPrayer"));
-const ChurchGiving = lazy(() => import("@/pages/ChurchGiving"));
 const ChurchMessaging = lazy(() => import("@/pages/ChurchMessaging"));
 const ChurchMemberProfilePage = lazy(() => import("@/pages/ChurchMemberProfile"));
 const ChurchMemberPublicProfile = lazy(() => import("@/pages/ChurchMemberPublicProfile"));
@@ -98,7 +95,6 @@ const ChurchPublicAbout = lazy(() => import("@/pages/ChurchPublicAbout"));
 const ChurchPublicWatch = lazy(() => import("@/pages/ChurchPublicWatch"));
 const ChurchPublicEvents = lazy(() => import("@/pages/ChurchPublicEvents"));
 const ChurchPublicMinistries = lazy(() => import("@/pages/ChurchPublicMinistries"));
-const ChurchPublicGive = lazy(() => import("@/pages/ChurchPublicGive"));
 const ChurchPublicContact = lazy(() => import("@/pages/ChurchPublicContact"));
 const ChurchPublicJoin = lazy(() => import("@/pages/ChurchPublicJoin"));
 const ChurchPublicVisit = lazy(() => import("@/pages/ChurchPublicVisit"));
@@ -185,8 +181,6 @@ const Router = memo(function Router() {
       <Route path="/church/:slug/announcements" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchAnnouncements /></Suspense>} />
       <Route path="/church/:slug/groups" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchGroups /></Suspense>} />
       <Route path="/church/:slug/prayer" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchPrayer /></Suspense>} />
-      <Route path="/church/:slug/giving/success" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchGiving /></Suspense>} />
-      <Route path="/church/:slug/giving" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchGiving /></Suspense>} />
       <Route path="/church/:slug/messages" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchMessaging /></Suspense>} />
       <Route path="/church/:slug/members/:memberId" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchMemberPublicProfile /></Suspense>} />
       <Route path="/church/:slug/members" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchMembers /></Suspense>} />
@@ -202,7 +196,6 @@ const Router = memo(function Router() {
       <Route path="/church/:slug/watch" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchPublicWatch /></Suspense>} />
       <Route path="/church/:slug/events" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchPublicEvents /></Suspense>} />
       <Route path="/church/:slug/ministries" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchPublicMinistries /></Suspense>} />
-      <Route path="/church/:slug/give-online" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchPublicGive /></Suspense>} />
       <Route path="/church/:slug/contact" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchPublicContact /></Suspense>} />
       <Route path="/church/:slug/join-us" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchPublicJoin /></Suspense>} />
       <Route path="/church/:slug/visit" component={() => <Suspense fallback={<ChurchPageFallback />}><ChurchPublicVisit /></Suspense>} />
@@ -219,8 +212,6 @@ const Router = memo(function Router() {
       <Route path="/shop/:productId"><Suspense fallback={<FeaturePageFallback />}><MinistryShop /></Suspense></Route>
       <Route path="/shop"><Suspense fallback={<FeaturePageFallback />}><MinistryShop /></Suspense></Route>
       <Route path="/discipleship" component={Discipleship} />
-      <Route path="/donate" component={Donate} />
-      <Route path="/donation-success" component={DonationSuccess} />
       <Route path="/prayer-counseling" component={PrayerCounseling} />
       <Route path="/my-requests" component={MyPrayerRequests} />
       <Route path="/testimonies" component={TestimonyWall} />

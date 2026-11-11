@@ -45,10 +45,6 @@ integrations = ["sendgrid:1.0.0", "javascript_object_storage:2.0.0", "javascript
 [userenv]
 
 [userenv.shared]
-PAYPAL_DONATION_LINK = "https://www.paypal.com/donate/?hosted_button_id=Y9PAZK36FKT8L"
-CASHTAG = "$365dailydevotional"
-VITE_PAYPAL_DONATION_LINK = "https://www.paypal.com/donate/?hosted_button_id=Y9PAZK36FKT8L"
-VITE_CASHTAG = "$365dailydevotional"
 
 [postMerge]
 path = "scripts/post-merge.sh"

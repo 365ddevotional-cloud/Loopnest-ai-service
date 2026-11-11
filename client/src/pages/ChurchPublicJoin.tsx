@@ -20,7 +20,6 @@ export default function ChurchPublicJoin() {
     t("cm_benefitPrayerNetwork"),
     t("cm_benefitAnnouncements"),
     t("cm_benefitConnect"),
-    t("cm_benefitGiving"),
   ];
 
   return (

@@ -29,7 +29,6 @@ export default function TapThePromise() {
       themeMode={themeMode}
       audioTrack={config.audioTrack}
       onBack={() => navigate("/")}
-      onDonate={() => navigate("/donate")}
     />
   );
 }

@@ -17,7 +17,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { OAuth2Client } from "google-auth-library";
 import { randomBytes } from "crypto";
-import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification, sendDonationThankYouEmail, sendChurchNameChangeSecurityEmail, sendChurchWelcomeEmail, sendChurchComplianceEmail } from "./sendgrid";
+import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification, sendChurchNameChangeSecurityEmail, sendChurchWelcomeEmail, sendChurchComplianceEmail } from "./sendgrid";
 import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { getTodayDateString, isFutureDate, isPastDate, getDayOfYear } from "./date-utils";
@@ -25,7 +25,7 @@ import { seedAllDevotionals } from "./seed-devotionals";
 import { getOrCreateTranslation, isAllowedLanguage, getCachedTranslationsForLanguage } from "./translationService";
 import { getCurrentPromise, getNextPromise, advancePromise, resetRotation, toggleEnabled, getTotalPromises, startPromiseScheduler } from "./promiseEngine";
 import { generateAIEncouragement } from "./inbox-ai";
-import { promiseAmens, INBOX_CATEGORIES, insertDonationConfirmationSchema, churchTransactions } from "@shared/schema";
+import { promiseAmens, INBOX_CATEGORIES, churchTransactions } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, desc, gte } from "drizzle-orm";
 
@@ -1750,71 +1750,6 @@ export async function registerRoutes(
     }
   });
 
-  // Public: get active giving methods (voluntary support)
-  app.get("/api/giving-methods", async (_req, res) => {
-    try {
-      const methods = await storage.getGivingMethods(true);
-      res.json(methods);
-    } catch (err) {
-      console.error("Error fetching giving methods:", err);
-      res.status(500).json({ message: "Could not fetch giving methods" });
-    }
-  });
-
-  // Admin: get all giving methods
-  app.get("/api/giving-methods/all", requireAdmin, async (_req, res) => {
-    try {
-      const methods = await storage.getGivingMethods(false);
-      res.json(methods);
-    } catch (err) {
-      res.status(500).json({ message: "Could not fetch giving methods" });
-    }
-  });
-
-  // Admin: create giving method
-  app.post("/api/giving-methods", requireAdmin, async (req, res) => {
-    try {
-      const { name, type, url, handle, instructions, isActive, displayOrder } = req.body;
-      if (!name || !type) return res.status(400).json({ message: "name and type are required" });
-      const method = await storage.createGivingMethod({
-        name, type, url: url || null, handle: handle || null,
-        instructions: instructions || null,
-        isActive: !!isActive,
-        displayOrder: Number(displayOrder) || 0,
-      });
-      res.json(method);
-    } catch (err) {
-      console.error("Error creating giving method:", err);
-      res.status(500).json({ message: "Could not create giving method" });
-    }
-  });
-
-  // Admin: update giving method
-  app.patch("/api/giving-methods/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
-    try {
-      const updated = await storage.updateGivingMethod(id, req.body);
-      if (!updated) return res.status(404).json({ message: "Giving method not found" });
-      res.json(updated);
-    } catch (err) {
-      console.error("Error updating giving method:", err);
-      res.status(500).json({ message: "Could not update giving method" });
-    }
-  });
-
-  // Admin: delete giving method
-  app.delete("/api/giving-methods/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
-    try {
-      await storage.deleteGivingMethod(id);
-      res.json({ success: true });
-    } catch (err) {
-      res.status(500).json({ message: "Could not delete giving method" });
-    }
-  });
-
   // Public: submit song testimony
   app.post("/api/song-testimonies", async (req, res) => {
     try {
@@ -2476,56 +2411,6 @@ export async function registerRoutes(
     } catch (err) {
       console.error("Error fetching follow-ups:", err);
       res.status(500).json({ message: "Could not fetch follow-ups" });
-    }
-  });
-
-  app.post("/api/create-donation-session", async (req, res) => {
-    try {
-      const stripeKey = process.env.STRIPE_SECRET_KEY;
-      if (!stripeKey) {
-        return res.status(503).json({ message: "Card payments are not currently available. Please use PayPal or Cash App." });
-      }
-
-      const { amount, donorName, note, purpose } = req.body;
-
-      if (!amount || isNaN(Number(amount)) || Number(amount) < 1) {
-        return res.status(400).json({ message: "Please enter a valid donation amount." });
-      }
-
-      const stripe = (await import("stripe")).default;
-      const stripeClient = new stripe(stripeKey);
-
-      const amountCents = Math.round(Number(amount) * 100);
-      const description = `${purpose || "General Ministry Support"}${donorName ? ` - ${donorName}` : ""}${note ? ` - ${note}` : ""}`;
-
-      const protocol = req.headers["x-forwarded-proto"] || "https";
-      const host = req.headers.host;
-      const baseUrl = `${protocol}://${host}`;
-
-      const session = await stripeClient.checkout.sessions.create({
-        payment_method_types: ["card"],
-        mode: "payment",
-        line_items: [
-          {
-            price_data: {
-              currency: "usd",
-              product_data: {
-                name: "Ministry Donation",
-                description,
-              },
-              unit_amount: amountCents,
-            },
-            quantity: 1,
-          },
-        ],
-        success_url: `${baseUrl}/donation-success`,
-        cancel_url: `${baseUrl}/donate`,
-      });
-
-      res.json({ checkoutUrl: session.url });
-    } catch (err: any) {
-      console.error("Stripe donation error:", err.message || err);
-      res.status(500).json({ message: "Payment could not be started. Please try again." });
     }
   });
 
@@ -3317,69 +3202,6 @@ export async function registerRoutes(
       res.json(updated);
     } catch {
       res.status(500).json({ message: "Failed to submit testimony for review" });
-    }
-  });
-
-  // ── Donation Confirmations ────────────────────────────────────────────────
-
-  // POST /api/donation-confirmations — public, submit after donating
-  app.post("/api/donation-confirmations", async (req, res) => {
-    try {
-      const parsed = insertDonationConfirmationSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ message: "Invalid data", errors: parsed.error.errors });
-      }
-      const confirmation = await storage.createDonationConfirmation(parsed.data);
-      res.status(201).json(confirmation);
-    } catch {
-      res.status(500).json({ message: "Failed to record donation confirmation" });
-    }
-  });
-
-  // GET /api/admin/donation-confirmations — admin only
-  app.get("/api/admin/donation-confirmations", requireAdmin, async (req, res) => {
-    try {
-      const confirmations = await storage.getDonationConfirmations();
-      res.json(confirmations);
-    } catch {
-      res.status(500).json({ message: "Failed to fetch donation confirmations" });
-    }
-  });
-
-  // PATCH /api/admin/donation-confirmations/:id/thank-you-status — admin only
-  app.patch("/api/admin/donation-confirmations/:id/thank-you-status", requireAdmin, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) return res.status(400).json({ message: "Invalid id" });
-      const { status } = req.body;
-      if (!["not_sent", "sent"].includes(status)) {
-        return res.status(400).json({ message: "Status must be not_sent or sent" });
-      }
-      const updated = await storage.updateDonationConfirmationThankYouStatus(id, status);
-      res.json(updated);
-    } catch {
-      res.status(500).json({ message: "Failed to update thank-you status" });
-    }
-  });
-
-  // POST /api/admin/donation-confirmations/:id/send-thank-you — admin only
-  app.post("/api/admin/donation-confirmations/:id/send-thank-you", requireAdmin, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) return res.status(400).json({ message: "Invalid id" });
-      const { message } = req.body;
-      if (!message?.trim()) return res.status(400).json({ message: "Message is required" });
-      const all = await storage.getDonationConfirmations();
-      const confirmation = all.find(c => c.id === id);
-      if (!confirmation) return res.status(404).json({ message: "Confirmation not found" });
-      let emailSent = false;
-      if (confirmation.email) {
-        emailSent = await sendDonationThankYouEmail(confirmation.email, confirmation.fullName, message.trim());
-      }
-      const updated = await storage.updateDonationConfirmationThankYouStatus(id, "sent");
-      res.json({ updated, emailSent });
-    } catch {
-      res.status(500).json({ message: "Failed to send thank-you" });
     }
   });
 
@@ -5441,20 +5263,6 @@ export async function registerRoutes(
     } catch { res.status(500).json({ message: "Server error" }); }
   });
 
-  // ── Church Giving Public Info + Categories ────────────────────────────────────
-  app.get("/api/churches/slug/:slug/giving", async (req, res) => {
-    try {
-      const church = await storage.getChurchBySlug(req.params.slug);
-      if (!church) return res.status(404).json({ message: "Church not found" });
-      const [settings, categories, platformFeeStr] = await Promise.all([
-        storage.getChurchGivingSettings(church.id),
-        storage.getChurchGivingCategories(church.id),
-        storage.getGlobalGivingSetting("platform_fee_percent"),
-      ]);
-      res.json({ church, settings, categories: categories.filter(c => c.isActive), platformFeePercent: platformFeeStr ? parseFloat(platformFeeStr) : 2.5 });
-    } catch { res.status(500).json({ message: "Server error" }); }
-  });
-
   app.get("/api/churches/:id/giving/categories", async (req, res) => {
     const uid = await getUid(req, res); if (!uid) return;
     try {
@@ -5542,75 +5350,6 @@ export async function registerRoutes(
       if (!member || !["owner", "lead_pastor", "administrator", "associate_pastor"].includes(member.role)) return res.status(403).json({ message: "Not authorized" });
       res.json(await storage.getChurchTransactions(churchId));
     } catch { res.status(500).json({ message: "Server error" }); }
-  });
-
-  // ── Church Giving — Stripe Checkout ──────────────────────────────────────────
-  app.post("/api/churches/slug/:slug/giving/create-session", async (req, res) => {
-    try {
-      const stripeKey = process.env.STRIPE_SECRET_KEY;
-      if (!stripeKey) return res.status(503).json({ message: "Card payments are not currently configured." });
-      const church = await storage.getChurchBySlug(req.params.slug);
-      if (!church) return res.status(404).json({ message: "Church not found" });
-      const settings = await storage.getChurchGivingSettings(church.id);
-      if (!settings?.isEnabled) return res.status(403).json({ message: "Online giving is not enabled for this church." });
-      const { amount, categoryId, categoryName, donorName, donorEmail, isAnonymous, note, donorFirebaseUid } = req.body;
-      if (!amount || isNaN(Number(amount)) || Number(amount) < 1) return res.status(400).json({ message: "Enter a valid amount (minimum $1)." });
-      if (!categoryName) return res.status(400).json({ message: "Giving category is required." });
-      const grossCents = Math.round(Number(amount) * 100);
-      const platformFeeStr = await storage.getGlobalGivingSetting("platform_fee_percent");
-      const platformFeePercent = platformFeeStr ? parseFloat(platformFeeStr) : 2.5;
-      const platformFeeCents = Math.round(grossCents * (platformFeePercent / 100));
-      const providerFeeCents = Math.round(grossCents * 0.029 + 30);
-      const churchNetCents = grossCents - platformFeeCents - providerFeeCents;
-      const reference = `cg-${church.id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const txn = await storage.createChurchTransaction({
-        churchId: church.id,
-        categoryId: categoryId ? Number(categoryId) : null,
-        categoryName: categoryName || "General",
-        donorFirebaseUid: donorFirebaseUid ?? null,
-        donorName: isAnonymous ? null : (donorName ?? null),
-        donorEmail: isAnonymous ? null : (donorEmail ?? null),
-        isAnonymous: !!isAnonymous,
-        note: note ?? null,
-        currency: settings.currency ?? "USD",
-        grossAmount: grossCents,
-        platformFeeAmount: platformFeeCents,
-        providerFeeAmount: providerFeeCents,
-        churchNetAmount: churchNetCents,
-        status: "pending",
-        payoutStatus: "pending",
-        stripeSessionId: null,
-        stripePaymentIntentId: null,
-        reference,
-      });
-      const stripe = (await import("stripe")).default;
-      const stripeClient = new stripe(stripeKey);
-      const protocol = req.headers["x-forwarded-proto"] || "https";
-      const host = req.headers.host;
-      const baseUrl = `${protocol}://${host}`;
-      const description = `${categoryName} — ${church.name}${!isAnonymous && donorName ? ` — From: ${donorName}` : ""}${note ? ` — "${note}"` : ""}`;
-      const session = await stripeClient.checkout.sessions.create({
-        payment_method_types: ["card"],
-        mode: "payment",
-        line_items: [{
-          price_data: {
-            currency: (settings.currency ?? "USD").toLowerCase(),
-            product_data: { name: `${church.name} — ${categoryName}`, description },
-            unit_amount: grossCents,
-          },
-          quantity: 1,
-        }],
-        metadata: { reference, txnId: String(txn.id), churchId: String(church.id) },
-        customer_email: !isAnonymous && donorEmail ? donorEmail : undefined,
-        success_url: `${baseUrl}/church/${church.slug}/giving/success?ref=${reference}`,
-        cancel_url: `${baseUrl}/church/${church.slug}/giving`,
-      });
-      await db.update(churchTransactions).set({ stripeSessionId: session.id }).where(eq(churchTransactions.id, txn.id));
-      res.json({ checkoutUrl: session.url, reference });
-    } catch (err: any) {
-      console.error("[ChurchGiving] Stripe error:", err.message || err);
-      res.status(500).json({ message: "Payment could not be started. Please try again." });
-    }
   });
 
   // ── Church Giving Success Confirmation ────────────────────────────────────────

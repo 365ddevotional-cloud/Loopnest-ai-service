@@ -151,7 +151,7 @@ export function Header() {
     if (location === "/" || location.startsWith("/archive") || location.startsWith("/bible") || location.startsWith("/sunday-school") || location.startsWith("/daily-promise")) return "daily-faith";
     if (location.startsWith("/music") || location.startsWith("/interactive")) return "worship-media";
     if (location.startsWith("/prayer") || location.startsWith("/inbox") || location.startsWith("/testimonies") || location.startsWith("/quick-prayer")) return "prayer-community";
-    if (location.startsWith("/church") || location.startsWith("/about") || location.startsWith("/donate")) return "church-ministry";
+    if (location.startsWith("/church") || location.startsWith("/about")) return "church-ministry";
     if (location.startsWith("/my-library") || location.startsWith("/signin")) return "my-account";
     if (location.startsWith("/admin")) return "administration";
     return "daily-faith";
@@ -256,7 +256,6 @@ export function Header() {
     { href: "/inbox", label: "Inbox", icon: Inbox, external: false },
     { href: "/testimonies", label: "Testimonies", icon: Star, external: false },
     { href: "/about", label: t("about"), icon: Info, external: false },
-    { href: "/donate", label: t("donate"), icon: Heart, external: false },
     { href: "/church", label: "Church Mode", icon: Building2, external: false },
   ];
 
@@ -716,13 +715,6 @@ export function Header() {
                   icon={Info}
                   label={t("about")}
                   data-testid="link-about-nav-mobile"
-                />
-                <MobileNavItem
-                  onClick={() => navigateWithTransition("/donate")}
-                  isActive={location === "/donate"}
-                  icon={Heart}
-                  label={t("donate")}
-                  data-testid="link-donate-nav-mobile"
                 />
               </MobileNavGroup>
 

@@ -735,20 +735,6 @@
 .ttp-dark .ttp-mission-label { color: rgba(255,255,255,0.55); }
 .ttp-light .ttp-mission-label { color: rgba(42,24,16,0.6); }
 
-.ttp-btn-mission-donate {
-  border: none;
-  border-radius: 8px;
-  padding: 6px 18px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  cursor: pointer;
-  background: linear-gradient(135deg, #FFD700, #e8b830, #d4a020);
-  color: #051030;
-  transition: transform 0.15s ease;
-  font-family: 'DM Sans', sans-serif;
-}
-.ttp-btn-mission-donate:active { transform: scale(0.95); }
 
 /* Buttons */
 .ttp-btn {

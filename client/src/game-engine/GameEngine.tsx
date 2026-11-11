@@ -61,7 +61,6 @@ export default function GameEngine({
   affirmations = DEFAULT_AFFIRMATIONS,
   colorThemes = DEFAULT_COLOR_THEMES,
   onBack,
-  onDonate,
   brandText = "365 DAILY DEVOTIONAL",
 }: GameEngineProps) {
   const isDark = themeMode === "dark";
@@ -244,18 +243,6 @@ export default function GameEngine({
               </div>
             </div>
 
-            {onDonate && (
-              <div className="ttp-mission-bar">
-                <span className="ttp-mission-label">Support Our Mission</span>
-                <button
-                  className="ttp-btn-mission-donate"
-                  onClick={onDonate}
-                  data-testid="button-donate"
-                >
-                  DONATE
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </>

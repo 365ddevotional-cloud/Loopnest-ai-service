@@ -22,7 +22,6 @@ export function ChurchPublicShell({ church, children }: ChurchPublicShellProps) 
     { label: t("cm_pub_sermons"), path: "/watch" },
     { label: t("cm_pub_events"), path: "/events" },
     { label: t("cm_pub_ministries"), path: "/ministries" },
-    { label: t("cm_pub_give"), path: "/give-online" },
     { label: t("cm_pub_contact"), path: "/contact" },
   ];
 
