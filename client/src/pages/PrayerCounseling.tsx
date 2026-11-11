@@ -8,7 +8,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { useState, useRef } from "react";
 import { Loader2, Send, CheckCircle, AlertTriangle, Paperclip, X, FileText, Image, Star, HandHeart } from "lucide-react";
 import type { AutoReplyTemplate, PrayerRequest } from "@shared/schema";
@@ -29,6 +28,8 @@ const CATEGORY_OPTIONS = [
   { value: "guidance", label: "Guidance" },
   { value: "family", label: "Family" },
   { value: "salvation", label: "Salvation" },
+  { value: "spiritual_growth", label: "Spiritual Growth" },
+  { value: "habit_recovery", label: "Habit Recovery" },
   { value: "other", label: "Other" },
 ];
 
@@ -36,19 +37,12 @@ const MAX_FILES = 3;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 
-interface UploadedFile {
-  file: File;
-  objectPath?: string;
-  uploading: boolean;
-  error?: string;
-}
-
 export default function PrayerCounseling() {
   const { toast } = useToast();
   const { user, getIdToken } = useUser();
   const [submitted, setSubmitted] = useState(false);
   const [submittedRequest, setSubmittedRequest] = useState<PrayerRequest | null>(null);
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     fullName: "",
@@ -61,47 +55,12 @@ export default function PrayerCounseling() {
     priority: "prayer_normal",
     category: "other",
     privacy: "private",
+    discipleshipOptIn: false,
   });
 
   const { data: autoReplyTemplate } = useQuery<AutoReplyTemplate>({
     queryKey: ["/api/auto-reply-templates", formData.priority],
     enabled: submitted,
-  });
-
-  const uploadFileMutation = useMutation({
-    mutationFn: async ({ file, index }: { file: File; index: number }) => {
-      const response = await fetch("/api/uploads/request-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: file.name,
-          size: file.size,
-          contentType: file.type,
-        }),
-      });
-      
-      if (!response.ok) throw new Error("Failed to get upload URL");
-      
-      const { uploadURL, objectPath } = await response.json();
-      
-      await fetch(uploadURL, {
-        method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type },
-      });
-      
-      return { index, objectPath };
-    },
-    onSuccess: ({ index, objectPath }) => {
-      setUploadedFiles(prev => prev.map((f, i) => 
-        i === index ? { ...f, objectPath, uploading: false } : f
-      ));
-    },
-    onError: (error, { index }) => {
-      setUploadedFiles(prev => prev.map((f, i) => 
-        i === index ? { ...f, uploading: false, error: "Upload failed" } : f
-      ));
-    },
   });
 
   const mutation = useMutation({
@@ -117,40 +76,40 @@ export default function PrayerCounseling() {
         priority: data.priority,
         category: data.category,
         privacy: data.privacy || "private",
+        discipleshipOptIn: data.discipleshipOptIn,
       };
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const headers: Record<string, string> = {};
       if (user) {
         try {
           const token = await getIdToken();
           if (token) headers["Authorization"] = `Bearer ${token}`;
         } catch { /* proceed as guest */ }
       }
-      const response = await fetch("/api/prayer-requests", { method: "POST", headers, body: JSON.stringify(payload) });
-      if (!response.ok) throw new Error("Request failed");
+      let body: string | FormData;
+      if (selectedFiles.length) {
+        const form = new FormData();
+        form.append("request", JSON.stringify(payload));
+        for (const file of selectedFiles) form.append("attachments", file);
+        body = form;
+      } else {
+        headers["Content-Type"] = "application/json";
+        body = JSON.stringify(payload);
+      }
+      const response = await fetch("/api/prayer-requests", { method: "POST", headers, body });
+      if (!response.ok) {
+        const failure = response.status < 500 ? await response.json().catch(() => null) : null;
+        throw new Error(failure?.message || "Something went wrong. Please try again.");
+      }
       return response.json();
     },
-    onSuccess: async (data) => {
-      const successfulUploads = uploadedFiles.filter(f => f.objectPath);
-      for (const upload of successfulUploads) {
-        try {
-          await apiRequest("POST", `/api/prayer-requests/${data.id}/attachments`, {
-            fileName: upload.file.name,
-            fileSize: upload.file.size,
-            contentType: upload.file.type,
-            objectPath: upload.objectPath,
-          });
-        } catch (err) {
-          console.error("Failed to save attachment metadata:", err);
-        }
-      }
-      
+    onSuccess: (data) => {
       setSubmittedRequest(data);
       setSubmitted(true);
     },
-    onError: () => {
+    onError: (error) => {
       toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
+        title: "Request could not be sent",
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -158,9 +117,10 @@ export default function PrayerCounseling() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    const nextFiles = [...selectedFiles];
     
     for (const file of files) {
-      if (uploadedFiles.length >= MAX_FILES) {
+      if (nextFiles.length >= MAX_FILES) {
         toast({ title: `Maximum ${MAX_FILES} files allowed`, variant: "destructive" });
         break;
       }
@@ -175,18 +135,17 @@ export default function PrayerCounseling() {
         continue;
       }
       
-      const newIndex = uploadedFiles.length;
-      setUploadedFiles(prev => [...prev, { file, uploading: true }]);
-      uploadFileMutation.mutate({ file, index: newIndex });
+      nextFiles.push(file);
     }
     
+    setSelectedFiles(nextFiles);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
   const removeFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -206,12 +165,10 @@ export default function PrayerCounseling() {
       return;
     }
     
-    const stillUploading = uploadedFiles.some(f => f.uploading);
-    if (stillUploading) {
-      toast({ title: "Please wait for files to finish uploading", variant: "destructive" });
+    if (formData.discipleshipOptIn && !formData.email.trim()) {
+      toast({ title: "Please provide an email for discipleship follow-up", variant: "destructive" });
       return;
     }
-
     mutation.mutate(formData);
   };
 
@@ -222,7 +179,7 @@ export default function PrayerCounseling() {
   const resetForm = () => {
     setSubmitted(false);
     setSubmittedRequest(null);
-    setUploadedFiles([]);
+    setSelectedFiles([]);
     setFormData({
       fullName: "",
       email: "",
@@ -234,6 +191,7 @@ export default function PrayerCounseling() {
       priority: "prayer_normal",
       category: "other",
       privacy: "private",
+      discipleshipOptIn: false,
     });
   };
 
@@ -456,6 +414,14 @@ export default function PrayerCounseling() {
             <p className="text-xs text-muted-foreground">Default is Private. Your email, phone, and personal details are never shared publicly.</p>
           </div>
 
+          <div className="flex items-start gap-3 rounded-lg border p-4">
+            <Checkbox id="discipleshipOptIn" checked={formData.discipleshipOptIn} onCheckedChange={(checked) => setFormData({ ...formData, discipleshipOptIn: checked === true, privacy: checked === true ? "private" : formData.privacy })} />
+            <div className="space-y-1">
+              <Label htmlFor="discipleshipOptIn">I would like to receive personal discipleship follow-up (optional)</Label>
+              <p className="text-xs text-muted-foreground">A ministry representative may contact me using the email I provide. This is optional and can be withdrawn by contacting the ministry. My request will remain private when I opt in.</p>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="subject">Subject (optional)</Label>
             <Input
@@ -488,32 +454,23 @@ export default function PrayerCounseling() {
               You can attach up to {MAX_FILES} files (jpg, png, pdf). Max 5MB each.
             </p>
             
-            {uploadedFiles.length > 0 && (
+            {selectedFiles.length > 0 && (
               <div className="space-y-2">
-                {uploadedFiles.map((upload, index) => (
+                {selectedFiles.map((file, index) => (
                   <div
                     key={index}
                     className="flex items-center justify-between gap-2 p-2 bg-muted/30 rounded-md"
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      {getFileIcon(upload.file.type)}
-                      <span className="text-sm truncate">{upload.file.name}</span>
-                      {upload.uploading && (
-                        <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                      )}
-                      {upload.error && (
-                        <span className="text-xs text-destructive">{upload.error}</span>
-                      )}
-                      {upload.objectPath && (
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                      )}
+                      {getFileIcon(file.type)}
+                      <span className="text-sm truncate">{file.name}</span>
                     </div>
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       onClick={() => removeFile(index)}
-                      disabled={upload.uploading}
+                      disabled={mutation.isPending}
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -522,7 +479,7 @@ export default function PrayerCounseling() {
               </div>
             )}
             
-            {uploadedFiles.length < MAX_FILES && (
+            {selectedFiles.length < MAX_FILES && (
               <div>
                 <input
                   ref={fileInputRef}
@@ -530,6 +487,7 @@ export default function PrayerCounseling() {
                   accept=".jpg,.jpeg,.png,.pdf"
                   multiple
                   onChange={handleFileSelect}
+                  disabled={mutation.isPending}
                   className="hidden"
                   id="file-upload"
                   data-testid="input-file"
@@ -560,7 +518,7 @@ export default function PrayerCounseling() {
           <Button
             type="submit"
             className="w-full"
-            disabled={mutation.isPending || uploadedFiles.some(f => f.uploading)}
+            disabled={mutation.isPending}
             data-testid="button-submit"
           >
             {mutation.isPending ? (

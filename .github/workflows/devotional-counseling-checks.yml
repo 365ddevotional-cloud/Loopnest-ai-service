@@ -1,0 +1,32 @@
+name: Devotional counseling safety checks
+on:
+  pull_request:
+    paths:
+      - 'client/src/pages/PrayerCounseling.tsx'
+      - 'client/src/pages/Home.tsx'
+      - 'client/src/components/Header.tsx'
+      - 'client/src/components/MinistryDiscovery.tsx'
+      - 'client/src/components/MinistryAnnouncementsAdmin.tsx'
+      - 'client/src/pages/Admin.tsx'
+      - 'server/routes.ts'
+      - 'server/prayer-privacy-release-gate.test.ts'
+      - 'server/sendgrid.ts'
+      - 'shared/schema.ts'
+      - 'migrations/20261108_optional_discipleship.sql'
+      - '.github/workflows/devotional-counseling-checks.yml'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
+      - run: npm run test:music-commerce
+      - run: npm run test:sharing
+      - name: Privacy release gate (must pass before merge)
+        run: node --import tsx --test server/prayer-privacy-release-gate.test.ts

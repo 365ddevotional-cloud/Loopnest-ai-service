@@ -1,4 +1,4 @@
-import { pgTable, text, serial, date, timestamp, boolean, integer, unique, jsonb, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, date, timestamp, boolean, integer, unique, jsonb, real, customType } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -118,6 +118,31 @@ export type UpdateDevotionalRequest = Partial<InsertDevotional>;
 // Response Types
 export type DevotionalResponse = Devotional;
 
+
+// Ministry-owned announcements and resource promotions; no third-party advertising.
+export const ministryAnnouncements = pgTable("ministry_announcements", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  category: text("category").notNull().default("whats_new"),
+  destinationUrl: text("destination_url").notNull(),
+  buttonLabel: text("button_label").notNull().default("Learn More"),
+  isPublished: boolean("is_published").notNull().default(false),
+  startsAt: timestamp("starts_at", { withTimezone: true }),
+  endsAt: timestamp("ends_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export const ministryAnnouncementInput = z.object({
+  title: z.string().trim().min(3).max(120),
+  description: z.string().trim().min(3).max(500),
+  category: z.enum(["whats_new", "book", "music", "discipleship", "feature", "product"]),
+  destinationUrl: z.string().trim().min(1).max(500).refine(url => url.startsWith("/") && !url.startsWith("//") && !url.includes("\\") && !url.includes("://") && !/[\u0000-\u001f\u007f]/.test(url), "Use an internal app path"),
+  buttonLabel: z.string().trim().min(2).max(40),
+  isPublished: z.boolean().default(false),
+  startsAt: z.string().datetime().nullable().optional(),
+  endsAt: z.string().datetime().nullable().optional(),
+});
+
 // Prayer Request Priority Types
 export const PRAYER_PRIORITIES = [
   "prayer_normal",
@@ -136,10 +161,22 @@ export const PRAYER_CATEGORIES = [
   "guidance",
   "family",
   "salvation",
+  "spiritual_growth",
+  "habit_recovery",
   "other"
 ] as const;
 
 export const prayerCategorySchema = z.enum(PRAYER_CATEGORIES);
+
+export const DISCIPLESHIP_STAGES = ["requested", "contacted", "enrolled", "declined", "completed"] as const;
+type DiscipleshipStage = typeof DISCIPLESHIP_STAGES[number];
+export const DISCIPLESHIP_NEXT_STAGES: Readonly<Record<string, readonly DiscipleshipStage[]>> = {
+  requested: ["contacted"],
+  contacted: ["enrolled", "declined"],
+  enrolled: ["declined", "completed"],
+  declined: [],
+  completed: [],
+};
 
 // Prayer Requests Table
 export const prayerRequests = pgTable("prayer_requests", {
@@ -160,6 +197,8 @@ export const prayerRequests = pgTable("prayer_requests", {
   answeredAt: timestamp("answered_at"),
   answerNote: text("answer_note"),
   privacy: text("privacy").default("private"),
+  discipleshipOptIn: boolean("discipleship_opt_in").notNull().default(false),
+  discipleshipFollowUpStatus: text("discipleship_follow_up_status").notNull().default("not_requested"),
 });
 
 export const insertPrayerRequestSchema = createInsertSchema(prayerRequests).omit({
@@ -169,6 +208,7 @@ export const insertPrayerRequestSchema = createInsertSchema(prayerRequests).omit
   createdAt: true,
 }).extend({
   category: prayerCategorySchema.optional().default("other"),
+  discipleshipOptIn: z.boolean().optional(),
 });
 
 export type PrayerRequest = typeof prayerRequests.$inferSelect;
@@ -239,6 +279,11 @@ export const prayerAttachments = pgTable("prayer_attachments", {
   contentType: text("content_type").notNull(),
   objectPath: text("object_path").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const prayerAttachmentFiles = pgTable("prayer_attachment_files", {
+  attachmentId: integer("attachment_id").primaryKey().references(() => prayerAttachments.id, { onDelete: "cascade" }),
+  bytes: customType<{ data: Buffer }>({ dataType: () => "bytea" })("bytes").notNull(),
 });
 
 export const insertPrayerAttachmentSchema = createInsertSchema(prayerAttachments).omit({

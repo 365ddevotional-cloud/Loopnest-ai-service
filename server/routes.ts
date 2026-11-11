@@ -5,7 +5,7 @@ import { registerAdminAuth } from "./admin-auth";
 import { registerMusicCommerceRoutes } from "./music-commerce";
 import { ensureAudienceAnalyticsTables, recordBrowserVisit, recordAudienceSongEvent, getAudienceAnalytics, savePlayStoreVisit } from "./audience-analytics";
 import { ensureMusicOrdersTable, musicOrderStorage } from "./music-commerce-storage";
-import { getMusicDownloadUrl } from "./replit_integrations/object_storage/routes";
+import { getMusicDownloadUrl, readLegacyPrayerAttachment } from "./replit_integrations/object_storage/routes";
 import { getDownloadAccess } from "./download-access";
 import { defaultMusicPricing, musicPricingSchema } from "@shared/music-pricing";
 import type { Express, Request, Response, NextFunction } from "express";
@@ -13,11 +13,13 @@ import type { Server } from "http";
 import fs from "fs";
 import path from "path";
 import { storage } from "./storage";
+import { startPrayerEmailVerification, confirmPrayerEmailVerification, isPrayerOwner, isVerifiedPrayerEmail, rememberSubmittedPrayer } from "./prayer-access";
+import { parsePrayerSubmission, type PrayerFile } from "./prayer-attachments";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { OAuth2Client } from "google-auth-library";
 import { randomBytes } from "crypto";
-import { sendPrayerReplyNotification, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification, sendDonationThankYouEmail, sendChurchNameChangeSecurityEmail, sendChurchWelcomeEmail, sendChurchComplianceEmail } from "./sendgrid";
+import { sendPrayerReplyNotification, sendNewCounselingAdminAlert, sendContactMessageNotification, sendContactAutoReply, sendGeneralInquiryNotification, sendFeedbackNotification, sendPartnershipNotification, sendDonationThankYouEmail, sendChurchNameChangeSecurityEmail, sendChurchWelcomeEmail, sendChurchComplianceEmail } from "./sendgrid";
 import { sendSmsNotification, isValidE164PhoneNumber } from "./twilio";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { getTodayDateString, isFutureDate, isPastDate, getDayOfYear } from "./date-utils";
@@ -25,9 +27,9 @@ import { seedAllDevotionals } from "./seed-devotionals";
 import { getOrCreateTranslation, isAllowedLanguage, getCachedTranslationsForLanguage } from "./translationService";
 import { getCurrentPromise, getNextPromise, advancePromise, resetRotation, toggleEnabled, getTotalPromises, startPromiseScheduler } from "./promiseEngine";
 import { generateAIEncouragement } from "./inbox-ai";
-import { promiseAmens, INBOX_CATEGORIES, insertDonationConfirmationSchema, churchTransactions } from "@shared/schema";
+import { promiseAmens, INBOX_CATEGORIES, insertDonationConfirmationSchema, churchTransactions, prayerRequests, prayerAttachments, prayerAttachmentFiles, ministryAnnouncements, ministryAnnouncementInput, DISCIPLESHIP_STAGES, DISCIPLESHIP_NEXT_STAGES } from "@shared/schema";
 import { db } from "./db";
-import { eq, sql, desc, gte } from "drizzle-orm";
+import { and, eq, sql, desc, gte, gt, isNull, lte, or } from "drizzle-orm";
 
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
@@ -836,8 +838,74 @@ export async function registerRoutes(
     res.json(passage);
   });
 
+  // Ministry-owned announcements: public read-only, administrator-managed writes.
+  // The table migration must be applied before enabling this feature in production.
+  app.get("/api/ministry-announcements", async (_req, res) => {
+    try {
+      const now = new Date();
+      const rows = await db.select().from(ministryAnnouncements).where(and(
+        eq(ministryAnnouncements.isPublished, true),
+        or(isNull(ministryAnnouncements.startsAt), lte(ministryAnnouncements.startsAt, now)),
+        or(isNull(ministryAnnouncements.endsAt), gt(ministryAnnouncements.endsAt, now)),
+      )).orderBy(desc(ministryAnnouncements.createdAt), desc(ministryAnnouncements.id)).limit(30);
+      res.json(rows);
+    } catch (error) {
+      console.error("[Announcements] Public read failed", error);
+      res.json([]); // Fail closed; the devotional itself must still load.
+    }
+  });
+  app.get("/api/admin/ministry-announcements", requireAdmin, async (_req, res) => {
+    try { res.json(await db.select().from(ministryAnnouncements).orderBy(desc(ministryAnnouncements.createdAt)).limit(100)); }
+    catch { res.status(503).json({ message: "Announcements are not available yet" }); }
+  });
+  app.post("/api/admin/ministry-announcements", requireAdmin, async (req, res) => {
+    const parsed = ministryAnnouncementInput.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid announcement details" });
+    const input = parsed.data;
+    const startsAt = input.startsAt ? new Date(input.startsAt) : null;
+    const endsAt = input.endsAt ? new Date(input.endsAt) : null;
+    if (startsAt && endsAt && startsAt >= endsAt) return res.status(400).json({ message: "End must follow start" });
+    try {
+      const [created] = await db.insert(ministryAnnouncements).values({
+        title: input.title, description: input.description, category: input.category,
+        destinationUrl: input.destinationUrl, buttonLabel: input.buttonLabel,
+        isPublished: input.isPublished, startsAt, endsAt,
+      }).returning();
+      res.status(201).json(created);
+    } catch { res.status(503).json({ message: "Announcements are not available yet" }); }
+  });
+  app.patch("/api/admin/ministry-announcements/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id < 1) return res.status(400).json({ message: "Invalid ID" });
+    const parsed = ministryAnnouncementInput.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid announcement details" });
+    const input = parsed.data;
+    try {
+      const result = await db.transaction(async tx => {
+        const [current] = await tx.select().from(ministryAnnouncements)
+          .where(eq(ministryAnnouncements.id, id)).for("update");
+        if (!current) return { status: 404, body: { message: "Announcement not found" } };
+
+        const { startsAt, endsAt, ...fields } = input;
+        const start = startsAt === undefined ? current.startsAt : startsAt ? new Date(startsAt) : null;
+        const end = endsAt === undefined ? current.endsAt : endsAt ? new Date(endsAt) : null;
+        if (start && end && start >= end) return { status: 400, body: { message: "End must follow start" } };
+
+        const [updated] = await tx.update(ministryAnnouncements)
+          .set({ ...fields, startsAt: start, endsAt: end })
+          .where(eq(ministryAnnouncements.id, id)).returning();
+        return { status: 200, body: updated };
+      });
+      res.status(result.status).json(result.body);
+    } catch { res.status(503).json({ message: "Announcements are not available yet" }); }
+  });
+
+  // Verified email access for existing guest prayer and counseling requests.
+  app.post("/api/prayer-access/send-code", startPrayerEmailVerification);
+  app.post("/api/prayer-access/verify-code", confirmPrayerEmailVerification);
+
   // Prayer Request Routes
-  app.post(api.prayerRequests.create.path, async (req, res) => {
+  app.post(api.prayerRequests.create.path, parsePrayerSubmission, async (req, res) => {
     try {
       const input = api.prayerRequests.create.input.parse(req.body);
       
@@ -860,14 +928,21 @@ export async function registerRoutes(
         }
       }
 
+      if (input.discipleshipOptIn && (!input.email || !z.string().email().safeParse(input.email).success)) {
+        return res.status(400).json({ message: "A valid email is required for discipleship follow-up", field: "email" });
+      }
+
       // Ensure smsEnabled is false if no valid phone number
       const sanitizedInput = {
         ...input,
         smsEnabled: input.smsEnabled && !!input.phoneNumber && isValidE164PhoneNumber(input.phoneNumber),
-        ...(firebaseUid ? { firebaseUid } : {}),
+        privacy: input.discipleshipOptIn ? "private" : input.privacy,
+        discipleshipFollowUpStatus: input.discipleshipOptIn ? "requested" : "not_requested",
+        firebaseUid,
       };
       
-      const prayerRequest = await storage.createPrayerRequest(sanitizedInput);
+      const prayerRequest = await storage.createPrayerRequest(sanitizedInput, res.locals.prayerFiles as PrayerFile[] | undefined);
+      rememberSubmittedPrayer(req, prayerRequest.id);
       try {
         const template = await storage.getAutoReplyTemplate(prayerRequest.priority);
         if (template) {
@@ -876,6 +951,8 @@ export async function registerRoutes(
         }
       } catch (error) { console.error("Could not save the automated prayer encouragement:", error); }
       res.status(201).json(prayerRequest);
+      // Alert contains no counseling text, sender details or sensitive category.
+      void sendNewCounselingAdminAlert(prayerRequest.id, prayerRequest.priority).catch(() => undefined);
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({
@@ -883,8 +960,31 @@ export async function registerRoutes(
           field: err.errors[0].path.join("."),
         });
       }
-      throw err;
+      console.error("[Prayer] Request could not be saved");
+      res.status(503).json({ message: "The prayer request could not be saved. Please try again." });
     }
+  });
+
+  // Admin-managed discipleship follow-up; never editable through a public request endpoint.
+  app.patch("/api/prayer-requests/:id/discipleship", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id < 1) return res.status(400).json({ message: "Invalid ID" });
+    const status = z.enum(DISCIPLESHIP_STAGES).safeParse(req.body?.status);
+    if (!status.success) return res.status(400).json({ message: "Invalid follow-up status" });
+    const request = await storage.getPrayerRequest(id);
+    if (!request) return res.status(404).json({ message: "Request not found" });
+    if (!request.discipleshipOptIn) return res.status(409).json({ message: "Subscriber did not opt in" });
+    if (request.discipleshipFollowUpStatus === status.data) return res.json(request);
+    if (!DISCIPLESHIP_NEXT_STAGES[request.discipleshipFollowUpStatus]?.includes(status.data)) {
+      return res.status(409).json({ message: "This follow-up stage cannot be selected yet" });
+    }
+    const [updated] = await db.update(prayerRequests).set({ discipleshipFollowUpStatus: status.data }).where(and(
+      eq(prayerRequests.id, id),
+      eq(prayerRequests.discipleshipOptIn, true),
+      eq(prayerRequests.discipleshipFollowUpStatus, request.discipleshipFollowUpStatus),
+    )).returning();
+    if (!updated) return res.status(409).json({ message: "The follow-up status changed. Refresh and try again." });
+    res.json(updated);
   });
 
   // Prayer request list (Admin only)
@@ -913,6 +1013,7 @@ export async function registerRoutes(
     if (!request) {
       return res.status(404).json({ message: "Prayer request not found" });
     }
+    if (!isPrayerOwner(req, request)) return res.status(403).json({ message: "Verified access required" });
     res.json(request);
   });
 
@@ -949,23 +1050,15 @@ export async function registerRoutes(
     }
   });
 
-  // Get thread messages (accessible to admin and users who own the request via email query param)
+  // Get thread messages for administrators and verified request owners
   app.get(api.prayerRequests.getThread.path, async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID" });
     }
 
-    if (!req.session?.isAdmin) {
-      const email = req.query.email as string;
-      if (!email) {
-        return res.status(401).json({ message: "Email required to view conversation" });
-      }
-      const request = await storage.getPrayerRequest(id);
-      if (!request || request.email?.toLowerCase() !== email.toLowerCase()) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-    }
+    const request = await storage.getPrayerRequest(id);
+    if (!request || !isPrayerOwner(req, request)) return res.status(403).json({ message: "Verified access required" });
 
     const messages = await storage.getThreadMessages(id);
     res.json(messages);
@@ -980,10 +1073,10 @@ export async function registerRoutes(
       }
       const { message, senderType } = req.body;
       
-      // Only admins can send as "admin"
-      if (senderType === "admin" && !req.session?.isAdmin) {
-        return res.status(401).json({ message: "Unauthorized: Admin access required" });
-      }
+      if (typeof message !== "string" || !message.trim() || message.length > 10000 || !["admin", "user"].includes(senderType)) return res.status(400).json({ message: "Invalid message" });
+      if (senderType === "admin" && !req.session?.isAdmin) return res.status(403).json({ message: "Admin access required" });
+      const ownerRequest = await storage.getPrayerRequest(id);
+      if (!ownerRequest || (senderType !== "admin" && !isPrayerOwner(req, ownerRequest))) return res.status(403).json({ message: "Verified access required" });
       
       const threadMessage = await storage.createThreadMessage({
         requestId: id,
@@ -1031,10 +1124,8 @@ export async function registerRoutes(
 
   // User-facing: Get prayer requests by email
   app.get("/api/my-prayer-requests", async (req, res) => {
-    const email = req.query.email as string;
-    if (!email || !email.includes("@")) {
-      return res.status(400).json({ message: "Valid email is required" });
-    }
+    const email = req.query.email;
+    if (typeof email !== "string" || !isVerifiedPrayerEmail(req, email)) return res.status(403).json({ message: "Verify your email to view requests" });
     try {
       const requests = await storage.getPrayerRequestsByEmail(email);
       const enriched = await Promise.all(
@@ -1059,13 +1150,9 @@ export async function registerRoutes(
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID" });
     }
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ message: "Email is required" });
-    }
     try {
       const request = await storage.getPrayerRequest(id);
-      if (!request || request.email?.toLowerCase() !== email.toLowerCase()) {
+      if (!request || !isPrayerOwner(req, request)) {
         return res.status(403).json({ message: "Access denied" });
       }
       const markedCount = await storage.markAdminMessagesRead(id);
@@ -1227,64 +1314,50 @@ export async function registerRoutes(
   // Object Storage Routes
   registerObjectStorageRoutes(app);
 
-  // Prayer Attachment Routes (accessible to admin and users who own the request)
+  // Resolve files through an authorized download route, including historical uploads.
   app.get("/api/prayer-requests/:id/attachments", async (req, res) => {
     const id = Number(req.params.id);
-    if (isNaN(id)) {
+    if (!Number.isSafeInteger(id) || id < 1) return res.status(400).json({ message: "Invalid ID" });
+
+    try {
+      const request = await storage.getPrayerRequest(id);
+      if (!request || !isPrayerOwner(req, request)) return res.status(403).json({ message: "Verified access required" });
+
+      const attachments = await storage.getAttachmentsForRequest(id);
+      res.set("Cache-Control", "private, no-store").json(attachments.map(attachment => ({
+        ...attachment,
+        objectPath: `/api/prayer-requests/${id}/attachments/${attachment.id}/download`,
+      })));
+    } catch {
+      res.status(503).json({ message: "Could not load attachments" });
+    }
+  });
+
+  app.get("/api/prayer-requests/:id/attachments/:attachmentId/download", async (req, res) => {
+    const requestId = Number(req.params.id);
+    const attachmentId = Number(req.params.attachmentId);
+    if (!Number.isSafeInteger(requestId) || requestId < 1 || !Number.isSafeInteger(attachmentId) || attachmentId < 1) {
       return res.status(400).json({ message: "Invalid ID" });
     }
 
-    if (!req.session?.isAdmin) {
-      const email = req.query.email as string;
-      if (!email) {
-        return res.status(401).json({ message: "Email required to view attachments" });
-      }
-      const request = await storage.getPrayerRequest(id);
-      if (!request || request.email?.toLowerCase() !== email.toLowerCase()) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-    }
-
-    const attachments = await storage.getAttachmentsForRequest(id);
-    res.json(attachments);
-  });
-
-  app.post("/api/prayer-requests/:id/attachments", async (req, res) => {
     try {
-      const requestId = Number(req.params.id);
-      if (isNaN(requestId)) {
-        return res.status(400).json({ message: "Invalid ID" });
-      }
-      const { fileName, fileSize, contentType, objectPath } = req.body;
-      
-      if (!fileName || !fileSize || !contentType || !objectPath) {
-        return res.status(400).json({ message: "Missing required fields" });
-      }
-      
-      // Validate file size (5MB limit)
-      const MAX_FILE_SIZE = 5 * 1024 * 1024;
-      if (fileSize > MAX_FILE_SIZE) {
-        return res.status(400).json({ message: "File size exceeds 5MB limit" });
-      }
-      
-      // Validate file type
-      const ALLOWED_TYPES = ["image/jpeg", "image/png", "application/pdf"];
-      if (!ALLOWED_TYPES.includes(contentType)) {
-        return res.status(400).json({ message: "Invalid file type. Allowed: jpg, png, pdf" });
-      }
-      
-      const attachment = await storage.createPrayerAttachment({
-        requestId,
-        fileName,
-        fileSize,
-        contentType,
-        objectPath,
-      });
-      
-      res.status(201).json(attachment);
-    } catch (err) {
-      console.error("Error creating attachment:", err);
-      res.status(500).json({ message: "Failed to save attachment" });
+      const request = await storage.getPrayerRequest(requestId);
+      if (!request || !isPrayerOwner(req, request)) return res.status(403).json({ message: "Verified access required" });
+
+      const [attachment] = await db.select({
+        fileName: prayerAttachments.fileName,
+        objectPath: prayerAttachments.objectPath,
+        bytes: prayerAttachmentFiles.bytes,
+      }).from(prayerAttachments)
+        .leftJoin(prayerAttachmentFiles, eq(prayerAttachmentFiles.attachmentId, prayerAttachments.id))
+        .where(and(eq(prayerAttachments.id, attachmentId), eq(prayerAttachments.requestId, requestId)));
+      if (!attachment) return res.status(404).json({ message: "Attachment not found" });
+
+      const bytes = attachment.bytes ?? await readLegacyPrayerAttachment(attachment.objectPath);
+      res.attachment(attachment.fileName).type("application/octet-stream")
+        .set("Cache-Control", "private, no-store").set("X-Content-Type-Options", "nosniff").send(bytes);
+    } catch {
+      res.status(503).json({ message: "Could not download the attachment" });
     }
   });
 
@@ -2471,6 +2544,8 @@ export async function registerRoutes(
     const id = Number(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
     try {
+      const request = await storage.getPrayerRequest(id);
+      if (!request || !isPrayerOwner(req, request)) return res.status(403).json({ message: "Verified access required" });
       const followUps = await storage.getFollowUpsForRequest(id);
       res.json(followUps);
     } catch (err) {

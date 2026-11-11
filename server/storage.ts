@@ -6,6 +6,7 @@ import {
   threadMessages,
   autoReplyTemplates,
   prayerAttachments,
+  prayerAttachmentFiles,
   supportTickets,
   contactMessages,
   generalInquiries,
@@ -72,7 +73,6 @@ import {
   type AutoReplyTemplate,
   type InsertAutoReplyTemplate,
   type PrayerAttachment,
-  type InsertPrayerAttachment,
   type SupportTicket,
   type InsertSupportTicket,
   type ContactMessage,
@@ -215,6 +215,7 @@ import {
   type YoutubeConnection,
   type YoutubeSongUpload,
 } from "@shared/schema";
+import type { PrayerFile } from "./prayer-attachments";
 import { eq, desc, asc, and, isNull, or, ilike, lte, notInArray, inArray, sql, gte, count, countDistinct } from "drizzle-orm";
 
 export interface ChurchDashboardStats {
@@ -250,7 +251,7 @@ export interface IStorage {
   // Prayer Requests
   getPrayerRequests(): Promise<PrayerRequest[]>;
   getPrayerRequest(id: number): Promise<PrayerRequest | undefined>;
-  createPrayerRequest(request: InsertPrayerRequest): Promise<PrayerRequest>;
+  createPrayerRequest(request: InsertPrayerRequest, files?: PrayerFile[]): Promise<PrayerRequest>;
   markPrayerRequestRead(id: number): Promise<PrayerRequest>;
   
   // Prayer Replies
@@ -283,7 +284,6 @@ export interface IStorage {
   
   // Prayer Attachments
   getAttachmentsForRequest(requestId: number): Promise<PrayerAttachment[]>;
-  createPrayerAttachment(attachment: InsertPrayerAttachment): Promise<PrayerAttachment>;
   
   // Support Tickets
   getSupportTickets(): Promise<SupportTicket[]>;
@@ -792,12 +792,25 @@ export class DatabaseStorage implements IStorage {
     return request;
   }
 
-  async createPrayerRequest(request: InsertPrayerRequest): Promise<PrayerRequest> {
-    const [created] = await db
-      .insert(prayerRequests)
-      .values(request)
-      .returning();
-    return created;
+  async createPrayerRequest(request: InsertPrayerRequest, files: PrayerFile[] = []): Promise<PrayerRequest> {
+    if (!files.length) {
+      const [created] = await db.insert(prayerRequests).values(request).returning();
+      return created;
+    }
+    return db.transaction(async tx => {
+      const [created] = await tx.insert(prayerRequests).values(request).returning();
+      for (const file of files) {
+        const [attachment] = await tx.insert(prayerAttachments).values({
+          requestId: created.id,
+          fileName: file.fileName,
+          fileSize: file.bytes.length,
+          contentType: file.contentType,
+          objectPath: "private",
+        }).returning({ id: prayerAttachments.id });
+        await tx.insert(prayerAttachmentFiles).values({ attachmentId: attachment.id, bytes: file.bytes });
+      }
+      return created;
+    });
   }
 
   async markPrayerRequestRead(id: number): Promise<PrayerRequest> {
@@ -862,7 +875,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(prayerRequests)
-      .where(ilike(prayerRequests.email, email))
+      .where(eq(sql<string>`lower(btrim(${prayerRequests.email}))`, email.trim().toLowerCase()))
       .orderBy(desc(prayerRequests.createdAt));
   }
 
@@ -964,14 +977,6 @@ export class DatabaseStorage implements IStorage {
       .from(prayerAttachments)
       .where(eq(prayerAttachments.requestId, requestId))
       .orderBy(prayerAttachments.createdAt);
-  }
-
-  async createPrayerAttachment(attachment: InsertPrayerAttachment): Promise<PrayerAttachment> {
-    const [created] = await db
-      .insert(prayerAttachments)
-      .values(attachment)
-      .returning();
-    return created;
   }
 
   // Support Tickets

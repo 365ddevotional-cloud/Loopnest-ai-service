@@ -5,6 +5,7 @@ import { MinistryLogoPicker } from "@/components/MinistryLogoPicker";
 import { resolveUploadLogo } from "@/lib/ministry-logo";
 import MusicPricingAdmin from "@/components/MusicPricingAdmin";
 import { FormattedPrayerMessage } from "@/components/FormattedPrayerMessage";
+import { MinistryAnnouncementsAdmin } from "@/components/MinistryAnnouncementsAdmin";
 import { pastePrayerReply } from "@/lib/prayer-reply-paste";
 import { CreateDevotionalForm } from "@/components/CreateDevotionalForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +26,7 @@ import { useState, useEffect, useRef, Component, type FormEvent } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { format, parseISO } from "date-fns";
 import { useLocation } from "wouter";
+import { DISCIPLESHIP_NEXT_STAGES } from "@shared/schema";
 import type { PrayerRequest, ThreadMessage, PrayerReply, PrayerAttachment, Devotional, SundaySchoolLesson, InboxThread, InboxMessage, Song, SongTestimony, GivingMethod, DonationConfirmation, SongCollection } from "@shared/schema";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -53,6 +55,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   guidance: "Guidance",
   family: "Family",
   salvation: "Salvation",
+  spiritual_growth: "Spiritual Growth",
+  habit_recovery: "Habit Recovery",
   other: "Other",
 };
 
@@ -64,6 +68,8 @@ const CATEGORY_OPTIONS = [
   { value: "guidance", label: "Guidance" },
   { value: "family", label: "Family" },
   { value: "salvation", label: "Salvation" },
+  { value: "spiritual_growth", label: "Spiritual Growth" },
+  { value: "habit_recovery", label: "Habit Recovery" },
   { value: "other", label: "Other" },
 ];
 
@@ -1176,6 +1182,16 @@ function PrayerInbox() {
     },
   });
 
+  const updateDiscipleshipMutation = useMutation({
+    mutationFn: async ({ requestId, status }: { requestId: number; status: string }) => apiRequest("PATCH", `/api/prayer-requests/${requestId}/discipleship`, { status }),
+    onSuccess: async (response, { requestId }) => {
+      const updated: PrayerRequest = await response.json();
+      setSelectedRequest(current => current?.id === requestId ? updated : current);
+      await queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests"] });
+    },
+    onError: () => toast({ title: "Could not update follow-up", description: "Refresh the request and try again.", variant: "destructive" }),
+  });
+
   const filteredRequests = requests.filter((r) => {
     const query = searchQuery.toLowerCase().trim();
     const matchesSearch = !query || 
@@ -1192,6 +1208,7 @@ function PrayerInbox() {
     if (filter === "answered") return r.status === "answered";
     if (filter === "urgent") return r.priority?.includes("urgent");
     if (filter === "counseling") return r.priority?.includes("counseling");
+    if (filter === "discipleship") return r.discipleshipOptIn;
     if (filter === "anonymous") return r.isAnonymous;
     if (CATEGORY_LABELS[filter]) return r.category === filter;
     return true;
@@ -1256,6 +1273,7 @@ function PrayerInbox() {
               <SelectItem value="answered">Answered</SelectItem>
               <SelectItem value="urgent">Urgent Only</SelectItem>
               <SelectItem value="counseling">Counseling Only</SelectItem>
+              <SelectItem value="discipleship">Discipleship Follow-up Requested</SelectItem>
               <SelectItem value="anonymous">Anonymous</SelectItem>
               <SelectItem value="healing">Category: Healing</SelectItem>
               <SelectItem value="marriage">Category: Marriage</SelectItem>
@@ -1264,6 +1282,8 @@ function PrayerInbox() {
               <SelectItem value="guidance">Category: Guidance</SelectItem>
               <SelectItem value="family">Category: Family</SelectItem>
               <SelectItem value="salvation">Category: Salvation</SelectItem>
+              <SelectItem value="spiritual_growth">Category: Spiritual Growth</SelectItem>
+              <SelectItem value="habit_recovery">Category: Habit Recovery</SelectItem>
               <SelectItem value="other">Category: Other</SelectItem>
             </SelectContent>
           </Select>
@@ -1396,6 +1416,18 @@ function PrayerInbox() {
               </div>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
+              {selectedRequest.discipleshipOptIn && (
+                <div className="rounded-lg border p-3 space-y-2">
+                  <p className="font-medium">Discipleship follow-up requested (subscriber opted in)</p>
+                  <Select disabled={updateDiscipleshipMutation.isPending} value={selectedRequest.discipleshipFollowUpStatus} onValueChange={(status) => updateDiscipleshipMutation.mutate({ requestId: selectedRequest.id, status })}>
+                    <SelectTrigger><SelectValue placeholder="Follow-up status" /></SelectTrigger>
+                    <SelectContent>
+                      {[selectedRequest.discipleshipFollowUpStatus, ...(DISCIPLESHIP_NEXT_STAGES[selectedRequest.discipleshipFollowUpStatus] ?? [])].map(status => <SelectItem key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Contact only through the subscriber-provided email. Do not publish counseling details.</p>
+                </div>
+              )}
               <div className="bg-muted/30 p-4 rounded-lg">
                 <p className="text-foreground whitespace-pre-wrap">{selectedRequest.message}</p>
               </div>
@@ -2851,6 +2883,7 @@ export default function Admin() {
         </TabsList>
 
         <TabsContent value="inbox">
+          <MinistryAnnouncementsAdmin />
           <Card className="border-primary/10 shadow-lg shadow-primary/5">
             <CardHeader className="bg-muted/30 border-b border-border">
               <CardTitle className="font-serif text-2xl text-primary flex items-center gap-2">
