@@ -20,7 +20,8 @@ try {
   const transcode = spawnSync("ffmpeg", [
     "-hide_banner", "-loglevel", "error", "-nostdin", "-protocol_whitelist", "file,pipe",
     "-ss", start, "-i", master, "-map", "0:a:0", "-t", "30", "-map_metadata", "-1",
-    "-af", "afade=t=in:d=0.15,afade=t=out:st=29.4:d=0.6", "-c:a", "libmp3lame", "-b:a", "64k", clip,
+    "-af", "afade=t=in:d=0.15,afade=t=out:st=29.4:d=0.6",
+    "-ar", "48000", "-c:a", "libmp3lame", "-q:a", "2", clip,
   ], { stdio: "inherit" });
   if (transcode.status !== 0) throw new Error("Could not create a clip from this local audio file.");
 
@@ -29,9 +30,10 @@ try {
   ], { encoding: "utf8" });
   if (check.status !== 0) throw new Error("Could not verify the clip.");
   const { duration, size } = JSON.parse(check.stdout).format;
-  if (Number(duration) < 29.9 || Number(duration) > 30.15 || Number(size) > 260_000) {
+  if (Number(duration) < 29.9 || Number(duration) > 30.15) {
     throw new Error("Choose a start with at least 30 seconds remaining in the recording.");
   }
+  if (Number(size) > 1_250_000) throw new Error("The 30-second clip exceeds the MP3 size limit.");
 
   const directory = join(root, "client/src/assets/shop-previews");
   await mkdir(directory, { recursive: true });
