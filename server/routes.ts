@@ -7,6 +7,8 @@ import { ensureAudienceAnalyticsTables, recordBrowserVisit, recordAudienceSongEv
 import { ensureMusicOrdersTable, musicOrderStorage } from "./music-commerce-storage";
 import { getMusicDownloadUrl } from "./replit_integrations/object_storage/routes";
 import { getDownloadAccess } from "./download-access";
+import { getSpiritTonePlaybackDecision, type PreviewManifestEntry } from "../shared/spirit-tone-playback-policy";
+import spiritTonePreviewManifest from "./spirit-tone-preview-manifest.json";
 import { defaultMusicPricing, musicPricingSchema } from "@shared/music-pricing";
 import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
@@ -1689,6 +1691,25 @@ export async function registerRoutes(
       if (!r2Base) {
         console.error("R2_PUBLIC_URL is not configured");
         return res.status(500).json({ message: "Media storage is not configured" });
+      }
+
+      const featured = process.env.SPIRIT_TONE_ARCHIVED_PREVIEW_ONLY === "true"
+        ? await storage.getFeaturedSong() : undefined;
+      const decision = getSpiritTonePlaybackDecision({
+        enforcementRequested: process.env.SPIRIT_TONE_ARCHIVED_PREVIEW_ONLY === "true",
+        mastersPrivateConfirmed: process.env.SPIRIT_TONE_MASTERS_PRIVATE_CONFIRMED === "true",
+        isFeatured: featured?.id === song.id,
+        songId: song.id,
+        preview: (spiritTonePreviewManifest as PreviewManifestEntry[]).find(p => p.songId === song.id),
+      });
+      res.setHeader("Cache-Control", "private, no-store");
+      if (decision.kind === "unavailable") {
+        // Never silently redirect an older listener to a full original when
+        // an enforced preview is absent or source storage is not private.
+        return res.status(503).json({ message: "This song's verified preview is not ready yet." });
+      }
+      if (decision.kind === "preview") {
+        return res.redirect(302, `${r2Base.replace(/\\/+$/, "")}/${decision.objectKey}`);
       }
 
       const objectPath = song.audioUrl
