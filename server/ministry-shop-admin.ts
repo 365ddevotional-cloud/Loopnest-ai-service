@@ -58,7 +58,7 @@ export function registerMinistryShopAdmin(
       }
       const shopSingles = catalog.filter(item => item.kind === "Music" && !item.replacedBy && item.id !== "x29Tw");
       const normalizeTitle = (title: string) => title.normalize("NFKC").toLocaleLowerCase("en")
-        .replace(/[\\p{P}\\p{Z}]+/gu, " ").trim().replace(/\\s+/g, " ");
+        .replace(/[\p{P}\p{Z}]+/gu, " ").trim().replace(/\s+/g, " ");
       const productMatches = new Map<string, {id: string; title: string}[]>();
       for (const product of shopSingles) {
         const normalized = normalizeTitle(product.title);
