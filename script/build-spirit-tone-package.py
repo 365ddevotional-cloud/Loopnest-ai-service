@@ -74,8 +74,8 @@ def build(song_file, audio_file, art_file, destination):
         signature = image_file.read(12)
     extension = art.suffix.lower()
     if not (
-        (extension in {".jpg", ".jpeg"} and signature.startswith(b"\\xff\\xd8\\xff")) or
-        (extension == ".png" and signature.startswith(b"\\x89PNG\\r\\n\\x1a\\n")) or
+        (extension in {".jpg", ".jpeg"} and signature.startswith(b"\xff\xd8\xff")) or
+        (extension == ".png" and signature.startswith(b"\x89PNG\r\n\x1a\n")) or
         (extension == ".webp" and signature.startswith(b"RIFF") and signature[8:12] == b"WEBP")
     ):
         raise ValueError("Original artwork file does not match its declared image type")
