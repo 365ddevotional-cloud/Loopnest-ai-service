@@ -34,6 +34,18 @@ function ProductViews({ total }: { total?: number }) {
 function ProductArtwork({ product, detail = false }: { product: (typeof catalog)[number]; detail?: boolean }) {
   const Icon = icons[product.kind as keyof typeof icons];
   const [failed, setFailed] = useState(false);
+  const slug = "spiritToneSlug" in product && typeof product.spiritToneSlug === "string" ? product.spiritToneSlug : null;
+  const { data: sourceSong } = useQuery<SpiritToneSongDetails>({
+    queryKey: ["spirit-tone-shop-release", slug],
+    queryFn: async ({ signal }) => {
+      const response = await fetch(`/api/songs/by-slug/${encodeURIComponent(slug!)}`, { signal });
+      if (!response.ok) throw new Error("Original artwork unavailable");
+      return response.json();
+    },
+    enabled: detail && !!slug,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
   const detailAspect = product.kind === "Book" ? "aspect-[2/3]" : "aspect-square";
   const frame = detail
     ? `w-full max-w-md self-start justify-self-center rounded-xl ${detailAspect}`
@@ -43,7 +55,7 @@ function ProductArtwork({ product, detail = false }: { product: (typeof catalog)
     <div className={`flex items-center justify-center overflow-hidden bg-muted/60 text-muted-foreground ${frame}`}>
       {!failed ? (
         <img
-          src={`/shop-art/${product.id}.webp`}
+          src={detail && slug && sourceSong?.coverImageUrl ? sourceSong.coverImageUrl : `/shop-art/${product.id}.webp`}
           alt={detail ? `${product.title} artwork` : ""}
           loading={detail ? "eager" : "lazy"}
           decoding="async"
@@ -153,6 +165,7 @@ type SpiritToneSongDetails = {
   composer?: string | null; producer?: string | null; lyricist?: string | null;
   labelName?: string | null; genre?: string | null; language?: string | null;
   songType?: string | null; scriptureReference?: string | null;
+  coverImageUrl?: string | null;
   scriptureText?: string | null; copyrightNotice?: string | null;
   releaseYear?: number | null; lyrics?: string | null;
 };
