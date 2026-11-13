@@ -14,7 +14,18 @@ type ShopOrder = {
   reference: string; productId: string; amount: number;
   currency: string; status: string; createdAt: string;
 };
+type SpiritToneReconciliation = {
+  totals: { allSongs: number; activeSongs: number; archivedSongs: number; possibleMatches: number; ambiguous: number; unmatched: number };
+  songs: Array<{
+    songId: number; slug: string; title: string; language: string | null; songType: string | null;
+    active: boolean; audioReady: boolean; lyricsReady: boolean; artworkReady: boolean;
+    featuredWeekStart: string | null; featuredWeekEnd: string | null;
+    matchStatus: "candidate" | "ambiguous" | "unmatched";
+    candidates: Array<{ id: string; title: string }>;
+  }>;
+};
 type ShopDashboard = {
+  reconciliation?: SpiritToneReconciliation;
   readiness: {
     checkoutConfigured: boolean; storageConfigured: boolean;
     stripeConfigured: boolean; webhookConfigured: boolean; countries: string[];
@@ -80,6 +91,66 @@ export default function MinistryShopAdmin() {
             ))}
           </dl>
           <p className="text-sm text-muted-foreground">Configured checkout countries · {data.readiness.countries.join(", ") || "None"}</p>
+
+          {data.reconciliation && (
+            <section className="space-y-3 rounded-xl border p-3 sm:p-4" aria-labelledby="spirit-tone-reconciliation">
+              <div>
+                <h3 id="spirit-tone-reconciliation" className="font-semibold">SpiritTone Records → Shop reconciliation</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Read-only database inventory, including archived recordings. Exact titles are possible matches, never automatically merged.
+                  No songs are published or deleted by this report.
+                </p>
+              </div>
+              <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+                {([
+                  ["All records", data.reconciliation.totals.allSongs],
+                  ["Active", data.reconciliation.totals.activeSongs],
+                  ["Archived", data.reconciliation.totals.archivedSongs],
+                  ["Possible matches", data.reconciliation.totals.possibleMatches],
+                  ["Ambiguous", data.reconciliation.totals.ambiguous],
+                  ["Unmatched titles", data.reconciliation.totals.unmatched],
+                ] as const).map(([label, value]) => (
+                  <div key={label} className="rounded-lg bg-muted/40 p-2">
+                    <dt className="text-muted-foreground">{label}</dt>
+                    <dd className="text-lg font-semibold tabular-nums">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <details>
+                <summary className="cursor-pointer font-semibold">Inspect individual recordings and required assets</summary>
+                <div className="mt-2 max-h-96 overflow-auto rounded-lg border">
+                  <table className="w-full text-left text-xs sm:text-sm">
+                    <thead className="sticky top-0 bg-muted">
+                      <tr>{["SpiritTone recording", "Status", "Files", "Shop candidates"].map(label => <th key={label} scope="col" className="p-2">{label}</th>)}</tr>
+                    </thead>
+                    <tbody>
+                      {data.reconciliation.songs.map(song => (
+                        <tr key={song.songId} className="border-t align-top">
+                          <th scope="row" className="min-w-48 p-2 font-medium">
+                            {song.title}
+                            <span className="block break-all font-normal text-muted-foreground">{song.slug} · {song.language || "Language unspecified"} · {song.active ? "Active" : "Archived"}</span>
+                          </th>
+                          <td className="p-2 capitalize">{song.matchStatus === "candidate" ? "Review match" : song.matchStatus}</td>
+                          <td className="min-w-28 p-2">
+                            <span className="block">Audio: {song.audioReady ? "Recorded" : "Missing"}</span>
+                            <span className="block">Lyrics: {song.lyricsReady ? "Recorded" : "Missing"}</span>
+                            <span className="block">Artwork: {song.artworkReady ? "Recorded" : "Missing"}</span>
+                          </td>
+                          <td className="min-w-36 p-2">
+                            {song.candidates.length
+                              ? song.candidates.map(candidate => (
+                                <Link key={candidate.id} href={`/shop/${candidate.id}`} className="block text-primary underline">{candidate.title}</Link>
+                              ))
+                              : "Needs review / new listing"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            </section>
+          )}
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
