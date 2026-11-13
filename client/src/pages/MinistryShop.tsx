@@ -1,4 +1,5 @@
 import { isAndroidReader } from "@/lib/android-reader";
+import { songLanguageCategories } from "@shared/song-languages";
 import { useEffect, useRef, useState } from "react";
 import { Link, useRoute } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -21,6 +22,26 @@ const filters = ["All", "Book", "Music", "Membership"] as const;
 const icons = { Book: BookOpen, Music: Headphones, Membership: Sparkles };
 
 const viewKey = ["/api/ministry-shop/views"] as const;
+type ShopProduct = (typeof catalog)[number];
+type ShopMusicMetadata = { language: string; genre: string; songType: string };
+type ShopArtworkResponse = {
+  artwork: Record<string, string>;
+  metadata: Record<string, ShopMusicMetadata>;
+};
+
+// Keep both music sources visible instead of putting all newly added weekly
+// songs after the existing Payhip catalog. Stable order avoids layout jumping.
+function mixMusicSources(products: ShopProduct[]): ShopProduct[] {
+  const older = products.filter(product => !("spiritToneSlug" in product));
+  const weekly = products.filter(product => "spiritToneSlug" in product);
+  const mixed: ShopProduct[] = [];
+  for (let i = 0; i < Math.max(older.length, weekly.length); i++) {
+    if (i < older.length) mixed.push(older[i]);
+    if (i < weekly.length) mixed.push(weekly[i]);
+  }
+  return mixed;
+}
+
 
 function ProductViews({ total }: { total?: number }) {
   if (total === undefined) return null;
@@ -388,7 +409,7 @@ function ShopCatalog() {
   const { data: prices, locationResolved, retryDeviceLocation } = useShopPrices();
   const { user, emailVerified, getIdToken } = useUser();
   const canViewVisits = emailVerified && isMinistryShopAdminEmail(user?.email);
-  const { data: spiritToneArt } = useQuery<{ artwork: Record<string, string> }>({
+  const { data: spiritToneArt } = useQuery<ShopArtworkResponse>({
     queryKey: ["/api/ministry-shop/spirit-tone-artwork"],
     queryFn: async ({ signal }) => {
       const response = await fetch("/api/ministry-shop/spirit-tone-artwork", { signal });
@@ -418,9 +439,30 @@ function ShopCatalog() {
   const views = canViewVisits ? visitCounts : undefined;
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
   const [query, setQuery] = useState("");
+  const [musicLanguage, setMusicLanguage] = useState("all");
+  const [musicGenre, setMusicGenre] = useState("all");
+  const [musicOrder, setMusicOrder] = useState<"mixed" | "az">("mixed");
   const normalizedQuery = query.trim().toLocaleLowerCase();
-  const products = catalog.filter(item => !item.replacedBy && (filter === "All" || item.kind === filter) &&
-    item.title.toLocaleLowerCase().includes(normalizedQuery));
+  const musicMetadata = spiritToneArt?.metadata ?? {};
+  const musicLanguageFor = (p: ShopProduct) =>
+    "spiritToneSlug" in p ? musicMetadata[p.id]?.language || "Unspecified" : "Unspecified";
+  const musicGenreFor = (p: ShopProduct) =>
+    "spiritToneSlug" in p ? musicMetadata[p.id]?.genre || "Unspecified" : "Unspecified";
+  const musicProducts = catalog.filter(p => p.kind === "Music" && !p.replacedBy);
+  const languages = Array.from(new Set(musicProducts.flatMap(p => songLanguageCategories(musicLanguageFor(p))))).sort();
+  const genres = Array.from(new Set(musicProducts.map(musicGenreFor))).sort();
+  const eligibleProducts = catalog.filter(item => !item.replacedBy &&
+    (filter === "All" || item.kind === filter) &&
+    item.title.toLocaleLowerCase().includes(normalizedQuery) &&
+    (item.kind !== "Music" || (
+      (musicLanguage === "all" || songLanguageCategories(musicLanguageFor(item)).includes(musicLanguage)) &&
+      (musicGenre === "all" || musicGenreFor(item) === musicGenre)
+    )));
+  const nonMusic = eligibleProducts.filter(item => item.kind !== "Music");
+  const matchingMusic = eligibleProducts.filter(item => item.kind === "Music");
+  const products = [...nonMusic, ...(musicOrder === "az"
+    ? [...matchingMusic].sort((a, b) => a.title.localeCompare(b.title))
+    : mixMusicSources(matchingMusic))];
 
   if (params) return <ProductDetail id={params.productId} views={views} price={prices?.products[params.productId]} />;
 
@@ -459,6 +501,34 @@ function ShopCatalog() {
             </Button>
           ))}
         </div>
+        {(filter === "All" || filter === "Music") && (
+          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-muted/20 p-2" aria-label="Music discovery filters">
+            <label className="min-w-28 flex-1 text-xs font-semibold text-muted-foreground sm:max-w-52">
+              Song language
+              <select value={musicLanguage} onChange={event => setMusicLanguage(event.target.value)}
+                className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground">
+                <option value="all">All languages</option>
+                {languages.map(value => <option key={value} value={value}>{value}</option>)}
+              </select>
+            </label>
+            <label className="min-w-28 flex-1 text-xs font-semibold text-muted-foreground sm:max-w-52">
+              Genre
+              <select value={musicGenre} onChange={event => setMusicGenre(event.target.value)}
+                className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground">
+                <option value="all">All genres</option>
+                {genres.map(value => <option key={value} value={value}>{value}</option>)}
+              </select>
+            </label>
+            <label className="min-w-28 flex-1 text-xs font-semibold text-muted-foreground sm:max-w-52">
+              Song order
+              <select value={musicOrder} onChange={event => setMusicOrder(event.target.value as "mixed" | "az")}
+                className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground">
+                <option value="mixed">Mixed — all catalogs</option>
+                <option value="az">Song title A–Z</option>
+              </select>
+            </label>
+          </div>
+        )}
         <p aria-live="polite" className="mb-2 text-xs text-muted-foreground">
           {products.length ? `${products.length} ${products.length === 1 ? "item" : "items"}` : "No matching items. Try a different title or category."}
         </p>
