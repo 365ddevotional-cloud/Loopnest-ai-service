@@ -10,29 +10,42 @@ const productIds = new Set(catalog.map(item => item.id));
 type VerifyToken = (token: string) => Promise<{ uid: string; email?: string; email_verified?: boolean }>;
 
 export function registerMinistryShopRoutes(app: Express, verifyToken: VerifyToken) {
-  // Compact public artwork lookup; avoids downloading complete song lyrics or
-  // private media paths for all 61 cards. Source artwork is already publicly
-  // exposed by SpiritTone song pages. No audio download URLs are returned.
+  // Minimal public metadata for shop artwork + language and genre filters.
+  // Do not include source audio paths, lyrics, buyer records or private assets.
   app.get("/api/ministry-shop/spirit-tone-artwork", async (_req, res) => {
     res.set("Cache-Control", "public, max-age=180, stale-while-revalidate=300");
     try {
-      const { rows } = await db.execute<{ id: number; cover_image_url: string | null }>(sql`
-        SELECT id, cover_image_url FROM songs WHERE is_active = true
+      const { rows } = await db.execute<{
+        id: number; cover_image_url: string | null; language: string | null;
+        genre: string | null; song_type: string | null;
+      }>(sql`
+        SELECT id, cover_image_url, language, genre, song_type
+        FROM songs WHERE is_active = true
       `);
       const allowed = new Set(catalog.filter(
         item => "spiritToneSongId" in item && typeof item.spiritToneSongId === "number"
       ).map(item => item.spiritToneSongId));
       const artwork: Record<string, string> = {};
+      const metadata: Record<string, { language: string; genre: string; songType: string }> = {};
       for (const row of rows) {
-        if (!allowed.has(row.id) || !row.cover_image_url) continue;
-        const url = row.cover_image_url.trim();
-        if (url.startsWith("/") && !url.startsWith("//") || /^https:\/\//i.test(url)) {
-          artwork[`st${String(row.id).padStart(3, "0")}`] = url;
+        if (!allowed.has(row.id)) continue;
+        const key = `st${String(row.id).padStart(3, "0")}`;
+        metadata[key] = {
+          language: row.language || "Unspecified",
+          genre: row.genre || "Unspecified",
+          songType: row.song_type || "Unspecified",
+        };
+        // This specific original image already exists in the app. Do not
+        // assign this cover to the other version of God Got Me (song #2).
+        const source = row.id === 24 && !row.cover_image_url
+          ? "/music/god-got-me.jpg" : row.cover_image_url?.trim();
+        if (source && ((source.startsWith("/") && !source.startsWith("//")) || /^https:\/\//i.test(source))) {
+          artwork[key] = source;
         }
       }
-      res.json({ artwork });
+      res.json({ artwork, metadata });
     } catch {
-      res.status(503).json({ message: "SpiritTone artwork is temporarily unavailable." });
+      res.status(503).json({ message: "SpiritTone catalog metadata is temporarily unavailable." });
     }
   });
 
