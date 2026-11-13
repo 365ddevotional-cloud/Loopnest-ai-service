@@ -1709,7 +1709,7 @@ export async function registerRoutes(
         return res.status(503).json({ message: "This song's verified preview is not ready yet." });
       }
       if (decision.kind === "preview") {
-        return res.redirect(302, `${r2Base.replace(/\\/+$/, "")}/${decision.objectKey}`);
+        return res.redirect(302, `${r2Base.replace(/\/+$/, "")}/${decision.objectKey}`);
       }
 
       const objectPath = song.audioUrl
