@@ -2,6 +2,8 @@
 """Offline regression checks for buyer-ready SpiritTone ZIP packages."""
 import importlib.util
 import json
+import shutil
+import subprocess
 import tempfile
 import unittest
 import zipfile
@@ -21,6 +23,24 @@ SONG = {
 }
 
 class SpiritTonePackageTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.fixture = tempfile.TemporaryDirectory()
+        cls.master = Path(cls.fixture.name) / "genuine-stereo.mp3"
+        command = [
+            "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+            "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000:duration=46",
+            "-f", "lavfi", "-i", "sine=frequency=880:sample_rate=48000:duration=46",
+            "-filter_complex", "[0:a][1:a]amerge=inputs=2[a]",
+            "-map", "[a]", "-ac", "2", "-c:a", "libmp3lame", "-q:a", "6",
+            str(cls.master),
+        ]
+        subprocess.run(command, check=True)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.fixture.cleanup()
+
     def setUp(self):
         self.work = tempfile.TemporaryDirectory()
         self.addCleanup(self.work.cleanup)
@@ -30,8 +50,8 @@ class SpiritTonePackageTests(unittest.TestCase):
         self.art = self.root / "cover.jpg"
         self.zip = self.root / "sale.zip"
         self.song.write_text(json.dumps(SONG), encoding="utf-8")
-        self.audio.write_bytes(b"synthetic-test-audio-only")
-        self.art.write_bytes(b"synthetic-test-artwork-only")
+        shutil.copyfile(self.master, self.audio)
+        self.art.write_bytes(bytes.fromhex("FFD8FFDB") + b"fixture-cover" + bytes.fromhex("FFD9"))
 
     def test_includes_all_files_and_preserves_originals(self):
         original_audio = self.audio.read_bytes()
@@ -72,6 +92,28 @@ class SpiritTonePackageTests(unittest.TestCase):
     def test_rejects_unsafe_slug(self):
         self.song.write_text(json.dumps({**SONG, "slug": "../../other"}), encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "Slug"):
+            MODULE.build(self.song, self.audio, self.art, self.zip)
+        self.assertFalse(self.zip.exists())
+
+    def test_legacy_leading_hyphen_slug_uses_unique_song_id(self):
+        self.song.write_text(json.dumps({**SONG, "slug": "-rivers-of-living-water", "songId": 19}), encoding="utf-8")
+        MODULE.build(self.song, self.audio, self.art, self.zip)
+        with zipfile.ZipFile(self.zip) as pack:
+            self.assertTrue(all(name.startswith("st019-rivers-of-living-water/") for name in pack.namelist()))
+            manifest = json.loads(pack.read("st019-rivers-of-living-water/Package-Manifest.json"))
+            self.assertEqual(manifest["song_id"], 19)
+
+    def test_rejects_fake_stereo(self):
+        mono = self.root / "mono.mp3"
+        subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+                        "-i", str(self.audio), "-ac", "1", str(mono)], check=True)
+        with self.assertRaisesRegex(ValueError, "two-channel"):
+            MODULE.build(self.song, mono, self.art, self.zip)
+        self.assertFalse(self.zip.exists())
+
+    def test_rejects_disguised_artwork(self):
+        self.art.write_bytes(b"This is not artwork.")
+        with self.assertRaisesRegex(ValueError, "artwork"):
             MODULE.build(self.song, self.audio, self.art, self.zip)
         self.assertFalse(self.zip.exists())
 
