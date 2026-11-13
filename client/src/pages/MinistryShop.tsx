@@ -12,7 +12,7 @@ import { isMinistryShopAdminEmail } from "@shared/ministry-shop-access";
 import catalog from "@/data/ministry-shop-catalog.json";
 import bookPreviewData from "@/data/ministry-shop-book-previews.json";
 
-const bookPreviews: Record<string, { section: string; quote: string; excerpt: string; exercise: string }> = bookPreviewData;
+const bookPreviews: Record<string, { section: string; quote?: string; excerpt: string; exercise?: string }> = bookPreviewData;
 const audioPreviews = import.meta.glob<string>("/src/assets/shop-previews/*.mp3", {
   eager: true, import: "default", query: "?url",
 });
@@ -122,13 +122,12 @@ function ProductPreview({ product }: { product: (typeof catalog)[number] }) {
         <h2 className="flex items-center gap-2 text-sm font-semibold">
           <BookOpen size={16} aria-hidden="true" /> Read a sample
         </h2>
-        <blockquote className="mt-2 border-l-2 border-orange-500 pl-3 text-base font-medium">“{book.quote}”</blockquote>
+        {book.quote && <blockquote className="mt-2 border-l-2 border-orange-500 pl-3 text-base font-medium">“{book.quote}”</blockquote>}
         <details className="mt-3 text-sm leading-relaxed">
-          <summary className="min-h-8 cursor-pointer font-semibold text-primary">Read the excerpt</summary>
-          <div className="mt-2 space-y-2">
-            <p className="font-semibold">{book.section}</p>
-            <p>{book.excerpt}</p>
-            <p><strong className="mr-1">Try this.</strong> {book.exercise}</p>
+          <summary className="min-h-8 cursor-pointer font-semibold text-primary">{book.section}</summary>
+          <div className="mt-2 space-y-3">
+            {book.excerpt.split("\n\n").map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+            {book.exercise && <p><strong className="mr-1">Try this.</strong> {book.exercise}</p>}
           </div>
         </details>
       </section>
