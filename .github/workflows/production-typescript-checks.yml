@@ -26,5 +26,6 @@ jobs:
       - run: npm run test:sharing
       - name: Install FFmpeg for stereo source verification
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - run: node script/test-ministry-shop-audio-preview.mjs
       - name: Verify complete SpiritTone song packages
         run: python3 script/test-spirit-tone-package.py
