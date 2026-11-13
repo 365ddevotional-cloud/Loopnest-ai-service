@@ -14,6 +14,19 @@ const product = catalog.find(item => item.id === productId && item.kind === "Mus
 if (!product || productId === "x29Tw") throw new Error("Choose a single-track shop product ID.");
 
 const master = await realpath(source);
+// Do not turn a mono master into an apparent stereo preview. The source itself
+// must be the original stereo recording, with at least 45 seconds of audio.
+const originalProbe = spawnSync("ffprobe", [
+  "-v", "error", "-select_streams", "a:0",
+  "-show_entries", "stream=codec_name,channels:format=duration",
+  "-of", "json", master,
+], { encoding: "utf8" });
+if (originalProbe.status !== 0) throw new Error("Could not inspect the original recording.");
+const original = JSON.parse(originalProbe.stdout);
+if (!original.streams?.length || Number(original.streams[0].channels) !== 2 ||
+    Number(original.format?.duration) < 45) {
+  throw new Error("A genuine stereo master with at least 45 seconds is required.");
+}
 const work = await mkdtemp(join(tmpdir(), "ministry-shop-clip-"));
 try {
   const clip = join(work, "clip.mp3");
