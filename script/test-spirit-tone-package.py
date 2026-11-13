@@ -61,6 +61,14 @@ class SpiritTonePackageTests(unittest.TestCase):
             MODULE.build(self.song, self.audio, self.art, self.zip)
         self.assertFalse(self.zip.exists())
 
+    def test_instrumental_without_lyrics_uses_truthful_notice(self):
+        self.song.write_text(json.dumps({**SONG, "songType": "Instrumental", "lyrics": ""}), encoding="utf-8")
+        MODULE.build(self.song, self.audio, self.art, self.zip)
+        with zipfile.ZipFile(self.zip) as pack:
+            text = pack.read("test-original/Lyrics.txt").decode("utf-8")
+            self.assertIn("no sung lyrics", text)
+            self.assertNotIn("Verse one", text)
+
     def test_rejects_unsafe_slug(self):
         self.song.write_text(json.dumps({**SONG, "slug": "../../other"}), encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "Slug"):
