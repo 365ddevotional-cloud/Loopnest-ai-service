@@ -8,9 +8,7 @@
  * or alter songs, shop products, recordings, payments, or customer entitlements.
  */
 import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
 
-const root = fileURLToPath(new URL("../", import.meta.url));
 const catalog = JSON.parse(await readFile(new URL("../client/src/data/ministry-shop-catalog.json", import.meta.url), "utf8"));
 const args = process.argv.slice(2);
 if (args.length !== 2 || !["--library", "--url"].includes(args[0])) {
