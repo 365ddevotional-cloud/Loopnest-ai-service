@@ -73,6 +73,17 @@ function SongPreview({ product }: { product: (typeof catalog)[number] }) {
     return src ? [{ title, src }] : [];
   });
   const track = tracks[selected];
+  if (!track && "spiritToneSlug" in product && typeof product.spiritToneSlug === "string") {
+    return (
+      <section className="mt-4 rounded-xl border border-border bg-muted/30 p-4" aria-label="Song preview status">
+        <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold"><Headphones size={16} aria-hidden="true" /> 45-second sample being prepared</h2>
+        <p className="text-sm text-muted-foreground">The original stereo sample is not ready in the shop yet. You can listen to the existing recording in SpiritTone Records.</p>
+        <Link href={`/music/${encodeURIComponent(product.spiritToneSlug)}`} className="mt-2 inline-flex min-h-9 items-center text-sm font-semibold text-primary underline">
+          Listen in SpiritTone Records
+        </Link>
+      </section>
+    );
+  }
   if (!track) return null;
 
   return (
@@ -197,6 +208,7 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
     retry: false,
   });
   const description = descriptions?.[id];
+  const isSpiritTonePreview = !!product && "spiritToneSlug" in product && typeof product.spiritToneSlug === "string";
 
   useEffect(() => {
     if (!product || product.replacedBy) return;
@@ -251,9 +263,10 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{product.kind}</p>
                 <h1 className="mb-2 mt-1 break-words text-2xl font-bold tracking-tight text-teal-900 dark:text-teal-200 sm:text-3xl">{product.title}</h1>
                 <ProductViews total={views?.[product.id]} />
-                {price && <p className="mt-2 text-xl font-bold text-orange-800 dark:text-orange-300">{formatShopPrice(price)}</p>}
+                {!isSpiritTonePreview && price && <p className="mt-2 text-xl font-bold text-orange-800 dark:text-orange-300">{formatShopPrice(price)}</p>}
+                {isSpiritTonePreview && <p className="mt-2 text-sm font-semibold text-orange-700 dark:text-orange-300">Catalog preview · Purchase package being prepared</p>}
                 <ProductPreview key={`preview-${product.id}`} product={product} />
-                {product.kind !== "Membership" && (
+                {product.kind !== "Membership" && !isSpiritTonePreview && (
                   isAndroidReader() || product.sourcePrice
                     ? <ShopCheckout key={product.id} productId={product.id} price={price} />
                     : <p className="mt-3 text-sm font-semibold text-orange-800 dark:text-orange-300">Coming soon. Pricing and downloads are being prepared.</p>
@@ -268,7 +281,7 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
               <div className="mt-3 space-y-3 break-words text-sm leading-relaxed text-muted-foreground sm:text-base">
                 {description?.length
                   ? description.map((paragraph, index) => <p key={index}>{paragraph}</p>)
-                  : <p>{isPending ? "Loading description…" : "The description is currently unavailable."}</p>}
+                  : <p>{isSpiritTonePreview ? "Explore this SpiritTone recording and its original credits below. The downloadable package will be available after original master, artwork, and lyrics verification." : isPending ? "Loading description…" : "The description is currently unavailable."}</p>}
               </div>
             </div>
           </>
@@ -358,7 +371,9 @@ function ShopCatalog() {
                   <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{product.kind}</p>
                   <h3 title={product.title} className="mb-2 mt-0.5 line-clamp-2 break-words text-sm font-bold leading-snug text-teal-900 dark:text-teal-200 sm:text-base">{product.title}</h3>
                   <div className="mt-auto flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
-                    {price && <span className="text-sm font-bold tabular-nums text-orange-800 dark:text-orange-300">{formatShopPrice(price)}</span>}
+                    {"spiritToneSlug" in product
+                      ? <span className="text-xs font-semibold text-orange-800 dark:text-orange-300">Preview · Coming soon</span>
+                      : price && <span className="text-sm font-bold tabular-nums text-orange-800 dark:text-orange-300">{formatShopPrice(price)}</span>}
                     {!isAndroidReader() && product.requiredFileCount && !price?.ready && <span className="text-xs font-semibold text-orange-800 dark:text-orange-300">Checkout unavailable</span>}
                     <ProductViews total={views?.[product.id]} />
                   </div>
