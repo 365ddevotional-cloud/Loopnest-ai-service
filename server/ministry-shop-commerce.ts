@@ -13,6 +13,7 @@ import { musicCountryFromRequest } from "./music-location";
 import { musicRegions, readMusicPrices } from "./music-regions";
 import { ministryShopPrice, shopBundleId, supportsMinistryShopStripe } from "./ministry-shop-pricing";
 import { registerMinistryShopAdmin, type ShopAsset as Asset } from "./ministry-shop-admin";
+import { shopAssetsMatchProduct } from "../shared/ministry-shop-asset-readiness";
 
 const appTag = "365-ministry-shop-v1";
 const base = "https://365dailydevotional.com";
@@ -43,66 +44,7 @@ function issue(status: number, message: string): never {
 }
 
 function canSell(id: string, assets: Asset[]) {
-  const item = byId.get(id);
-  if (!item || item.kind === "Membership" || !assets.length) return false;
-  if (item.requiredFileCount && assets.length !== item.requiredFileCount) return false;
-  // New SpiritTone releases are only purchasable once their ONE complete
-  // ZIP file is registered in the private shop bucket. This preserves
-  // historic MP3-only purchases and all existing order asset snapshots.
-  const completeSong = item.kind === "Music" && "packageFormat" in item && item.packageFormat === "zip";
-  const type = item.kind === "Book" ? "application/pdf"
-    : (id === shopBundleId || completeSong) ? "application/zip" : "audio/mpeg";
-  if (completeSong && assets.length !== 1) return false;
-  return assets.every(asset => asset.content_type === type &&
-    new RegExp(`^ministry-shop/${id}/[a-f0-9]{64}import { isAndroidReaderRequest } from "./android-reader";
-import { createHash } from "node:crypto";
-import type { Express, Request, RequestHandler, Response } from "express";
-import Stripe from "stripe";
-import { GetObjectCommand, HeadObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { sql } from "drizzle-orm";
-import { z } from "zod";
-import catalog from "../client/src/data/ministry-shop-catalog.json";
-import { db } from "./db";
-import { paymentMatchesOrder } from "./music-commerce";
-import { musicCountryFromRequest } from "./music-location";
-import { musicRegions, readMusicPrices } from "./music-regions";
-import { ministryShopPrice, shopBundleId, supportsMinistryShopStripe } from "./ministry-shop-pricing";
-import { registerMinistryShopAdmin, type ShopAsset as Asset } from "./ministry-shop-admin";
-
-const appTag = "365-ministry-shop-v1";
-const base = "https://365dailydevotional.com";
-const byId = new Map(catalog.map(item => [item.id, item]));
-const checkoutInput = z.object({
-  productId: z.string(),
-  country: z.string().regex(/^[A-Z]{2}$/),
-  amount: z.number().int().positive(),
-  currency: z.string().regex(/^[A-Z]{3}$/),
-  acceptedDownloadPolicy: z.literal(true),
-}).strict();
-const sessionInput = z.object({ sessionId: z.string().regex(/^cs_(test|live)_[A-Za-z0-9_]+$/) }).strict();
-
-type Order = {
-  session_id: string; firebase_uid: string; product_id: string; amount: number; currency: string;
-  status: string; payment_intent_id: string | null; assets: Asset[]; download_expires_at: Date | null;
-};
-type VerifyToken = (token: string) => Promise<{ uid: string; email?: string; email_verified?: boolean }>;
-
-function sendError(res: Response, error: unknown) {
-  const e = error as { status?: number; message?: string };
-  const status = e?.status && e.status >= 400 && e.status < 500 ? e.status : 503;
-  return res.status(status).json({ message: status < 500 ? e.message : "Shop checkout or downloads are temporarily unavailable." });
-}
-
-function issue(status: number, message: string): never {
-  throw Object.assign(new Error(message), { status });
-}
-
-function canSell(id: string, assets: Asset[]) {
-  const item = byId.get(id);
-  if (!item || item.kind === "Membership" || !assets.length) return false;
-  if (item.requiredFileCount && assets.length !== item.requiredFileCount) return false;
-).test(asset.object_key));
+  return shopAssetsMatchProduct(byId.get(id), assets, shopBundleId);
 }
 
 export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyToken, requireAdmin: RequestHandler) {
