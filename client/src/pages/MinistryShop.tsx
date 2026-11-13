@@ -308,7 +308,7 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
                 <h1 className="mb-2 mt-1 break-words text-2xl font-bold tracking-tight text-teal-900 dark:text-teal-200 sm:text-3xl">{product.title}</h1>
                 <ProductViews total={views?.[product.id]} />
                 {price && <p className="mt-2 text-xl font-bold text-orange-800 dark:text-orange-300">{formatShopPrice(price)}</p>}
-                {!price && product.sourcePrice && /^\\$\\d+\\.\\d{2}$/.test(product.sourcePrice) && (
+                {!price && product.sourcePrice && /^\$\d+\.\d{2}$/.test(product.sourcePrice) && (
                   <p className="mt-2 text-sm font-semibold text-orange-800 dark:text-orange-300">
                     US catalog reference: {product.sourcePrice}
                   </p>
@@ -482,7 +482,7 @@ function ShopCatalog() {
                     <div className="min-w-0 space-y-1">
                       {price
                         ? <span className="block text-sm font-bold tabular-nums text-orange-800 dark:text-orange-300">{formatShopPrice(price)}</span>
-                        : /^\\$\\d+\\.\\d{2}$/.test(product.sourcePrice || "")
+                        : /^\$\d+\.\d{2}$/.test(product.sourcePrice || "")
                           ? <span className="block text-xs font-bold text-orange-800 dark:text-orange-300">{product.sourcePrice} <span className="font-normal">(US reference)</span></span>
                           : null}
                       {"spiritToneSlug" in product && !price?.ready &&
