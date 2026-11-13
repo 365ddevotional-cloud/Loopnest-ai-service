@@ -1,5 +1,5 @@
 import { isAndroidReader } from "@/lib/android-reader";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useRoute } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, Eye, Headphones, Search, ShoppingBag, Sparkles } from "lucide-react";
@@ -31,7 +31,7 @@ function ProductViews({ total }: { total?: number }) {
   );
 }
 
-function ProductArtwork({ product, detail = false }: { product: (typeof catalog)[number]; detail?: boolean }) {
+function ProductArtwork({ product, detail = false, artworkUrl }: { product: (typeof catalog)[number]; detail?: boolean; artworkUrl?: string }) {
   const Icon = icons[product.kind as keyof typeof icons];
   const [failed, setFailed] = useState(false);
   const slug = "spiritToneSlug" in product && typeof product.spiritToneSlug === "string" ? product.spiritToneSlug : null;
@@ -46,6 +46,10 @@ function ProductArtwork({ product, detail = false }: { product: (typeof catalog)
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
+  const resolvedArtwork = detail && slug && sourceSong?.coverImageUrl ? sourceSong.coverImageUrl : artworkUrl || `/shop-art/${product.id}.webp`;
+  // A 404 on the placeholder may occur before the source artwork query resolves.
+  // Reset fallback state when the real artwork becomes available.
+  useEffect(() => { setFailed(false); }, [resolvedArtwork]);
   const detailAspect = product.kind === "Book" ? "aspect-[2/3]" : "aspect-square";
   const frame = detail
     ? `w-full max-w-md self-start justify-self-center rounded-xl ${detailAspect}`
@@ -55,7 +59,7 @@ function ProductArtwork({ product, detail = false }: { product: (typeof catalog)
     <div className={`flex items-center justify-center overflow-hidden bg-muted/60 text-muted-foreground ${frame}`}>
       {!failed ? (
         <img
-          src={detail && slug && sourceSong?.coverImageUrl ? sourceSong.coverImageUrl : `/shop-art/${product.id}.webp`}
+          src={resolvedArtwork}
           alt={detail ? `${product.title} artwork` : ""}
           loading={detail ? "eager" : "lazy"}
           decoding="async"
@@ -75,6 +79,88 @@ const praisePackTracks = [
   "You Never Fail",
 ];
 
+function SpiritToneTimedPreview({ songId, title, slug }: { songId: number; title: string; slug: string }) {
+  const playerRef = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const [availableDuration, setAvailableDuration] = useState(45);
+  const [failed, setFailed] = useState(false);
+  const maxTime = Math.min(45, availableDuration);
+  useEffect(() => () => {
+    const audio = playerRef.current;
+    if (audio) audio.pause();
+  }, []);
+  const toggle = async () => {
+    const audio = playerRef.current;
+    if (!audio) return;
+    if (!audio.paused) {
+      audio.pause();
+      setPlaying(false);
+      return;
+    }
+    try {
+      if (audio.currentTime >= maxTime - 0.15) audio.currentTime = 0;
+      await audio.play();
+      setPlaying(true);
+      setFailed(false);
+    } catch {
+      setPlaying(false);
+      setFailed(true);
+    }
+  };
+  const stopAtPreviewEnd = () => {
+    const audio = playerRef.current;
+    if (!audio) return;
+    if (audio.currentTime >= maxTime - 0.05) {
+      audio.pause();
+      audio.currentTime = 0;
+      setPlaying(false);
+      setElapsed(0);
+    } else {
+      setElapsed(audio.currentTime);
+    }
+  };
+  const seek = (time: number) => {
+    const audio = playerRef.current;
+    if (!audio || !Number.isFinite(time)) return;
+    const capped = Math.max(0, Math.min(time, maxTime - 0.05));
+    audio.currentTime = capped;
+    setElapsed(capped);
+  };
+  return (
+    <section className="mt-4 rounded-xl border border-border bg-muted/30 p-4" aria-label={`45-second preview of ${title}`}>
+      <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold"><Headphones size={16} aria-hidden="true" /> Listen to the first 45 seconds</h2>
+      <audio
+        ref={playerRef}
+        src={`/api/songs/${songId}/audio`}
+        preload="none"
+        onLoadedMetadata={event => {
+          const duration = event.currentTarget.duration;
+          if (Number.isFinite(duration) && duration > 0) setAvailableDuration(Math.min(45, duration));
+        }}
+        onTimeUpdate={stopAtPreviewEnd}
+        onSeeking={event => {
+          if (event.currentTarget.currentTime > 45) event.currentTarget.currentTime = 0;
+        }}
+        onEnded={() => { setPlaying(false); setElapsed(0); }}
+        onPause={() => setPlaying(false)}
+        onError={() => { setFailed(true); setPlaying(false); }}
+      />
+      <div className="flex items-center gap-3">
+        <Button type="button" size="sm" onClick={() => void toggle()} aria-label={playing ? `Pause ${title} preview` : `Play ${title} preview`}>
+          {playing ? "Pause" : "Play"}
+        </Button>
+        <input type="range" aria-label="Preview position" min={0} max={maxTime} step={0.1}
+          value={Math.min(elapsed, maxTime)} onChange={event => seek(Number(event.target.value))} className="min-w-0 flex-1" />
+        <span className="text-xs tabular-nums text-muted-foreground">{Math.floor(elapsed)}s / {Math.ceil(maxTime)}s</span>
+      </div>
+      {failed && <p role="alert" className="mt-2 text-sm text-destructive">This recording could not be played. You can try its original SpiritTone page.</p>}
+      <p className="mt-2 text-xs text-muted-foreground">Playback-limited sample from the existing SpiritTone recording. The separately rendered stereo clip and purchase package are still being prepared.</p>
+      <Link href={`/music/${encodeURIComponent(slug)}`} className="mt-2 inline-block text-sm font-semibold text-primary underline">Open in SpiritTone Records</Link>
+    </section>
+  );
+}
+
 function SongPreview({ product }: { product: (typeof catalog)[number] }) {
   const [selected, setSelected] = useState(0);
   const [audioFailed, setAudioFailed] = useState(false);
@@ -85,16 +171,9 @@ function SongPreview({ product }: { product: (typeof catalog)[number] }) {
     return src ? [{ title, src }] : [];
   });
   const track = tracks[selected];
-  if (!track && "spiritToneSlug" in product && typeof product.spiritToneSlug === "string") {
-    return (
-      <section className="mt-4 rounded-xl border border-border bg-muted/30 p-4" aria-label="Song preview status">
-        <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold"><Headphones size={16} aria-hidden="true" /> 45-second sample being prepared</h2>
-        <p className="text-sm text-muted-foreground">The original stereo sample is not ready in the shop yet. You can listen to the existing recording in SpiritTone Records.</p>
-        <Link href={`/music/${encodeURIComponent(product.spiritToneSlug)}`} className="mt-2 inline-flex min-h-9 items-center text-sm font-semibold text-primary underline">
-          Listen in SpiritTone Records
-        </Link>
-      </section>
-    );
+  if (!track && "spiritToneSlug" in product && typeof product.spiritToneSlug === "string" &&
+      "spiritToneSongId" in product && typeof product.spiritToneSongId === "number") {
+    return <SpiritToneTimedPreview songId={product.spiritToneSongId} title={product.title} slug={product.spiritToneSlug} />;
   }
   if (!track) return null;
 
@@ -309,6 +388,16 @@ function ShopCatalog() {
   const { data: prices, locationResolved, retryDeviceLocation } = useShopPrices();
   const { user, emailVerified, getIdToken } = useUser();
   const canViewVisits = emailVerified && isMinistryShopAdminEmail(user?.email);
+  const { data: spiritToneArt } = useQuery<{ artwork: Record<string, string> }>({
+    queryKey: ["/api/ministry-shop/spirit-tone-artwork"],
+    queryFn: async ({ signal }) => {
+      const response = await fetch("/api/ministry-shop/spirit-tone-artwork", { signal });
+      if (!response.ok) throw new Error("Artwork unavailable");
+      return response.json();
+    },
+    staleTime: 3 * 60 * 1000,
+    retry: false,
+  });
   const { data: visitCounts } = useQuery<Record<string, number>>({
     queryKey: [...viewKey, user?.uid],
     enabled: canViewVisits,
@@ -380,7 +469,7 @@ function ShopCatalog() {
             return (
               <li key={product.id}>
                 <Link href={`/shop/${product.id}`} className="flex h-full min-w-0 flex-col rounded-xl border border-border bg-card p-2.5 font-sans shadow-sm transition-colors hover:border-teal-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:p-3">
-                  <ProductArtwork product={product} />
+                  <ProductArtwork product={product} artworkUrl={spiritToneArt?.artwork[product.id]} />
                   <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{product.kind}</p>
                   <h3 title={product.title} className="mb-2 mt-0.5 line-clamp-2 break-words text-sm font-bold leading-snug text-teal-900 dark:text-teal-200 sm:text-base">{product.title}</h3>
                   <div className="mt-auto flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
