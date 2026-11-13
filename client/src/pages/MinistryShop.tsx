@@ -137,6 +137,55 @@ function ProductPreview({ product }: { product: (typeof catalog)[number] }) {
   return product.kind === "Music" ? <SongPreview product={product} /> : null;
 }
 
+type SpiritToneSongDetails = {
+  title: string; slug: string; artist?: string | null; featuredArtist?: string | null;
+  composer?: string | null; producer?: string | null; lyricist?: string | null;
+  labelName?: string | null; genre?: string | null; language?: string | null;
+  songType?: string | null; scriptureReference?: string | null;
+  scriptureText?: string | null; copyrightNotice?: string | null;
+  releaseYear?: number | null; lyrics?: string | null;
+};
+
+function SpiritToneReleaseDetails({ slug }: { slug: string }) {
+  const { data: song, isLoading } = useQuery<SpiritToneSongDetails>({
+    queryKey: ["spirit-tone-shop-release", slug],
+    queryFn: async ({ signal }) => {
+      const response = await fetch(`/api/songs/by-slug/${encodeURIComponent(slug)}`, { signal });
+      if (!response.ok) throw new Error("SpiritTone release information unavailable");
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  if (!song || song.slug !== slug) {
+    return isLoading ? <p className="mt-3 text-sm text-muted-foreground">Loading original song credits…</p> : null;
+  }
+  const credits = [
+    ["Artist", song.artist], ["Featured artist", song.featuredArtist],
+    ["Record label", song.labelName], ["Producer", song.producer],
+    ["Composer", song.composer], ["Lyricist", song.lyricist],
+    ["Genre", song.genre], ["Language", song.language],
+    ["Song type", song.songType], ["Scripture", song.scriptureReference],
+    ["Release year", song.releaseYear], ["Copyright", song.copyrightNotice],
+  ].filter((entry): entry is [string, string | number] => entry[1] !== null && entry[1] !== undefined && entry[1] !== "");
+  return (
+    <section className="mt-5 rounded-xl border border-border p-4" aria-label="SpiritTone Records release details">
+      <h2 className="text-lg font-bold">SpiritTone Records — Song information</h2>
+      <dl className="mt-3 grid gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
+        {credits.map(([label, value]) => <div key={label}><dt className="font-semibold text-foreground">{label}</dt><dd className="break-words text-muted-foreground">{value}</dd></div>)}
+      </dl>
+      {song.scriptureText && <p className="mt-3 text-sm italic">{song.scriptureText}</p>}
+      {song.lyrics && (
+        <details className="mt-4 rounded-lg bg-muted/30 p-3">
+          <summary className="cursor-pointer font-semibold">Read complete lyrics</summary>
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{song.lyrics}</p>
+        </details>
+      )}
+      <p className="mt-3 text-xs text-muted-foreground">Complete packages are provided only for recordings with verified original audio, artwork, and lyrics.</p>
+    </section>
+  );
+}
+
 function ProductDetail({ id, views, price }: { id: string; views?: Record<string, number>; price?: { amount: number; currency: string; country: string; ready: boolean } }) {
   const product = catalog.find(item => item.id === id);
   const queryClient = useQueryClient();
@@ -211,6 +260,9 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
                 )}
               </div>
             </div>
+            {product.kind === "Music" && "spiritToneSlug" in product && typeof product.spiritToneSlug === "string" && (
+              <SpiritToneReleaseDetails slug={product.spiritToneSlug} />
+            )}
             <div className="mt-6 border-t border-border pt-5">
               <h2 className="text-lg font-bold">{product.kind === "Book" ? "About this book" : product.kind === "Music" ? "About this release" : "About this membership"}</h2>
               <div className="mt-3 space-y-3 break-words text-sm leading-relaxed text-muted-foreground sm:text-base">
