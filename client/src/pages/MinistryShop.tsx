@@ -87,6 +87,13 @@ function ProductArtwork({ product, detail = false, artworkUrl }: { product: (typ
           className={`h-full w-full ${detail || product.kind === "Book" ? "object-contain p-1.5" : "object-cover"}`}
           onError={() => setFailed(true)}
         />
+      ) : "spiritToneSlug" in product ? (
+        <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-900 to-amber-800 p-3 text-center text-white">
+          <div aria-hidden="true" className="absolute -right-8 -top-8 h-28 w-28 rounded-full border-2 border-amber-300/40" />
+          <Music2 className="mb-2 size-7 text-amber-200" aria-hidden="true" />
+          <span className="line-clamp-3 break-words font-serif text-sm font-bold leading-tight sm:text-base">{product.title}</span>
+          <span className="mt-2 text-[10px] font-bold uppercase tracking-wider text-amber-200">SpiritTone Records</span>
+        </div>
       ) : <Icon className="size-9" aria-hidden="true" />}
     </div>
   );
