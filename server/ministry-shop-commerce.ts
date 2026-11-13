@@ -13,6 +13,7 @@ import { musicCountryFromRequest } from "./music-location";
 import { musicRegions, readMusicPrices } from "./music-regions";
 import { ministryShopPrice, shopBundleId, supportsMinistryShopStripe } from "./ministry-shop-pricing";
 import { registerMinistryShopAdmin, type ShopAsset as Asset } from "./ministry-shop-admin";
+import { shopAssetsMatchProduct } from "../shared/ministry-shop-asset-readiness";
 
 const appTag = "365-ministry-shop-v1";
 const base = "https://365dailydevotional.com";
@@ -43,12 +44,7 @@ function issue(status: number, message: string): never {
 }
 
 function canSell(id: string, assets: Asset[]) {
-  const item = byId.get(id);
-  if (!item || item.kind === "Membership" || !assets.length) return false;
-  if (item.requiredFileCount && assets.length !== item.requiredFileCount) return false;
-  const type = item.kind === "Book" ? "application/pdf" : id === shopBundleId ? "application/zip" : "audio/mpeg";
-  return assets.every(asset => asset.content_type === type &&
-    new RegExp(`^ministry-shop/${id}/[a-f0-9]{64}$`).test(asset.object_key));
+  return shopAssetsMatchProduct(byId.get(id), assets, shopBundleId);
 }
 
 export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyToken, requireAdmin: RequestHandler) {

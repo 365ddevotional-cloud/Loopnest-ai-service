@@ -21,4 +21,11 @@ jobs:
       - run: npm run check
       - run: npm run build
       - run: npm run test:music-commerce
+      - run: node --import tsx --test server/ministry-shop-asset-readiness.test.ts
+      - run: node --import tsx --test server/spirit-tone-playback-policy.test.ts
       - run: npm run test:sharing
+      - name: Install FFmpeg for stereo source verification
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - run: node script/test-ministry-shop-audio-preview.mjs
+      - name: Verify complete SpiritTone song packages
+        run: python3 script/test-spirit-tone-package.py
