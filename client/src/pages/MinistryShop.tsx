@@ -46,6 +46,10 @@ function ProductArtwork({ product, detail = false, artworkUrl }: { product: (typ
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
+  const resolvedArtwork = detail && slug && sourceSong?.coverImageUrl ? sourceSong.coverImageUrl : artworkUrl || `/shop-art/${product.id}.webp`;
+  // A 404 on the placeholder may occur before the source artwork query resolves.
+  // Reset fallback state when the real artwork becomes available.
+  useEffect(() => { setFailed(false); }, [resolvedArtwork]);
   const detailAspect = product.kind === "Book" ? "aspect-[2/3]" : "aspect-square";
   const frame = detail
     ? `w-full max-w-md self-start justify-self-center rounded-xl ${detailAspect}`
@@ -55,7 +59,7 @@ function ProductArtwork({ product, detail = false, artworkUrl }: { product: (typ
     <div className={`flex items-center justify-center overflow-hidden bg-muted/60 text-muted-foreground ${frame}`}>
       {!failed ? (
         <img
-          src={detail && slug && sourceSong?.coverImageUrl ? sourceSong.coverImageUrl : artworkUrl || `/shop-art/${product.id}.webp`}
+          src={resolvedArtwork}
           alt={detail ? `${product.title} artwork` : ""}
           loading={detail ? "eager" : "lazy"}
           decoding="async"
