@@ -3,11 +3,24 @@ import type { Express } from "express";
 import { sql } from "drizzle-orm";
 import catalog from "../client/src/data/ministry-shop-catalog.json";
 import { db } from "./db";
+import { isMinistryShopAdminEmail } from "../shared/ministry-shop-access";
 
 const productIds = new Set(catalog.map(item => item.id));
 
-export function registerMinistryShopRoutes(app: Express) {
-  app.get("/api/ministry-shop/views", async (_req, res) => {
+type VerifyToken = (token: string) => Promise<{ uid: string; email?: string; email_verified?: boolean }>;
+
+export function registerMinistryShopRoutes(app: Express, verifyToken: VerifyToken) {
+  app.get("/api/ministry-shop/views", async (req, res) => {
+    res.set("Cache-Control", "private, no-store");
+    const token = req.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+    if (!token) return res.status(401).json({ message: "Sign in to view product visit counts." });
+
+    const account = await verifyToken(token).catch(() => null);
+    if (!account) return res.status(401).json({ message: "Sign in to view product visit counts." });
+    if (account.email_verified !== true || !isMinistryShopAdminEmail(account.email)) {
+      return res.status(403).json({ message: "Admin access required." });
+    }
+
     try {
       const { rows } = await db.execute<{ product_id: string; total: string }>(sql`
         SELECT product_id, total FROM ministry_shop_product_views

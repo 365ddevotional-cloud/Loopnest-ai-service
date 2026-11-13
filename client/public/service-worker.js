@@ -10,6 +10,7 @@ const STATIC_ASSETS = [
 ];
 
 const SENSITIVE_API_PATTERNS = [
+  /^\/api\/ministry-shop\/views\/?$/,
   /^\/api\/music-commerce(?:\/|$)/,
   /^\/api\/user\/download-access(?:\/|$)/,
   /^\/api\/auth\//,

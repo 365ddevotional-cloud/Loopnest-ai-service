@@ -7,6 +7,8 @@ import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatShopPrice, MinistryShopPurchases, ShopCheckout, useShopPrices } from "@/components/MinistryShopCheckout";
+import { useUser } from "@/contexts/UserContext";
+import { isMinistryShopAdminEmail } from "@shared/ministry-shop-access";
 import catalog from "@/data/ministry-shop-catalog.json";
 import bookPreviewData from "@/data/ministry-shop-book-previews.json";
 
@@ -228,7 +230,26 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
 function ShopCatalog() {
   const [, params] = useRoute("/shop/:productId");
   const { data: prices, locationResolved, retryDeviceLocation } = useShopPrices();
-  const { data: views } = useQuery<Record<string, number>>({ queryKey: viewKey, retry: false });
+  const { user, emailVerified, getIdToken } = useUser();
+  const canViewVisits = emailVerified && isMinistryShopAdminEmail(user?.email);
+  const { data: visitCounts } = useQuery<Record<string, number>>({
+    queryKey: [...viewKey, user?.uid],
+    enabled: canViewVisits,
+    retry: false,
+    gcTime: 0,
+    queryFn: async ({ signal }) => {
+      const token = await getIdToken();
+      if (!token) throw new Error("Sign in to view product visit counts.");
+      const response = await fetch(viewKey[0], {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+        signal,
+      });
+      if (!response.ok) throw new Error("Product visit counts are unavailable.");
+      return response.json();
+    },
+  });
+  const views = canViewVisits ? visitCounts : undefined;
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLocaleLowerCase();

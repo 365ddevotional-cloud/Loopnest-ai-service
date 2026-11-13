@@ -190,8 +190,9 @@ export async function registerRoutes(
   // The shop can fail closed without preventing the rest of the app from starting.
   try { await ensureMinistryShopTables(); }
   catch { console.error("[Ministry Shop] Shop tables could not be prepared."); }
-  registerMinistryShopRoutes(app);
-  registerMinistryShopCommerce(app, async token => (await import("./firebase-admin")).auth.verifyIdToken(token), requireAdmin);
+  const verifyShopToken = async (token: string) => (await import("./firebase-admin")).auth.verifyIdToken(token);
+  registerMinistryShopRoutes(app, verifyShopToken);
+  registerMinistryShopCommerce(app, verifyShopToken, requireAdmin);
 
   // PUBLIC DEBUG ENDPOINT - Returns current server state for diagnosing production issues
   // This endpoint bypasses all caching and returns raw server data
