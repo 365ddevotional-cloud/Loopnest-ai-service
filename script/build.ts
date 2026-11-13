@@ -42,6 +42,7 @@ async function buildAll() {
   const shopMigrations = (await readdir("migrations"))
     .filter(file => /^20261108_ministry_shop(?:_orders|_sales_controls)?\.sql$/.test(file));
   if (shopMigrations.length !== 3) throw new Error("Shop migration files are incomplete");
+  shopMigrations.push("20261113_spirit_tone_producer_credit_fix.sql");
   await mkdir("dist/shop-migrations", { recursive: true });
   await Promise.all(shopMigrations.map(file => copyFile(`migrations/${file}`, `dist/shop-migrations/${file}`)));
 

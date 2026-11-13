@@ -6,6 +6,7 @@ export const ministryShopMigrationFiles = [
   "20261108_ministry_shop.sql",
   "20261108_ministry_shop_orders.sql",
   "20261108_ministry_shop_sales_controls.sql",
+  "20261113_spirit_tone_producer_credit_fix.sql",
 ];
 
 export async function ensureMinistryShopTables() {
