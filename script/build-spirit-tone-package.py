@@ -31,7 +31,9 @@ def digest(path):
 
 def build(song_file, audio_file, art_file, destination):
     song = json.loads(Path(song_file).read_text(encoding="utf-8"))
-    required = ("title", "slug", "lyrics", "artist", "producer", "labelName", "scriptureReference")
+    required = ("title", "slug", "artist", "producer", "labelName", "scriptureReference")
+    if song.get("songType") != "Instrumental":
+        required += ("lyrics",)
     missing = [key for key in required if not isinstance(song.get(key), str) or not song[key].strip()]
     if missing:
         raise ValueError("Incomplete authoritative song metadata: " + ", ".join(missing))
@@ -63,8 +65,11 @@ def build(song_file, audio_file, art_file, destination):
         "master_audio_sha256": digest(audio), "original_artwork_sha256": digest(art),
     }
     folder = slug + "/"
+    lyric_text = song.get("lyrics") or ""
+    if song.get("songType") == "Instrumental" and not lyric_text.strip():
+        lyric_text = "Instrumental recording — no sung lyrics. No lyrics were provided in the source record."
     entries = {
-        folder + "Lyrics.txt": song["title"] + "\n\n" + song["lyrics"].strip() + "\n",
+        folder + "Lyrics.txt": song["title"] + "\n\n" + lyric_text.strip() + "\n",
         folder + "Song-Information.txt": info + "\n",
         folder + "Package-Manifest.json": json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
     }
