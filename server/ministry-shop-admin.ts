@@ -23,7 +23,7 @@ export function registerMinistryShopAdmin(
   app.get("/api/admin/ministry-shop", requireAdmin, async (_req, res) => {
     res.set("Cache-Control", "private, no-store");
     try {
-      const [products, assets, orders] = await Promise.all([
+      const [products, assets, orders, spiritTone] = await Promise.all([
         db.execute<{ product_id: string; total: string | null; paused: boolean | null }>(sql`
           SELECT COALESCE(v.product_id,c.product_id) AS product_id, v.total, c.paused
           FROM ministry_shop_product_views v FULL JOIN ministry_shop_sales_controls c USING (product_id)
@@ -32,6 +32,20 @@ export function registerMinistryShopAdmin(
         db.execute<{ session_id: string; product_id: string; amount: number; currency: string; status: string; created_at: Date }>(sql`
           SELECT session_id, product_id, amount, currency, status, created_at
           FROM ministry_shop_orders ORDER BY created_at DESC, session_id DESC LIMIT 50
+        `),
+        // Read-only, includes archived recordings so none are silently omitted.
+        db.execute<{
+          id: number; slug: string; title: string; language: string | null;
+          song_type: string | null; is_active: boolean; audio_ready: boolean;
+          lyrics_ready: boolean; art_ready: boolean; featured_week_start: string | null;
+          featured_week_end: string | null;
+        }>(sql`
+          SELECT id, slug, title, language, song_type, is_active,
+            (audio_url IS NOT NULL AND length(btrim(audio_url)) > 0) AS audio_ready,
+            (lyrics IS NOT NULL AND length(btrim(lyrics)) > 0) AS lyrics_ready,
+            (cover_image_url IS NOT NULL AND length(btrim(cover_image_url)) > 0) AS art_ready,
+            featured_week_start, featured_week_end
+          FROM songs ORDER BY id ASC
         `),
       ]);
 
@@ -42,7 +56,40 @@ export function registerMinistryShopAdmin(
         files.push(asset);
         filesByProduct.set(asset.product_id, files);
       }
+      const shopSingles = catalog.filter(item => item.kind === "Music" && !item.replacedBy && item.id !== "x29Tw");
+      const normalizeTitle = (title: string) => title.normalize("NFKC").toLocaleLowerCase("en")
+        .replace(/[\\p{P}\\p{Z}]+/gu, " ").trim().replace(/\\s+/g, " ");
+      const productMatches = new Map<string, {id: string; title: string}[]>();
+      for (const product of shopSingles) {
+        const normalized = normalizeTitle(product.title);
+        const options = productMatches.get(normalized) ?? [];
+        options.push({ id: product.id, title: product.title });
+        productMatches.set(normalized, options);
+      }
+      const reconciliation = spiritTone.rows.map(song => {
+        // Never auto-merge by title. An exact name is still only a candidate.
+        const candidates = productMatches.get(normalizeTitle(song.title)) ?? [];
+        return {
+          songId: song.id, slug: song.slug, title: song.title,
+          language: song.language, songType: song.song_type, active: song.is_active,
+          audioReady: song.audio_ready, lyricsReady: song.lyrics_ready, artworkReady: song.art_ready,
+          featuredWeekStart: song.featured_week_start, featuredWeekEnd: song.featured_week_end,
+          matchStatus: candidates.length > 1 ? "ambiguous" : candidates.length === 1 ? "candidate" : "unmatched",
+          candidates,
+        };
+      });
       res.json({
+        reconciliation: {
+          totals: {
+            allSongs: reconciliation.length,
+            activeSongs: reconciliation.filter(s => s.active).length,
+            archivedSongs: reconciliation.filter(s => !s.active).length,
+            possibleMatches: reconciliation.filter(s => s.matchStatus === "candidate").length,
+            ambiguous: reconciliation.filter(s => s.matchStatus === "ambiguous").length,
+            unmatched: reconciliation.filter(s => s.matchStatus === "unmatched").length,
+          },
+          songs: reconciliation,
+        },
         readiness,
         products: catalog.map(item => {
           const files = filesByProduct.get(item.id) ?? [];
