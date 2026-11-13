@@ -4,7 +4,7 @@ import { songLanguageCategories } from "@shared/song-languages";
 import { useEffect, useState } from "react";
 import { Link, useRoute } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Eye, Headphones, Search, ShoppingBag, Sparkles } from "lucide-react";
+import { BookOpen, Eye, Headphones, Music2, Search, ShoppingBag, Sparkles } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
