@@ -7,7 +7,7 @@ import { isMinistryShopAdminEmail } from "../shared/ministry-shop-access";
 
 const productIds = new Set(catalog.map(item => item.id));
 
-type VerifyToken = (token: string) => Promise<{ email?: string; email_verified?: boolean }>;
+type VerifyToken = (token: string) => Promise<{ uid: string; email?: string; email_verified?: boolean }>;
 
 export function registerMinistryShopRoutes(app: Express, verifyToken: VerifyToken) {
   app.get("/api/ministry-shop/views", async (req, res) => {
