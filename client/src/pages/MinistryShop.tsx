@@ -31,7 +31,7 @@ function ProductViews({ total }: { total?: number }) {
   );
 }
 
-function ProductArtwork({ product, detail = false }: { product: (typeof catalog)[number]; detail?: boolean }) {
+function ProductArtwork({ product, detail = false, artworkUrl }: { product: (typeof catalog)[number]; detail?: boolean; artworkUrl?: string }) {
   const Icon = icons[product.kind as keyof typeof icons];
   const [failed, setFailed] = useState(false);
   const slug = "spiritToneSlug" in product && typeof product.spiritToneSlug === "string" ? product.spiritToneSlug : null;
@@ -55,7 +55,7 @@ function ProductArtwork({ product, detail = false }: { product: (typeof catalog)
     <div className={`flex items-center justify-center overflow-hidden bg-muted/60 text-muted-foreground ${frame}`}>
       {!failed ? (
         <img
-          src={detail && slug && sourceSong?.coverImageUrl ? sourceSong.coverImageUrl : `/shop-art/${product.id}.webp`}
+          src={detail && slug && sourceSong?.coverImageUrl ? sourceSong.coverImageUrl : artworkUrl || `/shop-art/${product.id}.webp`}
           alt={detail ? `${product.title} artwork` : ""}
           loading={detail ? "eager" : "lazy"}
           decoding="async"
@@ -384,6 +384,16 @@ function ShopCatalog() {
   const { data: prices, locationResolved, retryDeviceLocation } = useShopPrices();
   const { user, emailVerified, getIdToken } = useUser();
   const canViewVisits = emailVerified && isMinistryShopAdminEmail(user?.email);
+  const { data: spiritToneArt } = useQuery<{ artwork: Record<string, string> }>({
+    queryKey: ["/api/ministry-shop/spirit-tone-artwork"],
+    queryFn: async ({ signal }) => {
+      const response = await fetch("/api/ministry-shop/spirit-tone-artwork", { signal });
+      if (!response.ok) throw new Error("Artwork unavailable");
+      return response.json();
+    },
+    staleTime: 3 * 60 * 1000,
+    retry: false,
+  });
   const { data: visitCounts } = useQuery<Record<string, number>>({
     queryKey: [...viewKey, user?.uid],
     enabled: canViewVisits,
@@ -455,7 +465,7 @@ function ShopCatalog() {
             return (
               <li key={product.id}>
                 <Link href={`/shop/${product.id}`} className="flex h-full min-w-0 flex-col rounded-xl border border-border bg-card p-2.5 font-sans shadow-sm transition-colors hover:border-teal-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:p-3">
-                  <ProductArtwork product={product} />
+                  <ProductArtwork product={product} artworkUrl={spiritToneArt?.artwork[product.id]} />
                   <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{product.kind}</p>
                   <h3 title={product.title} className="mb-2 mt-0.5 line-clamp-2 break-words text-sm font-bold leading-snug text-teal-900 dark:text-teal-200 sm:text-base">{product.title}</h3>
                   <div className="mt-auto flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
