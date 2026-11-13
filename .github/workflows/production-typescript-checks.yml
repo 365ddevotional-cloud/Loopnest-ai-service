@@ -23,3 +23,4 @@ jobs:
       - run: npm run test:music-commerce
       - run: npm run test:sharing
       - run: python3 script/test-spirit-tone-package.py
+      - run: node script/test-ministry-shop-audio-preview.mjs
