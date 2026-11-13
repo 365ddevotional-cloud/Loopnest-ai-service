@@ -34,6 +34,18 @@ function ProductViews({ total }: { total?: number }) {
 function ProductArtwork({ product, detail = false }: { product: (typeof catalog)[number]; detail?: boolean }) {
   const Icon = icons[product.kind as keyof typeof icons];
   const [failed, setFailed] = useState(false);
+  const slug = "spiritToneSlug" in product && typeof product.spiritToneSlug === "string" ? product.spiritToneSlug : null;
+  const { data: sourceSong } = useQuery<SpiritToneSongDetails>({
+    queryKey: ["spirit-tone-shop-release", slug],
+    queryFn: async ({ signal }) => {
+      const response = await fetch(`/api/songs/by-slug/${encodeURIComponent(slug!)}`, { signal });
+      if (!response.ok) throw new Error("Original artwork unavailable");
+      return response.json();
+    },
+    enabled: detail && !!slug,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
   const detailAspect = product.kind === "Book" ? "aspect-[2/3]" : "aspect-square";
   const frame = detail
     ? `w-full max-w-md self-start justify-self-center rounded-xl ${detailAspect}`
@@ -43,7 +55,7 @@ function ProductArtwork({ product, detail = false }: { product: (typeof catalog)
     <div className={`flex items-center justify-center overflow-hidden bg-muted/60 text-muted-foreground ${frame}`}>
       {!failed ? (
         <img
-          src={`/shop-art/${product.id}.webp`}
+          src={detail && slug && sourceSong?.coverImageUrl ? sourceSong.coverImageUrl : `/shop-art/${product.id}.webp`}
           alt={detail ? `${product.title} artwork` : ""}
           loading={detail ? "eager" : "lazy"}
           decoding="async"
@@ -73,6 +85,17 @@ function SongPreview({ product }: { product: (typeof catalog)[number] }) {
     return src ? [{ title, src }] : [];
   });
   const track = tracks[selected];
+  if (!track && "spiritToneSlug" in product && typeof product.spiritToneSlug === "string") {
+    return (
+      <section className="mt-4 rounded-xl border border-border bg-muted/30 p-4" aria-label="Song preview status">
+        <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold"><Headphones size={16} aria-hidden="true" /> 45-second sample being prepared</h2>
+        <p className="text-sm text-muted-foreground">The original stereo sample is not ready in the shop yet. You can listen to the existing recording in SpiritTone Records.</p>
+        <Link href={`/music/${encodeURIComponent(product.spiritToneSlug)}`} className="mt-2 inline-flex min-h-9 items-center text-sm font-semibold text-primary underline">
+          Listen in SpiritTone Records
+        </Link>
+      </section>
+    );
+  }
   if (!track) return null;
 
   return (
@@ -137,6 +160,56 @@ function ProductPreview({ product }: { product: (typeof catalog)[number] }) {
   return product.kind === "Music" ? <SongPreview product={product} /> : null;
 }
 
+type SpiritToneSongDetails = {
+  title: string; slug: string; artist?: string | null; featuredArtist?: string | null;
+  composer?: string | null; producer?: string | null; lyricist?: string | null;
+  labelName?: string | null; genre?: string | null; language?: string | null;
+  songType?: string | null; scriptureReference?: string | null;
+  coverImageUrl?: string | null;
+  scriptureText?: string | null; copyrightNotice?: string | null;
+  releaseYear?: number | null; lyrics?: string | null;
+};
+
+function SpiritToneReleaseDetails({ slug }: { slug: string }) {
+  const { data: song, isLoading } = useQuery<SpiritToneSongDetails>({
+    queryKey: ["spirit-tone-shop-release", slug],
+    queryFn: async ({ signal }) => {
+      const response = await fetch(`/api/songs/by-slug/${encodeURIComponent(slug)}`, { signal });
+      if (!response.ok) throw new Error("SpiritTone release information unavailable");
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  if (!song || song.slug !== slug) {
+    return isLoading ? <p className="mt-3 text-sm text-muted-foreground">Loading original song credits…</p> : null;
+  }
+  const credits = [
+    ["Artist", song.artist], ["Featured artist", song.featuredArtist],
+    ["Record label", song.labelName], ["Producer", song.producer],
+    ["Composer", song.composer], ["Lyricist", song.lyricist],
+    ["Genre", song.genre], ["Language", song.language],
+    ["Song type", song.songType], ["Scripture", song.scriptureReference],
+    ["Release year", song.releaseYear], ["Copyright", song.copyrightNotice],
+  ].filter((entry): entry is [string, string | number] => entry[1] !== null && entry[1] !== undefined && entry[1] !== "");
+  return (
+    <section className="mt-5 rounded-xl border border-border p-4" aria-label="SpiritTone Records release details">
+      <h2 className="text-lg font-bold">SpiritTone Records — Song information</h2>
+      <dl className="mt-3 grid gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
+        {credits.map(([label, value]) => <div key={label}><dt className="font-semibold text-foreground">{label}</dt><dd className="break-words text-muted-foreground">{value}</dd></div>)}
+      </dl>
+      {song.scriptureText && <p className="mt-3 text-sm italic">{song.scriptureText}</p>}
+      {song.lyrics && (
+        <details className="mt-4 rounded-lg bg-muted/30 p-3">
+          <summary className="cursor-pointer font-semibold">Read complete lyrics</summary>
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{song.lyrics}</p>
+        </details>
+      )}
+      <p className="mt-3 text-xs text-muted-foreground">Complete packages are provided only for recordings with verified original audio, artwork, and lyrics.</p>
+    </section>
+  );
+}
+
 function ProductDetail({ id, views, price }: { id: string; views?: Record<string, number>; price?: { amount: number; currency: string; country: string; ready: boolean } }) {
   const product = catalog.find(item => item.id === id);
   const queryClient = useQueryClient();
@@ -148,6 +221,7 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
     retry: false,
   });
   const description = descriptions?.[id];
+  const isSpiritTonePreview = !!product && "spiritToneSlug" in product && typeof product.spiritToneSlug === "string";
 
   useEffect(() => {
     if (!product || product.replacedBy) return;
@@ -202,21 +276,25 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{product.kind}</p>
                 <h1 className="mb-2 mt-1 break-words text-2xl font-bold tracking-tight text-teal-900 dark:text-teal-200 sm:text-3xl">{product.title}</h1>
                 <ProductViews total={views?.[product.id]} />
-                {price && <p className="mt-2 text-xl font-bold text-orange-800 dark:text-orange-300">{formatShopPrice(price)}</p>}
+                {!isSpiritTonePreview && price && <p className="mt-2 text-xl font-bold text-orange-800 dark:text-orange-300">{formatShopPrice(price)}</p>}
+                {isSpiritTonePreview && <p className="mt-2 text-sm font-semibold text-orange-700 dark:text-orange-300">Catalog preview · Purchase package being prepared</p>}
                 <ProductPreview key={`preview-${product.id}`} product={product} />
-                {product.kind !== "Membership" && (
+                {product.kind !== "Membership" && !isSpiritTonePreview && (
                   isAndroidReader() || product.sourcePrice
                     ? <ShopCheckout key={product.id} productId={product.id} price={price} />
                     : <p className="mt-3 text-sm font-semibold text-orange-800 dark:text-orange-300">Coming soon. Pricing and downloads are being prepared.</p>
                 )}
               </div>
             </div>
+            {product.kind === "Music" && "spiritToneSlug" in product && typeof product.spiritToneSlug === "string" && (
+              <SpiritToneReleaseDetails slug={product.spiritToneSlug} />
+            )}
             <div className="mt-6 border-t border-border pt-5">
               <h2 className="text-lg font-bold">{product.kind === "Book" ? "About this book" : product.kind === "Music" ? "About this release" : "About this membership"}</h2>
               <div className="mt-3 space-y-3 break-words text-sm leading-relaxed text-muted-foreground sm:text-base">
                 {description?.length
                   ? description.map((paragraph, index) => <p key={index}>{paragraph}</p>)
-                  : <p>{isPending ? "Loading description…" : "The description is currently unavailable."}</p>}
+                  : <p>{isSpiritTonePreview ? "Explore this SpiritTone recording and its original credits below. The downloadable package will be available after original master, artwork, and lyrics verification." : isPending ? "Loading description…" : "The description is currently unavailable."}</p>}
               </div>
             </div>
           </>
@@ -306,7 +384,9 @@ function ShopCatalog() {
                   <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{product.kind}</p>
                   <h3 title={product.title} className="mb-2 mt-0.5 line-clamp-2 break-words text-sm font-bold leading-snug text-teal-900 dark:text-teal-200 sm:text-base">{product.title}</h3>
                   <div className="mt-auto flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
-                    {price && <span className="text-sm font-bold tabular-nums text-orange-800 dark:text-orange-300">{formatShopPrice(price)}</span>}
+                    {"spiritToneSlug" in product
+                      ? <span className="text-xs font-semibold text-orange-800 dark:text-orange-300">Preview · Coming soon</span>
+                      : price && <span className="text-sm font-bold tabular-nums text-orange-800 dark:text-orange-300">{formatShopPrice(price)}</span>}
                     {!isAndroidReader() && product.requiredFileCount && !price?.ready && <span className="text-xs font-semibold text-orange-800 dark:text-orange-300">Checkout unavailable</span>}
                     <ProductViews total={views?.[product.id]} />
                   </div>

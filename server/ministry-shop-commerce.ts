@@ -46,7 +46,11 @@ function canSell(id: string, assets: Asset[]) {
   const item = byId.get(id);
   if (!item || item.kind === "Membership" || !assets.length) return false;
   if (item.requiredFileCount && assets.length !== item.requiredFileCount) return false;
-  const type = item.kind === "Book" ? "application/pdf" : id === shopBundleId ? "application/zip" : "audio/mpeg";
+  // Only explicitly opted-in new SpiritTone products require one complete ZIP.
+  // Existing music purchases continue to use the original MP3 format.
+  const packagedRelease = item.kind === "Music" && "packageFormat" in item && item.packageFormat === "zip";
+  const type = item.kind === "Book" ? "application/pdf" : (id === shopBundleId || packagedRelease) ? "application/zip" : "audio/mpeg";
+  if (packagedRelease && assets.length !== 1) return false;
   return assets.every(asset => asset.content_type === type &&
     new RegExp(`^ministry-shop/${id}/[a-f0-9]{64}$`).test(asset.object_key));
 }
