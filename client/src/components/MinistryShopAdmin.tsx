@@ -59,6 +59,28 @@ export default function MinistryShopAdmin() {
   });
 
   const data = dashboard.data;
+  const exportSpiritToneAudit = () => {
+    if (!data?.reconciliation) return;
+    // Export only the sanitized server report: no audio URLs, private keys,
+    // buyer information, signed downloads, or authentication tokens.
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      source: "365 Ministry Shop admin reconciliation",
+      notice: "Title matches are candidates only. Verify original recording, version, language, artwork and rights before publishing.",
+      ...data.reconciliation,
+    };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
+    try {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "spirittone-shop-reconciliation.json";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  };
   return (
     <section aria-labelledby="admin-shop-heading" className="space-y-5 rounded-xl border bg-card p-4 sm:p-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -95,7 +117,12 @@ export default function MinistryShopAdmin() {
           {data.reconciliation && (
             <section className="space-y-3 rounded-xl border p-3 sm:p-4" aria-labelledby="spirit-tone-reconciliation">
               <div>
-                <h3 id="spirit-tone-reconciliation" className="font-semibold">SpiritTone Records → Shop reconciliation</h3>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 id="spirit-tone-reconciliation" className="font-semibold">SpiritTone Records → Shop reconciliation</h3>
+                  <Button type="button" size="sm" variant="outline" onClick={exportSpiritToneAudit}>
+                    Export song inventory (JSON)
+                  </Button>
+                </div>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Read-only database inventory, including archived recordings. Exact titles are possible matches, never automatically merged.
                   No songs are published or deleted by this report.
