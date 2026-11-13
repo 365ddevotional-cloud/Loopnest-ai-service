@@ -374,7 +374,7 @@ function ShopCatalog() {
   const musicLanguageFor = (p: ShopProduct) =>
     "spiritToneSlug" in p ? musicMetadata[p.id]?.language || "Unspecified" : "Unspecified";
   const musicGenreFor = (p: ShopProduct) =>
-    "spiritToneSlug" in p ? musicMetadata[p.id]?.genre || "Unspecified" : "Unspecified";
+    "spiritToneSlug" in p ? musicMetadata[p.id]?.genre !== "Unspecified" && musicMetadata[p.id]?.genre ? musicMetadata[p.id].genre : musicMetadata[p.id]?.songType || "Unspecified" : "Unspecified";
   const musicProducts = catalog.filter(p => p.kind === "Music" && !p.replacedBy);
   const languages = Array.from(new Set(musicProducts.flatMap(p => songLanguageCategories(musicLanguageFor(p))))).sort();
   const genres = Array.from(new Set(musicProducts.map(musicGenreFor))).sort();
@@ -439,10 +439,10 @@ function ShopCatalog() {
               </select>
             </label>
             <label className="min-w-28 flex-1 text-xs font-semibold text-muted-foreground sm:max-w-52">
-              Genre
+              Genre / format
               <select value={musicGenre} onChange={event => setMusicGenre(event.target.value)}
                 className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground">
-                <option value="all">All genres</option>
+                <option value="all">All genres and formats</option>
                 {genres.map(value => <option key={value} value={value}>{value}</option>)}
               </select>
             </label>
