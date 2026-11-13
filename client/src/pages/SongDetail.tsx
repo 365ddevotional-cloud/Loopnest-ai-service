@@ -1,5 +1,6 @@
 import { songLanguageCategories } from "@shared/song-languages";
 import MusicPurchasePanel from "@/components/MusicPurchasePanel";
+import SpiritToneTimedPreview from "@/components/SpiritToneTimedPreview";
 import { heavenTrackSlugs, isPaidMusicSlug } from "@shared/music-products";
 import { useState, useEffect, useRef } from "react";
 import { useRoute, Link, useLocation } from "wouter";
@@ -608,7 +609,12 @@ export default function SongDetail() {
 
       </div>
 
-      {paidRelease && <MusicPurchasePanel productId={heavenTrackSlugs.includes(song.slug) ? song.slug : `single:${song.slug}`} songTitle={song.title} />}
+      {paidRelease && (
+        <div className="grid gap-3 lg:grid-cols-2 lg:items-start" aria-label="Listen before purchasing">
+          <SpiritToneTimedPreview songId={song.id} title={song.title} slug={song.slug} />
+          <MusicPurchasePanel productId={heavenTrackSlugs.includes(song.slug) ? song.slug : `single:${song.slug}`} songTitle={song.title} />
+        </div>
+      )}
       {paidRelease && song.videoUrl && song.videoDownloadStatus !== "disabled" && (
         <MusicPurchasePanel productId={`video:${song.slug}`} songTitle={song.title} />
       )}

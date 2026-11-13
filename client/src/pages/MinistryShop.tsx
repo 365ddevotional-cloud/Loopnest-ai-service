@@ -1,8 +1,10 @@
 import { isAndroidReader } from "@/lib/android-reader";
-import { useEffect, useRef, useState } from "react";
+import SpiritToneTimedPreview from "@/components/SpiritToneTimedPreview";
+import { songLanguageCategories } from "@shared/song-languages";
+import { useEffect, useState } from "react";
 import { Link, useRoute } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Eye, Headphones, Search, ShoppingBag, Sparkles } from "lucide-react";
+import { BookOpen, Eye, Headphones, Music2, Search, ShoppingBag, Sparkles } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +23,26 @@ const filters = ["All", "Book", "Music", "Membership"] as const;
 const icons = { Book: BookOpen, Music: Headphones, Membership: Sparkles };
 
 const viewKey = ["/api/ministry-shop/views"] as const;
+type ShopProduct = (typeof catalog)[number];
+type ShopMusicMetadata = { language: string; genre: string; songType: string };
+type ShopArtworkResponse = {
+  artwork: Record<string, string>;
+  metadata: Record<string, ShopMusicMetadata>;
+};
+
+// Keep both music sources visible instead of putting all newly added weekly
+// songs after the existing Payhip catalog. Stable order avoids layout jumping.
+function mixMusicSources(products: ShopProduct[]): ShopProduct[] {
+  const older = products.filter(product => !("spiritToneSlug" in product));
+  const weekly = products.filter(product => "spiritToneSlug" in product);
+  const mixed: ShopProduct[] = [];
+  for (let i = 0; i < Math.max(older.length, weekly.length); i++) {
+    if (i < older.length) mixed.push(older[i]);
+    if (i < weekly.length) mixed.push(weekly[i]);
+  }
+  return mixed;
+}
+
 
 function ProductViews({ total }: { total?: number }) {
   if (total === undefined) return null;
@@ -66,6 +88,13 @@ function ProductArtwork({ product, detail = false, artworkUrl }: { product: (typ
           className={`h-full w-full ${detail || product.kind === "Book" ? "object-contain p-1.5" : "object-cover"}`}
           onError={() => setFailed(true)}
         />
+      ) : "spiritToneSlug" in product ? (
+        <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-900 to-amber-800 p-3 text-center text-white">
+          <div aria-hidden="true" className="absolute -right-8 -top-8 h-28 w-28 rounded-full border-2 border-amber-300/40" />
+          <Music2 className="mb-2 size-7 text-amber-200" aria-hidden="true" />
+          <span className="line-clamp-3 break-words font-serif text-sm font-bold leading-tight sm:text-base">{product.title}</span>
+          <span className="mt-2 text-[10px] font-bold uppercase tracking-wider text-amber-200">SpiritTone Records</span>
+        </div>
       ) : <Icon className="size-9" aria-hidden="true" />}
     </div>
   );
@@ -79,87 +108,6 @@ const praisePackTracks = [
   "You Never Fail",
 ];
 
-function SpiritToneTimedPreview({ songId, title, slug }: { songId: number; title: string; slug: string }) {
-  const playerRef = useRef<HTMLAudioElement>(null);
-  const [playing, setPlaying] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-  const [availableDuration, setAvailableDuration] = useState(45);
-  const [failed, setFailed] = useState(false);
-  const maxTime = Math.min(45, availableDuration);
-  useEffect(() => () => {
-    const audio = playerRef.current;
-    if (audio) audio.pause();
-  }, []);
-  const toggle = async () => {
-    const audio = playerRef.current;
-    if (!audio) return;
-    if (!audio.paused) {
-      audio.pause();
-      setPlaying(false);
-      return;
-    }
-    try {
-      if (audio.currentTime >= maxTime - 0.15) audio.currentTime = 0;
-      await audio.play();
-      setPlaying(true);
-      setFailed(false);
-    } catch {
-      setPlaying(false);
-      setFailed(true);
-    }
-  };
-  const stopAtPreviewEnd = () => {
-    const audio = playerRef.current;
-    if (!audio) return;
-    if (audio.currentTime >= maxTime - 0.05) {
-      audio.pause();
-      audio.currentTime = 0;
-      setPlaying(false);
-      setElapsed(0);
-    } else {
-      setElapsed(audio.currentTime);
-    }
-  };
-  const seek = (time: number) => {
-    const audio = playerRef.current;
-    if (!audio || !Number.isFinite(time)) return;
-    const capped = Math.max(0, Math.min(time, maxTime - 0.05));
-    audio.currentTime = capped;
-    setElapsed(capped);
-  };
-  return (
-    <section className="mt-4 rounded-xl border border-border bg-muted/30 p-4" aria-label={`45-second preview of ${title}`}>
-      <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold"><Headphones size={16} aria-hidden="true" /> Listen to the first 45 seconds</h2>
-      <audio
-        ref={playerRef}
-        src={`/api/songs/${songId}/audio`}
-        preload="none"
-        onLoadedMetadata={event => {
-          const duration = event.currentTarget.duration;
-          if (Number.isFinite(duration) && duration > 0) setAvailableDuration(Math.min(45, duration));
-        }}
-        onTimeUpdate={stopAtPreviewEnd}
-        onSeeking={event => {
-          if (event.currentTarget.currentTime > 45) event.currentTarget.currentTime = 0;
-        }}
-        onEnded={() => { setPlaying(false); setElapsed(0); }}
-        onPause={() => setPlaying(false)}
-        onError={() => { setFailed(true); setPlaying(false); }}
-      />
-      <div className="flex items-center gap-3">
-        <Button type="button" size="sm" onClick={() => void toggle()} aria-label={playing ? `Pause ${title} preview` : `Play ${title} preview`}>
-          {playing ? "Pause" : "Play"}
-        </Button>
-        <input type="range" aria-label="Preview position" min={0} max={maxTime} step={0.1}
-          value={Math.min(elapsed, maxTime)} onChange={event => seek(Number(event.target.value))} className="min-w-0 flex-1" />
-        <span className="text-xs tabular-nums text-muted-foreground">{Math.floor(elapsed)}s / {Math.ceil(maxTime)}s</span>
-      </div>
-      {failed && <p role="alert" className="mt-2 text-sm text-destructive">This recording could not be played. You can try its original SpiritTone page.</p>}
-      <p className="mt-2 text-xs text-muted-foreground">Playback-limited sample from the existing SpiritTone recording. The separately rendered stereo clip and purchase package are still being prepared.</p>
-      <Link href={`/music/${encodeURIComponent(slug)}`} className="mt-2 inline-block text-sm font-semibold text-primary underline">Open in SpiritTone Records</Link>
-    </section>
-  );
-}
 
 function SongPreview({ product }: { product: (typeof catalog)[number] }) {
   const [selected, setSelected] = useState(0);
@@ -388,7 +336,7 @@ function ShopCatalog() {
   const { data: prices, locationResolved, retryDeviceLocation } = useShopPrices();
   const { user, emailVerified, getIdToken } = useUser();
   const canViewVisits = emailVerified && isMinistryShopAdminEmail(user?.email);
-  const { data: spiritToneArt } = useQuery<{ artwork: Record<string, string> }>({
+  const { data: spiritToneArt } = useQuery<ShopArtworkResponse>({
     queryKey: ["/api/ministry-shop/spirit-tone-artwork"],
     queryFn: async ({ signal }) => {
       const response = await fetch("/api/ministry-shop/spirit-tone-artwork", { signal });
@@ -418,9 +366,30 @@ function ShopCatalog() {
   const views = canViewVisits ? visitCounts : undefined;
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
   const [query, setQuery] = useState("");
+  const [musicLanguage, setMusicLanguage] = useState("all");
+  const [musicGenre, setMusicGenre] = useState("all");
+  const [musicOrder, setMusicOrder] = useState<"mixed" | "az">("mixed");
   const normalizedQuery = query.trim().toLocaleLowerCase();
-  const products = catalog.filter(item => !item.replacedBy && (filter === "All" || item.kind === filter) &&
-    item.title.toLocaleLowerCase().includes(normalizedQuery));
+  const musicMetadata = spiritToneArt?.metadata ?? {};
+  const musicLanguageFor = (p: ShopProduct) =>
+    "spiritToneSlug" in p ? musicMetadata[p.id]?.language || "Unspecified" : "Unspecified";
+  const musicGenreFor = (p: ShopProduct) =>
+    "spiritToneSlug" in p ? musicMetadata[p.id]?.genre !== "Unspecified" && musicMetadata[p.id]?.genre ? musicMetadata[p.id].genre : musicMetadata[p.id]?.songType || "Unspecified" : "Unspecified";
+  const musicProducts = catalog.filter(p => p.kind === "Music" && !p.replacedBy);
+  const languages = Array.from(new Set(musicProducts.flatMap(p => songLanguageCategories(musicLanguageFor(p))))).sort();
+  const genres = Array.from(new Set(musicProducts.map(musicGenreFor))).sort();
+  const eligibleProducts = catalog.filter(item => !item.replacedBy &&
+    (filter === "All" || item.kind === filter) &&
+    item.title.toLocaleLowerCase().includes(normalizedQuery) &&
+    (item.kind !== "Music" || (
+      (musicLanguage === "all" || songLanguageCategories(musicLanguageFor(item)).includes(musicLanguage)) &&
+      (musicGenre === "all" || musicGenreFor(item) === musicGenre)
+    )));
+  const nonMusic = eligibleProducts.filter(item => item.kind !== "Music");
+  const matchingMusic = eligibleProducts.filter(item => item.kind === "Music");
+  const products = [...nonMusic, ...(musicOrder === "az"
+    ? [...matchingMusic].sort((a, b) => a.title.localeCompare(b.title))
+    : mixMusicSources(matchingMusic))];
 
   if (params) return <ProductDetail id={params.productId} views={views} price={prices?.products[params.productId]} />;
 
@@ -459,6 +428,34 @@ function ShopCatalog() {
             </Button>
           ))}
         </div>
+        {(filter === "All" || filter === "Music") && (
+          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-muted/20 p-2" aria-label="Music discovery filters">
+            <label className="min-w-28 flex-1 text-xs font-semibold text-muted-foreground sm:max-w-52">
+              Song language
+              <select value={musicLanguage} onChange={event => setMusicLanguage(event.target.value)}
+                className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground">
+                <option value="all">All languages</option>
+                {languages.map(value => <option key={value} value={value}>{value}</option>)}
+              </select>
+            </label>
+            <label className="min-w-28 flex-1 text-xs font-semibold text-muted-foreground sm:max-w-52">
+              Genre / format
+              <select value={musicGenre} onChange={event => setMusicGenre(event.target.value)}
+                className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground">
+                <option value="all">All genres and formats</option>
+                {genres.map(value => <option key={value} value={value}>{value}</option>)}
+              </select>
+            </label>
+            <label className="min-w-28 flex-1 text-xs font-semibold text-muted-foreground sm:max-w-52">
+              Song order
+              <select value={musicOrder} onChange={event => setMusicOrder(event.target.value as "mixed" | "az")}
+                className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground">
+                <option value="mixed">Mixed — all catalogs</option>
+                <option value="az">Song title A–Z</option>
+              </select>
+            </label>
+          </div>
+        )}
         <p aria-live="polite" className="mb-2 text-xs text-muted-foreground">
           {products.length ? `${products.length} ${products.length === 1 ? "item" : "items"}` : "No matching items. Try a different title or category."}
         </p>
