@@ -189,7 +189,7 @@ function ProductPreview({ product }: { product: (typeof catalog)[number] }) {
 
 type SpiritToneSongDetails = {
   title: string; slug: string; artist?: string | null; featuredArtist?: string | null;
-  composer?: string | null; producer?: string | null; lyricist?: string | null;
+  composer?: string | null; producer?: string | null; lyricist?: string | null; sampler?: string | null;
   labelName?: string | null; genre?: string | null; language?: string | null;
   songType?: string | null; scriptureReference?: string | null;
   coverImageUrl?: string | null;
@@ -217,7 +217,7 @@ function SpiritToneReleaseDetails({ slug }: { slug: string }) {
     ["Artist", song.artist && !/^(?:reverend |rev\.? |pastor )?moses afolabi$/i.test(song.artist.trim()) ? song.artist : null],
     ["Featured artist", song.featuredArtist && !/^(?:reverend |rev\.? |pastor )?moses afolabi$/i.test(song.featuredArtist.trim()) ? song.featuredArtist : null],
     ["Record label", song.labelName], ["Producer", song.producer],
-    ["Composer", song.composer], ["Lyricist", song.lyricist],
+    ["Composer", song.composer], ["Lyricist", song.lyricist], ["Sampler", song.sampler],
     ["Genre", song.genre], ["Language", song.language],
     ["Song type", song.songType], ["Scripture", song.scriptureReference],
     ["Release year", song.releaseYear], ["Copyright", song.copyrightNotice],
