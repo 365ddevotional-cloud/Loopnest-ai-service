@@ -86,7 +86,7 @@ def build(song_file, audio_file, art_file, destination):
     fields = [
         ("Song", "title"), ("Artist", "artist"), ("Featured artist", "featuredArtist"),
         ("Record label", "labelName"), ("Producer", "producer"), ("Composer", "composer"),
-        ("Lyricist", "lyricist"), ("Choir", "choir"), ("Instrumentalist", "instrumentalist"),
+        ("Lyricist", "lyricist"), ("Sampler", "sampler"), ("Choir", "choir"), ("Instrumentalist", "instrumentalist"),
         ("Genre", "genre"), ("Language", "language"), ("Song type", "songType"),
         ("Scripture reference", "scriptureReference"), ("Scripture text", "scriptureText"),
         ("Release year", "releaseYear"), ("Copyright", "copyrightNotice"),
