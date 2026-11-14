@@ -648,6 +648,12 @@ export default function SongDetail() {
               <span className="text-foreground">{song.lyricist}</span>
             </>
           )}
+          {song.sampler && (
+            <>
+              <span className="text-muted-foreground">Sampler</span>
+              <span className="text-foreground">{song.sampler}</span>
+            </>
+          )}
           {(song as any).choir && (
             <>
               <span className="text-muted-foreground">Choir / Group</span>
