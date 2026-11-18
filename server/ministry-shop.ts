@@ -79,7 +79,10 @@ export function registerMinistryShopRoutes(app: Express, verifyToken: VerifyToke
 
   app.post("/api/ministry-shop/:id/visit", async (req, res) => {
     const id = req.params.id;
-    if (!await getShopProduct(id)) return res.status(404).json({ message: "Product not found." });
+    let product;
+    try { product = await getShopProduct(id); }
+    catch { return res.status(503).json({ message: "The shop is temporarily unavailable." }); }
+    if (!product) return res.status(404).json({ message: "Product not found." });
 
     const browserId = req.body?.browserId;
     if (typeof browserId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(browserId)) {
