@@ -12,9 +12,10 @@ interface ShareButtonProps {
   url?: string;
   className?: string;
   variant?: "ghost" | "default" | "accent";
+  compact?: boolean;
 }
 
-export function ShareButton({ title, text, url, className = "", variant = "ghost" }: ShareButtonProps) {
+export function ShareButton({ title, text, url, className = "", variant = "ghost", compact = false }: ShareButtonProps) {
   const buttonVariant = variant === "accent" ? "default" : variant;
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -56,14 +57,14 @@ export function ShareButton({ title, text, url, className = "", variant = "ghost
   };
 
   return (
-    <span className="inline-flex flex-wrap items-center gap-1">
+    <span className={`inline-flex items-center gap-1 ${compact ? "relative flex-nowrap" : "flex-wrap"}`}>
       <Button size="sm" variant={buttonVariant} onClick={() => handleNativeShare()} disabled={sharing} aria-busy={sharing}
         className={className} title={url ? "Share a quick link; full text is under More sharing options" : "Share"} data-testid="button-share">
-        <Share2 className="h-4 w-4 mr-1" />{sharing ? "Opening share…" : "Share"}
+        <Share2 className={`h-4 w-4 ${compact ? "" : "mr-1"}`} />{sharing ? (compact ? "Sharing…" : "Opening share…") : "Share"}
       </Button>
       <DropdownMenu open={optionsOpen} onOpenChange={setOptionsOpen}>
         <DropdownMenuTrigger asChild>
-          <Button size="sm" variant="outline" aria-label="More sharing options" title="More sharing options" data-testid="button-share-options">
+          <Button size="sm" variant="outline" className={compact ? "min-h-8 w-8 px-1" : undefined} aria-label="More sharing options" title="More sharing options" data-testid="button-share-options">
             <ChevronDown className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
@@ -90,7 +91,7 @@ export function ShareButton({ title, text, url, className = "", variant = "ghost
           <DropdownMenuItem onClick={() => copyText(text)} data-testid="share-copy-text"><Copy className="h-4 w-4 mr-2" /> Copy full text</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <span role="status" aria-live="polite" className="basis-full text-xs text-muted-foreground">{status}</span>
+      <span role="status" aria-live="polite" className={compact ? "sr-only" : "basis-full text-xs text-muted-foreground"}>{status}</span>
     </span>
   );
 }

@@ -701,7 +701,7 @@ export function SongMiniCard() {
 
   return (
     <div
-      className="flex items-center gap-3 p-3 rounded-xl border border-amber-200/70 dark:border-amber-800/30 shadow-sm"
+      className="flex items-center gap-2 px-3 py-2 rounded-xl border border-amber-200/70 dark:border-amber-800/30 shadow-sm"
       style={{
         background: "linear-gradient(135deg, rgba(253,245,232,0.9) 0%, rgba(240,216,152,0.7) 100%)",
       }}
@@ -709,7 +709,7 @@ export function SongMiniCard() {
     >
       {/* Thumbnail + Info — clicking opens song detail page */}
       <Link href={`/music/${song.slug}`} className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
-        <div className="flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden flex items-center justify-center"
+        <div className="flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center"
           style={{ background: "linear-gradient(135deg, #f0d080 0%, #c89820 100%)" }}
         >
           {song.coverImageUrl ? (
@@ -748,7 +748,7 @@ export function SongMiniCard() {
           >
             {song.title}
           </div>
-          <div className="text-xs truncate" style={{ color: "#7a4a00" }}>
+          <div className="hidden sm:block text-xs truncate" style={{ color: "#7a4a00" }}>
             {song.labelName} · {song.scriptureReference}
           </div>
         </div>
@@ -772,7 +772,7 @@ export function SongMiniCard() {
         <Link href={`/music/${song.slug}`}>
           <button
             data-testid="button-view-song"
-            className="text-xs font-semibold transition-colors whitespace-nowrap"
+            className="hidden sm:block text-xs font-semibold transition-colors whitespace-nowrap"
             style={{ color: "#7a4a00" }}
           >
             View Song →

@@ -1,3 +1,4 @@
+import { ShopFeature } from "@/components/ShopFeature";
 import { GooglePlayReviewLink } from "@/components/GooglePlayReviewLink";
 import { useQuery } from "@tanstack/react-query";
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
@@ -200,6 +201,7 @@ export default function SundaySchool() {
       </Helmet>
 
       <div className="max-w-4xl mx-auto space-y-10">
+        <ShopFeature />
         <div className="text-center space-y-3">
           <div className="flex items-center justify-center gap-3">
             <GraduationCap className="w-8 h-8 text-primary" />
