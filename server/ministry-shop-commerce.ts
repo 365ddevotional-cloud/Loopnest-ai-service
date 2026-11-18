@@ -6,7 +6,8 @@ import { GetObjectCommand, HeadObjectCommand, S3Client } from "@aws-sdk/client-s
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
-import catalog from "../client/src/data/ministry-shop-catalog.json";
+import { getShopCatalog, getShopProduct, type ShopCatalogProduct } from "./ministry-shop-catalog";
+import { registerShopUploads } from "./ministry-shop-upload";
 import { db } from "./db";
 import { paymentMatchesOrder } from "./music-commerce";
 import { musicCountryFromRequest } from "./music-location";
@@ -17,7 +18,7 @@ import { shopAssetsMatchProduct } from "../shared/ministry-shop-asset-readiness"
 
 const appTag = "365-ministry-shop-v1";
 const base = "https://365dailydevotional.com";
-const byId = new Map(catalog.map(item => [item.id, item]));
+
 const checkoutInput = z.object({
   productId: z.string(),
   country: z.string().regex(/^[A-Z]{2}$/),
@@ -43,11 +44,12 @@ function issue(status: number, message: string): never {
   throw Object.assign(new Error(message), { status });
 }
 
-function canSell(id: string, assets: Asset[]) {
-  return shopAssetsMatchProduct(byId.get(id), assets, shopBundleId);
+async function canSell(id: string, assets: Asset[], product?: ShopCatalogProduct) {
+  return shopAssetsMatchProduct(product ?? await getShopProduct(id, true), assets, shopBundleId);
 }
 
 export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyToken, requireAdmin: RequestHandler) {
+  registerShopUploads(app, requireAdmin);
   const env = process.env;
   const bucket = env.SHOP_R2_PRIVATE_BUCKET;
   const r2 = env.R2_ACCOUNT_ID && env.R2_BUCKET_NAME && bucket && bucket !== env.R2_BUCKET_NAME &&
@@ -125,6 +127,8 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
       if (!country || !/^[A-Z]{2}$/.test(country) || !musicRegions[country]) return res.json({ products: {} });
       const local = prices();
       if (!local[country]) return res.json({ products: {} });
+      const catalog = await getShopCatalog();
+      const byId = new Map(catalog.map(item => [item.id,item]));
       const purchasable = new Set<string>();
       if (enabled && countries.has(country)) {
         const { rows } = await db.execute<Asset & {product_id: string}>(sql`SELECT assets.* FROM ministry_shop_assets assets
@@ -136,7 +140,7 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
           group.push(asset);
           groups.set(asset.product_id, group);
         }
-        for (const [id, files] of groups) if (canSell(id, files)) purchasable.add(id);
+        for (const [id, files] of groups) if (byId.has(id) && await canSell(id, files, byId.get(id))) purchasable.add(id);
       }
       res.json({ country, products: Object.fromEntries(catalog.flatMap(item => {
         const price = ministryShopPrice(item, country, local);
@@ -155,7 +159,7 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
       const { productId, country, amount, currency } = parsed.data;
       const detected = musicCountryFromRequest(req);
       if (detected && detected !== country) issue(409, "Your network location differs from your displayed country. Refresh before paying.");
-      const item = byId.get(productId);
+      const item = await getShopProduct(productId);
       const price = item && ministryShopPrice(item, country, prices());
       if (!item || !price?.stripeSupported || !countries.has(country)) issue(409, "Stripe checkout is unavailable for this product and currency.");
       if (price.usdFallback && !detected) issue(409, "We couldn't confirm your country for this price. Refresh before paying.");
@@ -168,7 +172,7 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
 
       const { rows: assets } = await db.execute<Asset>(sql`SELECT object_key, file_name, content_type, size_bytes
         FROM ministry_shop_assets WHERE product_id=${productId} ORDER BY object_key`);
-      if (!canSell(productId, assets)) issue(409, "The original download for this product is not ready.");
+      if (!await canSell(productId, assets)) issue(409, "The original download for this product is not ready.");
       await verifyStoredAssets(assets);
       const { rows: existingOrders } = await db.execute<Pick<Order, "session_id" | "status">>(sql`
         SELECT session_id, status FROM ministry_shop_orders
@@ -213,6 +217,7 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
       const { rows } = await db.execute<Order>(sql`SELECT session_id, product_id, status, download_expires_at
         FROM ministry_shop_orders WHERE firebase_uid=${user.uid} AND status IN ('paid','pending')
         ORDER BY created_at DESC LIMIT 100`);
+      const byId = new Map((await getShopCatalog(true)).map(item => [item.id, item]));
       res.json(rows.map(row => ({
         sessionId: row.session_id,
         title: byId.get(row.product_id)?.title ?? "Shop purchase",
@@ -233,7 +238,7 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
       if (order.download_expires_at && new Date(order.download_expires_at).getTime() <= Date.now()) {
         issue(410, "Your two-hour download window has ended.");
       }
-      if (!r2 || !bucket || !canSell(order.product_id, order.assets)) issue(503, "The original download is unavailable.");
+      if (!r2 || !bucket || !await canSell(order.product_id, order.assets)) issue(503, "The original download is unavailable.");
       const paid = await confirm(order);
       await verifyStoredAssets(paid.assets);
       const seconds = Math.min(900, Math.floor((new Date(paid.download_expires_at!).getTime() - Date.now()) / 1000));
