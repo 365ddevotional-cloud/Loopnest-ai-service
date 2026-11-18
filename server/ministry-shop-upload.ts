@@ -29,17 +29,25 @@ type Upload = {
 };
 function storage() {
   const env = process.env;
+  const accessKeyId = env.SHOP_IMPORT_R2_ACCESS_KEY_ID ?? env.SHOP_R2_ACCESS_KEY_ID;
+  const secretAccessKey = env.SHOP_IMPORT_R2_SECRET_ACCESS_KEY ?? env.SHOP_R2_SECRET_ACCESS_KEY;
   if (!env.SHOP_R2_PRIVATE_BUCKET || env.SHOP_R2_PRIVATE_BUCKET === env.R2_BUCKET_NAME ||
-      !env.R2_ACCOUNT_ID || !env.SHOP_R2_ACCESS_KEY_ID || !env.SHOP_R2_SECRET_ACCESS_KEY) {
+      !env.R2_ACCOUNT_ID || !accessKeyId || !secretAccessKey) {
     throw new Error("Private shop storage is not configured.");
   }
   return { bucket: env.SHOP_R2_PRIVATE_BUCKET, client: new S3Client({
     region: "auto", endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    credentials: { accessKeyId: env.SHOP_R2_ACCESS_KEY_ID, secretAccessKey: env.SHOP_R2_SECRET_ACCESS_KEY },
+    credentials: { accessKeyId, secretAccessKey },
+    requestChecksumCalculation: "WHEN_REQUIRED",
   }) };
 }
 function route(handler: RequestHandler): RequestHandler {
   return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(error => {
+    console.error("[Shop product upload]", {
+      operation: req.method + " " + req.route?.path,
+      error: error?.name, code: error?.code, status: error?.$metadata?.httpStatusCode,
+      message: error?.name === "Error" ? error.message : undefined,
+    });
     res.status(error instanceof z.ZodError ? 400 : 503).json({
       message: error instanceof z.ZodError ? "Review the product fields and file type." : "The shop operation could not finish. Your draft is retained. Try again.",
     });
