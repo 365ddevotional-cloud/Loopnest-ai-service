@@ -1,7 +1,7 @@
 import type { Express, RequestHandler } from "express";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
-import catalog from "../client/src/data/ministry-shop-catalog.json";
+import { getShopCatalog, getShopProduct, type ShopCatalogProduct } from "./ministry-shop-catalog";
 import { db } from "./db";
 
 export type ShopAsset = { object_key: string; file_name: string; content_type: string; size_bytes: string };
@@ -18,11 +18,12 @@ export function registerMinistryShopAdmin(
   app: Express,
   requireAdmin: RequestHandler,
   readiness: ShopReadiness,
-  canSell: (id: string, assets: ShopAsset[]) => boolean,
+  canSell: (id: string, assets: ShopAsset[], product?: ShopCatalogProduct) => Promise<boolean>,
 ) {
   app.get("/api/admin/ministry-shop", requireAdmin, async (_req, res) => {
     res.set("Cache-Control", "private, no-store");
     try {
+      const catalog = await getShopCatalog(true);
       const [products, assets, orders, spiritTone] = await Promise.all([
         db.execute<{ product_id: string; total: string | null; paused: boolean | null }>(sql`
           SELECT COALESCE(v.product_id,c.product_id) AS product_id, v.total, c.paused
@@ -91,15 +92,15 @@ export function registerMinistryShopAdmin(
           songs: reconciliation,
         },
         readiness,
-        products: catalog.map(item => {
+        products: await Promise.all(catalog.map(async item => {
           const files = filesByProduct.get(item.id) ?? [];
           const row = statistics.get(item.id);
           return {
             id: item.id, title: item.title, kind: item.kind,
             visits: Number(row?.total ?? 0), paused: row?.paused === true,
-            fileCount: files.length, filesReady: canSell(item.id, files),
+            fileCount: files.length, filesReady: await canSell(item.id, files, item),
           };
-        }),
+        })),
         orders: orders.rows.map(order => ({
           reference: order.session_id.slice(-12),
           productId: order.product_id,
@@ -116,7 +117,7 @@ export function registerMinistryShopAdmin(
 
   app.patch("/api/admin/ministry-shop/:id/sales", requireAdmin, async (req, res) => {
     res.set("Cache-Control", "private, no-store");
-    const product = catalog.find(item => item.id === req.params.id);
+    const product = await getShopProduct(req.params.id, true);
     if (!product) return res.status(404).json({ message: "Product not found." });
     if (product.kind === "Membership") return res.status(409).json({ message: "This control is for one-time products." });
     const input = salesInput.safeParse(req.body);

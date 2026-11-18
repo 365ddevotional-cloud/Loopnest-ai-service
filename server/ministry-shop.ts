@@ -1,11 +1,11 @@
 import { createHmac } from "node:crypto";
 import type { Express } from "express";
 import { sql } from "drizzle-orm";
-import catalog from "../client/src/data/ministry-shop-catalog.json";
+import { getShopCatalog, getShopProduct } from "./ministry-shop-catalog";
 import { db } from "./db";
 import { isMinistryShopAdminEmail } from "../shared/ministry-shop-access";
 
-const productIds = new Set(catalog.map(item => item.id));
+
 
 type VerifyToken = (token: string) => Promise<{ uid: string; email?: string; email_verified?: boolean }>;
 
@@ -22,6 +22,7 @@ export function registerMinistryShopRoutes(app: Express, verifyToken: VerifyToke
         SELECT id, cover_image_url, language, genre, song_type
         FROM songs WHERE is_active = true
       `);
+      const catalog = await getShopCatalog();
       const allowed = new Set(catalog.filter(
         item => "spiritToneSongId" in item && typeof item.spiritToneSongId === "number"
       ).map(item => item.spiritToneSongId));
@@ -64,6 +65,8 @@ export function registerMinistryShopRoutes(app: Express, verifyToken: VerifyToke
       const { rows } = await db.execute<{ product_id: string; total: string }>(sql`
         SELECT product_id, total FROM ministry_shop_product_views
       `);
+      const catalog = await getShopCatalog();
+      const productIds = new Set(catalog.map(item => item.id));
       const views: Record<string, number> = Object.fromEntries(catalog.map(item => [item.id, 0]));
       for (const row of rows) {
         if (productIds.has(row.product_id)) views[row.product_id] = Number(row.total);
@@ -76,7 +79,7 @@ export function registerMinistryShopRoutes(app: Express, verifyToken: VerifyToke
 
   app.post("/api/ministry-shop/:id/visit", async (req, res) => {
     const id = req.params.id;
-    if (!productIds.has(id)) return res.status(404).json({ message: "Product not found." });
+    if (!await getShopProduct(id)) return res.status(404).json({ message: "Product not found." });
 
     const browserId = req.body?.browserId;
     if (typeof browserId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(browserId)) {

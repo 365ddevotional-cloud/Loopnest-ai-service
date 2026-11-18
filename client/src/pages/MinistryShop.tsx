@@ -1,7 +1,7 @@
 import { isAndroidReader } from "@/lib/android-reader";
 import SpiritToneTimedPreview from "@/components/SpiritToneTimedPreview";
 import { songLanguageCategories } from "@shared/song-languages";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { Link, useRoute } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, Eye, Headphones, Music2, Search, ShoppingBag, Sparkles } from "lucide-react";
@@ -11,7 +11,9 @@ import { Input } from "@/components/ui/input";
 import { formatShopPrice, MinistryShopPurchases, ShopCheckout, useShopPrices } from "@/components/MinistryShopCheckout";
 import { useUser } from "@/contexts/UserContext";
 import { isMinistryShopAdminEmail } from "@shared/ministry-shop-access";
-import catalog from "@/data/ministry-shop-catalog.json";
+import staticCatalog from "@/data/ministry-shop-catalog.json";
+type CatalogProduct = (typeof staticCatalog)[number] & { artworkUrl?: string; description?: string; author?: string; lyrics?: string };
+const CatalogContext = createContext<CatalogProduct[]>(staticCatalog);
 import bookPreviewData from "@/data/ministry-shop-book-previews.json";
 
 const bookPreviews: Record<string, { section: string; quote?: string; excerpt: string; exercise?: string }> = bookPreviewData;
@@ -23,7 +25,7 @@ const filters = ["All", "Book", "Music", "Membership"] as const;
 const icons = { Book: BookOpen, Music: Headphones, Membership: Sparkles };
 
 const viewKey = ["/api/ministry-shop/views"] as const;
-type ShopProduct = (typeof catalog)[number];
+type ShopProduct = CatalogProduct;
 type ShopMusicMetadata = { language: string; genre: string; songType: string };
 type ShopArtworkResponse = {
   artwork: Record<string, string>;
@@ -53,7 +55,7 @@ function ProductViews({ total }: { total?: number }) {
   );
 }
 
-function ProductArtwork({ product, detail = false, artworkUrl }: { product: (typeof catalog)[number]; detail?: boolean; artworkUrl?: string }) {
+function ProductArtwork({ product, detail = false, artworkUrl }: { product: CatalogProduct; detail?: boolean; artworkUrl?: string }) {
   const Icon = icons[product.kind as keyof typeof icons];
   const [failed, setFailed] = useState(false);
   const slug = "spiritToneSlug" in product && typeof product.spiritToneSlug === "string" ? product.spiritToneSlug : null;
@@ -68,7 +70,7 @@ function ProductArtwork({ product, detail = false, artworkUrl }: { product: (typ
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
-  const resolvedArtwork = detail && slug && sourceSong?.coverImageUrl ? sourceSong.coverImageUrl : artworkUrl || `/shop-art/${product.id}.webp`;
+  const resolvedArtwork = detail && slug && sourceSong?.coverImageUrl ? sourceSong.coverImageUrl : product.artworkUrl || artworkUrl || `/shop-art/${product.id}.webp`;
   // A 404 on the placeholder may occur before the source artwork query resolves.
   // Reset fallback state when the real artwork becomes available.
   useEffect(() => { setFailed(false); }, [resolvedArtwork]);
@@ -109,7 +111,7 @@ const praisePackTracks = [
 ];
 
 
-function SongPreview({ product }: { product: (typeof catalog)[number] }) {
+function SongPreview({ product }: { product: CatalogProduct }) {
   const [selected, setSelected] = useState(0);
   const [audioFailed, setAudioFailed] = useState(false);
   const titles = product.id === "x29Tw" ? praisePackTracks : [product.title];
@@ -123,7 +125,7 @@ function SongPreview({ product }: { product: (typeof catalog)[number] }) {
       "spiritToneSongId" in product && typeof product.spiritToneSongId === "number") {
     return <SpiritToneTimedPreview songId={product.spiritToneSongId} title={product.title} slug={product.spiritToneSlug} />;
   }
-  if (!track) return null;
+  if (!track) return product.lyrics ? <details className="mt-4 rounded-lg border p-4"><summary className="font-semibold">Lyrics</summary><p className="mt-3 whitespace-pre-wrap text-sm">{product.lyrics}</p></details> : null;
 
   return (
     <section className="mt-4 rounded-xl border border-border bg-muted/30 p-4" aria-label="Song preview">
@@ -164,7 +166,7 @@ function SongPreview({ product }: { product: (typeof catalog)[number] }) {
   );
 }
 
-function ProductPreview({ product }: { product: (typeof catalog)[number] }) {
+function ProductPreview({ product }: { product: CatalogProduct }) {
   const book = product.kind === "Book" ? bookPreviews[product.id] : undefined;
   if (book) {
     return (
@@ -241,6 +243,7 @@ function SpiritToneReleaseDetails({ slug }: { slug: string }) {
 }
 
 function ProductDetail({ id, views, price }: { id: string; views?: Record<string, number>; price?: { amount: number; currency: string; country: string; ready: boolean } }) {
+  const catalog = useContext(CatalogContext);
   const product = catalog.find(item => item.id === id);
   const queryClient = useQueryClient();
   const { data: descriptions, isPending } = useQuery({
@@ -250,7 +253,7 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
     staleTime: Infinity,
     retry: false,
   });
-  const description = descriptions?.[id];
+  const description = product?.description ? product.description.split(/\n\n+/) : descriptions?.[id];
   const isSpiritTonePreview = !!product && "spiritToneSlug" in product && typeof product.spiritToneSlug === "string";
   const completePackageReady = isSpiritTonePreview && price?.ready === true;
 
@@ -329,7 +332,7 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
               <h2 className="text-lg font-bold">{product.kind === "Book" ? "About this book" : product.kind === "Music" ? "About this release" : "About this membership"}</h2>
               <div className="mt-3 space-y-3 break-words text-sm leading-relaxed text-muted-foreground sm:text-base">
                 {description?.length
-                  ? description.map((paragraph, index) => <p key={index}>{paragraph}</p>)
+                  ? description.map((paragraph, index) => <p className="whitespace-pre-wrap" key={index}>{paragraph}</p>)
                   : <p>{isSpiritTonePreview && !completePackageReady ? "Explore this SpiritTone recording and its original credits below. The downloadable package will be available after original master, artwork, and lyrics verification." : isPending ? "Loading description…" : "The description is currently unavailable."}</p>}
               </div>
             </div>
@@ -341,6 +344,7 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
 }
 
 function ShopCatalog() {
+  const catalog = useContext(CatalogContext);
   const [, params] = useRoute("/shop/:productId");
   const { data: prices, locationResolved, retryDeviceLocation } = useShopPrices();
   const { user, emailVerified, getIdToken } = useUser();
@@ -512,6 +516,7 @@ function ShopCatalog() {
 }
 
 export default function MinistryShop() {
+  const catalog = useQuery<CatalogProduct[]>({ queryKey: ["/api/ministry-shop/catalog"], staleTime: 30000 });
   const [purchases] = useRoute("/shop/purchases");
-  return purchases ? <MinistryShopPurchases /> : <ShopCatalog />;
+  return <CatalogContext.Provider value={catalog.data ?? staticCatalog}>{purchases ? <MinistryShopPurchases /> : <ShopCatalog />}</CatalogContext.Provider>;
 }

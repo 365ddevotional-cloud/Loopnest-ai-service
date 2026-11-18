@@ -3,6 +3,7 @@ import path from "node:path";
 import { pool } from "./db";
 
 export const ministryShopMigrationFiles = [
+  "20261118_ministry_shop_products.sql",
   "20261108_ministry_shop.sql",
   "20261108_ministry_shop_orders.sql",
   "20261108_ministry_shop_sales_controls.sql",
