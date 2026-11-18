@@ -106,7 +106,7 @@ export default function ShopProductEditor() {
       <label className="block text-sm font-medium">Product
         <select className="mt-1 min-h-11 w-full rounded-md border bg-background p-2" value={id} disabled={busy} onChange={event => choose(event.target.value)}>
           <option value="">Create a new product</option>
-          {inventory.data?.filter(p => p.kind !== "Membership" && !p.replacedBy && (p.requiredFileCount ?? 1) === 1 && p.packageFormat !== "zip")
+          {inventory.data?.filter(p => p.kind !== "Membership" && p.id !== "x29Tw" && !p.replacedBy && (p.requiredFileCount ?? 1) === 1 && p.packageFormat !== "zip")
             .map(p => <option key={p.id} value={p.id}>{p.title}{p.published === false ? " — Draft" : ""}</option>)}
         </select>
       </label>

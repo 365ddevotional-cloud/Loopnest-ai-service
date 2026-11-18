@@ -6,6 +6,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "./db";
+import { shopBundleId } from "./ministry-shop-pricing";
 import { getShopCatalog, getShopProduct, type ShopCatalogProduct } from "./ministry-shop-catalog";
 
 const productInput = z.object({
@@ -77,7 +78,7 @@ export function registerShopUploads(app: Express, requireAdmin: RequestHandler) 
       if (all.some(item => item.id !== id && normalize(item.title) === normalize(input.title))) {
         res.status(409).json({ message: "A product with this title already exists. Select it to update its files." }); return;
       }
-      if (previous && (previous.kind !== input.kind || (previous.requiredFileCount ?? 1) !== 1 ||
+      if (previous && (previous.id === shopBundleId || previous.kind !== input.kind || (previous.requiredFileCount ?? 1) !== 1 ||
           previous.packageFormat === "zip" || previous.replacedBy)) {
         res.status(409).json({ message: "This uploader supports individual PDF books and MP3 recordings. Choose a single-file product." });
         return;
