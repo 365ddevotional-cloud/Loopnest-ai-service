@@ -70,6 +70,7 @@ const Admin = lazy(() => import("@/pages/Admin"));
 const Bible = lazy(() => import("@/pages/Bible"));
 const Music = lazy(() => import("@/pages/Music"));
 const MusicPurchases = lazy(() => import("@/pages/MusicPurchases"));
+const ShopBookReader = lazy(() => import("@/pages/ShopBookReader"));
 const MinistryShop = lazy(() => import("@/pages/MinistryShop"));
 const SongDetail = lazy(() => import("@/pages/SongDetail"));
 const GamesHub = lazy(() => import("@/game-engine").then(m => ({ default: m.GamesHub })));
@@ -209,6 +210,7 @@ const Router = memo(function Router() {
       <Route path="/about" component={About} />
       <Route path="/updates" component={Updates} />
       <Route path="/promotions" component={Promotions} />
+      <Route path="/shop/read/:editionId"><Suspense fallback={<FeaturePageFallback />}><ShopBookReader /></Suspense></Route>
       <Route path="/shop/:productId"><Suspense fallback={<FeaturePageFallback />}><MinistryShop /></Suspense></Route>
       <Route path="/shop"><Suspense fallback={<FeaturePageFallback />}><MinistryShop /></Suspense></Route>
       <Route path="/discipleship" component={Discipleship} />

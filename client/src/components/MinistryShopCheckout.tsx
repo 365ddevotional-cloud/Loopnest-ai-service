@@ -1,3 +1,4 @@
+import {audioOwnership} from "@shared/shop-audiobook";
 import { isAndroidReader } from "@/lib/android-reader";
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -7,7 +8,7 @@ import { useUser } from "@/contexts/UserContext";
 import { formatMusicPrice } from "@shared/music-regions";
 import { useDeviceMusicCountry } from "./MusicPurchasePanel";
 
-type Price = { amount: number; currency: string; country: string; ready: boolean; usdFallback?: boolean };
+type Price = { audioEditionId?: string; audioAmount?: number; readListenAmount?: number; amount: number; currency: string; country: string; ready: boolean; usdFallback?: boolean };
 type ShopPrices = { country?: string; products: Record<string, Price> };
 
 export function formatShopPrice(price: Price) {
@@ -45,12 +46,19 @@ async function shopRequest<T>(path: string, token?: string, body?: object): Prom
 export function ShopCheckout({ productId, price }: { productId: string; price?: Price }) {
   const { user, emailVerified, getIdToken } = useUser();
   const [accepted, setAccepted] = useState(false);
+  const [choice,setChoice]=useState<"ebook"|"read-listen">("ebook");
+  const ownership=useQuery<ShopPurchase[]>({queryKey:["ministry-shop-purchases",user?.uid],enabled:!!user && !!emailVerified && !!price?.audioEditionId && !isAndroidReader(),queryFn:async()=>{
+    const token=await getIdToken();if(!token)throw new Error("Sign in to view purchases.");return shopRequest("/api/ministry-shop/purchases",token);
+  }});
+  const {ownedBook,ownedAudio}=audioOwnership(productId,price?.audioEditionId,ownership.data);
+  const purchaseKind=ownedBook ? "audio" : choice;
+  const selectedPrice = price && {...price,amount:purchaseKind === "audio" ? price.audioAmount ?? price.amount : purchaseKind === "read-listen" ? price.readListenAmount ?? price.amount : price.amount};
   const purchase = useMutation({
     mutationFn: async () => {
       const token = await getIdToken();
       if (!token || !price || !accepted || isAndroidReader()) throw new Error("Checkout is unavailable.");
       return shopRequest<{checkoutUrl?: string; purchaseUrl?: string}>("/api/ministry-shop/checkout", token, {
-        productId, country: price.country, amount: price.amount, currency: price.currency, acceptedDownloadPolicy: accepted,
+        productId, country: price.country, amount: selectedPrice!.amount, currency: price.currency, acceptedDownloadPolicy: accepted, purchaseKind, ...(ownedBook ? {bookSessionId:ownedBook.sessionId}:{}),
       });
     },
     onSuccess: result => {
@@ -71,19 +79,25 @@ export function ShopCheckout({ productId, price }: { productId: string; price?: 
   return (
     <div className="mt-5 space-y-3">
       {currencyNotice}
+      {ownedBook ? <div className="space-y-2 rounded-lg border p-3"><p className="text-sm font-semibold">You already own this book.</p><Button asChild variant="outline"><Link href={`/shop/read/${ownedBook.readerEditionId}`}>{ownedAudio?"Read and listen":"Read your book"}</Link></Button>{!ownedAudio && <p className="text-sm">Add the audiobook for {formatShopPrice({...price,amount:price.audioAmount!})} once.</p>}</div> : price.audioAmount && price.readListenAmount && <fieldset className="space-y-2 rounded-lg border p-3"><legend className="px-1 font-semibold">Choose your edition</legend>
+        {(["ebook","read-listen"] as const).map(kind=><label key={kind} className="flex items-center gap-2 text-sm"><input type="radio" name={`shop-edition-${productId}`} value={kind} checked={choice===kind} onChange={()=>{setChoice(kind);setAccepted(false);}} />{kind==="ebook"?"Read — eBook":"Read + Listen"} · {formatShopPrice({...price,amount:kind==="read-listen"?price.readListenAmount!:price.amount})}</label>)}
+      </fieldset>}
+      {price.audioAmount && <p className="text-xs text-muted-foreground">Audiobook: digitally narrated in English, US male voice. One payment, repeat listening in your account. No monthly subscription.</p>}
+      {!(ownedBook && ownedAudio) && <>
       <label className="flex items-start gap-2 text-sm text-muted-foreground">
         <input className="mt-1" type="checkbox" checked={accepted} onChange={event => setAccepted(event.target.checked)} />
-        I understand that my download window is two hours from payment.
+        {purchaseKind === "audio" ? "I understand this is an in-app audiobook upgrade for a book I already purchased, using this same account." : purchaseKind === "read-listen" ? "I understand that my PDF download window is two hours from payment. Audiobook listening has no two-hour limit." : "I understand that my download window is two hours from payment."}
       </label>
-      <Button disabled={!accepted || purchase.isPending} onClick={() => purchase.mutate()}>
-        {purchase.isPending ? "Opening Stripe…" : `Buy for ${formatShopPrice(price)}`}
+      <Button disabled={!accepted || purchase.isPending || ownership.isLoading} onClick={() => purchase.mutate()}>
+        {purchase.isPending ? "Opening Stripe…" : `${ownedBook?"Add audiobook":"Buy"} for ${formatShopPrice(selectedPrice!)}`}
       </Button>
       {purchase.error && <p role="alert" className="text-sm text-destructive">{purchase.error.message}</p>}
+      </>}
     </div>
   );
 }
 
-type ShopPurchase = { sessionId: string; title: string; status: string; downloadExpiresAt: string | null };
+type ShopPurchase = { productId:string; readerEditionId?:string; purchaseKind?:string; sessionId: string; title: string; status: string; downloadExpiresAt: string | null };
 
 export function MinistryShopPurchases() {
   const { user, loading } = useUser();
@@ -141,7 +155,8 @@ function ShopPurchaseList({ uid, returnedSession }: { uid: string; returnedSessi
         return (
           <section className="space-y-3 rounded-xl border p-4" key={order.sessionId}>
             <h2 className="font-semibold">{order.title}</h2>
-            {expired ? <p className="text-sm text-muted-foreground">Your two-hour download window has ended.</p> : (
+            {order.readerEditionId && <Button asChild><Link href={`/shop/read/${order.readerEditionId}`}>{order.purchaseKind === "audio" || order.purchaseKind === "read-listen" ? "Read and listen" : "Read book"}</Link></Button>}
+            {order.purchaseKind === "audio" ? <p className="text-sm text-muted-foreground">Audiobook access stays in this account. Open the reader to listen.</p> : expired ? <p className="text-sm text-muted-foreground">Your two-hour download window has ended.</p> : (
               <>
                 {order.status === "pending" && <p className="text-sm text-muted-foreground">If you just paid, check your payment to get your files.</p>}
                 <Button variant="outline" disabled={download.isPending} onClick={() => download.mutate(order.sessionId)}>

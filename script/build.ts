@@ -42,10 +42,15 @@ async function buildAll() {
   const shopMigrations = (await readdir("migrations"))
     .filter(file => /^20261108_ministry_shop(?:_orders|_sales_controls)?\.sql$/.test(file));
   if (shopMigrations.length !== 3) throw new Error("Shop migration files are incomplete");
-  shopMigrations.push("20261118_ministry_shop_products.sql");
+  shopMigrations.push("20261118_ministry_shop_products.sql", "20261118_ministry_shop_audio.sql");
   shopMigrations.push("20261113_spirit_tone_producer_credit_fix.sql", "20261113_spirittone_confirmed_song_credits.sql");
   await mkdir("dist/shop-migrations", { recursive: true });
   await Promise.all(shopMigrations.map(file => copyFile(`migrations/${file}`, `dist/shop-migrations/${file}`)));
+
+  await mkdir("dist/shop-migrations/readers", {recursive:true});
+  for (const name of (await readdir("server/shop-reader-drafts")).filter(name=>/^[a-z0-9-]+\.json$/.test(name))) {
+    await copyFile(`server/shop-reader-drafts/${name}`, `dist/shop-migrations/readers/${name}`);
+  }
 
   console.log("building server...");
   const pkg = JSON.parse(await readFile("package.json", "utf-8"));
