@@ -26,8 +26,9 @@ async function hashFile(file: string) {
 
 async function main() {
   const [directory, flag, ...extra] = process.argv.slice(2);
-  if (!directory || extra.length || (flag && flag !== "--upload")) {
-    throw new Error("Usage: node --import tsx script/import-ministry-shop-assets.ts EXTRACTED_DIRECTORY [--upload]");
+  const replaceBooks = flag === "--replace-book-pdfs";
+  if (!directory || extra.length || (flag && flag !== "--upload" && !replaceBooks)) {
+    throw new Error("Usage: node --import tsx script/import-ministry-shop-assets.ts EXTRACTED_DIRECTORY [--upload | --replace-book-pdfs]");
   }
 
   const root = await realpath(directory);
@@ -55,6 +56,14 @@ async function main() {
     }
 
     files.push({ ...item, file, name, key: `ministry-shop/${item.id}/${item.sha256}` });
+  }
+
+  if (replaceBooks) {
+    const singlePdfBooks = new Set(catalog.filter(item => item.kind === "Book" && item.requiredFileCount === 1).map(item => item.id));
+    if (new Set(files.map(item => item.id)).size !== files.length ||
+        files.some(item => !singlePdfBooks.has(item.id) || item.mime !== "application/pdf")) {
+      throw new Error("Replacement requires exactly one PDF per existing single-file book.");
+    }
   }
 
   if (!flag) {
@@ -99,11 +108,34 @@ async function main() {
       if (existing.ContentLength !== item.bytes || existing.Metadata?.sha256 !== item.sha256) {
         throw new Error(`Stored file verification failed: ${item.id}`);
       }
+      if (replaceBooks) continue;
       await db.execute(sql`
         INSERT INTO ministry_shop_assets (product_id, sha256, object_key, file_name, content_type, size_bytes)
         VALUES (${item.id}, ${item.sha256}, ${item.key}, ${item.name}, ${item.mime}, ${item.bytes})
         ON CONFLICT (product_id, sha256) DO NOTHING
       `);
+    }
+    if (replaceBooks) {
+      await db.transaction(async tx => {
+        // Serialize registry writes during the switch. Existing orders keep their asset snapshots.
+        await tx.execute(sql`LOCK TABLE ministry_shop_assets IN SHARE ROW EXCLUSIVE MODE`);
+        for (const item of files) {
+          const { rows } = await tx.execute<{ sha256: string; content_type: string }>(sql`
+            SELECT sha256, content_type FROM ministry_shop_assets WHERE product_id = ${item.id}
+          `);
+          if (rows.length !== 1 || rows[0].content_type !== "application/pdf") {
+            throw new Error(`Expected one existing registered PDF: ${item.id}`);
+          }
+          if (rows[0].sha256 === item.sha256) continue;
+          await tx.execute(sql`
+            UPDATE ministry_shop_assets SET sha256 = ${item.sha256}, object_key = ${item.key},
+              file_name = ${item.name}, content_type = ${item.mime}, size_bytes = ${item.bytes}
+            WHERE product_id = ${item.id} AND sha256 = ${rows[0].sha256}
+          `);
+        }
+      });
+      console.log(`Replaced current PDFs for ${files.length} books. Historical objects and orders were retained.`);
+      return;
     }
     console.log(`Imported ${files.length} verified originals as private shop assets.`);
   } finally {
