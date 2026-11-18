@@ -1,3 +1,5 @@
+import { registerShopAudiobooks, assetHash, type ShopOrder } from "./ministry-shop-audio";
+import { audioTotal } from "../shared/shop-audiobook";
 import { isAndroidReaderRequest } from "./android-reader";
 import { createHash } from "node:crypto";
 import type { Express, Request, RequestHandler, Response } from "express";
@@ -21,6 +23,8 @@ const base = "https://365dailydevotional.com";
 
 const checkoutInput = z.object({
   productId: z.string(),
+  purchaseKind: z.enum(["ebook","read-listen","audio"]).default("ebook"),
+  bookSessionId: z.string().max(180).optional(),
   country: z.string().regex(/^[A-Z]{2}$/),
   amount: z.number().int().positive(),
   currency: z.string().regex(/^[A-Z]{3}$/),
@@ -28,10 +32,7 @@ const checkoutInput = z.object({
 }).strict();
 const sessionInput = z.object({ sessionId: z.string().regex(/^cs_(test|live)_[A-Za-z0-9_]+$/) }).strict();
 
-type Order = {
-  session_id: string; firebase_uid: string; product_id: string; amount: number; currency: string;
-  status: string; payment_intent_id: string | null; assets: Asset[]; download_expires_at: Date | null;
-};
+type Order = ShopOrder;
 type VerifyToken = (token: string) => Promise<{ uid: string; email?: string; email_verified?: boolean }>;
 
 function sendError(res: Response, error: unknown) {
@@ -48,7 +49,7 @@ async function canSell(id: string, assets: Asset[], product?: ShopCatalogProduct
   return shopAssetsMatchProduct(product ?? await getShopProduct(id, true), assets, shopBundleId);
 }
 
-export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyToken, requireAdmin: RequestHandler) {
+export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyToken, requireAdmin: RequestHandler, services: {stripe?: Stripe} = {}) {
   registerShopUploads(app, requireAdmin);
   const env = process.env;
   const bucket = env.SHOP_R2_PRIVATE_BUCKET;
@@ -60,7 +61,7 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
     }) : null;
   const key = env.STRIPE_SECRET_KEY;
   const secret = env.STRIPE_SHOP_WEBHOOK_SECRET;
-  const stripe = key ? new Stripe(key, { maxNetworkRetries: 2, timeout: 20000 }) : null;
+  const stripe = services.stripe ?? (key ? new Stripe(key, { maxNetworkRetries: 2, timeout: 20000 }) : null);
   const countries = new Set((env.SHOP_STRIPE_COUNTRIES ?? "").split(",").map(value => value.trim()));
   const enabled = env.SHOP_CHECKOUT_ENABLED === "true" && !!secret && !!stripe && !!r2 &&
     (env.NODE_ENV !== "production" || /^(sk|rk)_live_/.test(key ?? ""));
@@ -104,7 +105,10 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
     const intent = session.payment_intent as Stripe.PaymentIntent | null;
     const charge = intent?.latest_charge as Stripe.Charge | null;
     if (intent?.id && charge && (charge.amount_refunded > 0 || charge.disputed)) await revoke(intent.id);
-    if (!paymentMatchesOrder(session, {
+    const audioMetadataMatches = order.purchase_kind === "ebook" || (
+      session.metadata?.purchaseKind === order.purchase_kind && session.metadata?.editionId === order.reader_edition_id &&
+      (order.purchase_kind !== "audio" || session.metadata?.bookSessionId === order.book_session_id));
+    if (!audioMetadataMatches || !paymentMatchesOrder(session, {
       sessionId: order.session_id, uid: order.firebase_uid, productId: order.product_id,
       amountCents: order.amount, currency: order.currency, status: order.status, paymentIntentId: order.payment_intent_id,
     }, appTag) || !intent || !charge || !Number.isSafeInteger(charge.created) || charge.created <= 0) {
@@ -119,6 +123,8 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
     if (latest?.status !== "paid" || !latest.download_expires_at) issue(403, "Download access is unavailable.");
     return latest;
   }
+
+  const audiobooks = registerShopAudiobooks(app, {viewer,confirm,r2,bucket,requireAdmin});
 
   app.get("/api/ministry-shop/prices", async (req, res) => {
     res.setHeader("Cache-Control", "private, no-store");
@@ -142,10 +148,13 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
         }
         for (const [id, files] of groups) if (byId.has(id) && await canSell(id, files, byId.get(id))) purchasable.add(id);
       }
-      res.json({ country, products: Object.fromEntries(catalog.flatMap(item => {
+      res.json({ country, products: Object.fromEntries((await Promise.all(catalog.map(async item => {
         const price = ministryShopPrice(item, country, local);
-        return price ? [[item.id, { ...price, ready: price.stripeSupported && purchasable.has(item.id) }]] : [];
-      })) });
+        const edition = item.kind === "Book" && audiobooks.configured() ? await audiobooks.currentEdition(item.id) : undefined;
+        const audioReady = !!price && price.currency === "USD" && audiobooks.ready(edition);
+        return price ? [[item.id, { ...price, ready: price.stripeSupported && purchasable.has(item.id),
+          ...(audioReady ? {audioEditionId:edition!.id,audioAmount:299,readListenAmount:price.amount+299} : {}) }]] : [];
+      }))).flat()) });
     } catch (error) { sendError(res, error); }
   });
 
@@ -156,14 +165,15 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
       const parsed = checkoutInput.safeParse(req.body);
       if (!parsed.success) issue(400, "Review the local price and accept the download policy.");
       if (!enabled || !stripe || !r2 || !bucket) issue(503, "Shop checkout is not open yet.");
-      const { productId, country, amount, currency } = parsed.data;
+      const { productId, country, amount, currency, purchaseKind, bookSessionId } = parsed.data;
       const detected = musicCountryFromRequest(req);
       if (detected && detected !== country) issue(409, "Your network location differs from your displayed country. Refresh before paying.");
       const item = await getShopProduct(productId);
       const price = item && ministryShopPrice(item, country, prices());
       if (!item || !price?.stripeSupported || !countries.has(country)) issue(409, "Stripe checkout is unavailable for this product and currency.");
       if (price.usdFallback && !detected) issue(409, "We couldn't confirm your country for this price. Refresh before paying.");
-      if (price.amount !== amount || price.currency !== currency) issue(409, "The local price changed. Refresh before paying.");
+      const expectedAmount = purchaseKind === "ebook" ? price.amount : audioTotal(price.amount,purchaseKind,price.currency);
+      if (expectedAmount !== amount || price.currency !== currency) issue(409, "The local price changed. Refresh before paying.");
       const user = await viewer(req);
       if (!user.email || !user.email_verified) issue(403, "Verify your account email before checking out.");
       const sales = await db.execute<{ paused: boolean }>(sql`SELECT paused FROM ministry_shop_sales_controls
@@ -174,10 +184,16 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
         FROM ministry_shop_assets WHERE product_id=${productId} ORDER BY object_key`);
       if (!await canSell(productId, assets)) issue(409, "The original download for this product is not ready.");
       await verifyStoredAssets(assets);
+      const edition = purchaseKind !== "ebook" ? await audiobooks.currentEdition(productId) : undefined;
+      if (purchaseKind !== "ebook" && (!audiobooks.ready(edition) || !edition || assetHash({assets}) !== edition.asset_sha256)) issue(409,"This audiobook is not ready for sale.");
+      const sourceBook = purchaseKind === "audio" && edition ? await audiobooks.bookOrder(user.uid,productId,edition,bookSessionId) : undefined;
+      if (edition) await audiobooks.reserve(edition);
       const { rows: existingOrders } = await db.execute<Pick<Order, "session_id" | "status">>(sql`
         SELECT session_id, status FROM ministry_shop_orders
         WHERE firebase_uid=${user.uid} AND product_id=${productId} AND amount=${amount} AND currency=${currency}
-        AND (status='pending' OR (status='paid' AND download_expires_at > now()))
+        AND purchase_kind=${purchaseKind}
+        AND (reader_edition_id IS NOT DISTINCT FROM ${edition?.id ?? null})
+        AND (status='pending' OR (status='paid' AND (purchase_kind != 'ebook' OR download_expires_at > now())))
         ORDER BY created_at DESC LIMIT 5
       `);
       for (const order of existingOrders) {
@@ -189,22 +205,23 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
         if (prior.status === "complete") return res.json({ purchaseUrl: "/shop/purchases" });
       }
 
-      const metadata = { app: appTag, productId, uid: user.uid, country };
+      const metadata = { app: appTag, productId, uid: user.uid, country, purchaseKind,
+        ...(edition ? {editionId:edition.id} : {}), ...(sourceBook ? {bookSessionId:sourceBook.session_id} : {}) };
       const fingerprint = createHash("sha256")
-        .update(JSON.stringify([user.uid, productId, country, amount, currency, assets, Math.floor(Date.now() / 1200000)]))
+        .update(JSON.stringify([user.uid, productId, country, amount, currency, assets, purchaseKind, edition?.id, sourceBook?.session_id, Math.floor(Date.now() / 1200000)]))
         .digest("hex");
       const session = await stripe.checkout.sessions.create({
         mode: "payment", adaptive_pricing: { enabled: false }, client_reference_id: user.uid,
         customer_email: user.email, metadata, payment_intent_data: { metadata },
-        custom_text: { submit: { message: "Download within two hours of payment using this same account." } },
-        line_items: [{ quantity: 1, price_data: { currency: currency.toLowerCase(), unit_amount: amount, product_data: { name: item.title } } }],
+        custom_text: { submit: { message: purchaseKind === "audio" ? "Audiobook access is saved to this account. Digitally narrated in English (US male voice)." : `Download within two hours of payment using this same account.${purchaseKind === "read-listen" ? " Audiobook access stays in your account. Digitally narrated in English (US male voice)." : ""}` } },
+        line_items: [{ quantity: 1, price_data: { currency: currency.toLowerCase(), unit_amount: amount, product_data: { name: item.title + (purchaseKind === "audio" ? " — Audiobook upgrade" : purchaseKind === "read-listen" ? " — Read + Listen" : "") } } }],
         success_url: `${base}/shop/purchases?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${base}/shop/${productId}`,
       }, { idempotencyKey: `365-shop-${fingerprint}` });
       if (session.status !== "open" || !session.url) issue(409, "Checkout is already complete or expired. Check your shop purchases.");
       await db.execute(sql`INSERT INTO ministry_shop_orders
-        (session_id, firebase_uid, product_id, amount, currency, assets)
-        VALUES (${session.id}, ${user.uid}, ${productId}, ${amount}, ${currency}, ${JSON.stringify(assets)}::jsonb)
+        (session_id, firebase_uid, product_id, amount, currency, assets, purchase_kind, reader_edition_id, book_session_id)
+        VALUES (${session.id}, ${user.uid}, ${productId}, ${amount}, ${currency}, ${JSON.stringify(assets)}::jsonb, ${purchaseKind}, ${edition?.id ?? null}, ${sourceBook?.session_id ?? null})
         ON CONFLICT (session_id) DO NOTHING`);
       res.json({ checkoutUrl: session.url });
     } catch (error) { sendError(res, error); }
@@ -214,15 +231,20 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
     res.setHeader("Cache-Control", "private, no-store");
     try {
       const user = await viewer(req);
-      const { rows } = await db.execute<Order>(sql`SELECT session_id, product_id, status, download_expires_at
+      const { rows } = await db.execute<Order>(sql`SELECT *
         FROM ministry_shop_orders WHERE firebase_uid=${user.uid} AND status IN ('paid','pending')
         ORDER BY created_at DESC LIMIT 100`);
       const byId = new Map((await getShopCatalog(true)).map(item => [item.id, item]));
-      res.json(rows.map(row => ({
-        sessionId: row.session_id,
-        title: byId.get(row.product_id)?.title ?? "Shop purchase",
-        status: row.status,
-        downloadExpiresAt: row.download_expires_at,
+      res.json(await Promise.all(rows.map(async row => {
+        const edition = row.reader_edition_id ? await audiobooks.editionById(row.reader_edition_id) : undefined;
+        const current = edition ?? (byId.get(row.product_id)?.kind === "Book" ? await audiobooks.editionForAssets(row.product_id,row.assets) : undefined);
+        const readerEditionId = current?.reviewed && assetHash(row) === current.asset_sha256 ? current.id : undefined;
+        return {
+          sessionId: row.session_id, productId:row.product_id,
+          title: byId.get(row.product_id)?.title ?? "Shop purchase", status: row.status,
+          downloadExpiresAt: row.download_expires_at, purchaseKind:row.purchase_kind,
+          readerEditionId,
+        };
       })));
     } catch (error) { sendError(res, error); }
   });
@@ -235,6 +257,7 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
       if (!parsed.success) issue(400, "Invalid purchase reference.");
       const order = await orderFor(parsed.data.sessionId);
       if (!order || order.firebase_uid !== user.uid) issue(404, "Purchase not found.");
+      if (order.purchase_kind === "audio") issue(409,"Open this audiobook in your book reader.");
       if (order.download_expires_at && new Date(order.download_expires_at).getTime() <= Date.now()) {
         issue(410, "Your two-hour download window has ended.");
       }
