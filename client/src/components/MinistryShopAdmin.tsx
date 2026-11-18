@@ -1,3 +1,4 @@
+import ShopProductEditor from "./ShopProductEditor";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -99,6 +100,7 @@ export default function MinistryShopAdmin() {
       )}
       {data && (
         <>
+          <ShopProductEditor />
           <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {([
               ["Checkout configuration", data.readiness.checkoutConfigured ? "Enabled" : "Off"],
