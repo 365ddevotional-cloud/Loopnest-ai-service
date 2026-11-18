@@ -22,6 +22,8 @@ declare module "express-session" {
   }
 }
 
+app.use("/api/admin/ministry-shop/audiobooks", express.json({limit:"2mb"}));
+
 app.use(
   express.json({
     verify: (req, _res, buf) => {
