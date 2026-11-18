@@ -1,3 +1,4 @@
+import { ShopFeature } from "@/components/ShopFeature";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -171,6 +172,7 @@ export default function SundaySchoolLessonPage() {
       </Helmet>
 
       <div className="max-w-3xl mx-auto space-y-6">
+        <ShopFeature />
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <Link href="/sunday-school">
             <Button variant="ghost" className="gap-2" data-testid="button-back-sunday-school">
