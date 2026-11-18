@@ -117,7 +117,9 @@ export function registerMinistryShopAdmin(
 
   app.patch("/api/admin/ministry-shop/:id/sales", requireAdmin, async (req, res) => {
     res.set("Cache-Control", "private, no-store");
-    const product = await getShopProduct(req.params.id, true);
+    let product;
+    try { product = await getShopProduct(req.params.id, true); }
+    catch { return res.status(503).json({ message: "The shop is temporarily unavailable." }); }
     if (!product) return res.status(404).json({ message: "Product not found." });
     if (product.kind === "Membership") return res.status(409).json({ message: "This control is for one-time products." });
     const input = salesInput.safeParse(req.body);
