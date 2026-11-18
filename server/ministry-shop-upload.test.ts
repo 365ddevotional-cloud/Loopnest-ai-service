@@ -77,13 +77,15 @@ test("admin upload creates private drafts, verifies bytes, publishes explicitly,
   const send=(method: "put"|"post",path:string,body:any,admin=true)=> {
     const r=request(app)[method](path); if(admin) r.set("x-fixture-admin","yes"); return r.send(body);
   };
-  const product={ title:"Fixture book unique",kind:"Book",author:"Moses Afolabi",priceCents:399,description:"A detailed original teaching book for this fixture.",lyrics:"" };
+  const product={ title:"Fixture book unique",kind:"Book",author:"Moses Afolabi",priceCents:399,description:"A detailed original teaching book for this fixture.",lyrics:"",previewTitle:"Chapter 2 — A fair hearing",previewText:"The conversation begins with an honest question.\n\nA second paragraph gives readers something useful.",previewEnding:"Continue the conversation in the complete chapter." };
   try {
     assert.equal((await send("put","/api/admin/ministry-shop/products",product,false)).status,401);
     assert.equal((await send("put","/api/admin/ministry-shop/products",{...product,id:"x29Tw",kind:"Music"})).status,409,"legacy ZIP bundle must retain its package");
     const created=await send("put","/api/admin/ministry-shop/products",product);
     assert.equal(created.status,200); const id=created.body.id;
     assert.ok(!(await request(app).get("/api/ministry-shop/catalog")).body.some((p:any)=>p.id===id));
+    assert.equal((await request(app).get("/api/admin/ministry-shop/products").set("x-fixture-admin","yes")).body.find((p:any)=>p.id===id).previewText,product.previewText,"preview remains available to the admin while the draft stays private");
+    assert.equal((await send("put","/api/admin/ministry-shop/products",{...product,id,previewText:"a".repeat(30001)})).status,400,"oversized preview must not be saved");
     assert.equal((await send("put","/api/admin/ministry-shop/products",product)).status,409);
     assert.equal((await send("post",`/api/admin/ministry-shop/products/${id}/publish`,{rightsConfirmed:true,contentReviewed:true})).status,409);
     async function upload(slot:string,bytes:Buffer,type:string,bad=false,productId=id) {
@@ -103,6 +105,11 @@ test("admin upload creates private drafts, verifies bytes, publishes explicitly,
     assert.equal((await send("post",`/api/admin/ministry-shop/products/${id}/publish`,{rightsConfirmed:true,contentReviewed:true})).status,200);
     const publicRecord=(await request(app).get("/api/ministry-shop/catalog")).body.find((p:any)=>p.id===id);
     assert.ok(publicRecord.artworkUrl); assert.equal(publicRecord.coverKey,undefined);
+    assert.equal(publicRecord.previewText,product.previewText,"published catalog exposes only the selected excerpt");
+    assert.equal(publicRecord.previewTitle,product.previewTitle);
+    const {previewTitle,previewText,previewEnding,...legacyInput}=product;
+    assert.equal((await send("put","/api/admin/ministry-shop/products",{...legacyInput,id})).status,200);
+    assert.equal((await request(app).get("/api/ministry-shop/catalog")).body.find((p:any)=>p.id===id).previewText,previewText,"older clients must not erase an existing preview");
     const replacement=await upload("download",Buffer.from("%PDF-1.7\nreplacement"),"application/pdf");
     assert.equal(replacement.done.status,200);
     const currentKey=assets.get(id)![0].object_key;
