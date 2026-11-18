@@ -17,3 +17,9 @@ export function validReaderParagraphs(paragraphs: ReaderParagraph[]) {
     ids.add(p.id); return true;
   }) && paragraphs.reduce((sum,p) => sum + p.text.length,0) <= 500000;
 }
+
+export function audioOwnership<T extends {productId:string;readerEditionId?:string;purchaseKind?:string;status:string}>(productId:string, editionId:string|undefined, orders:T[] = []) {
+  if(!editionId)return {ownedBook:undefined as T|undefined,ownedAudio:false};
+  const matching=orders.filter(o=>o.productId===productId && o.readerEditionId===editionId && o.status==='paid');
+  return {ownedBook:matching.find(o=>o.purchaseKind!=='audio'),ownedAudio:matching.some(o=>o.purchaseKind==='audio' || o.purchaseKind==='read-listen')};
+}
