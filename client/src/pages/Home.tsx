@@ -7,6 +7,7 @@ import { GameConsoleIcon } from "@/interactive/GameConsoleIcon";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { ShopFeature } from "@/components/ShopFeature";
 
 export default function Home() {
   const { data: devotional, isLoading, error } = useTodayDevotional();
@@ -68,9 +69,11 @@ export default function Home() {
   }
 
   return (
-    <div className="pb-12 space-y-8">
-      <details className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm" data-testid="home-quick-help">
-        <summary className="cursor-pointer font-semibold text-foreground">New here? A quick guide to today's devotional</summary>
+    <div className="pb-12 space-y-3 sm:space-y-4">
+      <ShopFeature />
+      <div className="grid grid-cols-2 items-start gap-2" data-testid="home-compact-tools">
+      <details className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5 text-xs" data-testid="home-quick-help">
+        <summary className="cursor-pointer font-semibold text-foreground">New here? Quick guide</summary>
         <p className="mt-2 text-muted-foreground">Scroll to the daily message for Scripture, reflection, prayer points, and declarations. Use the menu for the Bible, past devotionals, prayer requests, and music.</p>
         <Link href="/how-to-use" className="mt-2 inline-block font-medium underline text-primary">See all tips and replay the tour</Link>
       </details>
@@ -81,21 +84,22 @@ export default function Home() {
       >
         <Link href="/interactive/tap-the-promise">
           <div
-            className="group cursor-pointer rounded-lg border border-border/60 bg-card px-4 py-2.5 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center gap-3"
+            className="group cursor-pointer rounded-lg border border-border/60 bg-card px-3 py-2.5 shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2"
             data-testid="link-tap-the-promise"
           >
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <GameConsoleIcon size={18} />
+            <div className="flex-shrink-0 flex items-center justify-center">
+              <GameConsoleIcon size={16} />
             </div>
             <div className="flex-1 min-w-0">
-              <span className="font-serif text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+              <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
                 Tap The Promise
               </span>
-              <span className="text-xs text-muted-foreground ml-2">Interactive Faith Game</span>
+              <span className="sr-only">Interactive Faith Game</span>
             </div>
           </div>
         </Link>
       </motion.div>
+      </div>
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
