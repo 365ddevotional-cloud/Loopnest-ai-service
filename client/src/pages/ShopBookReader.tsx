@@ -48,6 +48,7 @@ export default function ShopBookReader() {
   },[editionId,user?.uid]);
   useEffect(()=>()=>{requestVersion.current++;clearTimeout(timer.current);audio.current?.pause();},[editionId,user?.uid]);
   useEffect(()=>{if(audio.current) audio.current.playbackRate=speed;},[speed]);
+  useEffect(()=>{const player=audio.current;return ()=>{player?.pause();nextRecording.current=undefined;};},[book?.id,user?.uid]);
 
   async function start(nextIndex:number,seconds=0,attempt=0,version?:number) {
     if(!book?.audioOwned || !book.paragraphs[nextIndex]) return;
