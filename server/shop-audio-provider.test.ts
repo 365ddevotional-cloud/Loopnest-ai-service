@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {createAudioCache,narrationConfig} from './shop-audio-provider';
-import {audioTotal, validReaderParagraphs} from '../shared/shop-audiobook';
+import {audioTotal, audioOwnership, validReaderParagraphs} from '../shared/shop-audiobook';
 
 test('audio upgrade is $2.99, bundle adds it once, and other currencies cannot use a guessed rate',()=> {
   assert.equal(audioTotal(399,'audio','USD'),299);assert.equal(audioTotal(399,'read-listen','USD'),698);
@@ -36,4 +36,12 @@ test('failed or ambiguous generation is never retried and disabled generation ca
   const f=fixture();assert.deepEqual(await f.cache('e','p','read',false),{pending:true});assert.equal(f.count(),0);
   await assert.rejects(()=>f.cache('e','p','fail',true),/timeout/);
   await assert.rejects(()=>f.cache('e','p','fail',true),/recording repair/);assert.equal(f.count(),1);
+});
+
+test('disabled offers and older or unpaid editions never turn an eBook checkout into an audio upgrade',()=> {
+ const order={productId:'book',status:'paid',purchaseKind:'ebook',sessionId:'owned'};
+ assert.equal(audioOwnership('book',undefined,[order]).ownedBook,undefined);
+ assert.equal(audioOwnership('book','edition',[order]).ownedBook,undefined);
+ assert.equal(audioOwnership('book','edition',[{...order,readerEditionId:'edition',status:'pending'}]).ownedBook,undefined);
+ assert.equal(audioOwnership('book','edition',[{...order,readerEditionId:'edition'}]).ownedBook?.sessionId,'owned');
 });
