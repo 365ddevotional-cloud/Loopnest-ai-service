@@ -80,17 +80,18 @@ test("admin upload creates private drafts, verifies bytes, publishes explicitly,
   const product={ title:"Fixture book unique",kind:"Book",author:"Moses Afolabi",priceCents:399,description:"A detailed original teaching book for this fixture.",lyrics:"" };
   try {
     assert.equal((await send("put","/api/admin/ministry-shop/products",product,false)).status,401);
+    assert.equal((await send("put","/api/admin/ministry-shop/products",{...product,id:"x29Tw",kind:"Music"})).status,409,"legacy ZIP bundle must retain its package");
     const created=await send("put","/api/admin/ministry-shop/products",product);
     assert.equal(created.status,200); const id=created.body.id;
     assert.ok(!(await request(app).get("/api/ministry-shop/catalog")).body.some((p:any)=>p.id===id));
     assert.equal((await send("put","/api/admin/ministry-shop/products",product)).status,409);
     assert.equal((await send("post",`/api/admin/ministry-shop/products/${id}/publish`,{rightsConfirmed:true,contentReviewed:true})).status,409);
-    async function upload(slot:string,bytes:Buffer,type:string,bad=false) {
+    async function upload(slot:string,bytes:Buffer,type:string,bad=false,productId=id) {
       const sha256=createHash("sha256").update(bytes).digest("hex");
-      const ticket=await send("post",`/api/admin/ministry-shop/products/${id}/upload`,{slot,name:"fixture",bytes:bytes.length,sha256,contentType:type});
+      const ticket=await send("post",`/api/admin/ministry-shop/products/${productId}/upload`,{slot,name:"fixture",bytes:bytes.length,sha256,contentType:type});
       assert.equal(ticket.status,200);
       const row=uploads.get(ticket.body.uploadId); bytesByKey.set(row.object_key,bad?Buffer.alloc(bytes.length,65):bytes);
-      const done=await send("post",`/api/admin/ministry-shop/products/${id}/uploads/${row.id}/complete`,{});
+      const done=await send("post",`/api/admin/ministry-shop/products/${productId}/uploads/${row.id}/complete`,{});
       return {done,row};
     }
     assert.equal((await upload("download",Buffer.from("%PDF-1.7\nfixture-bad"),"application/pdf",true)).done.status,503);
@@ -112,6 +113,9 @@ test("admin upload creates private drafts, verifies bytes, publishes explicitly,
     const music = {id:"fixturemusic",kind:"Music",sourcePrice:"$4.99",useBasePrice:true};
     const price = ministryShopPrice(music, "US", {US:{single:89,five:189}} as any);
     assert.equal(price?.amount,499,"uploaded music must honor its chosen base price");
-    assert.equal((await send("put","/api/admin/ministry-shop/products",{...product,title:"Fixture music unique",kind:"Music"})).status,200);
+    const newMusic=await send("put","/api/admin/ministry-shop/products",{...product,title:"Fixture music unique",kind:"Music"});
+    assert.equal(newMusic.status,200);
+    assert.equal((await upload("download",Buffer.from("ID3fixture-mp3"),"audio/mpeg",false,newMusic.body.id)).done.status,200);
+    assert.equal(assets.get(newMusic.body.id)?.[0].content_type,"audio/mpeg");
   } finally { dbMock.mock.restore(); transactionMock.mock.restore(); sdkMock.mock.restore(); await pool.end(); }
 });
