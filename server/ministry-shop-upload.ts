@@ -49,7 +49,10 @@ function route(handler: RequestHandler): RequestHandler {
       message: error?.name === "Error" ? error.message : undefined,
     });
     res.status(error instanceof z.ZodError ? 400 : 503).json({
-      message: error instanceof z.ZodError ? "Review the product fields and file type." : "The shop operation could not finish. Your draft is retained. Try again.",
+      message: error instanceof z.ZodError ? "Review the product fields and file type."
+        : [401,403].includes(error?.$metadata?.httpStatusCode)
+          ? "The storage account rejected this upload. Your draft is saved. The shop storage connection needs permission to write customer files."
+          : "The shop operation could not finish. Your draft is retained. Try again.",
     });
   });
 }
