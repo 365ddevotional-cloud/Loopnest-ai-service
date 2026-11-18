@@ -132,17 +132,17 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
   return (
     <article className="max-w-4xl mx-auto bg-card shadow-xl shadow-primary/10 rounded-none md:rounded-xl overflow-hidden border border-card-border">
       {/* Header Section with gradient */}
-      <div className="relative bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10 p-8 md:p-12 text-center border-b border-primary/10">
+      <div className="relative bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10 px-3 py-4 sm:p-6 md:p-8 text-center border-b border-primary/10">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M0%200h20v20H0z%22%20fill%3D%22none%22%2F%3E%3Cpath%20d%3D%22M10%2010m-1%200a1%201%200%201%200%202%200a1%201%200%201%200-2%200%22%20fill%3D%22%237C3A2A%22%20fill-opacity%3D%220.03%22%2F%3E%3C%2Fsvg%3E')]" />
         <div className="relative">
-          <div className="flex items-center justify-center gap-3 mb-6 flex-wrap">
-            <div className="inline-block px-5 py-1.5 border-2 border-primary/40 rounded-full text-xs font-bold text-primary tracking-widest uppercase bg-background/80 backdrop-blur-sm shadow-sm">
+          <div className="flex items-center justify-between gap-2 mb-2 sm:justify-center">
+            <div className="inline-block px-3 py-1 border border-primary/40 rounded-full text-[10px] sm:text-xs font-bold text-primary tracking-wide uppercase bg-background/80 backdrop-blur-sm">
               {format(parseISO(devotional.date), "MMMM d, yyyy")}
             </div>
             <Button
               size="sm"
               onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-              className="rounded-full text-xs font-bold tracking-wide uppercase shadow-md"
+              className="min-h-8 rounded-full px-2 text-[10px] sm:text-xs font-bold uppercase"
               data-testid="button-theme-toggle-devotional"
               title={resolvedTheme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
@@ -152,6 +152,8 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
                 <><Moon className="w-3.5 h-3.5" /> {t("darkMode")}</>
               )}
             </Button>
+          </div>
+          <div className="flex items-center justify-center gap-2 mb-4 flex-wrap" data-testid="devotional-compact-actions">
             <Button
               size="sm"
               onClick={() => {
@@ -169,7 +171,7 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
                 ].join(" ");
                 audio.play(listenText, devotional.title, { devotional: true });
               }}
-              className="rounded-full text-xs font-bold tracking-wide uppercase shadow-md gap-1"
+              className="min-h-8 rounded-full px-2 text-[11px] font-bold gap-1"
               data-testid="button-listen-devotional"
             >
               <Volume2 className="w-3.5 h-3.5" />
@@ -180,7 +182,7 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
               variant={isSaved ? "default" : "outline"}
               onClick={toggleSave}
               disabled={savePending}
-              className="rounded-full text-xs font-bold tracking-wide uppercase shadow-md gap-1"
+              className="min-h-8 rounded-full px-2 text-[11px] font-bold gap-1"
               data-testid="button-save-devotional"
               title={isSaved ? "Remove from Saved" : "Save Devotional"}
             >
@@ -194,12 +196,13 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
               title={devotional.title}
               text={fullShareText}
               url={devotionalShareUrl(devotional.date, window.location.search)}
-              className="rounded-full text-xs font-bold tracking-wide uppercase shadow-md"
+              className="min-h-8 rounded-full px-2 text-[11px] font-bold gap-1"
               variant="accent"
+              compact
             />
           </div>
           
-          <h1 className="font-serif text-3xl md:text-5xl font-bold text-foreground mb-6 leading-tight">
+          <h1 className="font-serif text-3xl md:text-5xl font-bold text-foreground mb-3 sm:mb-6 leading-tight">
             {devotional.title}
           </h1>
 
