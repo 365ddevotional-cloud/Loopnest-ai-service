@@ -25,6 +25,7 @@ import {
   getAvailableEnglishVoices,
   saveVoicePreference,
   clearVoicePreference,
+  getPreferredEnglishVoice,
 } from "@/hooks/useAudioReader";
 
 const fontSizeLevels: FontSizeLevel[] = ["small", "medium", "large", "extra-large"];
@@ -175,10 +176,8 @@ export function SettingsModal() {
     utterance.rate = 0.92;
     utterance.pitch = 1;
     utterance.volume = 1;
-    if (selectedVoice !== "auto") {
-      const voice = voices.find((v) => v.voiceURI === selectedVoice);
-      if (voice) utterance.voice = voice;
-    }
+    const voice = selectedVoice === "auto" ? getPreferredEnglishVoice() : voices.find((v) => v.voiceURI === selectedVoice);
+    if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
     window.speechSynthesis.speak(utterance);
   };
 
