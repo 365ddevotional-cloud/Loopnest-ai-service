@@ -19,6 +19,7 @@ type Services = {
   viewer(req: Request): Promise<{uid: string}>;
   confirm(order: ShopOrder): Promise<ShopOrder>;
   r2: S3Client | null; bucket?: string; requireAdmin: RequestHandler;
+  synthesize?: (text: string) => Promise<Buffer>;
 };
 function fail(status: number, message: string): never { throw Object.assign(new Error(message), {status}); }
 const paragraphSchema = z.object({ id: z.string().max(80), text: z.string().max(4500), heading: z.boolean().optional(), page: z.number().int().min(1).max(5000).optional() }).strict();
@@ -39,20 +40,22 @@ export function registerShopAudiobooks(app: Express, services: Services) {
     JOIN ministry_shop_assets a ON a.product_id=e.product_id
     WHERE e.product_id=${productId} AND e.reviewed=true AND a.content_type='application/pdf'
     AND a.object_key LIKE '%/' || e.asset_sha256 ORDER BY e.created_at DESC LIMIT 1`)).rows[0];
-  const reserve = async (edition: Edition) => {
+  const reserve = async (edition: Edition, sample?: ReaderParagraph) => {
     const config = narrationConfig(process.env);
     if (!config) fail(503,"Audiobook checkout is unavailable.");
-    const key = hash(`${edition.id}:${AUDIO_VOICE}`);
+    const bookKey = hash(`${edition.id}:${AUDIO_VOICE}`);
+    const key = sample ? hash(`${edition.id}:${AUDIO_VOICE}:sample:${sample.id}`) : bookKey;
     await db.transaction(async tx => {
       await tx.execute(sql`SELECT pg_advisory_xact_lock(365, 25)`);
-      if ((await tx.execute(sql`SELECT cache_id FROM ministry_shop_audio_budgets WHERE cache_id=${key}`)).rows.length) return;
+      if ((await tx.execute(sql`SELECT cache_id FROM ministry_shop_audio_budgets WHERE cache_id=${bookKey}`)).rows.length) return;
+      if (sample && (await tx.execute(sql`SELECT cache_id FROM ministry_shop_audio_budgets WHERE cache_id=${key}`)).rows.length) return;
       const {rows} = await tx.execute<{total: string}>(sql`SELECT COALESCE(SUM(characters),0) AS total FROM ministry_shop_audio_budgets`);
-      const characters = edition.paragraphs.reduce((n,p)=>n+Array.from(p.text).length,0);
+      const characters = sample ? Array.from(sample.text).length : edition.paragraphs.reduce((n,p)=>n+Array.from(p.text).length,0);
       if (Number(rows[0].total) + characters > config!.cap) fail(409,"Audiobook checkout is temporarily unavailable. Your eBook is still available.");
       await tx.execute(sql`INSERT INTO ministry_shop_audio_budgets(cache_id,characters) VALUES(${key},${characters})`);
     });
   };
-  const ready = (edition?: Edition) => configured() && !!edition?.reviewed && !!edition.audio_reviewed;
+  const ready = (edition?: Edition) => process.env.SHOP_AUDIO_SAMPLE_ONLY !== "true" && configured() && !!edition?.reviewed && !!edition.audio_reviewed;
   const wrap = (handler: (req: Request, res: any) => Promise<any>): RequestHandler => async (req,res) => {
     res.setHeader("Cache-Control","private, no-store");
     try { await handler(req,res); } catch(error) {
@@ -100,11 +103,11 @@ export function registerShopAudiobooks(app: Express, services: Services) {
     ready: async (id,key) => { await db.execute(sql`UPDATE ministry_shop_audio_segments SET status='ready',object_key=${key} WHERE id=${id}`); },
     failed: async id => { await db.execute(sql`UPDATE ministry_shop_audio_segments SET status='failed' WHERE id=${id}`); },
     save: async (key,bytes) => { if(!r2 || !bucket) throw new Error("Storage unavailable"); await r2.send(new PutObjectCommand({Bucket:bucket,Key:key,Body:bytes,ContentType:"audio/mpeg",IfNoneMatch:"*"})); },
-  }, googleNarrator(process.env));
+  }, services.synthesize ?? googleNarrator(process.env));
   app.get('/api/admin/ministry-shop/audiobooks',requireAdmin,wrap(async (_req,res)=> {
     const {rows}=await db.execute<Omit<Edition,'paragraphs'>>(sql`SELECT id,product_id,asset_sha256,title,reviewed,audio_reviewed FROM ministry_shop_reader_editions ORDER BY created_at DESC`);
     const budget=await db.execute(sql`SELECT COALESCE(SUM(characters),0) AS reserved FROM ministry_shop_audio_budgets`);
-    res.json({configured:configured(), voice:AUDIO_VOICE_LABEL, characterBudget:narrationConfig(process.env)?.cap??0,reserved:budget.rows[0]?.reserved??0,editions:rows});
+    res.json({configured:configured(), sampleOnly:process.env.SHOP_AUDIO_SAMPLE_ONLY === "true", voice:AUDIO_VOICE_LABEL, characterBudget:narrationConfig(process.env)?.cap??0,reserved:budget.rows[0]?.reserved??0,editions:rows});
   }));
   app.put('/api/admin/ministry-shop/audiobooks/:productId',requireAdmin,wrap(async(req,res)=> {
     const product = await getShopProduct(String(req.params.productId),true);
@@ -139,7 +142,7 @@ export function registerShopAudiobooks(app: Express, services: Services) {
     const input=z.object({paragraphId:z.string()}).strict().safeParse(req.body);
     const paragraph=edition && input.success && edition.paragraphs.find(p=>p.id===input.data.paragraphId);
     if(!edition || !paragraph || !configured() || !r2 || !bucket) fail(409,"Configure the narration service and choose a manuscript passage first.");
-    await reserve(edition);
+    await reserve(edition,paragraph);
     if(generating>=2) return res.status(202).json({pending:true});
     generating++;
     try {
