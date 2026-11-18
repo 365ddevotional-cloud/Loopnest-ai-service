@@ -17,7 +17,7 @@ export function supportsMinistryShopStripe(country: string) {
   return !!(musicRegions[country]?.stripe || littleHeartsUsdFallbackPrices[country]);
 }
 
-export function ministryShopPrice(product: { id: string; kind: string; sourcePrice: string; replacedBy?: string[] }, country: string, prices: MusicPrices) {
+export function ministryShopPrice(product: { id: string; kind: string; sourcePrice: string; useBasePrice?: boolean; replacedBy?: string[] }, country: string, prices: MusicPrices) {
   const region = musicRegions[country];
   if (!region || product.kind === "Membership" || product.replacedBy) return null;
   const local = prices[country];
@@ -31,7 +31,7 @@ export function ministryShopPrice(product: { id: string; kind: string; sourcePri
   const isLittleHeartsVolume = product.id === "littleheartsoldtestament" || product.id === "littleheartsnewtestament";
   const usdFallback = isLittleHeartsVolume ? littleHeartsUsdFallbackPrices[country] : undefined;
   if (usdFallback) return { amount: usdFallback, currency: "USD", country, stripeSupported: true, usdFallback: true };
-  let amount = product.kind === "Music" && product.id !== shopBundleId
+  let amount = product.kind === "Music" && product.id !== shopBundleId && !product.useBasePrice
     ? songPrice
     : Math.ceil(sourceCents * local.single / prices.US.single);
   if (isLittleHeartsVolume) amount = littleHeartsVolumePrices[country] ?? amount;
