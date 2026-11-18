@@ -265,7 +265,7 @@ export function Header() {
 
   const visibleNavItems = [...navItems, adminNavItem];
   // Keep primary navigation readable on a laptop; secondary links stay one click away.
-  const primaryNavItems = visibleNavItems.filter(item => ["/", "/archive", "/bible", "/music", "/prayer-counseling"].includes(item.href));
+  const primaryNavItems = visibleNavItems.filter(item => ["/", "/archive", "/bible", "/music", "/shop", "/prayer-counseling"].includes(item.href));
   const secondaryNavItems = visibleNavItems.filter(item => !primaryNavItems.includes(item));
 
   const toggleGroup = (group: string) => {
@@ -529,6 +529,7 @@ export function Header() {
             </SheetHeader>
             
             <nav className="flex flex-col gap-2 pb-6">
+              <MobileNavItem onClick={() => navigateWithTransition("/shop")} isActive={location.startsWith("/shop")} icon={ShoppingBag} label="Shop" data-testid="link-shop-nav-mobile" />
               <MobileNavItem onClick={() => navigateWithTransition("/promotions")} icon={ShoppingBag} label="Promotions" />
               <MobileNavItem onClick={() => navigateWithTransition("/updates")} icon={Sparkles} label="What\u0027s New" />
               <MobileNavItem onClick={() => navigateWithTransition("/discipleship")} icon={GraduationCap} label="Discipleship" />
@@ -641,13 +642,6 @@ export function Header() {
                   href="https://www.youtube.com/@365DailyDevotional"
                   external
                   data-testid="link-youtube-nav-mobile"
-                />
-                <MobileNavItem
-                  onClick={() => navigateWithTransition("/shop")}
-                  isActive={location === "/shop"}
-                  icon={ShoppingBag}
-                  label="Shop"
-                  data-testid="link-shop-nav-mobile"
                 />
                 <MobileNavItem
                   onClick={() => navigateWithTransition("/interactive/tap-the-promise")}
