@@ -1,3 +1,4 @@
+import ShopAudiobookStudio from "./ShopAudiobookStudio";
 import ShopProductEditor from "./ShopProductEditor";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -101,6 +102,7 @@ export default function MinistryShopAdmin() {
       {data && (
         <>
           <ShopProductEditor />
+          <ShopAudiobookStudio />
           <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {([
               ["Checkout configuration", data.readiness.checkoutConfigured ? "Enabled" : "Off"],
