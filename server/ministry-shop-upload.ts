@@ -29,8 +29,8 @@ type Upload = {
 };
 function storage() {
   const env = process.env;
-  const accessKeyId = env.SHOP_IMPORT_R2_ACCESS_KEY_ID ?? env.SHOP_R2_ACCESS_KEY_ID;
-  const secretAccessKey = env.SHOP_IMPORT_R2_SECRET_ACCESS_KEY ?? env.SHOP_R2_SECRET_ACCESS_KEY;
+  const accessKeyId = env.R2_ACCESS_KEY_ID ?? env.SHOP_IMPORT_R2_ACCESS_KEY_ID ?? env.SHOP_R2_ACCESS_KEY_ID;
+  const secretAccessKey = env.R2_SECRET_ACCESS_KEY ?? env.SHOP_IMPORT_R2_SECRET_ACCESS_KEY ?? env.SHOP_R2_SECRET_ACCESS_KEY;
   if (!env.SHOP_R2_PRIVATE_BUCKET || env.SHOP_R2_PRIVATE_BUCKET === env.R2_BUCKET_NAME ||
       !env.R2_ACCOUNT_ID || !accessKeyId || !secretAccessKey) {
     throw new Error("Private shop storage is not configured.");
