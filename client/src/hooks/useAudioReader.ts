@@ -17,10 +17,11 @@ export interface AudioReaderActions {
 }
 
 const VOICE_STORAGE_KEY = "audio-reader-voice";
-const VOICE_PRIORITY = ["Enhanced", "Premium", "Google", "Natural", "Samantha", "Daniel", "Karen"];
+const VOICE_PRIORITY = ["Natural", "Premium", "Enhanced", "Neural", "Google", "Samantha", "Daniel", "Karen"];
 
 const DEVOTIONAL_RATE = 0.88;
 const DEFAULT_RATE = 0.92;
+let customSpeed = false;
 
 let globalState: AudioReaderState = {
   isSpeaking: false,
@@ -106,7 +107,7 @@ export function clearVoicePreference() {
   } catch {}
 }
 
-function selectBestVoice(): SpeechSynthesisVoice | null {
+export function getPreferredEnglishVoice(): SpeechSynthesisVoice | null {
   const englishVoices = getEnglishVoices();
   if (englishVoices.length === 0) return null;
 
@@ -129,18 +130,6 @@ function selectBestVoice(): SpeechSynthesisVoice | null {
   return englishVoices[0];
 }
 
-function addPacing(text: string): string {
-  let result = text;
-  result = result.replace(/\.\s/g, ".   ");
-  result = result.replace(/\.\n/g, ".   \n");
-  result = result.replace(/,\s/g, ",  ");
-  result = result.replace(/;\s/g, ";  ");
-  result = result.replace(/:\s/g, ":  ");
-  result = result.replace(/\?\s/g, "?   ");
-  result = result.replace(/!\s/g, "!   ");
-  return result;
-}
-
 function prepareDevotionalText(text: string): string {
   return text
     .replace(/Title:\s*/g, "Title.   ")
@@ -151,9 +140,21 @@ function prepareDevotionalText(text: string): string {
     .replace(/Prophetic Declaration:\s*/g, "Prophetic Declaration.   ");
 }
 
-function splitIntoSegments(text: string): string[] {
-  const segments = text.split(/(?<=[.!?])\s+/).filter((s) => s.trim().length > 0);
-  if (segments.length === 0 && text.trim()) return [text];
+export function splitIntoSegments(text: string): string[] {
+  // Small connected passages avoid resetting intonation at every sentence,
+  // while bounded chunks keep long readings usable on mobile speech engines.
+  const segments: string[] = [];
+  for (const paragraph of text.split(/\n\s*\n/)) {
+    const words = paragraph.trim().split(/\s+/).filter(Boolean);
+    let chunk = "";
+    for (const word of words) {
+      if (chunk && chunk.length + word.length + 1 > 340) {
+        segments.push(chunk); chunk = "";
+      }
+      chunk = chunk ? `${chunk} ${word}` : word;
+    }
+    if (chunk) segments.push(chunk);
+  }
   return segments;
 }
 
@@ -164,7 +165,7 @@ function cancelSpeech() {
 }
 
 function getEffectiveRate(): number {
-  if (globalIsDevotional) {
+  if (globalIsDevotional && !customSpeed) {
     return DEVOTIONAL_RATE;
   }
   return globalState.rate;
@@ -193,8 +194,8 @@ function speakFromSegment(startIndex: number, session = playbackSession) {
       utterance.rate = getEffectiveRate();
       utterance.pitch = 1;
       utterance.volume = 1;
-      const voice = selectBestVoice();
-      if (voice) utterance.voice = voice;
+      const voice = getPreferredEnglishVoice();
+      if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
       utterance.onend = () => {
         if (session !== playbackSession || activeUtterance !== utterance) return;
         activeUtterance = null;
@@ -223,7 +224,7 @@ function doPlay(text: string, label: string, options?: { devotional?: boolean })
   globalIsDevotional = options?.devotional ?? false;
   const processedText = globalIsDevotional ? prepareDevotionalText(text) : text;
   globalOriginalText = processedText;
-  globalPacedSegments = splitIntoSegments(addPacing(processedText));
+  globalPacedSegments = splitIntoSegments(processedText);
   globalCurrentSegment = 0;
   globalState = { ...globalState, isSpeaking: true, isPaused: false, currentLabel: label, error: null };
   notify();
@@ -263,6 +264,9 @@ function doResume() {
 }
 
 function doSetSpeed(rate: number) {
+  if (!Number.isFinite(rate)) return;
+  rate = Math.min(2, Math.max(0.5, rate));
+  customSpeed = true;
   globalState = { ...globalState, rate };
   notify();
 
