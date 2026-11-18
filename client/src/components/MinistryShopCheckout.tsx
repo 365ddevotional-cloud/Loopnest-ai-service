@@ -1,3 +1,4 @@
+import {audioOwnership} from "@shared/shop-audiobook";
 import { isAndroidReader } from "@/lib/android-reader";
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -49,8 +50,7 @@ export function ShopCheckout({ productId, price }: { productId: string; price?: 
   const ownership=useQuery<ShopPurchase[]>({queryKey:["ministry-shop-purchases",user?.uid],enabled:!!user && !!emailVerified && !!price?.audioEditionId && !isAndroidReader(),queryFn:async()=>{
     const token=await getIdToken();if(!token)throw new Error("Sign in to view purchases.");return shopRequest("/api/ministry-shop/purchases",token);
   }});
-  const ownedBook=ownership.data?.find(order=>order.productId===productId && order.purchaseKind!=="audio" && order.status==="paid" && order.readerEditionId===price?.audioEditionId);
-  const ownedAudio=ownership.data?.some(order=>order.productId===productId && ["read-listen","audio"].includes(order.purchaseKind??"") && order.status==="paid" && order.readerEditionId===price?.audioEditionId);
+  const {ownedBook,ownedAudio}=audioOwnership(productId,price?.audioEditionId,ownership.data);
   const purchaseKind=ownedBook ? "audio" : choice;
   const selectedPrice = price && {...price,amount:purchaseKind === "audio" ? price.audioAmount ?? price.amount : purchaseKind === "read-listen" ? price.readListenAmount ?? price.amount : price.amount};
   const purchase = useMutation({
@@ -86,7 +86,7 @@ export function ShopCheckout({ productId, price }: { productId: string; price?: 
       {!(ownedBook && ownedAudio) && <>
       <label className="flex items-start gap-2 text-sm text-muted-foreground">
         <input className="mt-1" type="checkbox" checked={accepted} onChange={event => setAccepted(event.target.checked)} />
-        {purchaseKind === "audio" ? "I understand this is an in-app audiobook upgrade for a book I already purchased, using this same account." : "I understand that my PDF download window is two hours from payment. Audiobook listening has no two-hour limit."}
+        {purchaseKind === "audio" ? "I understand this is an in-app audiobook upgrade for a book I already purchased, using this same account." : purchaseKind === "read-listen" ? "I understand that my PDF download window is two hours from payment. Audiobook listening has no two-hour limit." : "I understand that my download window is two hours from payment."}
       </label>
       <Button disabled={!accepted || purchase.isPending || ownership.isLoading} onClick={() => purchase.mutate()}>
         {purchase.isPending ? "Opening Stripe…" : `${ownedBook?"Add audiobook":"Buy"} for ${formatShopPrice(selectedPrice!)}`}
