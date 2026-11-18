@@ -12,7 +12,7 @@ import { formatShopPrice, MinistryShopPurchases, ShopCheckout, useShopPrices } f
 import { useUser } from "@/contexts/UserContext";
 import { isMinistryShopAdminEmail } from "@shared/ministry-shop-access";
 import staticCatalog from "@/data/ministry-shop-catalog.json";
-type CatalogProduct = (typeof staticCatalog)[number] & { artworkUrl?: string; description?: string; author?: string; lyrics?: string };
+type CatalogProduct = (typeof staticCatalog)[number] & { artworkUrl?: string; description?: string; author?: string; lyrics?: string; previewTitle?: string; previewText?: string; previewEnding?: string };
 const CatalogContext = createContext<CatalogProduct[]>(staticCatalog);
 import bookPreviewData from "@/data/ministry-shop-book-previews.json";
 
@@ -167,6 +167,21 @@ function SongPreview({ product }: { product: CatalogProduct }) {
 }
 
 function ProductPreview({ product }: { product: CatalogProduct }) {
+  if (product.kind === "Book" && product.previewText?.trim()) {
+    return (
+      <section className="mt-5 rounded-xl border border-orange-200 bg-orange-50/40 p-5 dark:border-orange-900 dark:bg-orange-950/10" aria-label="Book preview">
+        <h2 className="flex items-center gap-2 text-lg font-bold"><BookOpen size={20} aria-hidden="true" /> Read a chapter sample</h2>
+        <p className="mt-1 text-sm text-muted-foreground">An excerpt from inside the book. The complete chapter is included in your purchase.</p>
+        <details className="mt-4 text-base leading-8">
+          <summary className="cursor-pointer font-semibold text-primary">{product.previewTitle || "Open the book preview"}</summary>
+          <div className="mt-4 space-y-4 break-words">
+            {product.previewText.split(/\n\n+/).map((paragraph, index) => <p className="whitespace-pre-wrap" key={index}>{paragraph}</p>)}
+            <p className="border-t pt-4 font-semibold">{product.previewEnding || "The chapter continues in the complete book."}</p>
+          </div>
+        </details>
+      </section>
+    );
+  }
   const book = product.kind === "Book" ? bookPreviews[product.id] : undefined;
   if (book) {
     return (

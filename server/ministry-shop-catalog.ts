@@ -5,6 +5,7 @@ import { db } from "./db";
 
 export type ShopCatalogProduct = (typeof original)[number] & {
   description?: string; author?: string; lyrics?: string;
+  previewTitle?: string; previewText?: string; previewEnding?: string;
   artworkUrl?: string; coverKey?: string; published?: boolean; useBasePrice?: boolean;
 };
 

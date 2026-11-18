@@ -17,6 +17,9 @@ const productInput = z.object({
   author: z.string().trim().min(2).max(160),
   priceCents: z.number().int().min(50).max(99999),
   lyrics: z.string().max(30000).default(""),
+  previewTitle: z.string().trim().max(180).optional(),
+  previewText: z.string().trim().max(30000).optional(),
+  previewEnding: z.string().trim().max(500).optional(),
 }).strict();
 const uploadInput = z.object({
   slot: z.enum(["download", "cover"]), name: z.string().min(1).max(180),
