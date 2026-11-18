@@ -30,7 +30,10 @@ async function uploadFile(id: string, slot: "download" | "cover", file: File, st
     const transfer = await fetch(`/api/admin/ministry-shop/products/${id}/uploads/${ticket.uploadId}/transfer`, {
       method: "PUT", credentials: "include", headers: { "Content-Type": contentType }, body: file,
     });
-    if (!transfer.ok && transfer.status !== 412) throw new Error("Upload failed. Keep this draft and retry.");
+    if (!transfer.ok && transfer.status !== 412) {
+      const failure = await transfer.json().catch(() => null);
+      throw new Error(failure?.message ?? "Upload failed. Keep this draft and retry.");
+    }
   }
   status(`Verifying ${file.name}…`);
   await apiRequest("POST", `/api/admin/ministry-shop/products/${id}/uploads/${ticket.uploadId}/complete`, {});
@@ -85,7 +88,7 @@ export default function ShopProductEditor() {
       setSaved(true);
       setFeedback("Product saved. Uploaded files are verified. Review the details, then publish when ready.");
       await refresh();
-    } catch (error) { setFeedback(error instanceof Error ? error.message : "Save failed. Retry your draft."); }
+    } catch (error) { setFeedback(error instanceof Error ? error.message : "Save failed. Retry your draft."); await refresh(); }
     finally { setBusy(false); }
   }
   async function publish() {
