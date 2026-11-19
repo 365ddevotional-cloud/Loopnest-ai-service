@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
 import React, { act } from 'react';
 import { JSDOM } from 'jsdom';
+import {webcrypto} from 'node:crypto';
 import pilot from '../../../server/content-translations/2026-11-19-glorious-light.json';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', {url:'https://example.invalid/devotional/2026-11-19?lang=yo'});
@@ -16,7 +17,15 @@ const spoken:any[]=[];
 (dom.window as any).speechSynthesis={getVoices:()=>[{name:'English',voiceURI:'english',lang:'en-US'}],addEventListener(){},removeEventListener(){},cancel(){},resume(){},pause(){},speak(u:any){spoken.push(u);u.onstart?.();}};
 (globalThis as any).SpeechSynthesisUtterance=class{constructor(public text:string){}};
 let fetches=0;
-globalThis.fetch=(async (url:any)=>{assert.equal(String(url),'/api/devotionals/date/2026-11-19?lang=en');fetches++;return new Response(JSON.stringify(pilot.source),{status:200,headers:{'Content-Type':'application/json'}});}) as typeof fetch;
+let recordingsAvailable=false;
+Object.defineProperty(globalThis,'crypto',{configurable:true,value:webcrypto});
+globalThis.fetch=(async (url:any)=>{
+  if(String(url).startsWith('/api/devotional-recordings/')) {
+    assert.match(String(url),/^\/api\/devotional-recordings\/318\/yo\/[a-f0-9]{64}$/);
+    return Response.json({available:recordingsAvailable,...(recordingsAvailable?{audioPath:`${url}/audio`}:{})});
+  }
+  assert.equal(String(url),'/api/devotionals/date/2026-11-19?lang=en');fetches++;return Response.json(pilot.source);
+}) as typeof fetch;
 const fixtures:Record<string,string>={
   '@/hooks/use-scripture':`export const useScriptureText=(ref,text)=>({text,isLoading:false,isFallback:false});`,
   '@/components/ScriptureReading':`export const ScriptureLinks=()=>null;`,
@@ -54,5 +63,25 @@ test('translated reading has no AI notice, reports missing device voice, and sta
     assert.equal(container.querySelector('[data-testid="audio-reader-error"]'),null);
     assert.ok(container.querySelector('[data-testid="audio-mini-player"]'));
   }finally{await act(async()=>{screen.stopAudioOnNavigate();root.unmount();});client.clear();container.remove();}
+});
+test('published saved recording uses native media in the tap and replays without device speech or generation',async()=>{
+  recordingsAvailable=true;const before=spoken.length;let plays=0,pauses=0;
+  dom.window.HTMLMediaElement.prototype.play=function(){plays++;this.dispatchEvent(new dom.window.Event('play'));return Promise.resolve();};
+  dom.window.HTMLMediaElement.prototype.pause=function(){pauses++;};
+  const translated=pilot.drafts.find(d=>d.language==='yo')!;
+  const devotional={...pilot.source,...translated,_translatedTo:'yo'};
+  const client=new QueryClient({defaultOptions:{queries:{retry:false,gcTime:0}}});
+  const container=document.createElement('div');document.body.append(container);const root=createRoot(container);
+  try {
+    await act(async()=>root.render(React.createElement(QueryClientProvider,{client},React.createElement(screen.DevotionalCard,{devotional}))));
+    for(let i=0;i<20&&!container.querySelector('audio');i++)await act(async()=>{await new Promise(r=>setTimeout(r,10));});
+    const player=container.querySelector<HTMLAudioElement>('[data-testid="saved-devotional-audio"]')!;
+    assert.ok(player);assert.equal(player.preload,'none');assert.equal(player.controls,true);
+    assert.match(player.getAttribute('src')!,/^\/api\/devotional-recordings\/318\/yo\/[a-f0-9]{64}\/audio$/);
+    const button=container.querySelector<HTMLButtonElement>('[data-testid="button-listen-devotional"]')!;
+    await act(async()=>button.click());await act(async()=>button.click());
+    assert.equal(plays,2);assert.equal(spoken.length,before,'saved media needs no installed Yoruba voice');
+    assert.equal(container.querySelector('[data-testid="audio-reader-error"]'),null);
+  }finally{await act(async()=>root.unmount());assert.ok(pauses>0,'stop saved audio when leaving the page');client.clear();container.remove();recordingsAvailable=false;}
 });
 after(()=>dom.window.close());

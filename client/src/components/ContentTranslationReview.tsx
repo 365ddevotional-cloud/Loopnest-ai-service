@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import {DevotionalRecordingStudio} from '@/components/DevotionalRecordingStudio';
 import type { ContentTranslationReview as Review, TranslationText, TranslationDraftLanguage } from '@shared/content-translation-review';
 
 const languages: Record<TranslationDraftLanguage, string> = {
@@ -52,8 +53,9 @@ export function ContentTranslationReview() {
           <TextColumn text={batch.source} lang="en" heading="English source" />
           {draft && <TextColumn text={draft} lang={language} heading={`${languages[language]} — ${batch.publicAvailability === 'published' ? 'approved for publication' : 'prepared translation'}`} />}
         </div>
+        {batch.sourceMatches && batch.publicAvailability==='published' && <DevotionalRecordingStudio key={`${batch.batchId}:${language}`} id={batch.source.id} language={language} />}
       </div>;
     })}
-    <p className="rounded border p-3 text-sm">This screen is read-only. Publication requires a recorded approval covering the exact English source and translated text. Any source or translation correction requires a new release.</p>
+    <p className="rounded border p-3 text-sm">Translation text is read-only. Publication requires a recorded approval covering the exact English source and translated text. Recordings have their own audition and publication controls. A text correction requires a new recording review.</p>
   </section>;
 }

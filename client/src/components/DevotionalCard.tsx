@@ -1,6 +1,7 @@
 import { ContentLanguageNotice } from "@/components/ContentLanguageNotice";
 import { ScriptureLinks } from "@/components/ScriptureReading";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import {useSavedDevotionalRecording} from '@/hooks/useSavedDevotionalRecording';
 import { useQuery } from '@tanstack/react-query';
 import { format, parseISO } from "date-fns";
 import { type DevotionalResponse } from "@shared/schema";
@@ -56,6 +57,12 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
   const audio = useAudioReader();
   const { t } = useI18n();
   const contentLanguage = (devotional as DevotionalResponse & {_translatedTo?:string})._translatedTo || 'en';
+  const savedRecording=useSavedDevotionalRecording(devotional,contentLanguage);
+  const recordingRef=useRef<HTMLAudioElement>(null);
+  const [recordingError,setRecordingError]=useState(false);
+  useEffect(()=>{setRecordingError(false);},[devotional.id,devotional.content,contentLanguage]);
+  useEffect(()=>{if(audio.isSpeaking)recordingRef.current?.pause();},[audio.isSpeaking]);
+  useEffect(()=>{const player=recordingRef.current;return()=>{player?.pause();};},[savedRecording.data?.audioPath]);
   // Preload the existing English text so fallback speech still starts inside a
   // fresh tap on iPhone. This endpoint only reads saved content; it generates none.
   const englishAudio = useQuery<DevotionalResponse>({
@@ -175,6 +182,11 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
             <Button
               size="sm"
               onClick={() => {
+                if(savedRecording.data?.available && recordingRef.current) {
+                  audio.stop(); setRecordingError(false);
+                  void recordingRef.current.play().catch(()=>setRecordingError(true));
+                  return;
+                }
                 const listenText = [
                   `${t("title")}: ${devotional.title}.`,
                   `${t("scripture")}: ${stripRedLetterMarkers(scriptureText)}.`,
@@ -219,10 +231,15 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
               compact
             />
           </div>
-          {audio.error && contentLanguage !== 'en' && <div className="mb-4 space-y-2" data-testid="devotional-english-audio-fallback">
+          {savedRecording.data?.available && <audio key={savedRecording.data.audioPath} ref={recordingRef} controls preload="none"
+            src={savedRecording.data.audioPath} className="mb-4 w-full" data-testid="saved-devotional-audio"
+            onPlay={()=>{audio.stop();setRecordingError(false);}} onError={()=>setRecordingError(true)} />}
+          {recordingError && <p role="alert" className="mb-4 text-sm">{t('ui_audioDidNotStart')}</p>}
+          {(audio.error || recordingError) && contentLanguage !== 'en' && <div className="mb-4 space-y-2" data-testid="devotional-english-audio-fallback">
             <Button size="sm" variant="outline" disabled={!englishAudio.data} onClick={() => {
               const original = englishAudio.data;
               if (!original) return;
+              recordingRef.current?.pause(); setRecordingError(false);
               const text = [original.title, original.scriptureText, original.scriptureReference, original.content,
                 ...original.prayerPoints, ...original.faithDeclarations, original.christianQuotes, original.propheticDeclaration].filter(Boolean).join('\n\n');
               audio.play(text, original.title, {devotional:true,language:'en'});
