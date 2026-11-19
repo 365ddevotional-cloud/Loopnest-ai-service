@@ -1655,5 +1655,13 @@
   "cm_dashboardSubtitle": "Na wetin dey happen for {church} be this.",
   "cm_publishedNotes": "Published Notes",
   "cm_weeklySermonNotes": "Weekly Sermon Notes",
-  "cm_noSermonNotes": "No sermon note yet. Create your first note above."
+  "cm_noSermonNotes": "No sermon note yet. Create your first note above.",
+  "screen_208a19d5eb90": "{count} item",
+  "screen_f65216b3ac8c": "{count} items",
+  "screen_90142aa4c23a": "{denomination} Church",
+  "screen_5dce6bd3a7ca": "Devotional · {date}",
+  "screen_15f9a7989f8d": "You sure say you wan delete \"{name}\"? This go remove group and all data permanently.",
+  "screen_89cc335ef9fa": "You sure say you wan leave \"{name}\"?",
+  "screen_508e7c108500": " · Joined {date}",
+  "screen_faa0783d73ee": "Page {page} · "
 }

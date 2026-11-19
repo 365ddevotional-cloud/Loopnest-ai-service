@@ -482,7 +482,7 @@ function ShopCatalog() {
           </div>
         )}
         <p aria-live="polite" className="mb-2 text-xs text-muted-foreground">
-          {products.length ? `${products.length} ${products.length === 1 ? "item" : "items"}` : tx("No matching items. Try a different title or category.")}
+          {products.length ? tx(products.length === 1 ? "{count} item" : "{count} items", {count: products.length}) : tx("No matching items. Try a different title or category.")}
         </p>
         {!isAndroidReader() && locationResolved && !prices?.country && <button type="button" className="mb-2 text-xs text-primary underline" onClick={retryDeviceLocation}>{tx("Refresh local pricing")}</button>}
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">

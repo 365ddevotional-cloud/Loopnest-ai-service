@@ -130,7 +130,7 @@ export default function GroupDevotionals() {
                       <div className="flex items-center gap-2 mb-1">
                         <BookOpen className="w-3.5 h-3.5 text-primary" />
                         <span className="text-xs font-semibold text-primary">
-                          {share.devotionalDate ? `Devotional · ${format(new Date(share.devotionalDate + "T00:00:00"), "MMM d, yyyy")}` : tx("Devotional")}
+                          {share.devotionalDate ? tx("Devotional · {date}", {date: format(new Date(share.devotionalDate + "T00:00:00"), "MMM d, yyyy")}) : tx("Devotional")}
                         </span>
                       </div>
                       {share.note && <p className="text-sm text-foreground italic">"{share.note}"</p>}

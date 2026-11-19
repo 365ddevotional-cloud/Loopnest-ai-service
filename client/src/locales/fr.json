@@ -1912,5 +1912,13 @@
   "screen_b131194308e2": "Votre compte vérifié bénéficie d’un accès gratuit à vie à tous les contenus téléchargeables. Aucun paiement n’est requis pour télécharger.",
   "screen_c56836071762": "Confirmez que l’adresse e-mail vous appartient pour activer les téléchargements gratuits à vie.",
   "screen_1ff522cd233e": "Envoyer l’e-mail de confirmation",
-  "screen_cc70a8d8506d": "Vérifier la confirmation"
+  "screen_cc70a8d8506d": "Vérifier la confirmation",
+  "screen_208a19d5eb90": "{count} article",
+  "screen_f65216b3ac8c": "{count} articles",
+  "screen_90142aa4c23a": "Église {denomination}",
+  "screen_5dce6bd3a7ca": "Méditation · {date}",
+  "screen_15f9a7989f8d": "Voulez-vous vraiment supprimer « {name} » ? Le groupe et toutes ses données seront définitivement supprimés.",
+  "screen_89cc335ef9fa": "Voulez-vous vraiment quitter « {name} » ?",
+  "screen_508e7c108500": " · Membre depuis le {date}",
+  "screen_faa0783d73ee": "Page {page} · "
 }

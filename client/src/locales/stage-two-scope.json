@@ -57,5 +57,8 @@
   "client/src/pages/PastorDashboard.tsx",
   "client/src/components/DownloadAccessCard.tsx",
   "client/src/components/CountrySelect.tsx",
-  "client/src/lib/groupTypes.ts"
+  "client/src/lib/groupTypes.ts",
+  "client/src/components/ui/dialog.tsx",
+  "client/src/components/ui/sheet.tsx",
+  "client/src/components/ui/localized-close-label.tsx"
 ]

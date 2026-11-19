@@ -18,6 +18,7 @@ function assertTranslations(key:string) {
 }
 
 test("all statically referenced Stage 2 labels are bundled in all six languages",()=>{
+  for(const key of Object.keys(locales.en).filter(key=>key.startsWith("screen_"))) assertTranslations(key);
   let references=0;
   for(const file of scope) {
     const source=tree(file);

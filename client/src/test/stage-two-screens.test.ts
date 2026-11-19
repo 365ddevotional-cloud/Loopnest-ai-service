@@ -51,6 +51,8 @@ test("settings translates options while preserving device voice names and origin
   await act(async()=>view.container.querySelector<HTMLButtonElement>('[data-testid="button-settings"]')!.click());
   const text=document.body.textContent||"";
   for(const source of ["Settings","Text Size","Small","Medium","Follow device","Audio Voice"])assert.ok(text.includes(screens.translateAppText(source)),source);
+  assert.ok(Array.from(document.querySelectorAll("button")).some(button=>button.textContent?.trim()===screens.translateAppText("Close")));
+  assert.ok(screens.translateAppText("{count} items",{count:163}).includes("163 articles"));
   assert.ok(text.includes('"For I know the plans I have for you," declares the Lord.'));
   await view.close();
 });

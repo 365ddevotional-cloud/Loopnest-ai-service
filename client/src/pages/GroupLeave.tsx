@@ -70,8 +70,8 @@ export default function GroupLeave() {
             <h2 className="font-semibold text-lg">{isOwner ? tx("Delete Group") : tx("Leave Group")}</h2>
             <p className="text-sm text-muted-foreground mt-1">
               {isOwner
-                ? `Are you sure you want to delete "${group.name}"? This will permanently remove the group and all its data.`
-                : `Are you sure you want to leave "${group.name}"?`}
+                ? tx('Are you sure you want to delete "{name}"? This will permanently remove the group and all its data.', {name: group.name})
+                : tx('Are you sure you want to leave "{name}"?', {name: group.name})}
             </p>
           </div>
           <div className="flex gap-3 pt-2">

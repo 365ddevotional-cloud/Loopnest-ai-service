@@ -111,7 +111,7 @@ export default function ShopBookReader() {
         const next=book.paragraphs.findIndex(p=>p.id===e.target.value);if(next<0)return;
         if(book.audioOwned)void start(next);else setIndex(next);
         document.getElementById(`passage-${next}`)?.scrollIntoView({behavior:'smooth',block:'center'});
-      }}>{book.paragraphs.map((p,i)=><option key={p.id} value={p.id}>{p.heading?'§ ':''}{p.page?`Page ${p.page} · `:''}{p.text.slice(0,90)}</option>)}</select></label></nav>
+      }}>{book.paragraphs.map((p,i)=><option key={p.id} value={p.id}>{p.heading?'§ ':''}{p.page?tx("Page {page} · ", {page: p.page}):''}{p.text.slice(0,90)}</option>)}</select></label></nav>
       <article className="mt-7 space-y-5 text-[19px] leading-9">
         {book.paragraphs.map((p,i)=><div id={`passage-${i}`} key={p.id} className={`scroll-mt-28 rounded-lg border-l-4 p-3 ${i===index?'border-orange-500 bg-orange-500/10':'border-transparent'} ${p.heading?'pt-7 text-2xl font-bold':''}`}>
           {book.audioOwned ? <button type="button" className="w-full whitespace-pre-wrap text-left" aria-label={`Listen: ${p.text.slice(0,75)}`} aria-current={i===index?'true':undefined} onClick={()=>void start(i)}>{p.text}</button> : <p className="whitespace-pre-wrap">{p.text}</p>}

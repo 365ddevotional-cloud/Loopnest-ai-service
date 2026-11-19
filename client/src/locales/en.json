@@ -1912,5 +1912,13 @@
   "screen_b131194308e2": "Your verified account has lifetime free access to all downloadable content. No download payment is required.",
   "screen_c56836071762": "Confirm ownership of your email address to activate lifetime free downloads.",
   "screen_1ff522cd233e": "Send Confirmation Email",
-  "screen_cc70a8d8506d": "Check Confirmation"
+  "screen_cc70a8d8506d": "Check Confirmation",
+  "screen_208a19d5eb90": "{count} item",
+  "screen_f65216b3ac8c": "{count} items",
+  "screen_90142aa4c23a": "A {denomination} Church",
+  "screen_5dce6bd3a7ca": "Devotional · {date}",
+  "screen_15f9a7989f8d": "Are you sure you want to delete \"{name}\"? This will permanently remove the group and all its data.",
+  "screen_89cc335ef9fa": "Are you sure you want to leave \"{name}\"?",
+  "screen_508e7c108500": " · Joined {date}",
+  "screen_faa0783d73ee": "Page {page} · "
 }
