@@ -48,6 +48,7 @@ for (const [key, value] of Object.entries(en)) {
   if (!uiKeysByEnglish.has(value)) uiKeysByEnglish.set(value, key as LocaleKeys);
 }
 export function translateAppText(source: string, values: Record<string, string | number> = {}, lang = getCurrentLang()): string {
+  if (typeof source !== "string") return "";
   const key = uiKeysByEnglish.get(source);
   const text = key ? getUIText(key, lang) : source;
   return text.replace(/\{(\w+)\}/g, (match, name) => Object.hasOwn(values, name) ? String(values[name]) : match);
@@ -75,5 +76,5 @@ const enumDisplayLabels: Record<string,string> = {
   salvation:"Salvation", other:"Other",
 };
 export function translateEnumLabel(value: string): string {
-  return translateAppText(enumDisplayLabels[value] ?? value);
+  return translateAppText(Object.hasOwn(enumDisplayLabels, value) ? enumDisplayLabels[value] : value);
 }

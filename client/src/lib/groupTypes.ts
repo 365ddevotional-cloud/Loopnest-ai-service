@@ -61,7 +61,8 @@ export function getGroupTypeBadge(groupType: string): { cls: string; label: stri
   if (!groupType || groupType === "other") {
     return { cls: "bg-teal-50 text-teal-800 border-teal-200", label: tx("Community Group") };
   }
-  const known = BADGE_MAP[groupType.toLowerCase()];
+  const key = groupType.toLowerCase();
+  const known = Object.hasOwn(BADGE_MAP, key) ? BADGE_MAP[key] : undefined;
   if (known) return { ...known, label: tx(known.label) };
   return { cls: "bg-stone-50 text-stone-700 border-stone-300", label: groupType };
 }

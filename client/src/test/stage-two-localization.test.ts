@@ -56,3 +56,12 @@ test("copyrighted and private content is not routed through interface translatio
   assert.ok(fs.readFileSync("server/translationService.ts","utf8").includes("createSavedTranslationReader"));
   assert.ok(!fs.readFileSync("server/translationService.ts","utf8").includes("OpenAI"));
 });
+
+
+test("unknown custom labels cannot access inherited object properties", async () => {
+  const {translateEnumLabel,translateAppText}=await import("../utils/i18n");
+  const {getGroupTypeBadge}=await import("../lib/groupTypes");
+  for(const label of ["constructor","__proto__","toString","Custom Ministry Name"])
+    {assert.equal(translateEnumLabel(label),label);assert.equal(getGroupTypeBadge(label).label,label);}
+  assert.equal(translateAppText(undefined as unknown as string),"");
+});
