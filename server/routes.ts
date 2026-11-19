@@ -1,3 +1,4 @@
+import { registerAsvChapters } from "./asv-chapters";
 import { conversationDDL, registerFeedbackConversations } from "./feedback-conversations";
 import { pool as conversationPool } from "./db";
 import { getUncachableSendGridClient } from "./sendgrid";
@@ -198,6 +199,8 @@ export async function registerRoutes(
   const verifyShopToken = async (token: string) => (await import("./firebase-admin")).auth.verifyIdToken(token);
   registerMinistryShopRoutes(app, verifyShopToken);
   registerMinistryShopCommerce(app, verifyShopToken, requireAdmin);
+
+  registerAsvChapters(app);
 
   // Additive tables only: existing feedback and counseling records remain intact.
   const migrationClient=await conversationPool.connect();

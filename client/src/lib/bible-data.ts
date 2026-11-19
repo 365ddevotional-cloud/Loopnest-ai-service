@@ -167,7 +167,7 @@ async function fetchChapterInternal(
   if (!bookNumber) return null;
 
   try {
-    const url = `https://api.getbible.net/v2/${translationCode}/${bookNumber}/${chapter}.json`;
+    const url = translation === "ASV" ? `/api/bible/asv/${bookNumber}/${chapter}` : `https://api.getbible.net/v2/${translationCode}/${bookNumber}/${chapter}.json`;
     const response = await fetch(url, {signal:AbortSignal.timeout(10000)});
     
     if (!response.ok) {
@@ -251,7 +251,7 @@ export async function fetchChapter(
   translation: string
 ): Promise<ChapterData | null> {
   if (!navigator.onLine) {
-    try{const saved=JSON.parse(localStorage.getItem(`bible.recent.${translation}`)||"null");if(saved?.bookId===bookId&&saved.chapter===chapter&&saved.data?.actualTranslation===translation)return saved.data;}catch{}
+    try{const saved=JSON.parse(localStorage.getItem(`bible.recent.${translation === "ASV" ? "ASV-ebible-8924ef74" : translation}`)||"null");if(saved?.bookId===bookId&&saved.chapter===chapter&&saved.data?.actualTranslation===translation)return saved.data;}catch{}
     try {
       const cached = await getBibleChapter(bookId, chapter);
       if (cached) {
@@ -297,7 +297,7 @@ export async function fetchChapter(
   if(pendingChapters.has(key)) return pendingChapters.get(key)!;
   const request=fetchChapterInternal(bookId,chapter,translation,false).then(data=>{
     if(data&&!data.isFallback){if(recentChapters.size>=128)recentChapters.delete(recentChapters.keys().next().value!);recentChapters.set(key,data);
-      try{localStorage.setItem(`bible.recent.${translation}`,JSON.stringify({bookId,chapter,data}));}catch{}}
+      try{localStorage.setItem(`bible.recent.${translation === "ASV" ? "ASV-ebible-8924ef74" : translation}`,JSON.stringify({bookId,chapter,data}));}catch{}}
     return data;
   }).finally(()=>pendingChapters.delete(key));
   pendingChapters.set(key,request);return request;
