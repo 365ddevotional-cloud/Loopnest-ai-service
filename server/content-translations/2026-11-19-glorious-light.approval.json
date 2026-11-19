@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "batchId": "2026-11-19-glorious-light",
+  "sourceHash": "b0f978bf3b182fc8d7578d43790067635cca53d29f9b502435d9dd03e1bc9dbe",
+  "translationHash": "e4d7cbfa062ee3b36d453e2437b0a947f2cd5af76908666d949d121b263f8bca",
+  "languages": [
+    "es",
+    "fr",
+    "yo",
+    "pcm",
+    "ha"
+  ],
+  "status": "approved-for-publication",
+  "approvedBy": "Moses Afolabi",
+  "approvedOn": "2026-11-19",
+  "approvalSource": "User instruction: Approved all translations",
+  "independentLanguageReview": "not-recorded"
+}

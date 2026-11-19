@@ -25,7 +25,7 @@ test('reader translations have complete keys and preserve interpolation placehol
 test('language changes update mounted controls and notices while preserving an unsent draft',async()=>{
  function Reader(){const {t}=useI18n();const[draft,setDraft]=useState('Private unsent message');return React.createElement('div',null,
   React.createElement('button',{onClick:()=>setDraft('Edited private message')},t('ui_send')),
-  React.createElement('textarea',{value:draft,readOnly:true}),React.createElement(ContentLanguageNotice),React.createElement(ContentLanguageNotice,{translatedTo:'fr'}));}
+  React.createElement('textarea',{value:draft,readOnly:true}),React.createElement(ContentLanguageNotice),React.createElement(ContentLanguageNotice,{translatedTo:'fr'}),React.createElement(ContentLanguageNotice,{translatedTo:'fr',publicationApproved:true}));}
  const container=document.createElement('div');document.body.append(container);const root=createRoot(container);
  await act(async()=>root.render(React.createElement(Reader)));
  await act(async()=>container.querySelector('button')!.click());
@@ -33,8 +33,9 @@ test('language changes update mounted controls and notices while preserving an u
  await act(async()=>applyAppLanguage('fr'));
  assert.equal(container.querySelector('button')!.textContent,getUIText('ui_send','fr'));
  assert.equal(container.querySelector('textarea')!.value,'Edited private message');
- assert.equal(container.querySelectorAll('[data-testid="content-language-notice"]').length,2);
+ assert.equal(container.querySelectorAll('[data-testid="content-language-notice"]').length,3);
  assert.ok(container.textContent!.includes(getUIText('ui_savedTranslation','fr')));
+ assert.ok(container.textContent!.includes(getUIText('ui_approvedTranslation','fr')));
  assert.ok(container.textContent!.includes(getUIText('ui_originalContent','fr')));
  assert.equal(document.documentElement.lang,'fr');assert.equal(window.history.length,before);
  assert.equal(new URL(window.location.href).searchParams.get('source'),'menu');assert.equal(window.location.hash,'#reply');

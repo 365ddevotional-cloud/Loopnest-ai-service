@@ -1663,5 +1663,6 @@
   "screen_15f9a7989f8d": "Ka tabbata kana son goge \"{name}\"? Wannan zai goge rukuni da duk bayanansa har abada.",
   "screen_89cc335ef9fa": "Ka tabbata kana son barin \"{name}\"?",
   "screen_508e7c108500": " · Ya shiga {date}",
-  "screen_faa0783d73ee": "Shafi {page} · "
+  "screen_faa0783d73ee": "Shafi {page} · ",
+  "ui_approvedTranslation": "Fassarar da aka shirya da taimakon AI, wadda ma’aikatar bishara ta amince a wallafa. Ka kwatanta da asalin Turanci idan wani lafazi bai bayyana ba."
 }

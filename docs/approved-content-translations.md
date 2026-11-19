@@ -1,0 +1,15 @@
+# Approved saved devotional translations
+
+On November 19, 2026, Moses Afolabi explicitly instructed: **“Approved all translations.”** This approves publication of the five prepared translations of **Glorious Light**, devotional ID 318, dated November 19, 2026: Spanish, French, Yoruba, Nigerian Pidgin and Hausa. It is not approval of future, edited or unrelated content, and it is not an invented independent-language certification.
+
+The original draft snapshot remains unchanged. A separate versioned approval record binds the batch ID, exact English source SHA-256 and exact translated-text SHA-256. The release validates both hashes and all five language codes. No environment variable, public reader request or admin-screen action can extend this approval. Any English or translation correction requires a new approval record/release.
+
+Public today, dated and archive requests reuse the saved approved text. Titles, teaching, prayers, faith declarations, quotation and prophetic declaration are localized. The source author, original Scripture reference and Scripture text remain intact. Selecting English returns the original. Public metadata identifies ministry publication approval and its date; the reader notice identifies the AI-assisted translation and suggests comparison with English. Independent language review remains recorded as **not-recorded** rather than fabricating a reviewer.
+
+The existing private admin review screen shows published status and the owner approval. If the original is edited, missing or deleted, it shows the source mismatch. A source mismatch suppresses this release and any older cache row for that same devotional/language, returning the original rather than stale teaching. Unrelated legacy saved translations remain unchanged. Approved text remains available when the older translation cache fails. Draft/release source files are not placed in public client assets.
+
+No external translation-provider call, automatic generation/retry, new service, subscription, database write or migration is introduced. New paid content-generation allowance remains zero. Normal existing hosting costs still apply. Existing book, music, purchase, narration and Google Play controls are unchanged. This publishes only this approved devotional batch; it does not translate the full archive or customer books.
+
+Validation covers exact approval hashes, false approval states, all five languages across today/dated/archive response projections, source drift/deletion, legacy fallback, cache failures, concurrent read reuse, English/unknown-language fallback, original Scripture/author preservation, publication status and honest reader notices. No real message, purchase, email, new account or paid generation is exercised.
+
+Verified locally: all 98 regression tests, TypeScript and the production build passed. The live English source matched the approved source hash immediately before release preparation. Build inspection found no pilot translation prose or source hash in public client files.

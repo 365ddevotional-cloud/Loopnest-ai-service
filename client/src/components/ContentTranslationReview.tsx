@@ -28,7 +28,7 @@ export function ContentTranslationReview() {
   });
   return <section aria-label="Content translation review" className="space-y-5 rounded-lg border bg-card p-4 sm:p-6">
     <h2 className="text-2xl font-bold">Content translations</h2>
-    <p>Private drafts for language and ministry review. Paid translation generation is off. These drafts are not published to readers.</p>
+    <p>Compare saved translations with the English source and check each batch’s publication status. Paid translation generation is off.</p>
     <p className="text-sm text-muted-foreground">Check accuracy, natural wording, theology, Scripture references and paragraph order with a fluent speaker. Review does not translate the selected Bible edition, publish books or generate narration.</p>
     <label className="block font-semibold">Draft language
       <select className="mt-1 block w-full rounded border bg-background p-2 sm:max-w-xs" value={language} onChange={e => setLanguage(e.target.value as TranslationDraftLanguage)}>
@@ -42,17 +42,18 @@ export function ContentTranslationReview() {
       const draft = batch.drafts.find(d => d.language === language);
       return <div key={batch.batchId} className="space-y-4">
         <h3 className="text-lg font-semibold">{batch.source.date} · {batch.source.title}</h3>
-        <p role="status">Not published · Language review pending · Ministry review pending</p>
+        <p role="status">{batch.publicAvailability === 'published' ? 'Published · Saved translation' : batch.publicAvailability === 'source-changed' ? 'Publication held · Source changed' : 'Not published · Language review pending · Ministry review pending'}</p>
+        {batch.publicationApproval && <p>Approved for publication by {batch.publicationApproval.approvedBy} on {batch.publicationApproval.approvedOn}. Independent language review is not recorded.</p>}
         {(!batch.sourceAvailable || !batch.sourceMatches) && <p role="alert" className="rounded border border-red-400 p-3">{batch.sourceAvailable ? 'The English source has changed. These drafts must be refreshed and reviewed again.' : 'The English source is missing or deleted. This batch cannot be released.'}</p>}
         {batch.sourceMatches && <p className="text-sm">The saved English source matches the current devotional.</p>}
         <details><summary className="cursor-pointer">Source verification</summary><p className="break-all text-xs">SHA-256: {batch.sourceHash}</p></details>
         <div className="rounded border p-3"><h4 className="font-semibold">Original Scripture — unchanged</h4><p>{batch.source.scriptureReference}</p><blockquote lang="en" className="mt-2">{batch.source.scriptureText}</blockquote></div>
         <div className="grid gap-4 lg:grid-cols-2">
           <TextColumn text={batch.source} lang="en" heading="English source" />
-          {draft && <TextColumn text={draft} lang={language} heading={`${languages[language]} — unreviewed draft`} />}
+          {draft && <TextColumn text={draft} lang={language} heading={`${languages[language]} — ${batch.publicAvailability === 'published' ? 'approved for publication' : 'prepared translation'}`} />}
         </div>
       </div>;
     })}
-    <p className="rounded border p-3 text-sm">No publication action is available here. Reviewed corrections and explicit language/ministry sign-off must be recorded in the repository before a separate release can make translations public.</p>
+    <p className="rounded border p-3 text-sm">This screen is read-only. Publication requires a recorded approval covering the exact English source and translated text. Any source or translation correction requires a new release.</p>
   </section>;
 }

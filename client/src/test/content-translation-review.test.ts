@@ -48,6 +48,16 @@ test('private review switches actual draft language, preserves Scripture and ren
     assert.ok(container.textContent?.includes(pilot.drafts[1].content));
     assert.equal(container.querySelector('blockquote')?.textContent, pilot.source.scriptureText);
     assert.ok(container.textContent?.includes('Language review pending'));
+    await act(async () => {
+      client.setQueryData(['/api/admin/content-translations'], [{ ...fixture, sourceMatches: true, publicAvailability: 'published',
+        publicationApproval: { approvedBy: 'Moses Afolabi', approvedOn: '2026-11-19', independentLanguageReview: 'not-recorded' } }]);
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+    assert.ok(container.textContent?.includes('Published · Saved translation'));
+    assert.ok(container.textContent?.includes('Approved for publication by Moses Afolabi'));
+    assert.ok(container.textContent?.includes('Independent language review is not recorded'));
+    assert.ok(!container.textContent?.includes('Language review pending'));
+    assert.equal(container.querySelector('button'), null);
   } finally {
     await act(async () => root.unmount()); client.clear(); container.remove();
   }

@@ -1,4 +1,7 @@
 import { registerAsvChapters } from "./asv-chapters";
+import { createApprovedContentRelease } from "./approved-content-translations";
+import { createDevotionalTranslator } from "./devotional-translation";
+import contentTranslationApproval from "./content-translations/2026-11-19-glorious-light.approval.json";
 import { registerContentTranslationReview } from "./content-translation-review";
 import contentTranslationPilot from "./content-translations/2026-11-19-glorious-light.json";
 import { conversationDDL, registerFeedbackConversations } from "./feedback-conversations";
@@ -40,46 +43,12 @@ import { eq, sql, desc, gte } from "drizzle-orm";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
-function overlayTranslation(devotional: any, translation: any, lang: string) {
-  return {
-    ...devotional,
-    title: translation._translatedTitle ?? devotional.title,
-    content: translation.devotionalMessage,
-    prayerPoints: translation.prayerPoints,
-    faithDeclarations: translation.faithDeclarations,
-    christianQuotes: translation.christianQuotes ?? devotional.christianQuotes,
-    propheticDeclaration: translation.propheticDeclaration ?? devotional.propheticDeclaration,
-    scriptureText: translation.scriptureTextTranslated ?? devotional.scriptureText,
-    _translatedTo: lang,
-  };
-}
-
-async function applyTranslation(devotional: any, lang: string | undefined) {
-  if (!lang || lang === "en" || !isAllowedLanguage(lang)) return devotional;
-  try {
-    const translation = await getOrCreateTranslation(devotional, lang);
-    if (!translation) return devotional;
-    return overlayTranslation(devotional, translation, lang);
-  } catch {
-    return devotional;
-  }
-}
-
-async function applyTranslationToList(devotionals: any[], lang: string | undefined) {
-  if (!lang || lang === "en" || !isAllowedLanguage(lang)) return devotionals;
-  try {
-    const translations = await getCachedTranslationsForLanguage(lang);
-    if (translations.length === 0) return devotionals;
-    const translationMap = new Map(translations.map(t => [t.devotionalId, t]));
-    return devotionals.map(d => {
-      const t = translationMap.get(d.id);
-      if (!t) return d;
-      return overlayTranslation(d, t, lang);
-    });
-  } catch {
-    return devotionals;
-  }
-}
+const approvedContent = createApprovedContentRelease(contentTranslationPilot, contentTranslationApproval);
+const { applyTranslation, applyTranslationToList } = createDevotionalTranslator({
+  resolveApproved: approvedContent.resolve,
+  readLegacy: getOrCreateTranslation,
+  readLegacyList: getCachedTranslationsForLanguage,
+});
 
 if (!ADMIN_PASSWORD) {
   console.warn("WARNING: ADMIN_PASSWORD not set. Admin login will be disabled.");
@@ -197,6 +166,7 @@ export async function registerRoutes(
   registerAdminAuth(app, ADMIN_PASSWORD);
   registerContentTranslationReview(app, {
     requireAdmin, batches: [contentTranslationPilot],
+    publicationApproval: approvedContent.forBatch,
     readSource: id => storage.getDevotional(id),
   });
   // The shop can fail closed without preventing the rest of the app from starting.

@@ -1920,5 +1920,6 @@
   "screen_15f9a7989f8d": "Voulez-vous vraiment supprimer « {name} » ? Le groupe et toutes ses données seront définitivement supprimés.",
   "screen_89cc335ef9fa": "Voulez-vous vraiment quitter « {name} » ?",
   "screen_508e7c108500": " · Membre depuis le {date}",
-  "screen_faa0783d73ee": "Page {page} · "
+  "screen_faa0783d73ee": "Page {page} · ",
+  "ui_approvedTranslation": "Traduction réalisée avec l’aide de l’IA et approuvée pour publication par le ministère. En cas de doute sur la formulation, comparez avec l’original anglais."
 }

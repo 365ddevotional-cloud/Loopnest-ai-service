@@ -1920,5 +1920,6 @@
   "screen_15f9a7989f8d": "Are you sure you want to delete \"{name}\"? This will permanently remove the group and all its data.",
   "screen_89cc335ef9fa": "Are you sure you want to leave \"{name}\"?",
   "screen_508e7c108500": " · Joined {date}",
-  "screen_faa0783d73ee": "Page {page} · "
+  "screen_faa0783d73ee": "Page {page} · ",
+  "ui_approvedTranslation": "AI-assisted translation approved for publication by the ministry. Compare with the English original if wording is unclear."
 }
