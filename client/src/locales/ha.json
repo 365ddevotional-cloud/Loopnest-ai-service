@@ -1669,5 +1669,11 @@
   "ui_audioDidNotStart": "Sauti bai fara ba. Duba ƙarar sauti da yanayin shiru, sannan ka sake danna Saurara.",
   "ui_listenEnglishOriginal": "Saurari asalin Turanci",
   "ui_preparingEnglishAudio": "Ana shirya asalin Turanci…",
-  "ui_englishAudioUnavailable": "Ba a iya loda asalin Turanci ba. Sake buɗe shafin ka sake gwadawa."
+  "ui_englishAudioUnavailable": "Ba a iya loda asalin Turanci ba. Sake buɗe shafin ka sake gwadawa.",
+  "ui_freeDeviceVoices": "Muryoyin na’ura kawai, ba tare da kuɗin samar da murya ba. Auto yana fifita muryoyin da aka sa wa suna Natural, Premium, Enhanced ko Neural idan suna nan. Ingancin sauti ya danganta da na’urarka.",
+  "ui_voiceLanguage": "Harshen murya",
+  "ui_noDeviceVoice": "Babu muryar da ta dace da wannan harshe a na’urar. Gwada wani harshe ko rikodin da aka adana kuma aka ba da izinin amfani da shi.",
+  "ui_voiceSelected": "Muryar da aka zaɓa",
+  "ui_pidginDeviceVoice": "Wannan na’ura tana amfani da muryar Turanci don Pidgin. Furucin na iya bambanta da na mai magana da Pidgin na asali.",
+  "ui_refreshVoices": "Sake duba muryoyi"
 }

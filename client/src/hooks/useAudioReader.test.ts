@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
-import { useAudioReader, getAvailableEnglishVoices, splitIntoSegments } from "./useAudioReader";
+import { useAudioReader, getAvailableEnglishVoices, splitIntoSegments, getAvailableReaderVoices, getPreferredReaderVoice, saveVoicePreference, clearVoicePreference } from "./useAudioReader";
 
 function reader() {
   let value!: ReturnType<typeof useAudioReader>;
@@ -151,6 +151,27 @@ test('Pidgin prefers a Nigerian English voice when no dedicated Pidgin voice is 
   setup(); availableVoices=[{name:'English US',voiceURI:'us',lang:'en-US'},{name:'Nigerian English',voiceURI:'ng',lang:'en-NG'}] as SpeechSynthesisVoice[];
   reader().play('Jesus na the light of the world.', 'Pidgin', {language:'pcm'});
   assert.equal(spoken[0].voice.voiceURI,'ng'); reader().stop();
+});
+
+test('free voice preferences are independent by language and retain the existing English preference',()=>{
+  setup();const preferences=new Map<string,string>([['audio-reader-voice','english']]);
+  Object.assign(globalThis.localStorage,{getItem:(key:string)=>preferences.get(key)??null,setItem:(key:string,value:string)=>preferences.set(key,value),removeItem:(key:string)=>preferences.delete(key)});
+  availableVoices=[{name:'English saved',voiceURI:'english',lang:'en-US'},{name:'French natural',voiceURI:'fr-natural',lang:'fr-FR'},{name:'French choice',voiceURI:'fr-choice',lang:'fr-CA'},{name:'Yoruba',voiceURI:'yo',lang:'yo-NG'}] as SpeechSynthesisVoice[];
+  saveVoicePreference('fr-choice','fr');saveVoicePreference('yo','yo');
+  assert.equal(getPreferredReaderVoice('fr')?.voiceURI,'fr-choice');
+  assert.equal(getPreferredReaderVoice('en')?.voiceURI,'english');
+  assert.equal(getPreferredReaderVoice('yo')?.voiceURI,'yo');
+  reader().play('Bonjour.','French',{language:'fr'});assert.equal(spoken.at(-1).voice.voiceURI,'fr-choice');reader().stop();
+  clearVoicePreference('fr');assert.equal(getPreferredReaderVoice('fr')?.voiceURI,'fr-natural');
+  assert.equal(getPreferredReaderVoice('en')?.voiceURI,'english');
+  assert.equal(getPreferredReaderVoice('yo')?.voiceURI,'yo');
+});
+test('voice discovery refreshes installed voices and never offers English as Yoruba',()=>{
+  setup();availableVoices=[{name:'English',voiceURI:'en',lang:'en-US'}] as SpeechSynthesisVoice[];
+  assert.deepEqual(getAvailableReaderVoices('yo'),[]);
+  availableVoices.push({name:'Yoruba Enhanced',voiceURI:'yo',lang:'yo-NG'} as SpeechSynthesisVoice);
+  assert.equal(getAvailableReaderVoices('yo')[0].voiceURI,'yo');
+  assert.equal(getPreferredReaderVoice('yo')?.voiceURI,'yo');
 });
 
 test('resume clears a paused speech queue before a new utterance is queued', () => {

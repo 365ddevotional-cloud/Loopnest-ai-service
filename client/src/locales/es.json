@@ -1926,5 +1926,11 @@
   "ui_audioDidNotStart": "El audio no comenzó. Comprueba el volumen multimedia y el modo silencio; después pulsa Escuchar de nuevo.",
   "ui_listenEnglishOriginal": "Escuchar el original en inglés",
   "ui_preparingEnglishAudio": "Preparando el original en inglés…",
-  "ui_englishAudioUnavailable": "No se pudo cargar el original en inglés. Actualiza la página e inténtalo de nuevo."
+  "ui_englishAudioUnavailable": "No se pudo cargar el original en inglés. Actualiza la página e inténtalo de nuevo.",
+  "ui_freeDeviceVoices": "Solo voces del dispositivo, sin cargos de generación. Auto prefiere voces etiquetadas Natural, Premium, Enhanced o Neural cuando están disponibles. La calidad depende del dispositivo.",
+  "ui_voiceLanguage": "Idioma de la voz",
+  "ui_noDeviceVoice": "No hay una voz compatible en este dispositivo. Prueba otro idioma o una grabación guardada autorizada.",
+  "ui_voiceSelected": "Voz seleccionada",
+  "ui_pidginDeviceVoice": "Este dispositivo usa una voz inglesa para el pidgin. La pronunciación puede diferir de la de un hablante nativo.",
+  "ui_refreshVoices": "Actualizar voces"
 }

@@ -1926,5 +1926,11 @@
   "ui_audioDidNotStart": "Audio did not start. Check media volume and silent mode, then tap Listen again.",
   "ui_listenEnglishOriginal": "Listen to English original",
   "ui_preparingEnglishAudio": "Preparing the English original…",
-  "ui_englishAudioUnavailable": "The English original could not be loaded. Refresh and try again."
+  "ui_englishAudioUnavailable": "The English original could not be loaded. Refresh and try again.",
+  "ui_freeDeviceVoices": "Free device voices only. Auto prefers voices labelled Natural, Premium, Enhanced or Neural when available. Sound quality depends on your device.",
+  "ui_voiceLanguage": "Voice language",
+  "ui_noDeviceVoice": "No matching voice is available on this device. Try another language or an authorized saved recording.",
+  "ui_voiceSelected": "Selected voice",
+  "ui_pidginDeviceVoice": "This device uses an English voice for Pidgin. Pronunciation may differ from a native Pidgin speaker.",
+  "ui_refreshVoices": "Refresh voices"
 }

@@ -21,7 +21,7 @@ export interface AudioReaderActions {
 }
 
 const VOICE_STORAGE_KEY = "audio-reader-voice";
-const VOICE_PRIORITY = ["Natural", "Premium", "Enhanced", "Neural", "Google", "Samantha", "Daniel", "Karen"];
+const VOICE_PRIORITY = ["Natural", "Premium", "Enhanced", "Neural", "Samantha", "Daniel", "Karen"];
 
 const DEVOTIONAL_RATE = 0.88;
 const DEFAULT_RATE = 0.92;
@@ -90,40 +90,41 @@ function getEnglishVoices(): SpeechSynthesisVoice[] {
 }
 
 export function getAvailableEnglishVoices(): SpeechSynthesisVoice[] {
-  if (!voicesLoaded) {
-    loadVoices();
-  }
-  return getEnglishVoices();
+  return getAvailableReaderVoices('en');
 }
 
-function getSavedVoiceURI(): string | null {
+function voicePreferenceKey(language = 'en') {
+  const base=speechLanguage(language).split('-')[0];
+  return base==='en'?VOICE_STORAGE_KEY:`${VOICE_STORAGE_KEY}:${base}`;
+}
+export function getSavedVoicePreference(language = 'en'): string | null {
   try {
-    return localStorage.getItem(VOICE_STORAGE_KEY);
+    return localStorage.getItem(voicePreferenceKey(language));
   } catch {
     return null;
   }
 }
 
-export function saveVoicePreference(voiceURI: string) {
+export function saveVoicePreference(voiceURI: string, language = 'en') {
   try {
-    localStorage.setItem(VOICE_STORAGE_KEY, voiceURI);
+    localStorage.setItem(voicePreferenceKey(language), voiceURI);
   } catch {}
 }
 
-export function clearVoicePreference() {
+export function clearVoicePreference(language = 'en') {
   try {
-    localStorage.removeItem(VOICE_STORAGE_KEY);
+    localStorage.removeItem(voicePreferenceKey(language));
   } catch {}
 }
 
 export function getPreferredEnglishVoice(): SpeechSynthesisVoice | null {
-  return chooseVoice(getEnglishVoices());
+  return getPreferredReaderVoice('en');
 }
 
-function chooseVoice(englishVoices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
+function chooseVoice(englishVoices: SpeechSynthesisVoice[], language = 'en'): SpeechSynthesisVoice | null {
   if (englishVoices.length === 0) return null;
 
-  const savedURI = getSavedVoiceURI();
+  const savedURI = getSavedVoicePreference(language);
   if (savedURI) {
     const saved = englishVoices.find((v) => v.voiceURI === savedURI);
     if (saved) return saved;
@@ -136,6 +137,8 @@ function chooseVoice(englishVoices: SpeechSynthesisVoice[]): SpeechSynthesisVoic
     if (match) return match;
   }
 
+  const defaultVoice = englishVoices.find((v) => v.default);
+  if (defaultVoice) return defaultVoice;
   const localVoice = englishVoices.find((v) => v.localService);
   if (localVoice) return localVoice;
 
@@ -147,15 +150,30 @@ function speechLanguage(language = 'en') {
   const base = language.toLowerCase().replace('_', '-').split('-')[0];
   return Object.hasOwn(speechLanguages, base) ? speechLanguages[base] : 'en-US';
 }
-function preferredVoice(language: string) {
+function voicesForLanguage(language: string) {
   const base = language.split('-')[0];
   const matches = cachedVoices.filter(v => v.lang.toLowerCase().replace('_', '-').split('-')[0] === base);
   // Pidgin can use a Nigerian English voice when no dedicated Pidgin voice exists.
   if (!matches.length && base === 'pcm') {
     const nigerian = cachedVoices.filter(v => /^en[-_]NG$/i.test(v.lang));
-    return chooseVoice(nigerian.length ? nigerian : getEnglishVoices());
+    return nigerian.length ? nigerian : getEnglishVoices();
   }
-  return chooseVoice(matches);
+  return matches;
+}
+export function getAvailableReaderVoices(language = 'en'): SpeechSynthesisVoice[] {
+  if (typeof window !== 'undefined' && window.speechSynthesis) {
+    try {
+      cachedVoices=window.speechSynthesis.getVoices();
+      if(!cachedVoices.length) void loadVoices().catch(()=>{});
+    } catch { cachedVoices=[]; }
+  } else cachedVoices=[];
+  return voicesForLanguage(speechLanguage(language));
+}
+export function getPreferredReaderVoice(language = 'en'): SpeechSynthesisVoice | null {
+  return chooseVoice(getAvailableReaderVoices(language),language);
+}
+function preferredVoice(language: string) {
+  return chooseVoice(voicesForLanguage(language),language);
 }
 
 function prepareDevotionalText(text: string): string {

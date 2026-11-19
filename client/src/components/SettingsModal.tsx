@@ -24,10 +24,12 @@ import { useFontSize, type FontSizeLevel } from "@/contexts/FontSizeContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useState, useEffect } from "react";
 import {
-  getAvailableEnglishVoices,
+  getAvailableReaderVoices,
   saveVoicePreference,
   clearVoicePreference,
-  getPreferredEnglishVoice,
+  getPreferredReaderVoice,
+  getSavedVoicePreference,
+  useAudioReader,
 } from "@/hooks/useAudioReader";
 
 const fontSizeLevels: FontSizeLevel[] = ["small", "medium", "large", "extra-large"];
@@ -44,7 +46,15 @@ const themeOptions = [
   { value: "system" as const, label: "Follow device", icon: Monitor },
 ];
 
-const VOICE_STORAGE_KEY = "audio-reader-voice";
+const readerLanguages=[['en','English'],['es','Español'],['fr','Français'],['yo','Èdè Yorùbá'],['pcm','Naijá Pidgin'],['ha','Hausa']] as const;
+const voiceSamples:Record<string,string>={
+  en:'The Lord is my shepherd, I shall not want.',
+  es:'Bienvenido. Escucha el devocional de hoy.',
+  fr:"Bienvenue. Écoutez la méditation d’aujourd’hui.",
+  yo:'Ẹ káàbọ̀. Ẹ gbọ́ ìfọkànsìn ojoojúmọ́ wa.',
+  pcm:'Welcome. Make we listen to today devotional.',
+  ha:'Barka da zuwa. Ku saurari karatun ibada na yau.',
+};
 
 export function MobileSettingsSection() {
   useI18n();
@@ -115,31 +125,26 @@ export function MobileSettingsSection() {
 }
 
 export function SettingsModal() {
-  useI18n();
+  const {t,lang}=useI18n();
+  const audio=useAudioReader();
   const { fontSize, setFontSize } = useFontSize();
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<string>("auto");
+  const [voiceLanguage,setVoiceLanguage]=useState<string>(lang);
 
   const currentIndex = fontSizeLevels.indexOf(fontSize);
 
+  useEffect(()=>{if(open)setVoiceLanguage(lang);},[open,lang]);
+  const loadVoiceList = () => {
+    const available=getAvailableReaderVoices(voiceLanguage);
+    setVoices(available);
+    const saved=getSavedVoicePreference(voiceLanguage);
+    setSelectedVoice(saved && available.some(v=>v.voiceURI===saved)?saved:'auto');
+  };
   useEffect(() => {
     if (!open) return;
-    const loadVoiceList = () => {
-      const available = getAvailableEnglishVoices();
-      setVoices(available);
-      try {
-        const saved = localStorage.getItem(VOICE_STORAGE_KEY);
-        if (saved && available.some((v) => v.voiceURI === saved)) {
-          setSelectedVoice(saved);
-        } else {
-          setSelectedVoice("auto");
-        }
-      } catch {
-        setSelectedVoice("auto");
-      }
-    };
     loadVoiceList();
     if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.addEventListener("voiceschanged", loadVoiceList);
@@ -147,14 +152,14 @@ export function SettingsModal() {
         window.speechSynthesis.removeEventListener("voiceschanged", loadVoiceList);
       };
     }
-  }, [open]);
+  }, [open,voiceLanguage]);
 
   const handleVoiceChange = (value: string) => {
     setSelectedVoice(value);
     if (value === "auto") {
-      clearVoicePreference();
+      clearVoicePreference(voiceLanguage);
     } else {
-      saveVoicePreference(value);
+      saveVoicePreference(value,voiceLanguage);
     }
   };
 
@@ -166,17 +171,7 @@ export function SettingsModal() {
   };
 
   const previewVoice = () => {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(
-      "The Lord is my shepherd, I shall not want."
-    );
-    utterance.rate = 0.92;
-    utterance.pitch = 1;
-    utterance.volume = 1;
-    const voice = selectedVoice === "auto" ? getPreferredEnglishVoice() : voices.find((v) => v.voiceURI === selectedVoice);
-    if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
-    window.speechSynthesis.speak(utterance);
+    audio.play(voiceSamples[voiceLanguage] || voiceSamples.en,tx('Audio Voice'),{language:voiceLanguage});
   };
 
   return (
@@ -192,7 +187,7 @@ export function SettingsModal() {
           <Settings className="w-5 h-5" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-serif text-xl">
             <Settings className="w-5 h-5" /> {tx("Settings")} </DialogTitle>
@@ -276,10 +271,16 @@ export function SettingsModal() {
               <h3 className="font-medium">{tx("Audio Voice")}</h3>
             </div>
             <p className="text-xs text-muted-foreground"> {tx("Choose a voice for the Listen feature. Available voices depend on your browser and device.")} </p>
+            <p className="text-xs text-muted-foreground">{t('ui_freeDeviceVoices')}</p>
+            <label className="block text-sm">{t('ui_voiceLanguage')}
+              <select value={voiceLanguage} onChange={e=>{audio.stop();setVoiceLanguage(e.target.value);}} className="mt-1 w-full rounded border bg-background p-2" data-testid="select-voice-language">
+                {readerLanguages.map(([code,name])=><option key={code} value={code}>{name}</option>)}
+              </select>
+            </label>
 
             <div className="flex items-center gap-2">
               <Select value={selectedVoice} onValueChange={handleVoiceChange}>
-                <SelectTrigger className="flex-1" data-testid="select-voice">
+                <SelectTrigger className="flex-1 min-w-0" data-testid="select-voice">
                   <SelectValue placeholder={tx("Auto (Best Available)")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -295,9 +296,15 @@ export function SettingsModal() {
                 variant="outline"
                 size="sm"
                 onClick={previewVoice}
+                disabled={voices.length===0}
                 data-testid="button-preview-voice"
               > {tx("Test")} </Button>
             </div>
+            {voices.length===0 ? <p role="status" className="text-sm" data-testid="voice-unavailable-message">{t('ui_noDeviceVoice')}</p>
+              : <p className="text-xs text-muted-foreground" data-testid="voice-current-selection">{t('ui_voiceSelected')}: {selectedVoice==='auto'?getPreferredReaderVoice(voiceLanguage)?.name:voices.find(v=>v.voiceURI===selectedVoice)?.name}</p>}
+            {voiceLanguage==='pcm' && voices.length>0 && !voices.some(v=>v.lang.toLowerCase().startsWith('pcm')) && <p className="text-xs text-muted-foreground">{t('ui_pidginDeviceVoice')}</p>}
+            <Button variant="outline" size="sm" onClick={loadVoiceList} data-testid="button-refresh-voices">{t('ui_refreshVoices')}</Button>
+            {audio.error && <p role="alert" className="text-sm">{audio.errorCode==='voice-unavailable'?t('ui_noDeviceVoice'):t('ui_audioDidNotStart')}</p>}
           </div>
         </div>
       </DialogContent>

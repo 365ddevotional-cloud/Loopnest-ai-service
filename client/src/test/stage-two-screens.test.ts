@@ -57,6 +57,34 @@ test("settings translates options while preserving device voice names and origin
   await view.close();
 });
 
+test('free voice settings preview the selected language and disable unsupported Yoruba speech',async()=>{
+  const utterances:any[]=[];
+  const installed=[{name:'English choice',voiceURI:'en-choice',lang:'en-US'},{name:'French Enhanced',voiceURI:'fr-enhanced',lang:'fr-FR'}];
+  Object.assign(dom.window,{speechSynthesis:{getVoices:()=>installed,addEventListener(){},removeEventListener(){},cancel(){},resume(){},pause(){},speak:(u:any)=>{utterances.push(u);u.onstart?.();}}});
+  (globalThis as any).SpeechSynthesisUtterance=class{constructor(public text:string){}};
+  localStorage.setItem('audio-reader-voice','en-choice');
+  screens.applyAppLanguage('fr');const view=await mount(screens.SettingsModal);
+  try {
+    await act(async()=>view.container.querySelector<HTMLButtonElement>('[data-testid="button-settings"]')!.click());
+    const language=document.querySelector<HTMLSelectElement>('[data-testid="select-voice-language"]')!;
+    const preview=document.querySelector<HTMLButtonElement>('[data-testid="button-preview-voice"]')!;
+    assert.equal(language.value,'fr');assert.equal(preview.disabled,false);
+    assert.ok(document.querySelector('[data-testid="voice-current-selection"]')?.textContent?.includes('French Enhanced'));
+    await act(async()=>preview.click());
+    assert.equal(utterances.at(-1).lang,'fr-FR');assert.equal(utterances.at(-1).voice.voiceURI,'fr-enhanced');
+    assert.ok(utterances.at(-1).text.includes('Bienvenue'));
+    await act(async()=>{language.value='yo';language.dispatchEvent(new dom.window.Event('change',{bubbles:true}));});
+    assert.equal(preview.disabled,true);assert.ok(document.querySelector('[data-testid="voice-unavailable-message"]'));
+    assert.ok(!document.querySelector('[data-testid="voice-current-selection"]'));
+    await act(async()=>{language.value='en';language.dispatchEvent(new dom.window.Event('change',{bubbles:true}));});
+    assert.equal(preview.disabled,false);
+    await act(async()=>preview.click());
+    assert.equal(utterances.at(-1).voice.voiceURI,'en-choice');
+    assert.equal(utterances.at(-1).text,'The Lord is my shepherd, I shall not want.');
+    assert.equal(localStorage.getItem('audio-reader-voice'),'en-choice');
+  } finally {await view.close();delete (dom.window as any).speechSynthesis;delete (globalThis as any).SpeechSynthesisUtterance;}
+});
+
 test("private prayer form preserves message and privacy machine values through a language change",async()=>{
   screens.setUser(null);screens.applyAppLanguage("en");const view=await mount(screens.PrayerCounseling);
   try {
