@@ -20,7 +20,7 @@ const fixtures:Record<string,string>={
   "./MusicPurchasePanel":`export function useDeviceMusicCountry(){return {deviceCountry:"US",locationResolved:true,retryDeviceLocation:()=>{}};}`,
 };
 const cacheDir=path.resolve("node_modules/.cache/stage-two-tests");mkdirSync(cacheDir,{recursive:true});const bundle=path.join(cacheDir,"screens.mjs");
-await build({stdin:{contents:`export {default as SignIn} from "@/pages/SignIn";export {default as PrayerCounseling} from "@/pages/PrayerCounseling";export {default as MyLibrary} from "@/pages/MyLibrary";export {SettingsModal} from "@/components/SettingsModal";export {ShopCheckout} from "@/components/MinistryShopCheckout";export {setUser} from "@/contexts/UserContext";export {applyAppLanguage,translateAppText,translateAccountError} from "@/utils/i18n";`,resolveDir:process.cwd(),loader:"tsx"},bundle:true,outfile:bundle,format:"esm",platform:"node",banner:{js:"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);"},jsx:"automatic",tsconfig:"tsconfig.json",external:["react","react/*","react-dom","react-dom/*","@tanstack/react-query"],plugins:[{name:"local-fixtures",setup(builder){builder.onResolve({filter:/.*/},args=>args.path in fixtures?{path:args.path,namespace:"fixture"}:undefined);builder.onLoad({filter:/.*/,namespace:"fixture"},args=>({contents:fixtures[args.path],loader:"js"}));}}]});
+await build({stdin:{contents:`export {default as SignIn} from "@/pages/SignIn";export {default as PrayerCounseling} from "@/pages/PrayerCounseling";export {default as MyLibrary} from "@/pages/MyLibrary";export {SettingsModal,MobileSettingsSection} from "@/components/SettingsModal";export {ShopCheckout} from "@/components/MinistryShopCheckout";export {setUser} from "@/contexts/UserContext";export {applyAppLanguage,translateAppText,translateAccountError} from "@/utils/i18n";`,resolveDir:process.cwd(),loader:"tsx"},bundle:true,outfile:bundle,format:"esm",platform:"node",banner:{js:"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);"},jsx:"automatic",tsconfig:"tsconfig.json",external:["react","react/*","react-dom","react-dom/*","@tanstack/react-query"],plugins:[{name:"local-fixtures",setup(builder){builder.onResolve({filter:/.*/},args=>args.path in fixtures?{path:args.path,namespace:"fixture"}:undefined);builder.onLoad({filter:/.*/,namespace:"fixture"},args=>({contents:fixtures[args.path],loader:"js"}));}}]});
 const screens=await import(pathToFileURL(bundle).href);
 const {createRoot}=await import("react-dom/client");const {QueryClient,QueryClientProvider}=await import("@tanstack/react-query");
 async function mount(Component:any,props:any={}) {
@@ -83,6 +83,19 @@ test('free voice settings preview the selected language and disable unsupported 
     assert.equal(utterances.at(-1).text,'The Lord is my shepherd, I shall not want.');
     assert.equal(localStorage.getItem('audio-reader-voice'),'en-choice');
   } finally {await view.close();delete (dom.window as any).speechSynthesis;delete (globalThis as any).SpeechSynthesisUtterance;}
+});
+
+test('phone settings open a focused voice dialog without desktop-only controls',async()=>{
+  screens.applyAppLanguage('yo');const view=await mount(screens.MobileSettingsSection);
+  try {
+    const button=view.container.querySelector<HTMLButtonElement>('[data-testid="button-voice-settings-mobile"]')!;
+    assert.ok(button);await act(async()=>button.click());
+    const dialog=document.querySelector('[role="dialog"]')!;
+    assert.ok(dialog);assert.equal(dialog.querySelector<HTMLSelectElement>('[data-testid="select-voice-language"]')?.value,'yo');
+    assert.equal(dialog.querySelector('[data-testid="slider-font-size"]'),null);
+    assert.ok(dialog.querySelector('[data-testid="button-refresh-voices"]'));
+    assert.ok(dialog.querySelector<HTMLButtonElement>('[data-testid="button-preview-voice"]')?.disabled);
+  }finally{await view.close();}
 });
 
 test("private prayer form preserves message and privacy machine values through a language change",async()=>{

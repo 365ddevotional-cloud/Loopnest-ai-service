@@ -64,6 +64,9 @@ export function MobileSettingsSection() {
   return (
     <>
       <div className="mt-4 border-t border-primary/10 px-4 pt-4">
+        <SettingsModal voiceOnly />
+      </div>
+      <div className="mt-4 border-t border-primary/10 px-4 pt-4">
         <GooglePlayReviewLink />
       </div>
       <div className="mt-4 border-t border-primary/10 pt-4">
@@ -124,7 +127,7 @@ export function MobileSettingsSection() {
   );
 }
 
-export function SettingsModal() {
+export function SettingsModal({voiceOnly=false}:{voiceOnly?:boolean}) {
   const {t,lang}=useI18n();
   const audio=useAudioReader();
   const { fontSize, setFontSize } = useFontSize();
@@ -178,23 +181,25 @@ export function SettingsModal() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button 
-          variant="ghost" 
-          size="icon" 
-          className="text-muted-foreground hover:text-primary"
-          title={tx("Settings - Adjust text size")}
-          data-testid="button-settings"
+          variant={voiceOnly?'outline':'ghost'}
+          size={voiceOnly?'sm':'icon'}
+          className={voiceOnly?'w-full justify-start gap-2':'text-muted-foreground hover:text-primary'}
+          title={tx(voiceOnly?'Audio Voice':"Settings - Adjust text size")}
+          data-testid={voiceOnly?'button-voice-settings-mobile':'button-settings'}
         >
           <Settings className="w-5 h-5" />
+          {voiceOnly && tx('Audio Voice')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-serif text-xl">
-            <Settings className="w-5 h-5" /> {tx("Settings")} </DialogTitle>
+            <Settings className="w-5 h-5" /> {tx(voiceOnly?'Audio Voice':"Settings")} </DialogTitle>
           <DialogDescription> {tx("Customize your reading experience")} </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {!voiceOnly && <>
           <GooglePlayReviewLink />
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -265,7 +270,8 @@ export function SettingsModal() {
             </div>
           </div>
 
-          <div className="border-t pt-6 space-y-4">
+          </>}
+          <div className={voiceOnly?'space-y-4':'border-t pt-6 space-y-4'}>
             <div className="flex items-center gap-2">
               <Volume2 className="w-4 h-4 text-primary" />
               <h3 className="font-medium">{tx("Audio Voice")}</h3>
