@@ -1,3 +1,4 @@
+import { useI18n } from "@/hooks/useI18n";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Loader2, Book, BookOpen, Hash, Search, Star, Menu, Volume2 } from "lucide-react";
@@ -56,6 +57,7 @@ import { BibleSearchDialog } from "@/components/BibleSearchDialog";
 import { getHighlight, type HighlightColor } from "@/lib/bible-storage";
 
 export default function Bible() {
+  const {t,lang}=useI18n();
   const { translation, setTranslation } = useTranslation();
   const { fontSize } = useFontSize();
   const audio = useAudioReader();
@@ -208,14 +210,14 @@ export default function Bible() {
               variant="ghost"
               size="icon"
               onClick={() => setSearchOpen(true)}
-              aria-label="Search Bible"
+              aria-label={t("ui_searchBible")}
               data-testid="button-bible-search"
             >
               <Search className="h-4 w-4" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Bible menu" data-testid="button-bible-menu">
+                <Button variant="ghost" size="icon" aria-label={t("ui_bibleMenu")} data-testid="button-bible-menu">
                   <Menu className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -248,7 +250,7 @@ export default function Bible() {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <Select value={position.bookId} onValueChange={handleBookChange}>
-            <SelectTrigger className="w-full h-9 text-sm" data-testid="select-book">
+            <SelectTrigger className="w-full h-9 text-sm" aria-label={t("ui_book")} data-testid="select-book">
               <Book className="h-3.5 w-3.5 mr-1.5 text-primary flex-shrink-0" />
               <SelectValue placeholder="Book" />
             </SelectTrigger>
@@ -273,7 +275,7 @@ export default function Bible() {
           </Select>
 
           <Select value={String(position.chapter)} onValueChange={handleChapterChange}>
-            <SelectTrigger className="w-full h-9 text-sm" data-testid="select-chapter">
+            <SelectTrigger className="w-full h-9 text-sm" aria-label={t("ui_chapter")} data-testid="select-chapter">
               <SelectValue placeholder="Chapter" />
             </SelectTrigger>
             <SelectContent className="max-h-60">
@@ -290,7 +292,7 @@ export default function Bible() {
             onValueChange={handleVerseChange}
             disabled={!chapterData || chapterData.verses.length === 0}
           >
-            <SelectTrigger className="w-full h-9 text-sm" data-testid="select-verse">
+            <SelectTrigger className="w-full h-9 text-sm" aria-label={t("ui_verse")} data-testid="select-verse">
               <Hash className="h-3.5 w-3.5 mr-1.5 text-primary flex-shrink-0" />
               <SelectValue placeholder="Verse" />
             </SelectTrigger>
@@ -304,7 +306,7 @@ export default function Bible() {
           </Select>
 
           <Select value={translation} onValueChange={(v) => setTranslation(v as BibleTranslation)}>
-            <SelectTrigger className="w-full h-9 text-sm" data-testid="select-translation">
+            <SelectTrigger className="w-full h-9 text-sm" aria-label={t("ui_bibleVersion")} data-testid="select-translation">
               <BookOpen className="h-3.5 w-3.5 mr-1.5 text-primary flex-shrink-0" />
               <SelectValue />
             </SelectTrigger>
@@ -317,6 +319,7 @@ export default function Bible() {
           </Select>
         </div>
         
+        {lang!=="en"&&<p className="text-xs text-muted-foreground mt-2">{t("ui_bibleLanguageNote")}</p>}
         {chapterData?.isFallback && (
           <p className="text-xs text-amber-600 mt-1.5">{translation} unavailable for this chapter</p>
         )}

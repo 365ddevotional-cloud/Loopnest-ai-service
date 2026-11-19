@@ -1,43 +1,37 @@
 import { useState, useEffect, useCallback } from "react";
-import { getUIText, getCurrentLang } from "@/utils/i18n";
+import { getUIText, getCurrentLang, isAppLanguage, type LocaleKeys } from "@/utils/i18n";
 
 export function useI18n() {
   const [lang, setLang] = useState(getCurrentLang);
-
   useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === "devotionalLang") {
-        setLang(getCurrentLang());
-      }
+    const update = () => {
+      const next = getCurrentLang();
+      setLang(next);
+      document.documentElement.lang = next;
     };
-
-    const handleLangChange = () => {
-      setLang(getCurrentLang());
+    const storage = (event: StorageEvent) => {
+      if (event.key !== "devotionalLang" && event.key !== null) return;
+      // A changed saved preference wins over this tab's stale query parameter.
+      try {
+        const saved = localStorage.getItem("devotionalLang");
+        const value = isAppLanguage(saved) ? saved : "en";
+        const url = new URL(window.location.href);
+        if (value === "en") url.searchParams.delete("lang");
+        else url.searchParams.set("lang", value);
+        window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+      } catch {}
+      update();
     };
-
-    window.addEventListener("storage", handleStorage);
-    window.addEventListener("languagechange", handleLangChange);
-    window.addEventListener("popstate", handleLangChange);
-
-    const interval = setInterval(() => {
-      const newLang = getCurrentLang();
-      if (newLang !== lang) {
-        setLang(newLang);
-      }
-    }, 500);
-
+    update();
+    window.addEventListener("app-languagechange", update);
+    window.addEventListener("storage", storage);
+    window.addEventListener("popstate", update);
     return () => {
-      window.removeEventListener("storage", handleStorage);
-      window.removeEventListener("languagechange", handleLangChange);
-      window.removeEventListener("popstate", handleLangChange);
-      clearInterval(interval);
+      window.removeEventListener("app-languagechange", update);
+      window.removeEventListener("storage", storage);
+      window.removeEventListener("popstate", update);
     };
-  }, [lang]);
-
-  const t = useCallback(
-    (key: Parameters<typeof getUIText>[0]) => getUIText(key, lang),
-    [lang]
-  );
-
+  }, []);
+  const t = useCallback((key: LocaleKeys) => getUIText(key, lang), [lang]);
   return { t, lang };
 }

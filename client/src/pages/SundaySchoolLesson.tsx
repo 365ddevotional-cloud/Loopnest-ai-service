@@ -1,3 +1,5 @@
+import { useI18n } from "@/hooks/useI18n";
+import { ContentLanguageNotice } from "@/components/ContentLanguageNotice";
 import { ScriptureLinks } from "@/components/ScriptureReading";
 import { ShopFeature } from "@/components/ShopFeature";
 import { useQuery } from "@tanstack/react-query";
@@ -55,6 +57,7 @@ function formatLessonForCopy(lesson: SundaySchoolLesson): string {
 
 export default function SundaySchoolLessonPage() {
   const params = useParams<{ id: string }>();
+  const {t}=useI18n();
   const { toast } = useToast();
   const audio = useAudioReader();
 
@@ -111,7 +114,7 @@ export default function SundaySchoolLessonPage() {
     const text = formatLessonForCopy(lesson);
     try {
       await navigator.clipboard.writeText(text);
-      toast({ title: "Lesson copied successfully." });
+      toast({ title: t("ui_copied") });
     } catch {
       const textarea = document.createElement("textarea");
       textarea.value = text;
@@ -119,7 +122,7 @@ export default function SundaySchoolLessonPage() {
       textarea.select();
       document.execCommand("copy");
       document.body.removeChild(textarea);
-      toast({ title: "Lesson copied successfully." });
+      toast({ title: t("ui_copied") });
     }
   };
 
@@ -145,17 +148,16 @@ export default function SundaySchoolLessonPage() {
               className="text-muted-foreground max-w-sm leading-relaxed"
               data-testid="text-ss-offline-unavailable"
             >
-              This Sunday School lesson is not available offline. Connect to the
-              internet and download it first.
+              {t("ui_offlineLesson")}
             </p>
           </div>
         ) : (
-          <p className="text-muted-foreground">Lesson not found.</p>
+          <p className="text-muted-foreground">{t("ui_lessonMissing")}</p>
         )}
         <Link href="/sunday-school">
           <Button variant="outline" className="gap-2">
             <ArrowLeft className="w-4 h-4" />
-            Back to Sunday School
+            {t("ui_back")} · {t("sundaySchool")}
           </Button>
         </Link>
       </div>
@@ -174,11 +176,12 @@ export default function SundaySchoolLessonPage() {
 
       <div className="max-w-3xl mx-auto space-y-6">
         <ShopFeature />
+        <ContentLanguageNotice />
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <Link href="/sunday-school">
             <Button variant="ghost" className="gap-2" data-testid="button-back-sunday-school">
               <ArrowLeft className="w-4 h-4" />
-              Back
+              {t("ui_back")}
             </Button>
           </Link>
           <div className="flex items-center gap-2 flex-wrap">
@@ -204,11 +207,11 @@ export default function SundaySchoolLessonPage() {
               data-testid="button-listen-lesson"
             >
               <Volume2 className="w-4 h-4" />
-              Listen
+              {t("listen")}
             </Button>
             <Button onClick={handleCopy} className="gap-2" data-testid="button-copy-lesson">
               <Copy className="w-4 h-4" />
-              Copy Lesson
+              {t("ui_copyLesson")}
             </Button>
           </div>
         </div>
@@ -216,7 +219,7 @@ export default function SundaySchoolLessonPage() {
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-muted-foreground text-base">
             <GraduationCap className="w-4 h-4" />
-            <span>Sunday School</span>
+            <span>{t("sundaySchool")}</span>
           </div>
           <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground" data-testid="text-lesson-title">
             {lesson.title}
@@ -233,7 +236,7 @@ export default function SundaySchoolLessonPage() {
           <CardContent className="pt-6 space-y-3">
             <div className="flex items-center gap-2 text-primary font-semibold text-base uppercase tracking-wider">
               <BookOpen className="w-4 h-4" />
-              Scripture Reading
+              {t("ui_scriptureReading")}
             </div>
             <p className="font-medium text-foreground">
               {lesson.scriptureReferences}
@@ -249,7 +252,7 @@ export default function SundaySchoolLessonPage() {
           <CardContent className="pt-6 space-y-3">
             <div className="flex items-center gap-2 text-primary font-semibold text-base uppercase tracking-wider">
               <BookOpen className="w-4 h-4" />
-              Lesson Content
+              {t("ui_lesson")}
             </div>
             <div className="whitespace-pre-wrap text-foreground/90 leading-relaxed">
               {formatLessonContent(lesson.lessonContent)}
@@ -261,7 +264,7 @@ export default function SundaySchoolLessonPage() {
           <CardContent className="pt-6 space-y-3">
             <div className="flex items-center gap-2 text-primary font-semibold text-base uppercase tracking-wider">
               <MessageCircle className="w-4 h-4" />
-              Discussion Questions
+              {t("ui_discussion")}
             </div>
             <ol className="space-y-3 list-decimal list-inside">
               {lesson.discussionQuestions.map((q, i) => (
@@ -277,7 +280,7 @@ export default function SundaySchoolLessonPage() {
           <CardContent className="pt-6 space-y-3">
             <div className="flex items-center gap-2 text-primary font-semibold text-base uppercase tracking-wider">
               <Target className="w-4 h-4" />
-              Prayer Focus
+              {t("ui_prayerFocus")}
             </div>
             <p className="text-foreground/90 leading-relaxed italic">
               {lesson.prayerFocus}
@@ -289,7 +292,7 @@ export default function SundaySchoolLessonPage() {
           <CardContent className="pt-6 space-y-3">
             <div className="flex items-center gap-2 text-primary font-semibold text-base uppercase tracking-wider">
               <ClipboardList className="w-4 h-4" />
-              Weekly Assignment
+              {t("ui_assignment")}
             </div>
             <p className="text-foreground/90 leading-relaxed">
               {lesson.weeklyAssignment}
@@ -300,7 +303,7 @@ export default function SundaySchoolLessonPage() {
         <div className="flex justify-center pb-8">
           <Button onClick={handleCopy} className="gap-2" data-testid="button-copy-lesson-bottom">
             <Copy className="w-4 h-4" />
-            Copy Full Lesson
+            {t("ui_copyLesson")}
           </Button>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { useI18n } from "@/hooks/useI18n";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import type { InsertDevotional } from "@shared/schema";
@@ -5,16 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getLocalDateString } from "@/lib/date-utils";
 import { getAllDevotionals, getDevotionalByDate as getOfflineDevotional, saveDevotionals } from "@/lib/offlineDb";
 
-function getLangParam(): string {
-  try {
-    const urlLang = new URLSearchParams(window.location.search).get("lang");
-    if (urlLang && urlLang !== "en") return urlLang;
-  } catch {}
-  return "";
-}
-
-function appendLangParam(url: string): string {
-  const lang = getLangParam();
+function appendLangParam(url: string, lang: string): string {
   if (lang) return url + `&lang=${lang}`;
   return url;
 }
@@ -100,7 +92,8 @@ async function fallbackTodayFromIndexedDB(localDate: string): Promise<any | null
 
 export function useTodayDevotional() {
   const localDate = getLocalDateString();
-  const lang = getLangParam();
+  const {lang:preferredLanguage}=useI18n();
+  const lang = preferredLanguage === "en" ? "" : preferredLanguage;
   
   return useQuery({
     queryKey: [api.devotionals.getToday.path, localDate, lang],
@@ -112,7 +105,7 @@ export function useTodayDevotional() {
       }
 
       try {
-        const url = appendLangParam(`${api.devotionals.getToday.path}?clientDate=${localDate}`);
+        const url = appendLangParam(`${api.devotionals.getToday.path}?clientDate=${localDate}`, lang);
         const res = await fetch(url, { credentials: "include" });
         if (res.status === 404) {
           const offline = await fallbackTodayFromIndexedDB(localDate);
@@ -152,7 +145,8 @@ export interface RestrictedDevotionalResponse {
 
 export function useDevotionalByDate(date: string) {
   const localDate = getLocalDateString();
-  const lang = getLangParam();
+  const {lang:preferredLanguage}=useI18n();
+  const lang = preferredLanguage === "en" ? "" : preferredLanguage;
   
   return useQuery({
     queryKey: [api.devotionals.getByDate.path, date, localDate, lang],
@@ -181,7 +175,7 @@ export function useDevotionalByDate(date: string) {
 
       try {
         const baseUrl = buildUrl(api.devotionals.getByDate.path, { date });
-        const url = appendLangParam(`${baseUrl}?clientDate=${localDate}`);
+        const url = appendLangParam(`${baseUrl}?clientDate=${localDate}`, lang);
         const res = await fetch(url, { credentials: "include" });
         if (res.status === 404) return { devotional: null };
         if (res.status === 403) {
@@ -213,7 +207,8 @@ export function useDevotionalByDate(date: string) {
 
 export function useDevotionalsList() {
   const localDate = getLocalDateString();
-  const lang = getLangParam();
+  const {lang:preferredLanguage}=useI18n();
+  const lang = preferredLanguage === "en" ? "" : preferredLanguage;
   
   return useQuery({
     queryKey: [api.devotionals.list.path, localDate, lang],
@@ -227,7 +222,7 @@ export function useDevotionalsList() {
       }
 
       try {
-        const url = appendLangParam(`${api.devotionals.list.path}?clientDate=${localDate}`);
+        const url = appendLangParam(`${api.devotionals.list.path}?clientDate=${localDate}`, lang);
         const res = await fetch(url, { credentials: "include" });
         if (!res.ok) {
           const allOffline = await getAllDevotionals();

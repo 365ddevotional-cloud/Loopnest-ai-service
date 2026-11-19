@@ -248,15 +248,15 @@ export function Header() {
     { href: "/archive", label: t("archive"), icon: Calendar, external: false },
     { href: "/bible", label: t("bible"), icon: Book, external: false },
     { href: "/sunday-school", label: t("sundaySchool"), icon: GraduationCap, external: false },
-    { href: "/daily-promise", label: "God's Promises", icon: Sparkles, external: false },
+    { href: "/daily-promise", label: t("ui_promises"), icon: Sparkles, external: false },
     { href: "/music", label: "SpiritTone Music", icon: Music2, external: false },
     { href: "https://www.youtube.com/@365DailyDevotional", label: "YouTube", icon: SiYoutube, external: true },
-    { href: "/shop", label: "Shop", icon: ShoppingBag, external: false },
+    { href: "/shop", label: t("ui_shop"), icon: ShoppingBag, external: false },
     { href: "/prayer-counseling", label: t("prayerCounseling"), icon: MessageCircleHeart, external: false },
-    { href: "/inbox", label: "Inbox", icon: Inbox, external: false },
-    { href: "/testimonies", label: "Testimonies", icon: Star, external: false },
+    { href: "/inbox", label: t("ui_inbox"), icon: Inbox, external: false },
+    { href: "/testimonies", label: t("ui_testimonies"), icon: Star, external: false },
     { href: "/about", label: t("about"), icon: Info, external: false },
-    { href: "/church", label: "Church Mode", icon: Building2, external: false },
+    { href: "/church", label: t("ui_churchMode"), icon: Building2, external: false },
   ];
 
   const adminNavItem = isAdmin 
@@ -355,7 +355,7 @@ export function Header() {
               data-testid="button-signin-nav"
             >
               <UserCircle className="w-4 h-4" />
-              Sign In
+              {t("ui_signIn")}
             </button>
           )}
           <button
@@ -400,11 +400,11 @@ export function Header() {
               </button>
             );
           })}
-          <button onClick={() => navigateWithTransition("/promotions")} className="shrink-0 rounded-lg px-3 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-500/10" data-testid="nav-promotions">Promotions</button>
-          <button onClick={() => navigateWithTransition("/updates")} className="shrink-0 rounded-lg px-3 py-2 text-sm font-medium hover:bg-primary/5" data-testid="nav-whats-new">What's New</button>
-          <button onClick={() => navigateWithTransition("/discipleship")} className="shrink-0 rounded-lg px-3 py-2 text-sm font-medium hover:bg-primary/5" data-testid="nav-discipleship">Discipleship</button>
+          <button onClick={() => navigateWithTransition("/promotions")} className="shrink-0 rounded-lg px-3 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-500/10" data-testid="nav-promotions">{t("ui_promotions")}</button>
+          <button onClick={() => navigateWithTransition("/updates")} className="shrink-0 rounded-lg px-3 py-2 text-sm font-medium hover:bg-primary/5" data-testid="nav-whats-new">{t("ui_updates")}</button>
+          <button onClick={() => navigateWithTransition("/discipleship")} className="shrink-0 rounded-lg px-3 py-2 text-sm font-medium hover:bg-primary/5" data-testid="nav-discipleship">{t("ui_discipleship")}</button>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild><Button variant="ghost" size="sm" className="shrink-0" data-testid="nav-more">More <ChevronDown className="ml-1 h-4 w-4" /></Button></DropdownMenuTrigger>
+            <DropdownMenuTrigger asChild><Button variant="ghost" size="sm" className="shrink-0" data-testid="nav-more">{t("ui_more")} <ChevronDown className="ml-1 h-4 w-4" /></Button></DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="max-h-[70vh] overflow-y-auto">
               {secondaryNavItems.map(item => <DropdownMenuItem key={item.href} onSelect={() => { if (item.external) window.open(item.href, "_blank", "noopener,noreferrer"); else navigateWithTransition(item.href); }}>{item.label}</DropdownMenuItem>)}
             </DropdownMenuContent>
@@ -529,10 +529,10 @@ export function Header() {
             </SheetHeader>
             
             <nav className="flex flex-col gap-2 pb-6">
-              <MobileNavItem onClick={() => navigateWithTransition("/shop")} isActive={location.startsWith("/shop")} icon={ShoppingBag} label="Shop" data-testid="link-shop-nav-mobile" />
-              <MobileNavItem onClick={() => navigateWithTransition("/promotions")} icon={ShoppingBag} label="Promotions" />
-              <MobileNavItem onClick={() => navigateWithTransition("/updates")} icon={Sparkles} label="What\u0027s New" />
-              <MobileNavItem onClick={() => navigateWithTransition("/discipleship")} icon={GraduationCap} label="Discipleship" />
+              <MobileNavItem onClick={() => navigateWithTransition("/shop")} isActive={location.startsWith("/shop")} icon={ShoppingBag} label={t("ui_shop")} data-testid="link-shop-nav-mobile" />
+              <MobileNavItem onClick={() => navigateWithTransition("/promotions")} icon={ShoppingBag} label={t("ui_promotions")} />
+              <MobileNavItem onClick={() => navigateWithTransition("/updates")} icon={Sparkles} label={t("ui_updates")} />
+              <MobileNavItem onClick={() => navigateWithTransition("/discipleship")} icon={GraduationCap} label={t("ui_discipleship")} />
               <a href={GOOGLE_PLAY_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-lg bg-orange-600 p-3 font-semibold text-white" data-testid="mobile-continue-to-app"><Smartphone className="h-5 w-5"/>Continue to App</a>
               {/* Sign In / Account — first item */}
               {appUser && appEmailVerified ? (
@@ -565,7 +565,7 @@ export function Header() {
                   onClick={() => navigateWithTransition("/signin")}
                   isActive={location === "/signin"}
                   icon={UserCircle}
-                  label="Sign In"
+                  label={t("ui_signIn")}
                   data-testid="button-signin-nav-mobile-top"
                 />
               )}
@@ -609,7 +609,7 @@ export function Header() {
                   onClick={() => navigateWithTransition("/daily-promise")}
                   isActive={location === "/daily-promise"}
                   icon={Sparkles}
-                  label="God's Promises"
+                  label={t("ui_promises")}
                   data-testid="link-gods-promises-nav-mobile"
                 />
                 <MobileNavItem
@@ -677,14 +677,14 @@ export function Header() {
                   onClick={() => navigateWithTransition("/inbox")}
                   isActive={location === "/inbox"}
                   icon={Inbox}
-                  label="Inbox"
+                  label={t("ui_inbox")}
                   data-testid="link-inbox-nav-mobile"
                 />
                 <MobileNavItem
                   onClick={() => navigateWithTransition("/testimonies")}
                   isActive={location === "/testimonies"}
                   icon={Star}
-                  label="Testimonies"
+                  label={t("ui_testimonies")}
                   data-testid="link-testimonies-nav-mobile"
                 />
               </MobileNavGroup>
@@ -700,7 +700,7 @@ export function Header() {
                   onClick={() => navigateWithTransition("/church")}
                   isActive={location.startsWith("/church")}
                   icon={Building2}
-                  label="Church Mode"
+                  label={t("ui_churchMode")}
                   data-testid="link-church-mode-nav-mobile"
                 />
                 <MobileNavItem
