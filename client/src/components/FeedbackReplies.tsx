@@ -47,9 +47,9 @@ export function FeedbackReplies({ initialCode = '' }: {
     } }
     return <section aria-label="Private feedback replies" className="space-y-3 rounded border p-4">
  <h2 className="font-serif text-xl font-bold">My feedback replies</h2>
- {user && <div>{list.isError && <p role="alert">Unable to load your feedback.</p>}{list.data?.map(t => <Button variant="outline" key={t.id} onClick={() => { setSelected(t.id); setOpened(true); }}>{t.feedback_type} · {t.status}{t.unread ? ' · New reply' : ''}</Button>)}</div>}
+ {user && <div>{list.isError && <p role="alert">Unable to load your feedback.</p>}{list.data?.map(t => <Button variant="outline" key={t.id} onClick={() => { setSelected(t.id); setOpened(true); void cache.invalidateQueries({queryKey:['feedback-private','thread']}); }}>{t.feedback_type} · {t.status}{t.unread ? ' · New reply' : ''}</Button>)}</div>}
  <label className="block">Private recovery code<Input value={code} autoComplete="off" onChange={e => { setRevision(n => n + 1); setCode(e.target.value); setOpened(false); setSelected(null); }}/></label>
- <Button variant="outline" disabled={!valid} onClick={() => setOpened(true)}>Open private replies</Button>
+ <Button variant="outline" disabled={!valid} onClick={() => {setOpened(true);void cache.invalidateQueries({queryKey:['feedback-private','thread']});}}>Open private replies</Button>
  <p className="text-sm">Guest access expires after one year or when revoked. Save your private code outside this browser. Losing it may prevent recovery. No guest push notification is promised.</p>
  {(thread.isError || error) && <p role="alert">{error || 'Conversation unavailable. Check your recovery code or sign-in.'}</p>}
  {(!!selected || opened) && thread.data && !thread.isFetching && !thread.isError && <div className="space-y-3"><p><strong>Your feedback:</strong> {thread.data.original.message}</p><p>Status: {thread.data.original.status}</p>{thread.data.messages.map((m: any) => <p key={m.id} className="whitespace-pre-wrap"><strong>{m.sender === 'ministry' ? 'Ministry' : 'You'}:</strong> {m.message}</p>)}

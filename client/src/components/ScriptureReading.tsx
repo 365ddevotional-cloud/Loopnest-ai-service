@@ -11,7 +11,7 @@ export function ScriptureReading({ reference }: {
     return <section aria-label={`Scripture ${reference}`} className="space-y-2 rounded-md border p-3">
   <div className="flex flex-wrap items-center justify-between gap-2"><strong>{reference} · {translation}</strong><TranslationSelector /></div>
   {isLoading ? <p>Loading Scripture…</p> : text ? <p className="whitespace-pre-wrap leading-relaxed">{text}</p> : <p>Passage unavailable. Please try the Bible reader.</p>}
-  {isFallback && preferred !== "KJV" && <p role="status" className="text-sm">{preferred} is unavailable for this passage. Showing KJV where available.</p>}
+  {!isLoading && !!text && isFallback && preferred !== "KJV" && <p role="status" className="text-sm">{preferred} is unavailable for this passage. Showing KJV where available.</p>}
  </section>;
 }
 export function ScriptureLinks({ text }: {
