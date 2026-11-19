@@ -21,6 +21,8 @@ jobs:
       - run: npm run check
       - name: Verify translated forms, privacy values and purchase options
         run: node --import tsx --test client/src/test/*.test.ts
+      - name: Verify private translation drafts and admin-only review
+        run: node --import tsx --test server/content-translation-review.test.ts
       - run: npm run build
       - run: npm run test:music-commerce
       - run: node --import tsx --test server/ministry-shop-asset-readiness.test.ts

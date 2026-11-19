@@ -1,4 +1,6 @@
 import { registerAsvChapters } from "./asv-chapters";
+import { registerContentTranslationReview } from "./content-translation-review";
+import contentTranslationPilot from "./content-translations/2026-11-19-glorious-light.json";
 import { conversationDDL, registerFeedbackConversations } from "./feedback-conversations";
 import { pool as conversationPool } from "./db";
 import { getUncachableSendGridClient } from "./sendgrid";
@@ -193,6 +195,10 @@ export async function registerRoutes(
     requireAdmin,
   });
   registerAdminAuth(app, ADMIN_PASSWORD);
+  registerContentTranslationReview(app, {
+    requireAdmin, batches: [contentTranslationPilot],
+    readSource: id => storage.getDevotional(id),
+  });
   // The shop can fail closed without preventing the rest of the app from starting.
   try { await ensureMinistryShopTables(); }
   catch { console.error("[Ministry Shop] Shop tables could not be prepared."); }

@@ -1,4 +1,5 @@
 import { FeedbackAdmin } from "@/components/FeedbackAdmin";
+import { ContentTranslationReview } from "@/components/ContentTranslationReview";
 import MinistryShopAdmin from "@/components/MinistryShopAdmin";
 import { SongLanguagePicker } from "@/components/SongLanguagePicker";
 import { SONG_LANGUAGES, songLanguageCategories, serializeSongLanguages } from "@shared/song-languages";
@@ -2470,6 +2471,7 @@ export default function Admin() {
     { value: "preview",                label: "Preview",            icon: Telescope,     count: 0 },
     { value: "sunday-school",          label: "Sunday School",      icon: GraduationCap, count: 0 },
     { value: "devotionals",            label: "Create New",         icon: ShieldCheck,   count: 0 },
+    { value: "content-translations",   label: "Content translations", icon: FileText,    count: 0 },
     { value: "promises",               label: "Promises",           icon: Sparkles,      count: 0 },
     { value: "songs",                  label: "Music Management",              icon: Music,         count: 0 },
     { value: "ministry-shop",           label: "Shop",              icon: ShoppingBag,   count: 0 },
@@ -2706,6 +2708,10 @@ export default function Admin() {
               <CreateDevotionalForm />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="content-translations">
+          <ContentTranslationReview />
         </TabsContent>
 
         <TabsContent value="promises">
