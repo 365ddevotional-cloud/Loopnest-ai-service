@@ -73,6 +73,7 @@ export default function Bible() {
   const [searchOpen, setSearchOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const verseRefs = useRef<Map<number, HTMLParagraphElement>>(new Map());
+  const loadedLocationRef = useRef<string>("");
 
   const currentBook = getBookById(position.bookId);
 
@@ -131,6 +132,9 @@ export default function Bible() {
 
   useEffect(() => {
     if (chapterData && chapterData.verses.length > 0) {
+      const locationKey = `${position.bookId}:${position.chapter}`;
+      const changedLocation = loadedLocationRef.current !== locationKey;
+      loadedLocationRef.current = locationKey;
       const highlights = new Map<number, HighlightColor>();
       for (const verse of chapterData.verses) {
         const highlight = getHighlight({ bookId: position.bookId, chapter: position.chapter, verse: verse.verse });
@@ -149,8 +153,13 @@ export default function Bible() {
             scrollToVerse(targetVerse);
           });
         });
-      } else {
+      } else if (changedLocation) {
         setSelectedVerse(1);
+      } else {
+        // A translation refresh changes the text, not the selected passage.
+        const retainedVerse = chapterData.verses.some(v => v.verse === selectedVerse)
+          ? selectedVerse : chapterData.verses[0].verse;
+        scrollToVerse(retainedVerse);
       }
     }
   }, [chapterData, position.bookId, position.chapter, scrollToVerse]);
