@@ -1655,5 +1655,13 @@
   "cm_dashboardSubtitle": "Ga abin da ke faruwa a {church}.",
   "cm_publishedNotes": "Bayanan da aka wallafa",
   "cm_weeklySermonNotes": "Bayanan wa'azi na mako-mako",
-  "cm_noSermonNotes": "Babu bayanan wa'azi tukuna. Ƙirƙiri bayaninka na farko a sama."
+  "cm_noSermonNotes": "Babu bayanan wa'azi tukuna. Ƙirƙiri bayaninka na farko a sama.",
+  "screen_208a19d5eb90": "Kaya {count}",
+  "screen_f65216b3ac8c": "Kaya {count}",
+  "screen_90142aa4c23a": "Cocin {denomination}",
+  "screen_5dce6bd3a7ca": "Karatun ibada · {date}",
+  "screen_15f9a7989f8d": "Ka tabbata kana son goge \"{name}\"? Wannan zai goge rukuni da duk bayanansa har abada.",
+  "screen_89cc335ef9fa": "Ka tabbata kana son barin \"{name}\"?",
+  "screen_508e7c108500": " · Ya shiga {date}",
+  "screen_faa0783d73ee": "Shafi {page} · "
 }

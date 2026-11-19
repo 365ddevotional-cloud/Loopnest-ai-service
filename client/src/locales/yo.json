@@ -1655,5 +1655,13 @@
   "cm_dashboardSubtitle": "Ohun tí ń ṣẹlẹ̀ ní {church} nìyí.",
   "cm_publishedNotes": "Àkọsílẹ̀ tí a tẹ̀ jáde",
   "cm_weeklySermonNotes": "Àkọsílẹ̀ ìwàásù ọ̀sẹ̀",
-  "cm_noSermonNotes": "Kò sí àkọsílẹ̀ ìwàásù síbẹ̀. Dá àkọsílẹ̀ àkọ́kọ́ rẹ sílẹ̀ ní òkè."
+  "cm_noSermonNotes": "Kò sí àkọsílẹ̀ ìwàásù síbẹ̀. Dá àkọsílẹ̀ àkọ́kọ́ rẹ sílẹ̀ ní òkè.",
+  "screen_208a19d5eb90": "Ọjà {count}",
+  "screen_f65216b3ac8c": "Ọjà {count}",
+  "screen_90142aa4c23a": "Ìjọ {denomination}",
+  "screen_5dce6bd3a7ca": "Ìfọkànsìn · {date}",
+  "screen_15f9a7989f8d": "Ṣé ó dá ọ lójú pé o fẹ́ pa \"{name}\" rẹ́? Èyí yóò pa ẹgbẹ́ àti gbogbo dátà rẹ̀ rẹ́ títí láé.",
+  "screen_89cc335ef9fa": "Ṣé ó dá ọ lójú pé o fẹ́ fi \"{name}\" sílẹ̀?",
+  "screen_508e7c108500": " · Darapọ̀ ní {date}",
+  "screen_faa0783d73ee": "Ojú ìwé {page} · "
 }

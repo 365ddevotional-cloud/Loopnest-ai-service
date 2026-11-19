@@ -125,7 +125,7 @@ export default function GroupMembers() {
                         {isMe && <span className="text-xs text-muted-foreground">{tx("(you)")}</span>}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {roleLabel(member.role)}{member.joinedAt ? ` · Joined ${format(new Date(member.joinedAt), "MMM d, yyyy")}` : ""}
+                        {roleLabel(member.role)}{member.joinedAt ? tx(" · Joined {date}", {date: format(new Date(member.joinedAt), "MMM d, yyyy")}) : ""}
                       </p>
                     </div>
                     {canManage && (

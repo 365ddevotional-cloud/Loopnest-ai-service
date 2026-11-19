@@ -4,7 +4,7 @@
 
 Extend the existing six UI language choices (English, Spanish, French, Yoruba, Nigerian Pidgin and Hausa) across the screens listed in client/src/locales/stage-two-scope.json. The scope includes settings and mobile settings; sign-in, account recovery and profile controls; private prayer/counseling forms, inbox and request history; storefront, checkout, purchase library, book reader and personal library; church public/member/leadership/administration pages; private groups and the pastor dashboard.
 
-561 additional English interface phrases have Spanish/French/Yoruba/Pidgin/Hausa entries. Each of the three previously sparse African-language dictionaries gains 1,529 entries, including existing church/group messages. Existing translations are preserved. Exact interface phrases reuse their existing keys where available. Standard option names are localized at render time, keeping API values unchanged. Interpolation preserves opaque price strings and diagnostic codes. No DOM text rewriting or external translator is used.
+569 additional English interface phrases have Spanish/French/Yoruba/Pidgin/Hausa entries. Each of the three previously sparse African-language dictionaries gains 1,537 entries, including existing church/group messages. Existing translations are preserved. Exact interface phrases reuse their existing keys where available. Standard option names are localized at render time, keeping API values unchanged. Interpolation preserves opaque price strings and diagnostic codes. No DOM text rewriting or external translator is used. Final live verification also covers localized item counts, group confirmations, reader page labels and modal/menu close labels.
 
 ## Content and cost boundaries
 

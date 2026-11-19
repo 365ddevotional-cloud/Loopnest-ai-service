@@ -1912,5 +1912,13 @@
   "screen_b131194308e2": "Tu cuenta verificada tiene acceso gratuito de por vida a todo el contenido descargable. No necesitas pagar por descargas.",
   "screen_c56836071762": "Confirma que el correo te pertenece para activar las descargas gratuitas de por vida.",
   "screen_1ff522cd233e": "Enviar correo de confirmación",
-  "screen_cc70a8d8506d": "Comprobar confirmación"
+  "screen_cc70a8d8506d": "Comprobar confirmación",
+  "screen_208a19d5eb90": "{count} artículo",
+  "screen_f65216b3ac8c": "{count} artículos",
+  "screen_90142aa4c23a": "Iglesia {denomination}",
+  "screen_5dce6bd3a7ca": "Devocional · {date}",
+  "screen_15f9a7989f8d": "¿Seguro que deseas eliminar «{name}»? Se eliminarán permanentemente el grupo y todos sus datos.",
+  "screen_89cc335ef9fa": "¿Seguro que deseas salir de «{name}»?",
+  "screen_508e7c108500": " · Se unió el {date}",
+  "screen_faa0783d73ee": "Página {page} · "
 }

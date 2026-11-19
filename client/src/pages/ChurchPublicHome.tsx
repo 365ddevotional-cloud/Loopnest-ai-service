@@ -194,7 +194,7 @@ export default function ChurchPublicHome() {
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: primary }}>{t("cm_pub_aboutUs")}</p>
                   <h2 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: "#1a1a1a" }}>
-                    {church.denomination ? `A ${church.denomination} Church` : church.name}
+                    {church.denomination ? tx("A {denomination} Church", {denomination: church.denomination}) : church.name}
                   </h2>
                   {church.description && (
                     <p className="text-base leading-relaxed mb-4" style={{ color: "#6b6460" }}>{church.description}</p>
