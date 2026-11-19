@@ -1,3 +1,5 @@
+import { translateAppText as tx } from "@/utils/i18n";
+import { ContentLanguageNotice } from "@/components/ContentLanguageNotice";
 import { useI18n } from "@/hooks/useI18n";
 import { Link } from "wouter";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
@@ -41,7 +43,7 @@ export default function ChurchModePolicyPage() {
       <div className="max-w-2xl mx-auto px-4 py-10 space-y-8">
         {/* Back link */}
         <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: "#b8962e" }}>
-          <ArrowLeft className="w-4 h-4" /> Back to Home
+          <ArrowLeft className="w-4 h-4" /> {tx("Back to Home")}
         </Link>
 
         {/* Header */}
@@ -61,6 +63,7 @@ export default function ChurchModePolicyPage() {
           <p className="text-sm" style={{ color: "#78350f" }}>{t("cm_approvalDisclaimerDesc")}</p>
         </div>
 
+        <ContentLanguageNotice />
         {/* Policy sections */}
         <div className="space-y-6">
           {sections.map((section, i) => (

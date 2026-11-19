@@ -1,3 +1,4 @@
+import { translateAppText as tx } from "@/utils/i18n";
 import { useState, useRef } from "react";
 import { useRoute } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -453,7 +454,7 @@ export default function ChurchSermons() {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm">{t("cm_bibleReference")}</Label>
-                  <Input value={form.bibleReference} onChange={e => setForm(f => ({ ...f, bibleReference: e.target.value }))} placeholder="e.g. John 3:16" data-testid="input-sermon-reference" />
+                  <Input value={form.bibleReference} onChange={e => setForm(f => ({ ...f, bibleReference: e.target.value }))} placeholder={tx("e.g. John 3:16")} data-testid="input-sermon-reference" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm">{t("cm_sermonDate")}</Label>

@@ -1,3 +1,4 @@
+import { translateAppText as tx } from "@/utils/i18n";
 import { useState, useEffect } from "react";
 import { useUser } from "@/contexts/UserContext";
 import { useLocation, useRoute } from "wouter";
@@ -10,6 +11,7 @@ import { getGroupTypeBadge } from "@/lib/groupTypes";
 import { useI18n } from "@/hooks/useI18n";
 
 function GroupTypeBadge({ groupType }: { groupType: string }) {
+  useI18n();
   const { cls, label } = getGroupTypeBadge(groupType);
   return (
     <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded border ${cls}`}>
@@ -114,7 +116,7 @@ export default function GroupJoin() {
           <p className="text-sm text-muted-foreground">{t("gm_enterCodePrompt")}</p>
           <div className="flex gap-2">
             <Input
-              placeholder="e.g. ABC-1234"
+              placeholder={tx("e.g. ABC-1234")}
               value={code}
               onChange={e => { setCode(e.target.value.toUpperCase()); setPreview(null); setNotFound(false); }}
               onKeyDown={e => e.key === "Enter" && handleLookup()}
@@ -145,7 +147,7 @@ export default function GroupJoin() {
               <div className="flex-1 min-w-0">
                 <h2 className="font-semibold text-foreground truncate" data-testid="text-preview-name">{preview.group.name}</h2>
                 <div className="mt-1" data-testid="text-preview-type">
-                  <GroupTypeBadge groupType={preview.group.groupType} />
+                  <GroupTypeBadge groupType={tx(preview.group.groupType)} />
                 </div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1.5">
                   <Users className="w-3 h-3" />

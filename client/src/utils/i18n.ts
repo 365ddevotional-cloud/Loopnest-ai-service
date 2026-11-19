@@ -41,3 +41,40 @@ export function applyAppLanguage(lang: AppLanguage) {
   document.documentElement.lang = lang;
   window.dispatchEvent(new Event("app-languagechange"));
 }
+
+// Exact interface phrases only: never pass user messages, book text, IDs or prices.
+const uiKeysByEnglish = new Map<string, LocaleKeys>();
+for (const [key, value] of Object.entries(en)) {
+  if (!uiKeysByEnglish.has(value)) uiKeysByEnglish.set(value, key as LocaleKeys);
+}
+export function translateAppText(source: string, values: Record<string, string | number> = {}, lang = getCurrentLang()): string {
+  if (typeof source !== "string") return "";
+  const key = uiKeysByEnglish.get(source);
+  const text = key ? getUIText(key, lang) : source;
+  return text.replace(/\{(\w+)\}/g, (match, name) => Object.hasOwn(values, name) ? String(values[name]) : match);
+}
+
+// Localize only recognized account-service messages. Keep diagnostic codes intact.
+export function translateAccountError(message: string): string {
+  const reset = /^Could not send reset email \(([^)]+)\)\. Please try again\.$/.exec(message);
+  if (reset) return `${translateAppText("Could not send reset email. Please try again.")} (${reset[1]})`;
+  const domain = /^Email delivery unavailable on this domain \(([^)]+)\)\. Try on the production site\.$/.exec(message);
+  if (domain) return `${translateAppText("Email delivery unavailable on this domain. Try on the production site.")} (${domain[1]})`;
+  const send = /^Could not send email \(([^)]+)\)\. Please try again\.$/.exec(message);
+  if (send) return `${translateAppText("Could not send email. Please try again.")} (${send[1]})`;
+  return translateAppText(message);
+}
+
+const enumDisplayLabels: Record<string,string> = {
+  owner:"Church Owner", lead_pastor:"Lead Pastor", administrator:"Administrator",
+  associate_pastor:"Associate Pastor", ministry_leader:"Ministry Leader", group_leader:"Group Leader",
+  counselor:"Counselor", prayer_team:"Prayer Team", moderator:"Moderator", member:"Member",
+  private:"Private", anonymous:"Anonymous Public", public:"Public",
+  new:"New", open:"Open", replied:"Replied", answered:"Answered", closed:"Closed",
+  prayer:"Prayer", counseling:"Counseling", healing:"Healing", marriage:"Marriage",
+  finance:"Finance", deliverance:"Deliverance", guidance:"Guidance", family:"Family",
+  salvation:"Salvation", other:"Other",
+};
+export function translateEnumLabel(value: string): string {
+  return translateAppText(Object.hasOwn(enumDisplayLabels, value) ? enumDisplayLabels[value] : value);
+}

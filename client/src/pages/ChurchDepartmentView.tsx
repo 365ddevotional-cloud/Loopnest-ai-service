@@ -1,3 +1,5 @@
+import { translateEnumLabel } from "@/utils/i18n";
+import { translateAppText as tx } from "@/utils/i18n";
 import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -502,7 +504,7 @@ export default function ChurchDepartmentView() {
             <h1 className="font-serif text-2xl font-bold" style={{ color: "#1d3461" }}>{deptData.name}</h1>
             <div className="flex items-center gap-3 flex-wrap mt-0.5">
               <Badge className="text-xs" style={{ backgroundColor: "#1d346112", color: "#1d3461", border: "none" }}>
-                {deptData.type}
+                {translateEnumLabel(deptData.type)}
               </Badge>
               <p className="text-xs" style={{ color: "#9a9080" }}>{deptData.memberCount} {t("cm_memberCount")}</p>
               {myMembership && (
@@ -676,8 +678,8 @@ export default function ChurchDepartmentView() {
                                 }}>
                                   <Flag className="w-2.5 h-2.5 mr-1" />{task.priority}
                                 </Badge>
-                                {task.dueDate && <p className="text-xs" style={{ color: "#9a9080" }}>Due: {fmtDate(task.dueDate, { month: "short", day: "numeric" })}</p>}
-                                {assignedMember && <p className="text-xs" style={{ color: "#7a7570" }}>→ {assignedMember.member.displayName ?? "Member"}</p>}
+                                {task.dueDate && <p className="text-xs" style={{ color: "#9a9080" }}>{tx("Due:")} {fmtDate(task.dueDate, { month: "short", day: "numeric" })}</p>}
+                                {assignedMember && <p className="text-xs" style={{ color: "#7a7570" }}>→ {assignedMember.member.displayName ?? tx("Member")}</p>}
                               </div>
                             </div>
                             {isDeptLeader && (
@@ -717,7 +719,7 @@ export default function ChurchDepartmentView() {
                       }
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold" style={{ color: "#1d3461" }}>{m.member.displayName ?? "Member"}</p>
+                      <p className="text-sm font-semibold" style={{ color: "#1d3461" }}>{m.member.displayName ?? tx("Member")}</p>
                       <p className="text-xs" style={{ color: ROLE_COLORS[m.role] ?? "#9a9080" }}>{ROLE_LABELS[m.role] ?? m.role}</p>
                     </div>
                     {isDeptLeader && m.role !== "leader" && (
@@ -755,13 +757,13 @@ export default function ChurchDepartmentView() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm font-semibold" style={{ color: "#1d3461" }}>
-                              {session.sessionTitle ?? "Session"}
+                              {session.sessionTitle ?? tx("Session")}
                             </p>
                             <p className="text-xs" style={{ color: "#7a7570" }}>{fmtDate(session.sessionDate)}</p>
                           </div>
                           <div className="text-right">
                             <p className="text-lg font-bold" style={{ color: "#1d3461" }}>{session.attendeeIds.length}</p>
-                            <p className="text-xs" style={{ color: "#9a9080" }}>present</p>
+                            <p className="text-xs" style={{ color: "#9a9080" }}>{tx("present")}</p>
                           </div>
                         </div>
                         {session.attendeeIds.length > 0 && members && (
@@ -771,7 +773,7 @@ export default function ChurchDepartmentView() {
                               return member ? (
                                 <span key={id} className="text-xs px-2 py-0.5 rounded-full"
                                   style={{ backgroundColor: "#22c55e18", color: "#166534" }}>
-                                  {member.member.displayName ?? "Member"}
+                                  {member.member.displayName ?? tx("Member")}
                                 </span>
                               ) : null;
                             })}
@@ -893,7 +895,7 @@ export default function ChurchDepartmentView() {
             </div>
             <div className="space-y-1.5">
               <Label>{t("cm_location")}</Label>
-              <Input value={eventForm.location} onChange={e => setEventForm(f => ({ ...f, location: e.target.value }))} placeholder="e.g. Church Hall, Main Auditorium" />
+              <Input value={eventForm.location} onChange={e => setEventForm(f => ({ ...f, location: e.target.value }))} placeholder={tx("e.g. Church Hall, Main Auditorium")} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -938,7 +940,7 @@ export default function ChurchDepartmentView() {
                   value={taskForm.assignedTo} onChange={e => setTaskForm(f => ({ ...f, assignedTo: e.target.value }))}>
                   <option value="">{t("cm_unassigned")}</option>
                   {(members ?? []).map(m => (
-                    <option key={m.id} value={m.churchMemberId}>{m.member.displayName ?? "Member"}</option>
+                    <option key={m.id} value={m.churchMemberId}>{m.member.displayName ?? tx("Member")}</option>
                   ))}
                 </select>
               </div>
@@ -981,7 +983,7 @@ export default function ChurchDepartmentView() {
               </div>
               <div className="space-y-1.5">
                 <Label>{t("cm_sessionTitle")}</Label>
-                <Input value={attendanceTitle} onChange={e => setAttendanceTitle(e.target.value)} placeholder="e.g. Sunday Practice" />
+                <Input value={attendanceTitle} onChange={e => setAttendanceTitle(e.target.value)} placeholder={tx("e.g. Sunday Practice")} />
               </div>
             </div>
             <div className="space-y-2">
@@ -996,7 +998,7 @@ export default function ChurchDepartmentView() {
                         onClick={() => setAttendeeSelection(s => { const n = new Set(s); isSelected ? n.delete(m.churchMemberId) : n.add(m.churchMemberId); return n; })}>
                         {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
                       </div>
-                      <span className="text-sm" style={{ color: "#1d3461" }}>{m.member.displayName ?? "Member"}</span>
+                      <span className="text-sm" style={{ color: "#1d3461" }}>{m.member.displayName ?? tx("Member")}</span>
                       <span className="text-xs ml-auto" style={{ color: ROLE_COLORS[m.role] ?? "#9a9080" }}>
                         {ROLE_LABELS[m.role] ?? m.role}
                       </span>

@@ -1,3 +1,5 @@
+import { translateAppText as tx } from "@/utils/i18n";
+import { useI18n } from "@/hooks/useI18n";
 import { useUser } from "@/contexts/UserContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
@@ -36,6 +38,7 @@ function roleLabel(role: string) {
 }
 
 export default function GroupMembers() {
+  useI18n();
   const [, params] = useRoute("/group/:id/members");
   const [, navigate] = useLocation();
   const groupId = Number((params as any)?.id);
@@ -69,9 +72,9 @@ export default function GroupMembers() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/groups", groupId, "members"] });
-      toast({ title: "Role updated" });
+      toast({ title: tx("Role updated") });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: tx("Error"), description: e.message, variant: "destructive" }),
   });
 
   const removeMutation = useMutation({
@@ -81,9 +84,9 @@ export default function GroupMembers() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/groups", groupId, "members"] });
-      toast({ title: "Member removed" });
+      toast({ title: tx("Member removed") });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: tx("Error"), description: e.message, variant: "destructive" }),
   });
 
   if (!user || !emailVerified) { navigate("/signin"); return null; }
@@ -98,7 +101,7 @@ export default function GroupMembers() {
     <GroupModeShell group={groupData.group} myMember={groupData.myMember}>
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <h2 className="font-serif text-xl font-bold">Members</h2>
+          <h2 className="font-serif text-xl font-bold">{tx("Members")}</h2>
           <span className="text-sm text-muted-foreground">({members.length})</span>
         </div>
 
@@ -119,7 +122,7 @@ export default function GroupMembers() {
                       <div className="flex items-center gap-1.5">
                         {roleIcon(member.role)}
                         <span className="font-medium text-sm truncate">{member.displayName ?? member.email}</span>
-                        {isMe && <span className="text-xs text-muted-foreground">(you)</span>}
+                        {isMe && <span className="text-xs text-muted-foreground">{tx("(you)")}</span>}
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {roleLabel(member.role)}{member.joinedAt ? ` · Joined ${format(new Date(member.joinedAt), "MMM d, yyyy")}` : ""}
@@ -128,28 +131,24 @@ export default function GroupMembers() {
                     {canManage && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs" data-testid={`button-manage-${member.id}`}>
-                            Manage <ChevronDown className="w-3 h-3" />
+                          <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs" data-testid={`button-manage-${member.id}`}> {tx("Manage")} <ChevronDown className="w-3 h-3" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           {member.role !== "moderator" && (
                             <DropdownMenuItem onClick={() => roleMutation.mutate({ memberId: member.id, role: "moderator" })} data-testid={`menu-make-mod-${member.id}`}>
-                              <Shield className="w-3.5 h-3.5 mr-2" /> Make Moderator
-                            </DropdownMenuItem>
+                              <Shield className="w-3.5 h-3.5 mr-2" /> {tx("Make Moderator")} </DropdownMenuItem>
                           )}
                           {member.role !== "member" && (
                             <DropdownMenuItem onClick={() => roleMutation.mutate({ memberId: member.id, role: "member" })} data-testid={`menu-make-member-${member.id}`}>
-                              <Users className="w-3.5 h-3.5 mr-2" /> Make Member
-                            </DropdownMenuItem>
+                              <Users className="w-3.5 h-3.5 mr-2" /> {tx("Make Member")} </DropdownMenuItem>
                           )}
                           <DropdownMenuItem
                             onClick={() => removeMutation.mutate(member.id)}
                             className="text-destructive focus:text-destructive"
                             data-testid={`menu-remove-${member.id}`}
                           >
-                            <UserX className="w-3.5 h-3.5 mr-2" /> Remove
-                          </DropdownMenuItem>
+                            <UserX className="w-3.5 h-3.5 mr-2" /> {tx("Remove")} </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}

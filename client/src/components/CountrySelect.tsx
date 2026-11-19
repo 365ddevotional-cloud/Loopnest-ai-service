@@ -1,3 +1,5 @@
+import { useI18n } from "@/hooks/useI18n";
+import { translateAppText as tx } from "@/utils/i18n";
 import { useState, useRef, useEffect } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,6 +22,7 @@ export function CountrySelect({
   className,
   "data-testid": testId,
 }: CountrySelectProps) {
+  useI18n();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -62,7 +65,7 @@ export function CountrySelect({
           !selected && "text-muted-foreground"
         )}
       >
-        <span className="truncate">{selected ? selected.name : placeholder}</span>
+        <span className="truncate">{selected ? selected.name : tx(placeholder)}</span>
         <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0 ml-2" />
       </button>
 
@@ -74,14 +77,14 @@ export function CountrySelect({
               ref={searchRef}
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search countries…"
+              placeholder={tx("Search countries…")}
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               data-testid={testId ? `${testId}-search` : undefined}
             />
           </div>
           <div className="max-h-52 overflow-y-auto py-1">
             {filtered.length === 0 ? (
-              <p className="py-4 text-center text-sm text-muted-foreground">No countries found</p>
+              <p className="py-4 text-center text-sm text-muted-foreground">{tx("No countries found")}</p>
             ) : (
               filtered.map(country => (
                 <button

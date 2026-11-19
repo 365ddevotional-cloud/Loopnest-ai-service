@@ -19,6 +19,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - name: Verify translated forms, privacy values and purchase options
+        run: node --import tsx --test client/src/test/*.test.ts
       - run: npm run build
       - run: npm run test:music-commerce
       - run: node --import tsx --test server/ministry-shop-asset-readiness.test.ts

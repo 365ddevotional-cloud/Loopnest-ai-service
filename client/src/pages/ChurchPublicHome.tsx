@@ -1,3 +1,4 @@
+import { translateAppText as tx } from "@/utils/i18n";
 import { useParams, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
@@ -10,6 +11,7 @@ import { useI18n } from "@/hooks/useI18n";
 const SECTION_ORDER = ["hero","serviceTimes","about","sermons","events","ministries","announcements","gallery","prayer","give","contact","join"];
 
 function SEOHead({ church, slug }: { church: any; slug: string }) {
+  useI18n();
   useEffect(() => {
     const title = `${church.name}${church.denomination ? ` — ${church.denomination}` : ""} | 365 Daily Devotional`;
     const desc = church.welcomeMessage || church.description || `Welcome to ${church.name}. Join our community of faith.`;
@@ -444,13 +446,13 @@ export default function ChurchPublicHome() {
                 </div>
                 {church.mapEmbedUrl ? (
                   <div className="rounded-2xl overflow-hidden border h-72 lg:h-auto" style={{ borderColor: "#ece8e0" }}>
-                    <iframe src={church.mapEmbedUrl} title="Church location" className="w-full h-full" style={{ border: 0 }} loading="lazy" allowFullScreen />
+                    <iframe src={church.mapEmbedUrl} title={tx("Church location")} className="w-full h-full" style={{ border: 0 }} loading="lazy" allowFullScreen />
                   </div>
                 ) : church.address ? (
                   <div className="rounded-2xl overflow-hidden border h-72 lg:h-auto" style={{ borderColor: "#ece8e0" }}>
                     <iframe
                       src={`https://maps.google.com/maps?q=${encodeURIComponent(church.address)}&output=embed`}
-                      title="Church location" className="w-full h-full" style={{ border: 0 }} loading="lazy" allowFullScreen />
+                      title={tx("Church location")} className="w-full h-full" style={{ border: 0 }} loading="lazy" allowFullScreen />
                   </div>
                 ) : null}
               </div>

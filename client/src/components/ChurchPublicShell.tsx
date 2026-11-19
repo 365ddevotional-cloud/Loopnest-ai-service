@@ -1,3 +1,4 @@
+import { translateAppText as tx } from "@/utils/i18n";
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { Menu, X, Building2, ChevronRight } from "lucide-react";
@@ -44,7 +45,7 @@ export function ChurchPublicShell({ church, children }: ChurchPublicShellProps) 
                 </div>
               )}
               <div className="hidden sm:block">
-                <p className="text-sm font-bold leading-tight" style={{ color: primary }}>{church?.name ?? "Church"}</p>
+                <p className="text-sm font-bold leading-tight" style={{ color: primary }}>{church?.name ?? tx("Church")}</p>
                 {church?.denomination && (
                   <p className="text-xs leading-tight" style={{ color: "#9a9080" }}>{church.denomination}</p>
                 )}
@@ -59,7 +60,7 @@ export function ChurchPublicShell({ church, children }: ChurchPublicShellProps) 
                   <Link key={item.path} href={`${base}${item.path}`}
                     className="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors"
                     style={{ color: active ? primary : "#6b6460", backgroundColor: active ? `${primary}12` : "transparent" }}>
-                    {item.label}
+                    {tx(item.label)}
                   </Link>
                 );
               })}
@@ -94,7 +95,7 @@ export function ChurchPublicShell({ church, children }: ChurchPublicShellProps) 
                 className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium"
                 style={{ color: "#3d3a36" }}
                 onClick={() => setMenuOpen(false)}>
-                {item.label}
+                {tx(item.label)}
                 <ChevronRight className="w-4 h-4" style={{ color: "#c0b8b0" }} />
               </Link>
             ))}
@@ -186,7 +187,7 @@ export function ChurchPublicShell({ church, children }: ChurchPublicShellProps) 
                   <Link key={item.path} href={`${base}${item.path}`}
                     className="block text-sm transition-colors hover:text-white"
                     style={{ color: "#9ca3af" }}>
-                    {item.label}
+                    {tx(item.label)}
                   </Link>
                 ))}
                 <Link href={`${base}/join-us`}
@@ -235,7 +236,7 @@ export function ChurchPublicShell({ church, children }: ChurchPublicShellProps) 
               © {new Date().getFullYear()} {church?.name}. {t("cm_pub_allRightsReserved")}
             </p>
             <p className="text-xs" style={{ color: "#4b5563" }}>
-              {t("cm_pub_poweredBy")} <a href="/" className="transition-colors hover:text-white">365 Daily Devotional</a>
+              {t("cm_pub_poweredBy")} <a href="/" className="transition-colors hover:text-white">{tx("365 Daily Devotional")}</a>
             </p>
           </div>
         </div>

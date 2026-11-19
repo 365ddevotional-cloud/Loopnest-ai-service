@@ -1,3 +1,5 @@
+import { translateAppText as tx } from "@/utils/i18n";
+import { useI18n } from "@/hooks/useI18n";
 import { useUser } from "@/contexts/UserContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
@@ -24,6 +26,7 @@ function useGroupData(groupId: number) {
 }
 
 export default function GroupMessages() {
+  useI18n();
   const [, params] = useRoute("/group/:id/messages");
   const [, navigate] = useLocation();
   const groupId = Number((params as any)?.id);
@@ -66,7 +69,7 @@ export default function GroupMessages() {
       qc.invalidateQueries({ queryKey: ["/api/groups", groupId, "messages"] });
       setText("");
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: tx("Error"), description: e.message, variant: "destructive" }),
   });
 
   function handleSend() {
@@ -83,21 +86,21 @@ export default function GroupMessages() {
   return (
     <GroupModeShell group={groupData.group} myMember={groupData.myMember}>
       <div className="flex flex-col gap-4">
-        <h2 className="font-serif text-xl font-bold">Messages</h2>
+        <h2 className="font-serif text-xl font-bold">{tx("Messages")}</h2>
 
         {/* Chat area */}
         <div className="space-y-3 min-h-[50vh]" data-testid="messages-container">
           {loadingMsgs ? (
             <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
           ) : messages.length === 0 ? (
-            <p className="text-center text-muted-foreground text-sm py-8">No messages yet. Say hello!</p>
+            <p className="text-center text-muted-foreground text-sm py-8">{tx("No messages yet. Say hello!")}</p>
           ) : (
             messages.map(msg => {
               const isMe = msg.firebaseUid === myUid;
               return (
                 <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`} data-testid={`msg-${msg.id}`}>
                   <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${isMe ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm"}`}>
-                    {!isMe && <p className="text-xs font-semibold mb-0.5 opacity-70">{msg.displayName ?? "Member"}</p>}
+                    {!isMe && <p className="text-xs font-semibold mb-0.5 opacity-70">{msg.displayName ?? tx("Member")}</p>}
                     <p className="text-sm leading-relaxed">{msg.content}</p>
                     <p className={`text-[10px] mt-0.5 ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
                       {msg.createdAt ? format(new Date(msg.createdAt), "h:mm a") : ""}
@@ -113,7 +116,7 @@ export default function GroupMessages() {
         {/* Input */}
         <div className="flex gap-2 sticky bottom-0 pb-2">
           <Input
-            placeholder="Type a message…"
+            placeholder={tx("Type a message…")}
             value={text}
             onChange={e => setText(e.target.value)}
             onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleSend()}

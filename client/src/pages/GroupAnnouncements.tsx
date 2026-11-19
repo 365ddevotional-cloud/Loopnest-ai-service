@@ -1,3 +1,5 @@
+import { translateAppText as tx } from "@/utils/i18n";
+import { useI18n } from "@/hooks/useI18n";
 import { useUser } from "@/contexts/UserContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
@@ -27,6 +29,7 @@ function useGroupData(groupId: number) {
 }
 
 export default function GroupAnnouncements() {
+  useI18n();
   const [, params] = useRoute("/group/:id/announcements");
   const [, navigate] = useLocation();
   const groupId = Number((params as any)?.id);
@@ -64,9 +67,9 @@ export default function GroupAnnouncements() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/groups", groupId, "announcements"] });
       setTitle(""); setContent(""); setOpen(false);
-      toast({ title: "Announcement posted!" });
+      toast({ title: tx("Announcement posted!") });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: tx("Error"), description: e.message, variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
@@ -88,11 +91,10 @@ export default function GroupAnnouncements() {
     <GroupModeShell group={groupData.group} myMember={groupData.myMember}>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-serif text-xl font-bold">Announcements</h2>
+          <h2 className="font-serif text-xl font-bold">{tx("Announcements")}</h2>
           {canPost && (
             <Button size="sm" onClick={() => setOpen(true)} data-testid="button-new-announcement" className="gap-1">
-              <Plus className="w-4 h-4" /> Post
-            </Button>
+              <Plus className="w-4 h-4" /> {tx("Post")} </Button>
           )}
         </div>
 
@@ -101,8 +103,8 @@ export default function GroupAnnouncements() {
         ) : announcements.length === 0 ? (
           <div className="text-center py-10 space-y-2">
             <Megaphone className="w-10 h-10 text-muted-foreground mx-auto" />
-            <p className="text-muted-foreground text-sm">No announcements yet.</p>
-            {canPost && <p className="text-xs text-muted-foreground">Post an announcement for your group.</p>}
+            <p className="text-muted-foreground text-sm">{tx("No announcements yet.")}</p>
+            {canPost && <p className="text-xs text-muted-foreground">{tx("Post an announcement for your group.")}</p>}
           </div>
         ) : (
           <div className="space-y-3">
@@ -123,7 +125,7 @@ export default function GroupAnnouncements() {
                   </div>
                   <p className="text-sm text-foreground leading-relaxed">{ann.content}</p>
                   <p className="text-xs text-muted-foreground">
-                    {ann.displayName ?? "Member"} · {ann.createdAt ? format(new Date(ann.createdAt), "MMM d, yyyy") : ""}
+                    {ann.displayName ?? tx("Member")} · {ann.createdAt ? format(new Date(ann.createdAt), "MMM d, yyyy") : ""}
                   </p>
                 </CardContent>
               </Card>
@@ -134,27 +136,25 @@ export default function GroupAnnouncements() {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>New Announcement</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{tx("New Announcement")}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <Input
-              placeholder="Announcement title"
+              placeholder={tx("Announcement title")}
               value={title}
               onChange={e => setTitle(e.target.value)}
               data-testid="input-announcement-title"
             />
             <Textarea
-              placeholder="Write your announcement…"
+              placeholder={tx("Write your announcement…")}
               rows={4}
               value={content}
               onChange={e => setContent(e.target.value)}
               data-testid="textarea-announcement-content"
             />
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setOpen(false)}>{tx("Cancel")}</Button>
               <Button onClick={() => postMutation.mutate()} disabled={!title.trim() || !content.trim() || postMutation.isPending} data-testid="button-submit-announcement">
-                {postMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                Post
-              </Button>
+                {postMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null} {tx("Post")} </Button>
             </div>
           </div>
         </DialogContent>

@@ -1,3 +1,4 @@
+import { translateAppText as tx } from "@/utils/i18n";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -115,7 +116,7 @@ export default function GroupCreate() {
                     </FormControl>
                     <SelectContent>
                       {GROUP_TYPES.map(gt => (
-                        <SelectItem key={gt.value} value={gt.value}>{gt.label}</SelectItem>
+                        <SelectItem key={gt.value} value={gt.value}>{tx(gt.label)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -152,7 +153,7 @@ export default function GroupCreate() {
               <FormField control={form.control} name="country" render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("gm_country")}</FormLabel>
-                  <FormControl><Input placeholder="e.g. Nigeria, United States" data-testid="input-group-country" {...field} /></FormControl>
+                  <FormControl><Input placeholder={tx("e.g. Nigeria, United States")} data-testid="input-group-country" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />

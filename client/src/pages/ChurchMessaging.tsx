@@ -1,3 +1,4 @@
+import { translateAppText as tx } from "@/utils/i18n";
 import { useState, useEffect, useRef } from "react";
 import { useRoute } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -580,7 +581,7 @@ export default function ChurchMessaging() {
                           }}>
                           {!isMe && (
                             <p className="text-[10px] font-semibold opacity-60">
-                              {msg.senderName ?? "Member"}{isPastor ? " · Leadership" : ""}
+                              {msg.senderName ?? tx("Member")}{isPastor ? tx("· Leadership") : ""}
                             </p>
                           )}
                           <p className="text-sm whitespace-pre-wrap break-words">{msg.body}</p>
@@ -633,16 +634,15 @@ export default function ChurchMessaging() {
                 <MessageSquare className="w-10 h-10 mx-auto opacity-25" style={{ color: "#1a2744" }} />
                 <p className="text-sm" style={{ color: "#7a7570" }}>
                   {isLeader
-                    ? activeTab === "mine" ? "No conversations assigned to you."
-                    : activeTab === "unassigned" ? "No unassigned conversations."
-                    : activeTab === "closed" ? "No closed conversations."
-                    : "No conversations yet. Members can message you from here."
-                    : "No messages yet. Start a conversation with church leadership."}
+                    ? activeTab === "mine" ? tx("No conversations assigned to you.")
+                    : activeTab === "unassigned" ? tx("No unassigned conversations.")
+                    : activeTab === "closed" ? tx("No closed conversations.")
+                    : tx("No conversations yet. Members can message you from here.")
+                    : tx("No messages yet. Start a conversation with church leadership.")}
                 </p>
                 {!isLeader && (
                   <Button onClick={() => setShowNewForm(true)} variant="outline" data-testid="button-start-conversation">
-                    <Plus className="w-4 h-4 mr-1.5" />Start a Conversation
-                  </Button>
+                    <Plus className="w-4 h-4 mr-1.5" />{tx("Start a Conversation")} </Button>
                 )}
               </div>
             ) : filteredConversations.map(conv => (

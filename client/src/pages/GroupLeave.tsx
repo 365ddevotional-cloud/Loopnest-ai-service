@@ -1,3 +1,5 @@
+import { translateAppText as tx } from "@/utils/i18n";
+import { useI18n } from "@/hooks/useI18n";
 import { useUser } from "@/contexts/UserContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
@@ -21,6 +23,7 @@ function useGroupData(groupId: number) {
 }
 
 export default function GroupLeave() {
+  useI18n();
   const [, params] = useRoute("/group/:id/leave");
   const [, navigate] = useLocation();
   const groupId = Number((params as any)?.id);
@@ -45,7 +48,7 @@ export default function GroupLeave() {
       toast({ title: isOwner ? "Group deleted" : "You have left the group" });
       navigate("/groups");
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: tx("Error"), description: e.message, variant: "destructive" }),
   });
 
   if (!user || !emailVerified) { navigate("/signin"); return null; }
@@ -64,7 +67,7 @@ export default function GroupLeave() {
             </div>
           </div>
           <div>
-            <h2 className="font-semibold text-lg">{isOwner ? "Delete Group" : "Leave Group"}</h2>
+            <h2 className="font-semibold text-lg">{isOwner ? tx("Delete Group") : tx("Leave Group")}</h2>
             <p className="text-sm text-muted-foreground mt-1">
               {isOwner
                 ? `Are you sure you want to delete "${group.name}"? This will permanently remove the group and all its data.`
@@ -72,9 +75,7 @@ export default function GroupLeave() {
             </p>
           </div>
           <div className="flex gap-3 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => navigate(`/group/${groupId}`)} data-testid="button-cancel-leave">
-              Cancel
-            </Button>
+            <Button variant="outline" className="flex-1" onClick={() => navigate(`/group/${groupId}`)} data-testid="button-cancel-leave"> {tx("Cancel")} </Button>
             <Button
               variant="destructive"
               className="flex-1"
@@ -83,7 +84,7 @@ export default function GroupLeave() {
               data-testid="button-confirm-leave"
             >
               {leaveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-              {isOwner ? "Delete" : "Leave"}
+              {isOwner ? tx("Delete") : tx("Leave")}
             </Button>
           </div>
         </CardContent>

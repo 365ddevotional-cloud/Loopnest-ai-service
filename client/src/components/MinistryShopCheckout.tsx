@@ -1,3 +1,5 @@
+import { translateAppText as tx } from "@/utils/i18n";
+import { useI18n } from "@/hooks/useI18n";
 import {audioOwnership} from "@shared/shop-audiobook";
 import { isAndroidReader } from "@/lib/android-reader";
 import { useState } from "react";
@@ -44,6 +46,7 @@ async function shopRequest<T>(path: string, token?: string, body?: object): Prom
 }
 
 export function ShopCheckout({ productId, price }: { productId: string; price?: Price }) {
+  useI18n();
   const { user, emailVerified, getIdToken } = useUser();
   const [accepted, setAccepted] = useState(false);
   const [choice,setChoice]=useState<"ebook"|"read-listen">("ebook");
@@ -67,29 +70,29 @@ export function ShopCheckout({ productId, price }: { productId: string; price?: 
     },
   });
 
-  if (isAndroidReader()) return <p className="mt-4 text-sm text-muted-foreground">Browse the collection here. Your completed purchases are available in Shop purchases.</p>;
-  if (!price?.ready) return <p className="mt-4 text-sm text-muted-foreground">Checkout is currently unavailable for this item in your currency.</p>;
-  const currencyNotice = price.usdFallback && <p className="text-sm text-muted-foreground">Your card will be charged in US dollars. Your bank may charge a currency conversion fee.</p>;
+  if (isAndroidReader()) return <p className="mt-4 text-sm text-muted-foreground">{tx("Browse the collection here. Your completed purchases are available in Shop purchases.")}</p>;
+  if (!price?.ready) return <p className="mt-4 text-sm text-muted-foreground">{tx("Checkout is currently unavailable for this item in your currency.")}</p>;
+  const currencyNotice = price.usdFallback && <p className="text-sm text-muted-foreground">{tx("Your card will be charged in US dollars. Your bank may charge a currency conversion fee.")}</p>;
   if (!user || !emailVerified) return (
     <div className="mt-4 space-y-2">
       {currencyNotice}
-      <Button asChild><Link href={`/signin?return=${encodeURIComponent(`/shop/${productId}`)}`}>{user ? "Verify email to buy" : "Sign in to buy"}</Link></Button>
+      <Button asChild><Link href={`/signin?return=${encodeURIComponent(`/shop/${productId}`)}`}>{user ? tx("Verify email to buy") : tx("Sign in to buy")}</Link></Button>
     </div>
   );
   return (
     <div className="mt-5 space-y-3">
       {currencyNotice}
-      {ownedBook ? <div className="space-y-2 rounded-lg border p-3"><p className="text-sm font-semibold">You already own this book.</p><Button asChild variant="outline"><Link href={`/shop/read/${ownedBook.readerEditionId}`}>{ownedAudio?"Read and listen":"Read your book"}</Link></Button>{!ownedAudio && <p className="text-sm">Add the audiobook for {formatShopPrice({...price,amount:price.audioAmount!})} once.</p>}</div> : price.audioAmount && price.readListenAmount && <fieldset className="space-y-2 rounded-lg border p-3"><legend className="px-1 font-semibold">Choose your edition</legend>
-        {(["ebook","read-listen"] as const).map(kind=><label key={kind} className="flex items-center gap-2 text-sm"><input type="radio" name={`shop-edition-${productId}`} value={kind} checked={choice===kind} onChange={()=>{setChoice(kind);setAccepted(false);}} />{kind==="ebook"?"Read — eBook":"Read + Listen"} · {formatShopPrice({...price,amount:kind==="read-listen"?price.readListenAmount!:price.amount})}</label>)}
+      {ownedBook ? <div className="space-y-2 rounded-lg border p-3"><p className="text-sm font-semibold">{tx("You already own this book.")}</p><Button asChild variant="outline"><Link href={`/shop/read/${ownedBook.readerEditionId}`}>{ownedAudio?tx("Read and listen"):tx("Read your book")}</Link></Button>{!ownedAudio && <p className="text-sm">{tx("Add the audiobook for")} {formatShopPrice({...price,amount:price.audioAmount!})} {tx("once.")}</p>}</div> : price.audioAmount && price.readListenAmount && <fieldset className="space-y-2 rounded-lg border p-3"><legend className="px-1 font-semibold">{tx("Choose your edition")}</legend>
+        {(["ebook","read-listen"] as const).map(kind=><label key={kind} className="flex items-center gap-2 text-sm"><input type="radio" name={`shop-edition-${productId}`} value={kind} checked={choice===kind} onChange={()=>{setChoice(kind);setAccepted(false);}} />{kind==="ebook"?tx("Read — eBook"):tx("Read + Listen")} · {formatShopPrice({...price,amount:kind==="read-listen"?price.readListenAmount!:price.amount})}</label>)}
       </fieldset>}
-      {price.audioAmount && <p className="text-xs text-muted-foreground">Audiobook: digitally narrated in English, US male voice. One payment, repeat listening in your account. No monthly subscription.</p>}
+      {price.audioAmount && <p className="text-xs text-muted-foreground">{tx("Audiobook: digitally narrated in English, US male voice. One payment, repeat listening in your account. No monthly subscription.")}</p>}
       {!(ownedBook && ownedAudio) && <>
       <label className="flex items-start gap-2 text-sm text-muted-foreground">
         <input className="mt-1" type="checkbox" checked={accepted} onChange={event => setAccepted(event.target.checked)} />
-        {purchaseKind === "audio" ? "I understand this is an in-app audiobook upgrade for a book I already purchased, using this same account." : purchaseKind === "read-listen" ? "I understand that my PDF download window is two hours from payment. Audiobook listening has no two-hour limit." : "I understand that my download window is two hours from payment."}
+        {purchaseKind === "audio" ? tx("I understand this is an in-app audiobook upgrade for a book I already purchased, using this same account.") : purchaseKind === "read-listen" ? tx("I understand that my PDF download window is two hours from payment. Audiobook listening has no two-hour limit.") : tx("I understand that my download window is two hours from payment.")}
       </label>
       <Button disabled={!accepted || purchase.isPending || ownership.isLoading} onClick={() => purchase.mutate()}>
-        {purchase.isPending ? "Opening Stripe…" : `${ownedBook?"Add audiobook":"Buy"} for ${formatShopPrice(selectedPrice!)}`}
+        {purchase.isPending ? tx("Opening Stripe…") : tx(ownedBook ? "Add audiobook for {price}" : "Buy for {price}", {price: formatShopPrice(selectedPrice!)})}
       </Button>
       {purchase.error && <p role="alert" className="text-sm text-destructive">{purchase.error.message}</p>}
       </>}
@@ -100,24 +103,26 @@ export function ShopCheckout({ productId, price }: { productId: string; price?: 
 type ShopPurchase = { productId:string; readerEditionId?:string; purchaseKind?:string; sessionId: string; title: string; status: string; downloadExpiresAt: string | null };
 
 export function MinistryShopPurchases() {
+  useI18n();
   const { user, loading } = useUser();
   const returnTo = window.location.pathname + window.location.search;
   const returnedSession = new URLSearchParams(window.location.search).get("session_id");
 
   return (
     <main className="mx-auto max-w-3xl space-y-5 px-4 py-10">
-      <Link href="/shop" className="text-sm font-semibold text-primary hover:underline">← Back to 365 Ministry Shop</Link>
-      <h1 className="font-serif text-3xl font-bold">Shop purchases</h1>
-      {loading ? <p>Loading account…</p> : user ? (
+      <Link href="/shop" className="text-sm font-semibold text-primary hover:underline">{tx("← Back to 365 Ministry Shop")}</Link>
+      <h1 className="font-serif text-3xl font-bold">{tx("Shop purchases")}</h1>
+      {loading ? <p>{tx("Loading account…")}</p> : user ? (
         <ShopPurchaseList key={user.uid} uid={user.uid} returnedSession={returnedSession} />
       ) : (
-        <Button asChild><Link href={`/signin?return=${encodeURIComponent(returnTo)}`}>Sign in to view purchases</Link></Button>
+        <Button asChild><Link href={`/signin?return=${encodeURIComponent(returnTo)}`}>{tx("Sign in to view purchases")}</Link></Button>
       )}
     </main>
   );
 }
 
 function ShopPurchaseList({ uid, returnedSession }: { uid: string; returnedSession: string | null }) {
+  useI18n();
   const { getIdToken } = useUser();
   const purchases = useQuery<ShopPurchase[]>({
     queryKey: ["ministry-shop-purchases", uid],
@@ -140,14 +145,14 @@ function ShopPurchaseList({ uid, returnedSession }: { uid: string; returnedSessi
 
   return (
     <>
-      {purchases.isLoading && <p>Loading purchases…</p>}
+      {purchases.isLoading && <p>{tx("Loading purchases…")}</p>}
       {purchases.error && <p role="alert">{purchases.error.message}</p>}
       {purchases.data && !returnedOrder && returnedSession && (
-        <p className="text-muted-foreground">This order is not listed. Use the account you checked out with, or refresh purchases if you just paid.</p>
+        <p className="text-muted-foreground">{tx("This order is not listed. Use the account you checked out with, or refresh purchases if you just paid.")}</p>
       )}
-      {purchases.data && !visibleOrders.length && <p className="text-muted-foreground">There are no shop purchases on this account.</p>}
+      {purchases.data && !visibleOrders.length && <p className="text-muted-foreground">{tx("There are no shop purchases on this account.")}</p>}
       {(purchases.error || (returnedSession && !returnedOrder && purchases.data)) && (
-        <Button variant="outline" disabled={purchases.isFetching} onClick={() => void purchases.refetch()}>Refresh purchases</Button>
+        <Button variant="outline" disabled={purchases.isFetching} onClick={() => void purchases.refetch()}>{tx("Refresh purchases")}</Button>
       )}
       {visibleOrders.map(order => {
         const expired = !!order.downloadExpiresAt && Date.parse(order.downloadExpiresAt) <= Date.now();
@@ -155,12 +160,12 @@ function ShopPurchaseList({ uid, returnedSession }: { uid: string; returnedSessi
         return (
           <section className="space-y-3 rounded-xl border p-4" key={order.sessionId}>
             <h2 className="font-semibold">{order.title}</h2>
-            {order.readerEditionId && <Button asChild><Link href={`/shop/read/${order.readerEditionId}`}>{order.purchaseKind === "audio" || order.purchaseKind === "read-listen" ? "Read and listen" : "Read book"}</Link></Button>}
-            {order.purchaseKind === "audio" ? <p className="text-sm text-muted-foreground">Audiobook access stays in this account. Open the reader to listen.</p> : expired ? <p className="text-sm text-muted-foreground">Your two-hour download window has ended.</p> : (
+            {order.readerEditionId && <Button asChild><Link href={`/shop/read/${order.readerEditionId}`}>{order.purchaseKind === "audio" || order.purchaseKind === "read-listen" ? tx("Read and listen") : tx("Read book")}</Link></Button>}
+            {order.purchaseKind === "audio" ? <p className="text-sm text-muted-foreground">{tx("Audiobook access stays in this account. Open the reader to listen.")}</p> : expired ? <p className="text-sm text-muted-foreground">{tx("Your two-hour download window has ended.")}</p> : (
               <>
-                {order.status === "pending" && <p className="text-sm text-muted-foreground">If you just paid, check your payment to get your files.</p>}
+                {order.status === "pending" && <p className="text-sm text-muted-foreground">{tx("If you just paid, check your payment to get your files.")}</p>}
                 <Button variant="outline" disabled={download.isPending} onClick={() => download.mutate(order.sessionId)}>
-                  {selected && download.isPending ? "Checking payment…" : "Get download links"}
+                  {selected && download.isPending ? tx("Checking payment…") : tx("Get download links")}
                 </Button>
                 {selected && download.error && <p role="alert" className="text-sm text-destructive">{download.error.message}</p>}
                 {selected && download.data && <ul className="space-y-1">

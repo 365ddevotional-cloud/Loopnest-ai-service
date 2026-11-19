@@ -1,3 +1,4 @@
+import { translateAppText as tx } from "@/utils/i18n";
 import { useState, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -142,7 +143,7 @@ export default function ChurchMemberPublicProfile() {
       setPrayerNote("");
       setTimeout(() => { setPrayerOpen(false); setPrayerSent(false); }, 2000);
     } catch {
-      toast({ title: t("cm_error"), description: "Could not submit prayer.", variant: "destructive" });
+      toast({ title: t("cm_error"), description: tx("Could not submit prayer."), variant: "destructive" });
     } finally {
       setPrayerSending(false);
     }
@@ -302,7 +303,7 @@ export default function ChurchMemberPublicProfile() {
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       <Badge variant="outline" className={`text-xs flex items-center gap-1 ${roleColors[role] ?? ""}`} data-testid="badge-member-role">
                         {roleIcon(role)}
-                        {roleLabel}
+                        {tx(roleLabel)}
                       </Badge>
                       {joinDate && (
                         <Badge variant="outline" className="text-xs flex items-center gap-1" data-testid="badge-member-join-date">
@@ -401,23 +402,20 @@ export default function ChurchMemberPublicProfile() {
                         onClick={() => setPrayerOpen(true)}
                         data-testid="button-pray-for-member"
                       >
-                        <Heart className="w-4 h-4" />
-                        Pray For This Member
-                      </Button>
+                        <Heart className="w-4 h-4" /> {tx("Pray For This Member")} </Button>
                     ) : prayerSent ? (
                       <div className="flex items-center gap-2 py-2 px-3 rounded-lg" style={{ backgroundColor: "#f0fdf4" }}>
                         <CheckCircle2 className="w-4 h-4 text-green-600" />
-                        <p className="text-sm text-green-700 font-medium">Prayer submitted — may God bless them!</p>
+                        <p className="text-sm text-green-700 font-medium">{tx("Prayer submitted — may God bless them!")}</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        <p className="text-sm font-medium" style={{ color: "#1a2744" }}>
-                          Write a prayer for {displayName} <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+                        <p className="text-sm font-medium" style={{ color: "#1a2744" }}> {tx("Write a prayer for")} {displayName} <span className="text-xs font-normal text-muted-foreground">{tx("(optional)")}</span>
                         </p>
                         <Textarea
                           value={prayerNote}
                           onChange={e => setPrayerNote(e.target.value)}
-                          placeholder="Lord, I lift up this member..."
+                          placeholder={tx("Lord, I lift up this member...")}
                           rows={3}
                           className="text-sm resize-none"
                           data-testid="textarea-prayer-note"
@@ -431,13 +429,11 @@ export default function ChurchMemberPublicProfile() {
                             data-testid="button-submit-prayer"
                           >
                             {prayerSending
-                              ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Sending…</>
-                              : <><Heart className="w-3.5 h-3.5 mr-1.5" />Submit Prayer</>}
+                              ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />{tx("Sending…")}</>
+                              : <><Heart className="w-3.5 h-3.5 mr-1.5" />{tx("Submit Prayer")}</>}
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => { setPrayerOpen(false); setPrayerNote(""); }}
-                            data-testid="button-cancel-prayer">
-                            Cancel
-                          </Button>
+                            data-testid="button-cancel-prayer"> {tx("Cancel")} </Button>
                         </div>
                       </div>
                     )}
@@ -452,9 +448,7 @@ export default function ChurchMemberPublicProfile() {
                     onClick={() => setLocation(`/church/${slug}/messages`)}
                     data-testid="button-message-member"
                   >
-                    <MessageCircle className="w-4 h-4" />
-                    Message
-                  </Button>
+                    <MessageCircle className="w-4 h-4" /> {tx("Message")} </Button>
                 )}
 
                 {/* Copy profile link */}
@@ -465,8 +459,8 @@ export default function ChurchMemberPublicProfile() {
                   data-testid="button-copy-profile-link"
                 >
                   {linkCopied
-                    ? <><CheckCircle2 className="w-4 h-4 text-green-600" />Link Copied!</>
-                    : <><Link2 className="w-4 h-4" />Copy Profile Link</>}
+                    ? <><CheckCircle2 className="w-4 h-4 text-green-600" />{tx("Link Copied!")}</>
+                    : <><Link2 className="w-4 h-4" />{tx("Copy Profile Link")}</>}
                 </Button>
               </CardContent>
             </Card>

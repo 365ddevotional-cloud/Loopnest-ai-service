@@ -1,3 +1,6 @@
+import { translateEnumLabel } from "@/utils/i18n";
+import { translateAppText as tx } from "@/utils/i18n";
+import { useI18n } from "@/hooks/useI18n";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +47,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 const ALL_FILTERS = ["All", ...INBOX_CATEGORIES] as const;
 
 export default function Inbox() {
+  useI18n();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [searchedEmail, setSearchedEmail] = useState("");
@@ -95,10 +99,10 @@ export default function Inbox() {
       setComposeSubject("");
       setComposeMessage("");
       queryClient.invalidateQueries({ queryKey: ["/api/inbox/threads", searchedEmail] });
-      toast({ title: "Message sent", description: "Your new thread has been created." });
+      toast({ title: tx("Message sent"), description: tx("Your new thread has been created.") });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to create thread.", variant: "destructive" });
+      toast({ title: tx("Error"), description: tx("Failed to create thread."), variant: "destructive" });
     },
   });
 
@@ -112,17 +116,17 @@ export default function Inbox() {
       setReplyMessage("");
       queryClient.invalidateQueries({ queryKey: ["/api/inbox/threads", selectedThreadId, searchedEmail] });
       queryClient.invalidateQueries({ queryKey: ["/api/inbox/threads", searchedEmail] });
-      toast({ title: "Reply sent" });
+      toast({ title: tx("Reply sent") });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to send reply.", variant: "destructive" });
+      toast({ title: tx("Error"), description: tx("Failed to send reply."), variant: "destructive" });
     },
   });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !email.includes("@")) {
-      toast({ title: "Please enter a valid email address", variant: "destructive" });
+      toast({ title: tx("Please enter a valid email address"), variant: "destructive" });
       return;
     }
     setSearchedEmail(email);
@@ -132,7 +136,7 @@ export default function Inbox() {
 
   const handleCreateThread = () => {
     if (!composeName.trim() || !composeSubject.trim() || !composeMessage.trim()) {
-      toast({ title: "Please fill all fields", variant: "destructive" });
+      toast({ title: tx("Please fill all fields"), variant: "destructive" });
       return;
     }
     createThreadMutation.mutate();
@@ -153,20 +157,16 @@ export default function Inbox() {
   return (
     <div className="max-w-4xl mx-auto py-8">
       <div className="text-center mb-12 space-y-4">
-        <h1 className="font-serif text-4xl md:text-5xl font-bold text-primary" data-testid="text-inbox-title">
-          My Inbox
-        </h1>
+        <h1 className="font-serif text-4xl md:text-5xl font-bold text-primary" data-testid="text-inbox-title"> {tx("My Inbox")} </h1>
         <div className="w-24 h-1 bg-primary mx-auto rounded-full opacity-30" />
-        <p className="text-muted-foreground max-w-xl mx-auto">
-          View and manage your conversations with our ministry team.
-        </p>
+        <p className="text-muted-foreground max-w-xl mx-auto"> {tx("View and manage your conversations with our ministry team.")} </p>
       </div>
 
       <Card className="bg-white dark:bg-card border-primary/10 shadow-xl shadow-primary/5 mb-6">
         <CardContent className="p-6">
           <form onSubmit={handleSearch} className="flex items-end gap-4 flex-wrap">
             <div className="flex-1 min-w-[200px] space-y-2">
-              <Label htmlFor="inbox-email">Enter your email to access your inbox</Label>
+              <Label htmlFor="inbox-email">{tx("Enter your email to access your inbox")}</Label>
               <Input
                 id="inbox-email"
                 type="email"
@@ -181,9 +181,7 @@ export default function Inbox() {
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <Search className="w-4 h-4 mr-2" />
-              )}
-              Open Inbox
-            </Button>
+              )} {tx("Open Inbox")} </Button>
           </form>
         </CardContent>
       </Card>
@@ -191,23 +189,21 @@ export default function Inbox() {
       {searchedEmail && !selectedThreadId && !showCompose && (
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
-            <h3 className="font-serif text-lg font-semibold text-foreground">Your Threads</h3>
+            <h3 className="font-serif text-lg font-semibold text-foreground">{tx("Your Threads")}</h3>
             <Button onClick={() => setShowCompose(true)} data-testid="button-new-message">
-              <Plus className="w-4 h-4 mr-2" />
-              New Message
-            </Button>
+              <Plus className="w-4 h-4 mr-2" /> {tx("New Message")} </Button>
           </div>
 
           <div className="flex gap-2 flex-wrap">
             {ALL_FILTERS.map((filter) => (
               <Button
-                key={filter}
+                key={tx(filter)}
                 variant={activeFilter === filter ? "default" : "outline"}
                 size="sm"
                 onClick={() => setActiveFilter(filter)}
                 data-testid={`filter-${filter.toLowerCase().replace(/\s+/g, "-")}`}
               >
-                {filter}
+                {tx(filter)}
               </Button>
             ))}
           </div>
@@ -215,7 +211,7 @@ export default function Inbox() {
           {filteredThreads.length === 0 ? (
             <Card className="p-6 text-center text-muted-foreground">
               <InboxIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p data-testid="text-empty-inbox">No threads found. Start a new conversation!</p>
+              <p data-testid="text-empty-inbox">{tx("No threads found. Start a new conversation!")}</p>
             </Card>
           ) : (
             <div className="space-y-2">
@@ -230,13 +226,11 @@ export default function Inbox() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-foreground">{thread.subject}</span>
                       <Badge className={`text-xs ${CATEGORY_COLORS[thread.category] || ""}`}>
-                        {thread.category}
+                        {translateEnumLabel(thread.category)}
                       </Badge>
                       {thread.hasUnreadUser && (
                         <Badge className="text-xs bg-primary text-primary-foreground" data-testid={`unread-indicator-${thread.id}`}>
-                          <Mail className="w-3 h-3 mr-1" />
-                          New
-                        </Badge>
+                          <Mail className="w-3 h-3 mr-1" /> {tx("New")} </Badge>
                       )}
                     </div>
                     <Badge className={`text-xs ${STATUS_CONFIG[thread.status]?.color || ""}`} data-testid={`status-badge-${thread.id}`}>
@@ -245,7 +239,7 @@ export default function Inbox() {
                   </div>
                   {thread.lastMessage && (
                     <p className="text-sm text-muted-foreground line-clamp-1" data-testid={`thread-preview-${thread.id}`}>
-                      {thread.lastMessageSender === "admin" ? "Team: " : thread.lastMessageSender === "ai" ? "AI: " : "You: "}
+                      {thread.lastMessageSender === "admin" ? tx("Team:") : thread.lastMessageSender === "ai" ? tx("AI:") : tx("You:")}
                       {truncate(thread.lastMessage, 80)}
                     </p>
                   )}
@@ -277,25 +271,25 @@ export default function Inbox() {
               >
                 <ArrowLeft className="w-4 h-4" />
               </Button>
-              <CardTitle className="font-serif text-xl text-foreground">New Message</CardTitle>
+              <CardTitle className="font-serif text-xl text-foreground">{tx("New Message")}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-6 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="compose-name">Your Name</Label>
+              <Label htmlFor="compose-name">{tx("Your Name")}</Label>
               <Input
                 id="compose-name"
                 value={composeName}
                 onChange={(e) => setComposeName(e.target.value)}
-                placeholder="Enter your name"
+                placeholder={tx("Enter your name")}
                 data-testid="input-compose-name"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="compose-category">Category</Label>
+              <Label htmlFor="compose-category">{tx("Category")}</Label>
               <Select value={composeCategory} onValueChange={setComposeCategory}>
                 <SelectTrigger data-testid="select-compose-category">
-                  <SelectValue placeholder="Select a category" />
+                  <SelectValue placeholder={tx("Select a category")} />
                 </SelectTrigger>
                 <SelectContent>
                   {INBOX_CATEGORIES.map((cat) => (
@@ -307,22 +301,22 @@ export default function Inbox() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="compose-subject">Subject</Label>
+              <Label htmlFor="compose-subject">{tx("Subject")}</Label>
               <Input
                 id="compose-subject"
                 value={composeSubject}
                 onChange={(e) => setComposeSubject(e.target.value)}
-                placeholder="What is this about?"
+                placeholder={tx("What is this about?")}
                 data-testid="input-compose-subject"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="compose-message">Message</Label>
+              <Label htmlFor="compose-message">{tx("Message")}</Label>
               <Textarea
                 id="compose-message"
                 value={composeMessage}
                 onChange={(e) => setComposeMessage(e.target.value)}
-                placeholder="Write your message..."
+                placeholder={tx("Write your message...")}
                 rows={5}
                 className="resize-none"
                 data-testid="textarea-compose-message"
@@ -337,9 +331,7 @@ export default function Inbox() {
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <Send className="w-4 h-4 mr-2" />
-              )}
-              Send Message
-            </Button>
+              )} {tx("Send Message")} </Button>
           </CardContent>
         </Card>
       )}
@@ -355,9 +347,7 @@ export default function Inbox() {
             }}
             data-testid="button-back-to-threads"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Inbox
-          </Button>
+            <ArrowLeft className="w-4 h-4 mr-2" /> {tx("Back to Inbox")} </Button>
 
           {isLoadingDetail ? (
             <div className="flex items-center justify-center py-12">
@@ -383,7 +373,7 @@ export default function Inbox() {
               <CardContent className="p-6 space-y-4">
                 <div className="space-y-3 max-h-[500px] overflow-y-auto">
                   {threadDetail.messages.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">No messages yet.</p>
+                    <p className="text-center text-muted-foreground py-8">{tx("No messages yet.")}</p>
                   ) : (
                     threadDetail.messages.map((msg) => {
                       const isUser = msg.senderType === "user";
@@ -405,7 +395,7 @@ export default function Inbox() {
                           >
                             <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
                               <span className={`text-xs font-medium ${isUser ? "text-blue-100" : "text-muted-foreground"}`}>
-                                {isUser ? "You" : isAi ? "AI Assistant" : "Ministry Team"}
+                                {isUser ? tx("You") : isAi ? tx("AI Assistant") : tx("Ministry Team")}
                                 {isAi && <Bot className="w-3 h-3 inline ml-1" />}
                               </span>
                               <span className={`text-xs ${isUser ? "text-blue-200" : "text-muted-foreground"}`}>
@@ -424,10 +414,10 @@ export default function Inbox() {
 
                 {threadDetail.thread.status !== "closed" && (
                   <div className="space-y-2 pt-4 border-t">
-                    <Label>Reply</Label>
+                    <Label>{tx("Reply")}</Label>
                     <div className="flex gap-2">
                       <Textarea
-                        placeholder="Type your reply..."
+                        placeholder={tx("Type your reply...")}
                         value={replyMessage}
                         onChange={(e) => setReplyMessage(e.target.value)}
                         rows={2}
@@ -454,14 +444,14 @@ export default function Inbox() {
                 {threadDetail.thread.status === "closed" && (
                   <div className="text-center py-4 text-muted-foreground border-t">
                     <MessageSquare className="w-6 h-6 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">This conversation has been closed.</p>
+                    <p className="text-sm">{tx("This conversation has been closed.")}</p>
                   </div>
                 )}
               </CardContent>
             </Card>
           ) : (
             <Card className="p-6 text-center text-muted-foreground">
-              <p>Thread not found.</p>
+              <p>{tx("Thread not found.")}</p>
             </Card>
           )}
         </div>

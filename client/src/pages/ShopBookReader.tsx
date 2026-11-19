@@ -1,3 +1,5 @@
+import { translateAppText as tx } from "@/utils/i18n";
+import { useI18n } from "@/hooks/useI18n";
 import { useEffect, useRef, useState } from "react";
 import { Link, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -6,6 +8,7 @@ import { useUser } from "@/contexts/UserContext";
 import type { ReaderEdition } from "@shared/shop-audiobook";
 
 export default function ShopBookReader() {
+  useI18n();
   const [,params]=useRoute('/shop/read/:editionId');
   const {user,getIdToken}=useUser();
   const editionId=params?.editionId??'';
@@ -93,18 +96,18 @@ export default function ShopBookReader() {
       audio.current?.pause();playing.current=false;setActive(false);setBusy(false);void save().catch(()=>{});return;
     }
     if(audio.current?.src) {
-      try {await audio.current.play();playing.current=true;setActive(true);setError('');} catch {setError('Tap the audio player’s Play button to continue.');}
+      try {await audio.current.play();playing.current=true;setActive(true);setError('');} catch {setError(tx("Tap the audio player’s Play button to continue."));}
     } else await start(index,resumeSeconds.current);
   }
-  if(!user) return <main className="mx-auto max-w-3xl p-6"><h1 className="text-2xl font-bold">Your book reader</h1><Button asChild className="mt-5"><Link href={`/signin?return=${encodeURIComponent('/shop/read/'+editionId)}`}>Sign in to read</Link></Button></main>;
+  if(!user) return <main className="mx-auto max-w-3xl p-6"><h1 className="text-2xl font-bold">{tx("Your book reader")}</h1><Button asChild className="mt-5"><Link href={`/signin?return=${encodeURIComponent('/shop/read/'+editionId)}`}>{tx("Sign in to read")}</Link></Button></main>;
   return <main className="mx-auto max-w-3xl px-4 py-7 pb-44">
-    <Link href="/shop/purchases" className="text-primary underline">← Your purchases</Link>
-    {reader.isLoading && <p className="mt-5">Opening your book…</p>}
+    <Link href="/shop/purchases" className="text-primary underline">{tx("← Your purchases")}</Link>
+    {reader.isLoading && <p className="mt-5">{tx("Opening your book…")}</p>}
     {reader.error && <p role="alert" className="mt-5">{reader.error.message}</p>}
     {book && <>
       <h1 className="mt-5 font-serif text-3xl font-bold">{book.title}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{book.author??"Moses Afolabi"} · Your reading position saves automatically.</p>
-      <nav className="mt-5"><label className="text-sm font-semibold">Go to a section<select className="mt-2 block min-h-11 w-full rounded-md border bg-background p-2" value={book.paragraphs[index]?.id} onChange={e=>{
+      <p className="mt-2 text-sm text-muted-foreground">{book.author??tx("Moses Afolabi")} {tx("· Your reading position saves automatically.")}</p>
+      <nav className="mt-5"><label className="text-sm font-semibold">{tx("Go to a section")}<select className="mt-2 block min-h-11 w-full rounded-md border bg-background p-2" value={book.paragraphs[index]?.id} onChange={e=>{
         const next=book.paragraphs.findIndex(p=>p.id===e.target.value);if(next<0)return;
         if(book.audioOwned)void start(next);else setIndex(next);
         document.getElementById(`passage-${next}`)?.scrollIntoView({behavior:'smooth',block:'center'});
@@ -114,18 +117,18 @@ export default function ShopBookReader() {
           {book.audioOwned ? <button type="button" className="w-full whitespace-pre-wrap text-left" aria-label={`Listen: ${p.text.slice(0,75)}`} aria-current={i===index?'true':undefined} onClick={()=>void start(i)}>{p.text}</button> : <p className="whitespace-pre-wrap">{p.text}</p>}
         </div>)}
       </article>
-      <section aria-label="Audiobook player" className="fixed inset-x-0 bottom-0 z-40 border-t bg-background p-3 shadow-lg">
+      <section aria-label={tx("Audiobook player")} className="fixed inset-x-0 bottom-0 z-40 border-t bg-background p-3 shadow-lg">
         <div className="mx-auto max-w-3xl space-y-2">
           {book.audioOwned ? <>
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" disabled={index===0} onClick={()=>void start(index-1)}>Previous</Button>
-              <Button onClick={()=>void toggle()}>{busy?'Cancel preparation':active?'Pause':'Play'}</Button>
-              <Button variant="outline" disabled={index>=book.paragraphs.length-1} onClick={()=>void start(index+1)}>Next</Button>
-              <label className="ml-auto text-sm">Speed <select className="rounded border bg-background p-2" value={speed} onChange={e=>setSpeed(Number(e.target.value))}>{[.75,1,1.25,1.5,1.75,2].map(s=><option key={s} value={s}>{s}×</option>)}</select></label>
+              <Button variant="outline" disabled={index===0} onClick={()=>void start(index-1)}>{tx("Previous")}</Button>
+              <Button onClick={()=>void toggle()}>{busy?tx("Cancel preparation"):active?tx("Pause"):tx("Play")}</Button>
+              <Button variant="outline" disabled={index>=book.paragraphs.length-1} onClick={()=>void start(index+1)}>{tx("Next")}</Button>
+              <label className="ml-auto text-sm">{tx("Speed")} <select className="rounded border bg-background p-2" value={speed} onChange={e=>setSpeed(Number(e.target.value))}>{[.75,1,1.25,1.5,1.75,2].map(s=><option key={s} value={s}>{s}×</option>)}</select></label>
             </div>
-            <audio ref={audio} controls className="h-9 w-full" onLoadedMetadata={()=>{if(audio.current){audio.current.currentTime=Math.min(resumeSeconds.current,Number.isFinite(audio.current.duration)?Math.max(0,audio.current.duration-.1):resumeSeconds.current);audio.current.playbackRate=speed;}resumeSeconds.current=0;}} onPlay={()=>{playing.current=true;setActive(true);setBusy(false);}} onPause={()=>{playing.current=false;setActive(false);void save().catch(()=>{});}} onEnded={()=>{if(index+1<book.paragraphs.length)void start(index+1);else{setActive(false);void save().catch(()=>{});}}} onError={()=>{setBusy(false);setActive(false);setError('This recording could not load. Tap the passage to request a fresh link.');}} />
-            <p className="text-xs text-muted-foreground">Audiobook · Digitally narrated · {book.voice} · Passage {index+1} of {book.paragraphs.length}</p>
-          </> : <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm">Read your book here. Available audiobook upgrades appear on its product page.</p><Button asChild variant="outline"><Link href={`/shop/${book.productId}`}>Book details</Link></Button></div>}
+            <audio ref={audio} controls className="h-9 w-full" onLoadedMetadata={()=>{if(audio.current){audio.current.currentTime=Math.min(resumeSeconds.current,Number.isFinite(audio.current.duration)?Math.max(0,audio.current.duration-.1):resumeSeconds.current);audio.current.playbackRate=speed;}resumeSeconds.current=0;}} onPlay={()=>{playing.current=true;setActive(true);setBusy(false);}} onPause={()=>{playing.current=false;setActive(false);void save().catch(()=>{});}} onEnded={()=>{if(index+1<book.paragraphs.length)void start(index+1);else{setActive(false);void save().catch(()=>{});}}} onError={()=>{setBusy(false);setActive(false);setError(tx("This recording could not load. Tap the passage to request a fresh link."));}} />
+            <p className="text-xs text-muted-foreground">{tx("Audiobook · Digitally narrated ·")} {book.voice} {tx("· Passage")} {index+1} {tx("of")} {book.paragraphs.length}</p>
+          </> : <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm">{tx("Read your book here. Available audiobook upgrades appear on its product page.")}</p><Button asChild variant="outline"><Link href={`/shop/${book.productId}`}>{tx("Book details")}</Link></Button></div>}
           {error && <p role="status" className="text-sm">{error}</p>}
         </div>
       </section>

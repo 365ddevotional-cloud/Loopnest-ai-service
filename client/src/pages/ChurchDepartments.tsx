@@ -1,3 +1,5 @@
+import { translateEnumLabel } from "@/utils/i18n";
+import { translateAppText as tx } from "@/utils/i18n";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -256,7 +258,7 @@ export default function ChurchDepartments() {
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs mt-0.5" style={{ color: "#9a9080" }}>{dept.type}</p>
+                        <p className="text-xs mt-0.5" style={{ color: "#9a9080" }}>{translateEnumLabel(dept.type)}</p>
                         {dept.description && (
                           <p className="text-xs mt-1 line-clamp-2" style={{ color: "#7a7570" }}>{dept.description}</p>
                         )}
@@ -281,7 +283,7 @@ export default function ChurchDepartments() {
             <div className="space-y-1.5">
               <Label>{t("cm_departmentName")} <span className="text-red-500">*</span></Label>
               <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="e.g. Youth Ministry, Choir" data-testid="input-dept-name" />
+                placeholder={tx("e.g. Youth Ministry, Choir")} data-testid="input-dept-name" />
             </div>
             <div className="space-y-1.5">
               <Label>{t("cm_deptType")} <span className="text-red-500">*</span></Label>

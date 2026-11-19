@@ -1,3 +1,4 @@
+import { translateAppText as tx } from "@/utils/i18n";
 import { useUser } from "@/contexts/UserContext";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
@@ -87,7 +88,7 @@ export default function GroupHome() {
           )}
           <div className="space-y-1.5">
             <h2 className="font-serif text-2xl font-bold text-foreground">{group.name}</h2>
-            <GroupTypeBadge groupType={group.groupType} />
+            <GroupTypeBadge groupType={tx(group.groupType)} />
             {group.description && <p className="text-sm text-muted-foreground mt-1 max-w-xs">{group.description}</p>}
             <p className="text-sm text-muted-foreground">{memberCount} {memberCount !== 1 ? t("gm_members") : t("gm_member")}{group.country ? ` · ${group.country}` : ""}</p>
           </div>

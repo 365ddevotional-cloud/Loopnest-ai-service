@@ -1,3 +1,5 @@
+import { translateAppText as tx, translateAccountError } from "@/utils/i18n";
+import { useI18n } from "@/hooks/useI18n";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useUser } from "@/contexts/UserContext";
@@ -13,6 +15,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export default function SignIn() {
+  useI18n();
   const [location, setLocation] = useLocation();
   const params = new URLSearchParams(window.location.search);
   const returnUrl = params.get("return") || "/";
@@ -74,7 +77,7 @@ export default function SignIn() {
             body: JSON.stringify({ songId: pendingSongId }),
           });
           queryClient.invalidateQueries({ queryKey: ["/api/user/library/saved"] });
-          toast({ title: "Song saved to your library!" });
+          toast({ title: tx("Song saved to your library!") });
         }
       } catch {}
     }
@@ -215,7 +218,7 @@ export default function SignIn() {
       <div className="max-w-md mx-auto pt-10 px-4">
         <Card>
           <CardHeader>
-            <CardTitle className="font-serif text-primary text-center">Verify Your Email</CardTitle>
+            <CardTitle className="font-serif text-primary text-center">{tx("Verify Your Email")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col items-center text-center gap-2">
@@ -223,21 +226,14 @@ export default function SignIn() {
               {initialSendFailed ? (
                 <Alert variant="destructive" className="text-left">
                   <AlertCircle className="w-4 h-4" />
-                  <AlertDescription>
-                    We could not send the verification email
-                    {initialSendErrorCode ? ` (${initialSendErrorCode})` : ""}.
-                    Please tap <strong>Resend</strong> to try again, or use a different email address.
-                  </AlertDescription>
+                  <AlertDescription> {tx("We could not send the verification email")} {initialSendErrorCode ? ` (${initialSendErrorCode})` : ""}{tx(". Please tap")} <strong>{tx("Resend")}</strong> {tx("to try again, or use a different email address.")} </AlertDescription>
                 </Alert>
               ) : (
-                <p className="text-sm text-foreground">
-                  A verification link was sent to{" "}
+                <p className="text-sm text-foreground"> {tx("A verification link was sent to")}{" "}
                   <span className="font-semibold">{user.email}</span>.
                 </p>
               )}
-              <p className="text-xs text-muted-foreground">
-                Check your inbox and spam folder. Once you verify, tap the button below.
-              </p>
+              <p className="text-xs text-muted-foreground"> {tx("Check your inbox and spam folder. Once you verify, tap the button below.")} </p>
             </div>
 
             {verifyMsg && (
@@ -245,7 +241,7 @@ export default function SignIn() {
                 {verifyMsg.type === "error"
                   ? <AlertCircle className="w-4 h-4" />
                   : <CheckCircle className="w-4 h-4 text-green-600" />}
-                <AlertDescription>{verifyMsg.text}</AlertDescription>
+                <AlertDescription>{translateAccountError(verifyMsg.text)}</AlertDescription>
               </Alert>
             )}
 
@@ -256,9 +252,7 @@ export default function SignIn() {
                 size="sm"
                 data-testid="button-verified-continue"
               >
-                {verifyingCheck && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                I've Verified — Continue
-              </Button>
+                {verifyingCheck && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} {tx("I've Verified — Continue")} </Button>
 
               <Button
                 onClick={handleResend}
@@ -269,8 +263,8 @@ export default function SignIn() {
               >
                 {resending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {resendCooldown > 0
-                  ? `Resend Verification Email (${resendCooldown}s)`
-                  : "Resend Verification Email"}
+                  ? `${tx("Resend Verification Email")} (${resendCooldown}s)`
+                  : tx("Resend Verification Email")}
               </Button>
 
               <div className="flex gap-2 pt-1">
@@ -280,18 +274,14 @@ export default function SignIn() {
                   className="flex-1 text-muted-foreground"
                   onClick={handleUseDifferentEmail}
                   data-testid="button-use-different-email"
-                >
-                  Use a Different Email
-                </Button>
+                > {tx("Use a Different Email")} </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   className="flex-1 text-muted-foreground"
                   onClick={handleCancelVerification}
                   data-testid="button-cancel-verification"
-                >
-                  Cancel
-                </Button>
+                > {tx("Cancel")} </Button>
               </div>
 
               <Button
@@ -306,9 +296,7 @@ export default function SignIn() {
                   });
                 }}
                 data-testid="button-verify-forgot-password"
-              >
-                Forgot Password?
-              </Button>
+              > {tx("Forgot Password?")} </Button>
 
               <Button
                 variant="ghost"
@@ -317,8 +305,7 @@ export default function SignIn() {
                 onClick={handleCancelVerification}
                 data-testid="button-back-to-signin"
               >
-                <ArrowLeft className="w-3 h-3 mr-1" /> Back to Sign In
-              </Button>
+                <ArrowLeft className="w-3 h-3 mr-1" /> {tx("Back to Sign In")} </Button>
             </div>
           </CardContent>
         </Card>
@@ -334,7 +321,7 @@ export default function SignIn() {
       <div className="max-w-md mx-auto pt-10 px-4">
         <Card>
           <CardHeader>
-            <CardTitle className="font-serif text-primary text-center">Check Your Email</CardTitle>
+            <CardTitle className="font-serif text-primary text-center">{tx("Check Your Email")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-center">
             {initialSendFailed ? (
@@ -343,19 +330,11 @@ export default function SignIn() {
               <CheckCircle className="w-12 h-12 mx-auto text-green-600" />
             )}
             {initialSendFailed ? (
-              <p className="text-sm text-destructive font-medium">
-                Account created but we could not send the verification email
-                {initialSendErrorCode ? ` (${initialSendErrorCode})` : ""}. Sign in below and resend from the verification screen.
-              </p>
+              <p className="text-sm text-destructive font-medium"> {tx("Account created but we could not send the verification email")} {initialSendErrorCode ? ` (${initialSendErrorCode})` : ""}{tx(". Sign in below and resend from the verification screen.")} </p>
             ) : (
-              <p className="text-sm text-foreground">
-                We sent a verification link to <span className="font-semibold">{email}</span>.
-                Click it, then sign in below.
-              </p>
+              <p className="text-sm text-foreground"> {tx("We sent a verification link to")} <span className="font-semibold">{email}</span>{tx(". Click it, then sign in below.")} </p>
             )}
-            <Button onClick={() => setSignedUpAwaitingVerification(false)} variant="outline" size="sm">
-              Back to Sign In
-            </Button>
+            <Button onClick={() => setSignedUpAwaitingVerification(false)} variant="outline" size="sm"> {tx("Back to Sign In")} </Button>
           </CardContent>
         </Card>
       </div>
@@ -365,22 +344,18 @@ export default function SignIn() {
   return (
     <div className="max-w-md mx-auto pt-6 pb-12">
       <div className="text-center mb-6">
-        <h1 className="font-serif text-3xl text-primary mb-1">Your Account</h1>
-        <p className="text-sm text-muted-foreground">
-          Save songs, favorites, and access them on any device — free.
-        </p>
+        <h1 className="font-serif text-3xl text-primary mb-1">{tx("Your Account")}</h1>
+        <p className="text-sm text-muted-foreground"> {tx("Save songs, favorites, and access them on any device — free.")} </p>
         {pendingAction === "save" && pendingSongId && (
-          <div className="mt-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 px-4 py-2 text-xs text-amber-800 dark:text-amber-300">
-            Sign in to save this song to your library automatically.
-          </div>
+          <div className="mt-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 px-4 py-2 text-xs text-amber-800 dark:text-amber-300"> {tx("Sign in to save this song to your library automatically.")} </div>
         )}
       </div>
 
       <Tabs value={tab} onValueChange={(v) => { setTab(v as any); setError(""); setEmailInUse(null); setSignInErrIsCredential(false); setResetSent(false); }}>
         <TabsList className="w-full">
-          <TabsTrigger value="signin" className="flex-1" data-testid="tab-signin">Sign In</TabsTrigger>
-          <TabsTrigger value="signup" className="flex-1" data-testid="tab-signup">Create Account</TabsTrigger>
-          <TabsTrigger value="reset" className="flex-1" data-testid="tab-reset">Forgot Password</TabsTrigger>
+          <TabsTrigger value="signin" className="flex-1" data-testid="tab-signin">{tx("Sign In")}</TabsTrigger>
+          <TabsTrigger value="signup" className="flex-1" data-testid="tab-signup">{tx("Create Account")}</TabsTrigger>
+          <TabsTrigger value="reset" className="flex-1" data-testid="tab-reset">{tx("Forgot Password")}</TabsTrigger>
         </TabsList>
 
         {/* ── Sign In ── */}
@@ -392,29 +367,24 @@ export default function SignIn() {
                   <div className="space-y-2">
                     <Alert variant="destructive">
                       <AlertCircle className="w-4 h-4" />
-                      <AlertDescription>{error}</AlertDescription>
+                      <AlertDescription>{translateAccountError(error)}</AlertDescription>
                     </Alert>
                     {signInErrIsCredential && (
                       <div className="flex flex-col gap-1.5 pl-1">
                         <button type="button" className="text-xs text-primary underline text-left"
                           onClick={() => { setTab("reset"); setError(""); setSignInErrIsCredential(false); }}
-                          data-testid="button-signin-forgot-password">
-                          Forgot your password? Reset it here.
-                        </button>
-                        <p className="text-xs text-muted-foreground">
-                          Created an account but never received the verification email?{" "}
+                          data-testid="button-signin-forgot-password"> {tx("Forgot your password? Reset it here.")} </button>
+                        <p className="text-xs text-muted-foreground"> {tx("Created an account but never received the verification email?")}{" "}
                           <button type="button" className="underline text-primary"
                             onClick={() => { setError(""); setSignInErrIsCredential(false); }}
-                            data-testid="button-signin-retry-hint">
-                            Try signing in with your correct password — the verification screen will appear automatically.
-                          </button>
+                            data-testid="button-signin-retry-hint"> {tx("Try signing in with your correct password — the verification screen will appear automatically.")} </button>
                         </p>
                       </div>
                     )}
                   </div>
                 )}
                 <div className="space-y-1.5">
-                  <Label htmlFor="si-email">Email</Label>
+                  <Label htmlFor="si-email">{tx("Email")}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -431,7 +401,7 @@ export default function SignIn() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="si-password">Password</Label>
+                  <Label htmlFor="si-password">{tx("Password")}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -455,9 +425,7 @@ export default function SignIn() {
                   </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={submitting} data-testid="button-signin-submit">
-                  {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                  Sign In
-                </Button>
+                  {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null} {tx("Sign In")} </Button>
               </form>
             </CardContent>
           </Card>
@@ -472,48 +440,35 @@ export default function SignIn() {
                 <div className="space-y-3 py-2">
                   <Alert variant="destructive">
                     <AlertCircle className="w-4 h-4" />
-                    <AlertDescription>
-                      An account already exists for <strong>{emailInUse}</strong>.
+                    <AlertDescription> {tx("An account already exists for")} <strong>{emailInUse}</strong>.
                     </AlertDescription>
                   </Alert>
-                  <p className="text-sm text-muted-foreground">
-                    Choose an option below to recover access:
-                  </p>
+                  <p className="text-sm text-muted-foreground"> {tx("Choose an option below to recover access:")} </p>
                   <div className="flex flex-col gap-2">
                     <Button size="sm" onClick={() => { setTab("signin"); setEmail(emailInUse); setEmailInUse(null); }}
-                      data-testid="button-recover-signin">
-                      Sign In with this Email
-                    </Button>
+                      data-testid="button-recover-signin"> {tx("Sign In with this Email")} </Button>
                     <Button size="sm" variant="outline"
                       onClick={() => { setTab("signin"); setEmail(emailInUse); setEmailInUse(null); }}
-                      data-testid="button-recover-resend">
-                      Resend Verification Email
-                    </Button>
+                      data-testid="button-recover-resend"> {tx("Resend Verification Email")} </Button>
                     <Button size="sm" variant="outline"
                       onClick={() => { setTab("reset"); setEmail(emailInUse); setEmailInUse(null); }}
-                      data-testid="button-recover-reset">
-                      Forgot Password — Reset it
-                    </Button>
+                      data-testid="button-recover-reset"> {tx("Forgot Password — Reset it")} </Button>
                     <Button size="sm" variant="ghost"
                       onClick={() => { setEmailInUse(null); setEmail(""); }}
-                      data-testid="button-recover-different">
-                      Use a Different Email
-                    </Button>
+                      data-testid="button-recover-different"> {tx("Use a Different Email")} </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground pt-1">
-                    To resend a verification email, sign in with your password — the verification screen appears automatically with a Resend button.
-                  </p>
+                  <p className="text-xs text-muted-foreground pt-1"> {tx("To resend a verification email, sign in with your password — the verification screen appears automatically with a Resend button.")} </p>
                 </div>
               )}
               {!emailInUse && <form onSubmit={handleSignUp} className="space-y-4">
                 {error && (
                   <Alert variant="destructive">
                     <AlertCircle className="w-4 h-4" />
-                    <AlertDescription>{error}</AlertDescription>
+                    <AlertDescription>{translateAccountError(error)}</AlertDescription>
                   </Alert>
                 )}
                 <div className="space-y-1.5">
-                  <Label htmlFor="su-email">Email</Label>
+                  <Label htmlFor="su-email">{tx("Email")}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -530,7 +485,7 @@ export default function SignIn() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="su-password">Password</Label>
+                  <Label htmlFor="su-password">{tx("Password")}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -538,7 +493,7 @@ export default function SignIn() {
                       type={showPw ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="At least 6 characters"
+                      placeholder={tx("At least 6 characters")}
                       required
                       autoComplete="new-password"
                       className="pl-9 pr-10"
@@ -550,7 +505,7 @@ export default function SignIn() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="su-confirm">Confirm Password</Label>
+                  <Label htmlFor="su-confirm">{tx("Confirm Password")}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -558,7 +513,7 @@ export default function SignIn() {
                       type={showPw ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Repeat password"
+                      placeholder={tx("Repeat password")}
                       required
                       autoComplete="new-password"
                       className="pl-9"
@@ -566,13 +521,9 @@ export default function SignIn() {
                     />
                   </div>
                 </div>
-                <p className="text-[11px] text-muted-foreground">
-                  A verification email will be sent. Your account is free and does not require a subscription.
-                </p>
+                <p className="text-[11px] text-muted-foreground"> {tx("A verification email will be sent. Your account is free and does not require a subscription.")} </p>
                 <Button type="submit" className="w-full" disabled={submitting} data-testid="button-signup-submit">
-                  {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                  Create Free Account
-                </Button>
+                  {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null} {tx("Create Free Account")} </Button>
               </form>}
             </CardContent>
           </Card>
@@ -585,26 +536,21 @@ export default function SignIn() {
               {resetSent ? (
                 <div className="text-center space-y-3 py-4">
                   <CheckCircle className="w-10 h-10 mx-auto text-green-600" />
-                  <p className="text-sm font-medium">Check your inbox</p>
-                  <p className="text-xs text-muted-foreground">
-                    If an account exists for this email, a password-reset link has been sent from 365 Daily Devotional.
-                    Please also check your Spam, Junk, Promotions, or Updates folder.
-                  </p>
-                  <Button variant="outline" size="sm" onClick={() => setTab("signin")}>Back to Sign In</Button>
+                  <p className="text-sm font-medium">{tx("Check your inbox")}</p>
+                  <p className="text-xs text-muted-foreground"> {tx("If an account exists for this email, a password-reset link has been sent from 365 Daily Devotional. Please also check your Spam, Junk, Promotions, or Updates folder.")} </p>
+                  <Button variant="outline" size="sm" onClick={() => setTab("signin")}>{tx("Back to Sign In")}</Button>
                 </div>
               ) : (
                 <form onSubmit={handleReset} className="space-y-4">
                   {error && (
                     <Alert variant="destructive">
                       <AlertCircle className="w-4 h-4" />
-                      <AlertDescription>{error}</AlertDescription>
+                      <AlertDescription>{translateAccountError(error)}</AlertDescription>
                     </Alert>
                   )}
-                  <p className="text-sm text-muted-foreground">
-                    Enter your email address and we'll send a password reset link.
-                  </p>
+                  <p className="text-sm text-muted-foreground"> {tx("Enter your email address and we'll send a password reset link.")} </p>
                   <div className="space-y-1.5">
-                    <Label htmlFor="reset-email">Email</Label>
+                    <Label htmlFor="reset-email">{tx("Email")}</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
@@ -621,9 +567,7 @@ export default function SignIn() {
                     </div>
                   </div>
                   <Button type="submit" className="w-full" disabled={submitting} data-testid="button-reset-submit">
-                    {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                    Send Reset Link
-                  </Button>
+                    {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null} {tx("Send Reset Link")} </Button>
                 </form>
               )}
             </CardContent>

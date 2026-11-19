@@ -1,3 +1,5 @@
+import { translateEnumLabel } from "@/utils/i18n";
+import { translateAppText as tx } from "@/utils/i18n";
 import { useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { useRoute } from "wouter";
@@ -227,7 +229,7 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
                   <Building2 className="w-4 h-4 flex-shrink-0" style={{ color: "#1a2744" }} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold" style={{ color: "#1a2744" }}>{dept.name}</p>
-                    <p className="text-xs" style={{ color: "#7a7570" }}>{dept.type} · Invite: {dept.inviteCode}</p>
+                    <p className="text-xs" style={{ color: "#7a7570" }}>{translateEnumLabel(dept.type)} {tx("· Invite:")} {dept.inviteCode}</p>
                   </div>
                   <a href={`/church/${church.slug}/departments/${dept.slug}`}
                     className="text-xs px-2.5 py-1.5 rounded-lg font-medium"
@@ -267,7 +269,7 @@ function AdminDepartmentsPanel({ church, getIdToken }: { church: Church; getIdTo
                       <Input value={editLogoUrl} onChange={e => setEditLogoUrl(e.target.value)} placeholder="https://..." data-testid="input-edit-dept-logo" />
                     </div>
                     <div className="space-y-1.5">
-                      <Label>Banner URL</Label>
+                      <Label>{tx("Banner URL")}</Label>
                       <Input value={editBannerUrl} onChange={e => setEditBannerUrl(e.target.value)} placeholder="https://..." data-testid="input-edit-dept-banner" />
                     </div>
                     {editName.trim() !== editingDept?.name && (
@@ -1106,7 +1108,7 @@ export default function ChurchAdminPage() {
                   </div>
                 )}
                 <div className="space-y-1.5"><Label>{t("cm_denomination")}</Label>
-                  <Input value={formVal("denomination") as string} onChange={e => setForm(f => ({ ...f, denomination: e.target.value || null }))} placeholder="e.g. Baptist, Pentecostal, Non-denominational" /></div>
+                  <Input value={formVal("denomination") as string} onChange={e => setForm(f => ({ ...f, denomination: e.target.value || null }))} placeholder={tx("e.g. Baptist, Pentecostal, Non-denominational")} /></div>
                 <div className="space-y-1.5"><Label>{t("cm_deptDescription")}</Label>
                   <Textarea value={formVal("description") as string} onChange={e => setForm(f => ({ ...f, description: e.target.value || null }))} rows={3} /></div>
                 <div className="space-y-1.5"><Label>{t("cm_addressLabel")}</Label>
@@ -1392,7 +1394,7 @@ export default function ChurchAdminPage() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <Label>{t("cm_inviteLabel")} <span className="text-muted-foreground text-xs">({t("cm_optional")})</span></Label>
-                      <Input value={invLabel} onChange={e => setInvLabel(e.target.value)} placeholder="e.g. Sunday Service Invite" data-testid="input-invite-label" />
+                      <Input value={invLabel} onChange={e => setInvLabel(e.target.value)} placeholder={tx("e.g. Sunday Service Invite")} data-testid="input-invite-label" />
                     </div>
                     <div className="space-y-1.5">
                       <Label>{t("cm_maxUses")} <span className="text-muted-foreground text-xs">({t("cm_optional")})</span></Label>
@@ -1458,14 +1460,14 @@ export default function ChurchAdminPage() {
                             <Share2 className="w-3 h-3 mr-1" />{t("cm_share")}
                           </Button>
                           <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-amber-600"
-                            title="Deactivate (keep record)"
-                            onClick={() => { if (confirm("Deactivate this invitation link? It will no longer work but can be tracked.")) deactivateInv.mutate(inv.id); }}
+                            title={tx("Deactivate (keep record)")}
+                            onClick={() => { if (confirm(tx("Deactivate this invitation link? It will no longer work but can be tracked."))) deactivateInv.mutate(inv.id); }}
                             data-testid={`button-deactivate-invite-${inv.id}`}>
                             <X className="w-3.5 h-3.5" />
                           </Button>
                           <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            title="Delete permanently"
-                            onClick={() => { if (confirm("Permanently delete this invitation? This cannot be undone.")) deleteInv.mutate(inv.id); }}
+                            title={tx("Delete permanently")}
+                            onClick={() => { if (confirm(tx("Permanently delete this invitation? This cannot be undone."))) deleteInv.mutate(inv.id); }}
                             data-testid={`button-delete-invite-${inv.id}`}>
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
@@ -1497,11 +1499,11 @@ export default function ChurchAdminPage() {
                     <div className="space-y-1.5"><Label>{t("cm_speaker")}</Label>
                       <Input value={sermonForm.speakerName} onChange={e => setSermonForm(f => ({ ...f, speakerName: e.target.value }))} /></div>
                     <div className="space-y-1.5"><Label>{t("cm_bibleReference")}</Label>
-                      <Input value={sermonForm.bibleReference} onChange={e => setSermonForm(f => ({ ...f, bibleReference: e.target.value }))} placeholder="e.g. John 3:16" /></div>
+                      <Input value={sermonForm.bibleReference} onChange={e => setSermonForm(f => ({ ...f, bibleReference: e.target.value }))} placeholder={tx("e.g. John 3:16")} /></div>
                     <div className="space-y-1.5"><Label>{t("cm_sermonDate")}</Label>
                       <Input type="date" value={sermonForm.sermonDate} onChange={e => setSermonForm(f => ({ ...f, sermonDate: e.target.value }))} /></div>
                     <div className="space-y-1.5"><Label>{t("cm_videoUrl")}</Label>
-                      <Input type="url" value={sermonForm.videoUrl} onChange={e => setSermonForm(f => ({ ...f, videoUrl: e.target.value }))} placeholder="YouTube, Vimeo, etc." /></div>
+                      <Input type="url" value={sermonForm.videoUrl} onChange={e => setSermonForm(f => ({ ...f, videoUrl: e.target.value }))} placeholder={tx("YouTube, Vimeo, etc.")} /></div>
                     <div className="space-y-1.5"><Label>{t("cm_audioUrl")}</Label>
                       <Input type="url" value={sermonForm.audioUrl} onChange={e => setSermonForm(f => ({ ...f, audioUrl: e.target.value }))} /></div>
                     <div className="space-y-1.5"><Label>{t("cm_pdfNotesUrl")}</Label>
@@ -1539,7 +1541,7 @@ export default function ChurchAdminPage() {
                       </p>
                     </div>
                     <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive flex-shrink-0"
-                      onClick={() => { if (confirm("Delete this sermon?")) deleteSermon.mutate(s.id); }}
+                      onClick={() => { if (confirm(tx("Delete this sermon?"))) deleteSermon.mutate(s.id); }}
                       data-testid={`button-delete-sermon-${s.id}`}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -1601,7 +1603,7 @@ export default function ChurchAdminPage() {
                       <p className="text-xs mt-1" style={{ color: "#9a9080" }}>{new Date(a.createdAt!).toLocaleDateString()}</p>
                     </div>
                     <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive flex-shrink-0"
-                      onClick={() => { if (confirm("Delete this announcement?")) deleteAnn.mutate(a.id); }}
+                      onClick={() => { if (confirm(tx("Delete this announcement?"))) deleteAnn.mutate(a.id); }}
                       data-testid={`button-delete-announcement-${a.id}`}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -1638,7 +1640,7 @@ export default function ChurchAdminPage() {
                           <span className="font-medium text-sm truncate block" style={{ color: "#1a2744" }}>{m.displayName ?? m.email}</span>
                           <p className="text-xs truncate" style={{ color: "#7a7570" }}>{m.email}</p>
                           {(m as any).inviteCodeUsed && (
-                            <p className="text-xs mt-0.5" style={{ color: "#9a9080" }}>Code: {(m as any).inviteCodeUsed}</p>
+                            <p className="text-xs mt-0.5" style={{ color: "#9a9080" }}>{tx("Code:")} {(m as any).inviteCodeUsed}</p>
                           )}
                         </div>
                         <div className="flex gap-2 flex-shrink-0">
@@ -1692,13 +1694,13 @@ export default function ChurchAdminPage() {
                             </SelectTrigger>
                             <SelectContent>
                               {CHURCH_ROLES.filter(r => r !== "owner").map(r => (
-                                <SelectItem key={r} value={r}>{CHURCH_ROLE_LABELS[r]}</SelectItem>
+                                <SelectItem key={r} value={r}>{tx(CHURCH_ROLE_LABELS[r])}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         ) : (
                           <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${roleColors[m.role] ?? ""}`}>
-                            {CHURCH_ROLE_LABELS[m.role as ChurchRole] ?? m.role}
+                            {tx(CHURCH_ROLE_LABELS[m.role as ChurchRole] ?? m.role)}
                           </span>
                         )}
                         {canManage && (
@@ -1748,7 +1750,7 @@ export default function ChurchAdminPage() {
                     </p>
                   </div>
                   <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive flex-shrink-0"
-                    onClick={() => { if (confirm("Remove this prayer request?")) deletePrayer.mutate(pr.id); }}
+                    onClick={() => { if (confirm(tx("Remove this prayer request?"))) deletePrayer.mutate(pr.id); }}
                     data-testid={`button-delete-prayer-${pr.id}`}>
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -1795,7 +1797,7 @@ export default function ChurchAdminPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm truncate" style={{ color: "#1a2744" }}>
-                            <span className="font-medium">{act.displayName ?? "Anonymous"}</span>
+                            <span className="font-medium">{act.displayName ?? tx("Anonymous")}</span>
                             {" "}{activityLabels[act.activityType] ?? act.activityType}
                           </p>
                         </div>
@@ -1846,7 +1848,7 @@ export default function ChurchAdminPage() {
                       <CardContent className="pt-4 pb-4 px-4">
                         <p className="text-xs font-semibold" style={{ color: "#7a7570" }}>{label}</p>
                         <p className="text-xl font-bold mt-1" style={{ color: "#1a2744" }}>${(data.gross / 100).toFixed(2)}</p>
-                        <p className="text-xs mt-1" style={{ color: "#22c55e" }}>Net: ${(data.net / 100).toFixed(2)}</p>
+                        <p className="text-xs mt-1" style={{ color: "#22c55e" }}>{tx("Net: $")}{(data.net / 100).toFixed(2)}</p>
                         <p className="text-xs" style={{ color: "#9a9080" }}>{data.count} {t("cm_gifts")}</p>
                       </CardContent>
                     </Card>
@@ -2000,7 +2002,7 @@ export default function ChurchAdminPage() {
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "#7a7570" }}>{t("cm_pastorLeaderName")}</label>
                   <Input value={websiteForm.pastorName} onChange={e => setWebsiteForm(f => ({ ...f, pastorName: e.target.value }))}
-                    placeholder="e.g. Pastor John Smith" data-testid="input-website-pastor-name" />
+                    placeholder={tx("e.g. Pastor John Smith")} data-testid="input-website-pastor-name" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -2056,7 +2058,7 @@ export default function ChurchAdminPage() {
               </CardHeader>
               <CardContent>
                 <Textarea value={websiteForm.serviceTimesRaw} onChange={e => setWebsiteForm(f => ({ ...f, serviceTimesRaw: e.target.value }))}
-                  placeholder={"Sunday | 9:00 AM | Morning Service\nSunday | 11:00 AM | Main Service\nWednesday | 7:00 PM | Bible Study"}
+                  placeholder={tx("Sunday | 9:00 AM | Morning Service Sunday | 11:00 AM | Main Service Wednesday | 7:00 PM | Bible Study")}
                   rows={4} className="font-mono text-xs" data-testid="input-website-service-times" />
               </CardContent>
             </Card>
@@ -2344,11 +2346,11 @@ function ChurchGovernancePanel({ church, getIdToken }: { church: Church; getIdTo
     const h = await authHeaders();
     if (!thread) {
       const r = await fetch(`/api/churches/${church.id}/platform-thread/start`, { method: "POST", headers: h, body: JSON.stringify({ subject: threadSubject, message: threadMsg }) });
-      if (r.ok) { toast({ title: "Message sent" }); setThreadMsg(""); qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "platform-thread"] }); qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "platform-thread", "messages"] }); }
+      if (r.ok) { toast({ title: tx("Message sent") }); setThreadMsg(""); qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "platform-thread"] }); qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "platform-thread", "messages"] }); }
       else toast({ title: t("cm_error"), variant: "destructive" });
     } else {
       const r = await fetch(`/api/churches/${church.id}/platform-thread/reply`, { method: "POST", headers: h, body: JSON.stringify({ message: threadMsg }) });
-      if (r.ok) { toast({ title: "Message sent" }); setThreadMsg(""); qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "platform-thread", "messages"] }); }
+      if (r.ok) { toast({ title: tx("Message sent") }); setThreadMsg(""); qc.invalidateQueries({ queryKey: ["/api/churches", church.id, "platform-thread", "messages"] }); }
       else toast({ title: t("cm_error"), variant: "destructive" });
     }
   };
@@ -2487,7 +2489,7 @@ function ChurchGovernancePanel({ church, getIdToken }: { church: Church; getIdTo
                   <div className="space-y-1.5">
                     {c.responses.map((r: any) => (
                       <div key={r.id} className={`rounded p-2 text-xs ${r.senderType === "admin" ? "bg-primary/10 mr-4" : "bg-muted ml-4"}`}>
-                        <p className="font-semibold capitalize mb-0.5">{r.senderType === "admin" ? "Platform Admin" : "Your Response"}</p>
+                        <p className="font-semibold capitalize mb-0.5">{r.senderType === "admin" ? tx("Platform Admin") : tx("Your Response")}</p>
                         <p>{r.message}</p>
                       </div>
                     ))}
@@ -2544,7 +2546,7 @@ function ChurchGovernancePanel({ church, getIdToken }: { church: Church; getIdTo
                       <Badge className="text-xs capitalize">{a.status}</Badge>
                     </div>
                     <p className="text-xs bg-gray-50 rounded p-2">{a.message}</p>
-                    {a.adminNote && <p className="text-xs italic" style={{ color: "#7a7570" }}>Admin: {a.adminNote}</p>}
+                    {a.adminNote && <p className="text-xs italic" style={{ color: "#7a7570" }}>{tx("Admin:")} {a.adminNote}</p>}
                   </CardContent>
                 </Card>
               ))}
@@ -2583,7 +2585,7 @@ function ChurchGovernancePanel({ church, getIdToken }: { church: Church; getIdTo
             <div className="space-y-2 max-h-72 overflow-y-auto p-1">
               {threadMessages.map((m: any) => (
                 <div key={m.id} className={`rounded p-2 text-sm max-w-xs ${m.senderType === "admin" ? "bg-primary/10" : "bg-muted ml-auto text-right"}`}>
-                  <p className="text-xs font-semibold capitalize text-muted-foreground mb-0.5">{m.senderType === "admin" ? "Platform Admin" : "You"}</p>
+                  <p className="text-xs font-semibold capitalize text-muted-foreground mb-0.5">{m.senderType === "admin" ? tx("Platform Admin") : tx("You")}</p>
                   <p>{m.message}</p>
                 </div>
               ))}
@@ -2594,7 +2596,7 @@ function ChurchGovernancePanel({ church, getIdToken }: { church: Church; getIdTo
             <div className="space-y-2">
               <Label className="text-xs">{t("cm_startThread")}</Label>
               <Input
-                placeholder="Subject…"
+                placeholder={tx("Subject…")}
                 value={threadSubject}
                 onChange={e => setThreadSubject(e.target.value)}
                 className="text-sm h-8"
