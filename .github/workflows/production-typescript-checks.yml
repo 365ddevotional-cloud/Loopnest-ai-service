@@ -23,6 +23,8 @@ jobs:
         run: node --import tsx --test client/src/test/*.test.ts
       - name: Verify speech language, paused queues and silent startup recovery
         run: node --import tsx --test client/src/hooks/useAudioReader.test.ts client/src/hooks/useI18n.test.ts
+      - name: Verify saved devotional recordings and publication review
+        run: node --import tsx --test server/devotional-recordings.test.ts
       - name: Verify private translation drafts and admin-only review
         run: node --import tsx --test server/content-translation-review.test.ts server/approved-content-translations.test.ts
       - run: npm run build

@@ -1,4 +1,5 @@
 import { registerAsvChapters } from "./asv-chapters";
+import { registerDevotionalRecordings, privateRecordingStore } from './devotional-recordings';
 import { createApprovedContentRelease } from "./approved-content-translations";
 import { createDevotionalTranslator } from "./devotional-translation";
 import contentTranslationApproval from "./content-translations/2026-11-19-glorious-light.approval.json";
@@ -164,6 +165,10 @@ export async function registerRoutes(
     requireAdmin,
   });
   registerAdminAuth(app, ADMIN_PASSWORD);
+  registerDevotionalRecordings(app, {
+    requireAdmin, store: privateRecordingStore(),
+    readSource: id => storage.getDevotional(id), translate: applyTranslation, today: getTodayDateString,
+  });
   registerContentTranslationReview(app, {
     requireAdmin, batches: [contentTranslationPilot],
     publicationApproval: approvedContent.forBatch,
