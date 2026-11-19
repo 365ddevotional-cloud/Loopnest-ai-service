@@ -1663,5 +1663,6 @@
   "screen_15f9a7989f8d": "You sure say you wan delete \"{name}\"? This go remove group and all data permanently.",
   "screen_89cc335ef9fa": "You sure say you wan leave \"{name}\"?",
   "screen_508e7c108500": " · Joined {date}",
-  "screen_faa0783d73ee": "Page {page} · "
+  "screen_faa0783d73ee": "Page {page} · ",
+  "ui_approvedTranslation": "Na translation wey AI help prepare, and ministry don approve am for publication. Compare am with the English original if any wording no clear."
 }

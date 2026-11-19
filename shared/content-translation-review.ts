@@ -27,6 +27,12 @@ export interface ContentTranslationReview {
   sourceHash: string;
   sourceMatches: boolean;
   sourceAvailable: boolean;
-  publicAvailability: 'not-published';
+  publicAvailability: 'not-published' | 'published' | 'source-changed';
+  publicationApproval?: TranslationPublicationApproval;
   drafts: ContentTranslationDraft[];
+}
+export interface TranslationPublicationApproval {
+  approvedBy: string;
+  approvedOn: string;
+  independentLanguageReview: 'not-recorded';
 }

@@ -1920,5 +1920,6 @@
   "screen_15f9a7989f8d": "¿Seguro que deseas eliminar «{name}»? Se eliminarán permanentemente el grupo y todos sus datos.",
   "screen_89cc335ef9fa": "¿Seguro que deseas salir de «{name}»?",
   "screen_508e7c108500": " · Se unió el {date}",
-  "screen_faa0783d73ee": "Página {page} · "
+  "screen_faa0783d73ee": "Página {page} · ",
+  "ui_approvedTranslation": "Traducción realizada con ayuda de IA y aprobada por el ministerio para su publicación. Compárala con el original en inglés si alguna expresión no está clara."
 }
