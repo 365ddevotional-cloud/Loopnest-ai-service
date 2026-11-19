@@ -1,3 +1,7 @@
+import { registerAsvChapters } from "./asv-chapters";
+import { conversationDDL, registerFeedbackConversations } from "./feedback-conversations";
+import { pool as conversationPool } from "./db";
+import { getUncachableSendGridClient } from "./sendgrid";
 import { ensureMinistryShopTables } from "./ministry-shop-migrations";
 import { registerMinistryShopCommerce } from "./ministry-shop-commerce";
 import { registerMinistryShopRoutes } from "./ministry-shop";
@@ -195,6 +199,19 @@ export async function registerRoutes(
   const verifyShopToken = async (token: string) => (await import("./firebase-admin")).auth.verifyIdToken(token);
   registerMinistryShopRoutes(app, verifyShopToken);
   registerMinistryShopCommerce(app, verifyShopToken, requireAdmin);
+
+  registerAsvChapters(app);
+
+  // Additive tables only: existing feedback and counseling records remain intact.
+  const migrationClient=await conversationPool.connect();
+  try{await migrationClient.query("BEGIN");await migrationClient.query("SET LOCAL lock_timeout='2s'");await migrationClient.query("SET LOCAL statement_timeout='10s'");await migrationClient.query(conversationDDL);await migrationClient.query("COMMIT");}catch(e){await migrationClient.query("ROLLBACK");throw e;}finally{migrationClient.release();}
+  registerFeedbackConversations(app, {
+    query: (text,values)=>conversationPool.query(text,values),
+    transaction:async fn=>{const c=await conversationPool.connect();try{await c.query("BEGIN");const result=await fn((text,values)=>c.query(text,values));await c.query("COMMIT");return result;}catch(e){await c.query("ROLLBACK");throw e;}finally{c.release();}},
+    verifyToken:verifyShopToken, requireAdmin,
+    notify: d=>sendFeedbackNotification(d.name||null,d.email||null,d.feedbackType,d.message),
+    emailReply:async(to,message)=>{const {client}=await getUncachableSendGridClient();const escaped=message.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));await client.send({to,subject:"365 Daily Devotional — Reply to your feedback",text:message,html:`<p>You received a ministry reply to your feedback:</p><p>${escaped.replace(/\n/g,"<br />")}</p><p>Open Feedback in the app to continue your conversation.</p>`});},
+  });
 
   // PUBLIC DEBUG ENDPOINT - Returns current server state for diagnosing production issues
   // This endpoint bypasses all caching and returns raw server data
@@ -1412,32 +1429,6 @@ export async function registerRoutes(
   });
 
   // Feedback Routes
-  app.post("/api/feedback", async (req, res) => {
-    try {
-      const { insertFeedbackSchema } = await import("@shared/schema");
-      const input = insertFeedbackSchema.parse(req.body);
-      const feedback = await storage.createFeedback(input);
-      
-      sendFeedbackNotification(
-        input.name || null,
-        input.email || null,
-        input.feedbackType,
-        input.message
-      ).catch(err => console.error("Failed to send feedback notification:", err));
-      
-      res.status(201).json(feedback);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({
-          message: err.errors[0].message,
-          field: err.errors[0].path.join("."),
-        });
-      }
-      console.error("Error creating feedback:", err);
-      res.status(500).json({ message: "Failed to submit feedback" });
-    }
-  });
-
   app.get("/api/feedback", requireAdmin, async (req, res) => {
     const feedback = await storage.getFeedback();
     res.json(feedback);

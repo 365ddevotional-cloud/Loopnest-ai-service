@@ -1,4 +1,5 @@
-import { pgTable, text, serial, date, timestamp, boolean, integer, unique, jsonb, real } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { pgTable, text, serial, date, timestamp, boolean, integer, unique, jsonb, real, bigserial, index, check, foreignKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -320,6 +321,38 @@ export const feedbackMessages = pgTable("feedback_messages", {
   status: text("status").default("new").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// Keep additive runtime migrations visible to future Drizzle schema updates.
+export const biblePreferences = pgTable("bible_preferences", {
+  firebaseUid: text("firebase_uid").primaryKey(),
+  translation: text("translation").notNull(),
+  updatedAt: timestamp("updated_at", {withTimezone:true}).notNull().defaultNow(),
+}, table => ({translationCheck:check("bible_preferences_translation_check", sql`${table.translation} IN ('KJV','WEB','ASV','DRB')`)}));
+
+export const feedbackConversations = pgTable("feedback_conversations", {
+  feedbackId: integer("feedback_id").primaryKey(),
+  firebaseUid: text("firebase_uid"),
+  tokenHash: text("token_hash"),
+  repliesEnabled: boolean("replies_enabled").notNull().default(false),
+  emailConsent: boolean("email_consent").notNull().default(false),
+  unread: boolean("unread").notNull().default(false),
+  expiresAt: timestamp("expires_at", {withTimezone:true}).notNull().default(sql`(now()+interval '365 days')`),
+  revoked: boolean("revoked").notNull().default(false),
+}, table => ({
+  userIndex:index("feedback_conversations_uid").on(table.firebaseUid),
+  feedbackFk:foreignKey({columns:[table.feedbackId],foreignColumns:[feedbackMessages.id],name:"feedback_conversations_feedback_id_fkey"}),
+}));
+
+export const feedbackConversationReplies = pgTable("feedback_conversation_replies", {
+  id: bigserial("id", {mode:"number"}).primaryKey(),
+  feedbackId: integer("feedback_id").notNull(),
+  sender: text("sender").notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at", {withTimezone:true}).notNull().defaultNow(),
+}, table => ({
+  senderCheck:check("feedback_conversation_replies_sender_check",sql`${table.sender} IN ('subscriber','ministry')`),
+  feedbackFk:foreignKey({columns:[table.feedbackId],foreignColumns:[feedbackConversations.feedbackId],name:"feedback_conversation_replies_feedback_id_fkey"}).onDelete("cascade"),
+}));
 
 export const insertFeedbackSchema = createInsertSchema(feedbackMessages).omit({
   id: true,

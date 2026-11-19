@@ -1,3 +1,4 @@
+import { ScriptureLinks } from "@/components/ScriptureReading";
 import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
 import { type DevotionalResponse } from "@shared/schema";
@@ -234,6 +235,7 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
         </div>
       </div>
 
+      <div className="px-8 py-3"><ScriptureLinks text={devotional.scriptureReference}/></div>
       {/* Main Content */}
       <div className="p-8 md:p-12 space-y-8">
         <div className={`prose prose-stone dark:prose-invert ${sizeClasses.prose} max-w-none font-serif leading-relaxed text-foreground/90 dark:text-foreground first-letter:text-5xl first-letter:font-bold first-letter:text-primary first-letter:float-left first-letter:mr-3 first-letter:mt-[-10px]`}>

@@ -52,6 +52,9 @@ async function buildAll() {
     await copyFile(`server/shop-reader-drafts/${name}`, `dist/shop-migrations/readers/${name}`);
   }
 
+  await mkdir("dist/scripture-data", {recursive:true});
+  await copyFile("server/scripture-data/asv1901.json.gz", "dist/scripture-data/asv1901.json.gz");
+
   console.log("building server...");
   const pkg = JSON.parse(await readFile("package.json", "utf-8"));
   const allDeps = [
