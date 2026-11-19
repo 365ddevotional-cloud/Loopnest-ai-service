@@ -1,3 +1,4 @@
+import { translateAppText as tx } from "@/utils/i18n";
 export const GROUP_TYPES = [
   { value: "family",            label: "Family" },
   { value: "prayer",            label: "Prayer Group" },
@@ -58,9 +59,9 @@ const BADGE_MAP: Record<string, { cls: string; label: string }> = {
 
 export function getGroupTypeBadge(groupType: string): { cls: string; label: string } {
   if (!groupType || groupType === "other") {
-    return { cls: "bg-teal-50 text-teal-800 border-teal-200", label: "Community Group" };
+    return { cls: "bg-teal-50 text-teal-800 border-teal-200", label: tx("Community Group") };
   }
   const known = BADGE_MAP[groupType.toLowerCase()];
-  if (known) return known;
+  if (known) return { ...known, label: tx(known.label) };
   return { cls: "bg-stone-50 text-stone-700 border-stone-300", label: groupType };
 }

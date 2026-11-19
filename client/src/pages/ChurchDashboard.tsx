@@ -1,3 +1,4 @@
+import { translateAppText as tx } from "@/utils/i18n";
 import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
@@ -46,6 +47,7 @@ function SummaryCard({
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   value: number | string; label: string; onClick?: () => void; color: string; testId: string;
 }) {
+  useI18n();
   return (
     <button
       onClick={onClick}
@@ -81,6 +83,7 @@ function QuickActionButton({
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   label: string; onClick: () => void; color: string;
 }) {
+  useI18n();
   return (
     <button
       onClick={onClick}
@@ -106,6 +109,7 @@ function QuickActionButton({
 }
 
 function ActivityIcon({ type }: { type: string }) {
+  useI18n();
   if (type === "member_joined") return <UserPlus className="w-3.5 h-3.5 text-blue-500" />;
   if (type === "announcement") return <Megaphone className="w-3.5 h-3.5 text-green-600" />;
   if (type === "note_published") return <FileText className="w-3.5 h-3.5 text-purple-500" />;
@@ -436,7 +440,7 @@ export default function ChurchDashboard() {
                         </div>
                       ))}
                       {stats.pendingMembersList.length > 3 && (
-                        <p className="text-xs text-gray-400">+{stats.pendingMembersList.length - 3} more</p>
+                        <p className="text-xs text-gray-400">+{stats.pendingMembersList.length - 3} {tx("more")}</p>
                       )}
                     </div>
                   ) : (

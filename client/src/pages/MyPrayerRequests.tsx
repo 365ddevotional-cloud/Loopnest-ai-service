@@ -1,3 +1,5 @@
+import { translateAppText as tx } from "@/utils/i18n";
+import { useI18n } from "@/hooks/useI18n";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormattedPrayerMessage } from "@/components/FormattedPrayerMessage";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export default function MyPrayerRequests() {
+  useI18n();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [searchedEmail, setSearchedEmail] = useState("");
@@ -100,17 +103,17 @@ export default function MyPrayerRequests() {
     onSuccess: () => {
       setFollowUpMessage("");
       queryClient.invalidateQueries({ queryKey: ["/api/prayer-requests", selectedRequest?.id, "thread", searchedEmail] });
-      toast({ title: "Message sent", description: "Your follow-up message has been sent." });
+      toast({ title: tx("Message sent"), description: tx("Your follow-up message has been sent.") });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to send message. Please try again.", variant: "destructive" });
+      toast({ title: tx("Error"), description: tx("Failed to send message. Please try again."), variant: "destructive" });
     },
   });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !email.includes("@")) {
-      toast({ title: "Please enter a valid email address", variant: "destructive" });
+      toast({ title: tx("Please enter a valid email address"), variant: "destructive" });
       return;
     }
     setSearchedEmail(email);
@@ -125,18 +128,16 @@ export default function MyPrayerRequests() {
   return (
     <div className="max-w-4xl mx-auto py-8">
       <div className="text-center mb-12 space-y-4">
-        <h1 className="font-serif text-4xl md:text-5xl font-bold text-primary">My Prayer Requests</h1>
+        <h1 className="font-serif text-4xl md:text-5xl font-bold text-primary">{tx("My Prayer Requests")}</h1>
         <div className="w-24 h-1 bg-primary mx-auto rounded-full opacity-30" />
-        <p className="text-muted-foreground max-w-xl mx-auto">
-          View your submitted prayer requests and any replies from our team.
-        </p>
+        <p className="text-muted-foreground max-w-xl mx-auto"> {tx("View your submitted prayer requests and any replies from our team.")} </p>
       </div>
 
       <Card className="bg-white dark:bg-card border-primary/10 shadow-xl shadow-primary/5 mb-6">
         <CardContent className="p-6">
           <form onSubmit={handleSearch} className="flex items-end gap-4 flex-wrap">
             <div className="flex-1 min-w-[200px] space-y-2">
-              <Label htmlFor="email">Enter your email to view your requests</Label>
+              <Label htmlFor="email">{tx("Enter your email to view your requests")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -151,9 +152,7 @@ export default function MyPrayerRequests() {
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <Search className="w-4 h-4 mr-2" />
-              )}
-              Find My Requests
-            </Button>
+              )} {tx("Find My Requests")} </Button>
           </form>
         </CardContent>
       </Card>
@@ -161,11 +160,11 @@ export default function MyPrayerRequests() {
       {searchedEmail && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-4">
-            <h3 className="font-serif text-lg font-semibold text-foreground">Your Requests</h3>
+            <h3 className="font-serif text-lg font-semibold text-foreground">{tx("Your Requests")}</h3>
             {requests.length === 0 ? (
               <Card className="p-6 text-center text-muted-foreground">
                 <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>No prayer requests found for this email.</p>
+                <p>{tx("No prayer requests found for this email.")}</p>
               </Card>
             ) : (
               <div className="space-y-2 max-h-[500px] overflow-y-auto">
@@ -183,19 +182,16 @@ export default function MyPrayerRequests() {
                     <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium text-foreground">
-                          {request.subject || "Prayer Request"}
+                          {request.subject || tx("Prayer Request")}
                         </span>
                         {request.priority?.includes("urgent") && (
                           <Badge variant="destructive" className="text-xs">
-                            <AlertTriangle className="w-3 h-3 mr-1" />
-                            URGENT
-                          </Badge>
+                            <AlertTriangle className="w-3 h-3 mr-1" /> {tx("URGENT")} </Badge>
                         )}
                         {(request as any).unreadAdminReplies > 0 && (
                           <Badge className="text-xs bg-primary text-primary-foreground" data-testid={`unread-badge-${request.id}`}>
                             <MessageSquare className="w-3 h-3 mr-1" />
-                            {(request as any).unreadAdminReplies} new
-                          </Badge>
+                            {(request as any).unreadAdminReplies} {tx("new")} </Badge>
                         )}
                       </div>
                       <Badge className={`text-xs ${STATUS_LABELS[request.status || "new"]?.color}`}>
@@ -204,7 +200,7 @@ export default function MyPrayerRequests() {
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2">{request.message}</p>
                     <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground flex-wrap">
-                      <span>{PRIORITY_LABELS[request.priority || "prayer_normal"]}</span>
+                      <span>{tx(PRIORITY_LABELS[request.priority || "prayer_normal"])}</span>
                       <span>|</span>
                       <span>{request.createdAt ? format(new Date(request.createdAt), "MMM d, yyyy") : ""}</span>
                     </div>
@@ -220,14 +216,14 @@ export default function MyPrayerRequests() {
                 <CardHeader className="bg-muted/30 border-b">
                   <div className="flex items-start justify-between gap-2 flex-wrap">
                     <CardTitle className="font-serif text-xl text-foreground">
-                      {selectedRequest.subject || "Prayer Request"}
+                      {selectedRequest.subject || tx("Prayer Request")}
                     </CardTitle>
                     <Badge className={STATUS_LABELS[selectedRequest.status || "new"]?.color}>
                       {STATUS_LABELS[selectedRequest.status || "new"]?.label}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    <Badge variant="outline">{PRIORITY_LABELS[selectedRequest.priority || "prayer_normal"]}</Badge>
+                    <Badge variant="outline">{tx(PRIORITY_LABELS[selectedRequest.priority || "prayer_normal"])}</Badge>
                     <span className="text-xs text-muted-foreground">
                       {selectedRequest.createdAt ? format(new Date(selectedRequest.createdAt), "MMMM d, yyyy") : ""}
                     </span>
@@ -235,15 +231,14 @@ export default function MyPrayerRequests() {
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
                   <div className="bg-muted/30 p-4 rounded-lg">
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Your original message:</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">{tx("Your original message:")}</p>
                     <p className="text-foreground whitespace-pre-wrap">{selectedRequest.message}</p>
                   </div>
 
                   {attachments.length > 0 && (
                     <div className="space-y-2">
                       <h4 className="font-medium text-foreground flex items-center gap-2">
-                        <Paperclip className="w-4 h-4" />
-                        Your Attachments ({attachments.length})
+                        <Paperclip className="w-4 h-4" /> {tx("Your Attachments (")}{attachments.length})
                       </h4>
                       <div className="flex flex-wrap gap-2">
                         {attachments.map((attachment) => (
@@ -267,13 +262,13 @@ export default function MyPrayerRequests() {
                   {threadMessages.some(m => m.senderType === "admin") && (
                     <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-3 rounded-lg border border-primary/20 flex items-center gap-3" data-testid="prayer-partner-banner">
                       <HandHeart className="w-5 h-5 text-primary flex-shrink-0" />
-                      <p className="text-sm text-foreground font-medium">One of our prayer partners is praying for you right now.</p>
+                      <p className="text-sm text-foreground font-medium">{tx("One of our prayer partners is praying for you right now.")}</p>
                     </div>
                   )}
 
                   {threadMessages.length > 0 && (
                     <div className="space-y-3">
-                      <h4 className="font-medium text-foreground">Conversation</h4>
+                      <h4 className="font-medium text-foreground">{tx("Conversation")}</h4>
                       {threadMessages.map((msg) => (
                         <div
                           key={msg.id}
@@ -286,7 +281,7 @@ export default function MyPrayerRequests() {
                         >
                           <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
                             <span className="text-xs font-medium text-muted-foreground">
-                              {msg.senderType === "admin" ? "365 Daily Devotional Team" : msg.senderType === "automated" ? "Automated encouragement" : "You"}
+                              {msg.senderType === "admin" ? tx("365 Daily Devotional Team") : msg.senderType === "automated" ? tx("Automated encouragement") : tx("You")}
                             </span>
                             <span className="text-xs text-muted-foreground">
                               {msg.createdAt ? format(new Date(msg.createdAt), "MMM d, h:mm a") : ""}
@@ -300,9 +295,9 @@ export default function MyPrayerRequests() {
 
                   {selectedRequest.status !== "closed" && (
                     <div className="space-y-2 pt-4 border-t">
-                      <Label>Send a follow-up message</Label>
+                      <Label>{tx("Send a follow-up message")}</Label>
                       <Textarea
-                        placeholder="Write your message..."
+                        placeholder={tx("Write your message...")}
                         value={followUpMessage}
                         onChange={(e) => setFollowUpMessage(e.target.value)}
                         rows={3}
@@ -318,9 +313,7 @@ export default function MyPrayerRequests() {
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         ) : (
                           <Send className="w-4 h-4 mr-2" />
-                        )}
-                        Send Message
-                      </Button>
+                        )} {tx("Send Message")} </Button>
                     </div>
                   )}
                 </CardContent>
@@ -328,7 +321,7 @@ export default function MyPrayerRequests() {
             ) : (
               <div className="flex flex-col items-center justify-center h-full py-12 text-muted-foreground">
                 <MessageSquare className="w-12 h-12 mb-4 opacity-50" />
-                <p>Select a request to view details and replies</p>
+                <p>{tx("Select a request to view details and replies")}</p>
               </div>
             )}
           </div>

@@ -1,3 +1,4 @@
+import { translateAppText as tx } from "@/utils/i18n";
 import { useRoute, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
@@ -192,13 +193,13 @@ export default function ChurchMembers() {
                               </SelectTrigger>
                               <SelectContent>
                                 {CHURCH_ROLES.filter(r => r !== "owner").map(r => (
-                                  <SelectItem key={r} value={r}>{CHURCH_ROLE_LABELS[r]}</SelectItem>
+                                  <SelectItem key={r} value={r}>{tx(CHURCH_ROLE_LABELS[r])}</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           ) : (
                             <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${roleColors[m.role] ?? ""}`}>
-                              {CHURCH_ROLE_LABELS[m.role as ChurchRole] ?? m.role}
+                              {tx(CHURCH_ROLE_LABELS[m.role as ChurchRole] ?? m.role)}
                             </span>
                           )}
                           {canManage && (
@@ -257,7 +258,7 @@ export default function ChurchMembers() {
                               </SelectTrigger>
                               <SelectContent>
                                 {CHURCH_ROLES.filter(r => r !== "owner").map(r => (
-                                  <SelectItem key={r} value={r}>{CHURCH_ROLE_LABELS[r]}</SelectItem>
+                                  <SelectItem key={r} value={r}>{tx(CHURCH_ROLE_LABELS[r])}</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>

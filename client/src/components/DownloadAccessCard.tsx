@@ -1,3 +1,5 @@
+import { useI18n } from "@/hooks/useI18n";
+import { translateAppText as tx } from "@/utils/i18n";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
@@ -7,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 
 type Access = { lifetimeFreeDownloads: boolean; verificationRequired: boolean };
 export function DownloadAccessCard() {
+  useI18n();
   const { user, resendVerification, checkEmailVerified } = useUser();
   const [busy, setBusy] = useState(false);
   const { toast } = useToast();
@@ -26,7 +29,7 @@ export function DownloadAccessCard() {
     setBusy(true);
     try {
       const result = await resendVerification();
-      toast({ title: result.sent ? "Check your email" : "Email could not be sent", description: result.sent ? "Open the verification link, then select Check Confirmation." : "Please try again shortly." });
+      toast({ title: result.sent ? tx("Check your email") : tx("Email could not be sent"), description: result.sent ? tx("Open the verification link, then select Check Confirmation.") : tx("Please try again shortly.") });
     } finally { setBusy(false); }
   }
   async function checkConfirmation() {
@@ -35,9 +38,9 @@ export function DownloadAccessCard() {
     finally { setBusy(false); }
   }
   return <Card data-testid="download-access-card"><CardContent className="pt-6 space-y-3">
-    <h2 className="font-semibold">Lifetime Download Access</h2>
-    <p className="text-sm text-muted-foreground">{isLoading ? "Confirming your account…" : isError ? "Could not confirm access. Please try again." : data?.lifetimeFreeDownloads ? "Your verified account has lifetime free access to all downloadable content. No download payment is required." : "Confirm ownership of your email address to activate lifetime free downloads."}</p>
-    {data?.verificationRequired && <Button disabled={busy} onClick={sendConfirmation}>Send Confirmation Email</Button>}
-    {!data?.lifetimeFreeDownloads && <Button variant="outline" disabled={busy || isLoading} onClick={checkConfirmation}>Check Confirmation</Button>}
+    <h2 className="font-semibold">{tx("Lifetime Download Access")}</h2>
+    <p className="text-sm text-muted-foreground">{isLoading ? tx("Confirming your account…") : isError ? tx("Could not confirm access. Please try again.") : data?.lifetimeFreeDownloads ? tx("Your verified account has lifetime free access to all downloadable content. No download payment is required.") : tx("Confirm ownership of your email address to activate lifetime free downloads.")}</p>
+    {data?.verificationRequired && <Button disabled={busy} onClick={sendConfirmation}>{tx("Send Confirmation Email")}</Button>}
+    {!data?.lifetimeFreeDownloads && <Button variant="outline" disabled={busy || isLoading} onClick={checkConfirmation}>{tx("Check Confirmation")}</Button>}
   </CardContent></Card>;
 }

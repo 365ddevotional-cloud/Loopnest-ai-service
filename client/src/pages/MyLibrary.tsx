@@ -1,3 +1,6 @@
+import { translateEnumLabel } from "@/utils/i18n";
+import { translateAppText as tx } from "@/utils/i18n";
+import { useI18n } from "@/hooks/useI18n";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -34,6 +37,7 @@ function SongCard({
   removePending: boolean;
   showDownloadDate?: boolean;
 }) {
+  useI18n();
   const [, setLocation] = useLocation();
   const song = entry.song;
   const hasCover = !!song.coverImageUrl;
@@ -59,8 +63,7 @@ function SongCard({
           {song.labelName}{song.scriptureReference ? ` · ${song.scriptureReference}` : ""}
         </div>
         {showDownloadDate && entry.downloadedAt && (
-          <div className="text-[10px] text-muted-foreground/60 mt-0.5">
-            Downloaded {new Date(entry.downloadedAt).toLocaleDateString()}
+          <div className="text-[10px] text-muted-foreground/60 mt-0.5"> {tx("Downloaded")} {new Date(entry.downloadedAt).toLocaleDateString()}
           </div>
         )}
       </div>
@@ -74,7 +77,7 @@ function SongCard({
             className="w-8 h-8 p-0"
             onClick={() => setLocation(`/music/${song.slug}`)}
             data-testid={`button-library-play-${song.id}`}
-            title="Open song"
+            title={tx("Open song")}
           >
             <Play className="w-3.5 h-3.5" />
           </Button>
@@ -85,7 +88,7 @@ function SongCard({
           className="w-8 h-8 p-0"
           onClick={() => setLocation(`/music/${song.slug}`)}
           data-testid={`button-library-open-${song.id}`}
-          title="Open song page"
+          title={tx("Open song page")}
         >
           <ExternalLink className="w-3.5 h-3.5" />
         </Button>
@@ -96,7 +99,7 @@ function SongCard({
           onClick={onRemove}
           disabled={removePending}
           data-testid={`button-library-remove-${song.id}`}
-          title="Remove from library"
+          title={tx("Remove from library")}
         >
           {removePending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
         </Button>
@@ -115,6 +118,7 @@ async function authedFetch(path: string, getIdToken: () => Promise<string | null
 }
 
 export default function MyLibrary() {
+  useI18n();
   const [, setLocation] = useLocation();
   const { user, loading, emailVerified, getIdToken, signUserOut } = useUser();
 
@@ -254,13 +258,9 @@ export default function MyLibrary() {
     return (
       <div className="max-w-md mx-auto py-16 text-center space-y-4">
         <UserCircle className="w-14 h-14 mx-auto text-primary/40" />
-        <h2 className="font-serif text-2xl text-primary">My Library</h2>
-        <p className="text-sm text-muted-foreground">
-          Sign in to your free account to access your saved songs, favorites, and download history — on any device.
-        </p>
-        <Button onClick={() => setLocation("/signin?return=/my-library")} data-testid="button-library-signin">
-          Sign In or Create Account
-        </Button>
+        <h2 className="font-serif text-2xl text-primary">{tx("My Library")}</h2>
+        <p className="text-sm text-muted-foreground"> {tx("Sign in to your free account to access your saved songs, favorites, and download history — on any device.")} </p>
+        <Button onClick={() => setLocation("/signin?return=/my-library")} data-testid="button-library-signin"> {tx("Sign In or Create Account")} </Button>
       </div>
     );
   }
@@ -272,7 +272,7 @@ export default function MyLibrary() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-3xl text-primary">My Library</h1>
+          <h1 className="font-serif text-3xl text-primary">{tx("My Library")}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{user.email}</p>
         </div>
         <Button
@@ -280,9 +280,7 @@ export default function MyLibrary() {
           size="sm"
           onClick={signUserOut}
           data-testid="button-library-signout"
-        >
-          Sign Out
-        </Button>
+        > {tx("Sign Out")} </Button>
       </div>
 
       {/* Reading Streak */}
@@ -291,17 +289,17 @@ export default function MyLibrary() {
           <div className="flex items-center gap-2">
             <Flame className="w-5 h-5 text-orange-500" />
             <div>
-              <div className="font-bold text-lg text-orange-700 dark:text-orange-400 leading-none">{streakData.currentStreak} {streakData.currentStreak === 1 ? "day" : "days"}</div>
-              <div className="text-xs text-muted-foreground">Current streak</div>
+              <div className="font-bold text-lg text-orange-700 dark:text-orange-400 leading-none">{streakData.currentStreak} {streakData.currentStreak === 1 ? tx("day") : tx("days")}</div>
+              <div className="text-xs text-muted-foreground">{tx("Current streak")}</div>
             </div>
           </div>
           {(streakData.longestStreak ?? 0) > 1 && (
             <div className="border-l border-amber-200/60 dark:border-amber-800/40 pl-4">
-              <div className="font-semibold text-sm text-foreground">{streakData.longestStreak} days</div>
-              <div className="text-xs text-muted-foreground">Longest streak</div>
+              <div className="font-semibold text-sm text-foreground">{streakData.longestStreak} {tx("days")}</div>
+              <div className="text-xs text-muted-foreground">{tx("Longest streak")}</div>
             </div>
           )}
-          <p className="ml-auto text-xs text-muted-foreground italic hidden sm:block">Keep growing in God's Word.</p>
+          <p className="ml-auto text-xs text-muted-foreground italic hidden sm:block">{tx("Keep growing in God's Word.")}</p>
         </div>
       )}
 
@@ -315,15 +313,13 @@ export default function MyLibrary() {
       <section data-testid="section-saved-songs">
         <div className="flex items-center gap-2 mb-3">
           <BookMarked className="w-4 h-4 text-primary" />
-          <h2 className="font-serif text-lg text-foreground">Saved Songs</h2>
+          <h2 className="font-serif text-lg text-foreground">{tx("Saved Songs")}</h2>
           {savedSongs.length > 0 && (
             <Badge variant="secondary" className="text-xs">{savedSongs.length}</Badge>
           )}
         </div>
         {!savedLoading && savedSongs.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6 border border-dashed border-border/40 rounded-xl">
-            No saved songs yet. Visit any song page and tap "Save to My Library."
-          </p>
+          <p className="text-sm text-muted-foreground text-center py-6 border border-dashed border-border/40 rounded-xl"> {tx("No saved songs yet. Visit any song page and tap \"Save to My Library.\"")} </p>
         ) : (
           <div className="space-y-2">
             {savedSongs.map((entry) => (
@@ -342,15 +338,13 @@ export default function MyLibrary() {
       <section data-testid="section-favorite-songs">
         <div className="flex items-center gap-2 mb-3">
           <Heart className="w-4 h-4 text-rose-500" />
-          <h2 className="font-serif text-lg text-foreground">Favorite Songs</h2>
+          <h2 className="font-serif text-lg text-foreground">{tx("Favorite Songs")}</h2>
           {favoriteSongs.length > 0 && (
             <Badge variant="secondary" className="text-xs">{favoriteSongs.length}</Badge>
           )}
         </div>
         {!favsLoading && favoriteSongs.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6 border border-dashed border-border/40 rounded-xl">
-            No favorites yet. Tap the heart icon on any song to add it here.
-          </p>
+          <p className="text-sm text-muted-foreground text-center py-6 border border-dashed border-border/40 rounded-xl"> {tx("No favorites yet. Tap the heart icon on any song to add it here.")} </p>
         ) : (
           <div className="space-y-2">
             {favoriteSongs.map((entry) => (
@@ -369,21 +363,21 @@ export default function MyLibrary() {
       <section data-testid="section-offline-content-link">
         <div className="flex items-center gap-2 mb-3">
           <WifiOff className="w-4 h-4 text-primary" aria-hidden="true" />
-          <h2 className="font-serif text-lg text-foreground">Offline Devotionals</h2>
+          <h2 className="font-serif text-lg text-foreground">{tx("Offline Devotionals")}</h2>
         </div>
         <Link href="/offline-content">
           <div
             className="flex items-center gap-3 p-4 rounded-xl border border-border/40 bg-card hover:bg-muted/20 hover:border-primary/20 transition-colors cursor-pointer"
             data-testid="link-offline-content"
             role="link"
-            aria-label="Go to Offline Content page"
+            aria-label={tx("Go to Offline Content page")}
           >
             <div className="w-10 h-10 rounded-lg flex-shrink-0 bg-primary/10 flex items-center justify-center">
               <Download className="w-5 h-5 text-primary" aria-hidden="true" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-sm text-foreground">Offline Devotionals</div>
-              <div className="text-xs text-muted-foreground">Manage downloads · Read without internet</div>
+              <div className="font-semibold text-sm text-foreground">{tx("Offline Devotionals")}</div>
+              <div className="text-xs text-muted-foreground">{tx("Manage downloads · Read without internet")}</div>
             </div>
             <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
           </div>
@@ -394,15 +388,13 @@ export default function MyLibrary() {
       <section data-testid="section-download-history">
         <div className="flex items-center gap-2 mb-3">
           <Download className="w-4 h-4 text-primary" />
-          <h2 className="font-serif text-lg text-foreground">Download History</h2>
+          <h2 className="font-serif text-lg text-foreground">{tx("Download History")}</h2>
           {downloadHistory.length > 0 && (
             <Badge variant="secondary" className="text-xs">{downloadHistory.length}</Badge>
           )}
         </div>
         {!downloadsLoading && downloadHistory.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6 border border-dashed border-border/40 rounded-xl">
-            No downloads recorded. Download a free promotional song to see it here.
-          </p>
+          <p className="text-sm text-muted-foreground text-center py-6 border border-dashed border-border/40 rounded-xl"> {tx("No downloads recorded. Download a free promotional song to see it here.")} </p>
         ) : (
           <div className="space-y-2">
             {downloadHistory.map((entry) => (
@@ -422,7 +414,7 @@ export default function MyLibrary() {
       <section data-testid="section-saved-devotionals">
         <div className="flex items-center gap-2 mb-3">
           <Bookmark className="w-4 h-4 text-primary" />
-          <h2 className="font-serif text-lg text-foreground">Saved Devotionals</h2>
+          <h2 className="font-serif text-lg text-foreground">{tx("Saved Devotionals")}</h2>
           {savedDevotionals.length > 0 && (
             <Badge variant="secondary" className="text-xs">{savedDevotionals.length}</Badge>
           )}
@@ -430,9 +422,7 @@ export default function MyLibrary() {
         {savedDevsLoading ? (
           <div className="flex items-center gap-2 py-4"><Loader2 className="w-4 h-4 animate-spin text-primary" /></div>
         ) : savedDevotionals.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6 border border-dashed border-border/40 rounded-xl">
-            No saved devotionals yet. Tap "Save" on any devotional to keep it here.
-          </p>
+          <p className="text-sm text-muted-foreground text-center py-6 border border-dashed border-border/40 rounded-xl"> {tx("No saved devotionals yet. Tap \"Save\" on any devotional to keep it here.")} </p>
         ) : (
           <div className="space-y-2">
             {savedDevotionals.map((entry: any) => (
@@ -452,7 +442,7 @@ export default function MyLibrary() {
         <section data-testid="section-recently-read">
           <div className="flex items-center gap-2 mb-3">
             <BookOpen className="w-4 h-4 text-secondary" />
-            <h2 className="font-serif text-lg text-foreground">Recently Read</h2>
+            <h2 className="font-serif text-lg text-foreground">{tx("Recently Read")}</h2>
             <Badge variant="secondary" className="text-xs">{Math.min(devHistory.length, 20)}</Badge>
           </div>
           <div className="space-y-2">
@@ -467,7 +457,7 @@ export default function MyLibrary() {
       <section data-testid="section-my-prayers">
         <div className="flex items-center gap-2 mb-3">
           <HandHeart className="w-4 h-4 text-primary" />
-          <h2 className="font-serif text-lg text-foreground">My Prayers</h2>
+          <h2 className="font-serif text-lg text-foreground">{tx("My Prayers")}</h2>
           {myPrayers.length > 0 && (
             <Badge variant="secondary" className="text-xs">{myPrayers.length}</Badge>
           )}
@@ -475,10 +465,8 @@ export default function MyLibrary() {
         {prayersLoading ? (
           <div className="flex items-center gap-2 py-4"><Loader2 className="w-4 h-4 animate-spin text-primary" /></div>
         ) : myPrayers.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6 border border-dashed border-border/40 rounded-xl">
-            No prayer requests linked to your account yet.{" "}
-            <Link href="/prayer" className="underline text-primary/70">Submit a prayer request</Link> while signed in to track it here.
-          </p>
+          <p className="text-sm text-muted-foreground text-center py-6 border border-dashed border-border/40 rounded-xl"> {tx("No prayer requests linked to your account yet.")}{" "}
+            <Link href="/prayer" className="underline text-primary/70">{tx("Submit a prayer request")}</Link> {tx("while signed in to track it here.")} </p>
         ) : (
           <div className="space-y-3">
             {myPrayers.map((prayer) => (
@@ -499,14 +487,13 @@ export default function MyLibrary() {
 
       <RecentlyPlayedSection />
 
-      <p className="text-[11px] text-muted-foreground/50 text-center">
-        My Library syncs across all your signed-in devices automatically.
-      </p>
+      <p className="text-[11px] text-muted-foreground/50 text-center"> {tx("My Library syncs across all your signed-in devices automatically.")} </p>
     </div>
   );
 }
 
 function RecentlyPlayedSection() {
+  useI18n();
   const { recentlyPlayed } = useMusicPlayer();
 
   if (recentlyPlayed.length === 0) return null;
@@ -525,7 +512,7 @@ function RecentlyPlayedSection() {
     <section data-testid="section-recently-played-library">
       <div className="flex items-center gap-2 mb-3">
         <Clock className="w-4 h-4 text-muted-foreground" />
-        <h2 className="font-serif text-lg text-foreground">Recently Played</h2>
+        <h2 className="font-serif text-lg text-foreground">{tx("Recently Played")}</h2>
         <Badge variant="secondary" className="text-xs">{recentlyPlayed.length}</Badge>
       </div>
       <div className="space-y-2">
@@ -569,6 +556,7 @@ function SavedDevotionalCard({
   onRemove: () => void;
   removePending: boolean;
 }) {
+  useI18n();
   const [, setLocation] = useLocation();
   const dev = entry.devotional as Devotional;
   const preview = dev.content?.slice(0, 100) + (dev.content?.length > 100 ? "…" : "");
@@ -596,9 +584,7 @@ function SavedDevotionalCard({
           onClick={() => setLocation(`/devotional/${dev.date}`)}
           data-testid={`button-open-saved-devotional-${dev.id}`}
         >
-          <BookOpen className="w-3 h-3" />
-          Open
-        </Button>
+          <BookOpen className="w-3 h-3" /> {tx("Open")} </Button>
         <ShareButton
           title={dev.title}
           text={`${dev.title}\n${dev.scriptureReference}\n\n${dev.content}`}
@@ -613,15 +599,14 @@ function SavedDevotionalCard({
           disabled={removePending}
           data-testid={`button-remove-saved-devotional-${dev.id}`}
         >
-          {removePending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-          Remove
-        </Button>
+          {removePending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />} {tx("Remove")} </Button>
       </div>
     </div>
   );
 }
 
 function RecentlyReadCard({ entry }: { entry: any & { devotional: Devotional } }) {
+  useI18n();
   const [, setLocation] = useLocation();
   const dev = entry.devotional as Devotional;
 
@@ -684,6 +669,7 @@ function PrayerCard({
   withdrawPending: boolean;
   editPending: boolean;
 }) {
+  useI18n();
   const { getIdToken } = useUser();
   const [showAnswerForm, setShowAnswerForm] = useState(false);
   const [answerNote, setAnswerNote] = useState("");
@@ -759,11 +745,11 @@ function PrayerCard({
           </div>
           <div className="font-semibold text-sm text-foreground">{summary}</div>
           {prayer.category && (
-            <div className="text-xs text-muted-foreground/70 capitalize mt-0.5">{prayer.category} · <span title="Privacy">{privacyInfo.icon} {privacyInfo.label}</span></div>
+            <div className="text-xs text-muted-foreground/70 capitalize mt-0.5">{translateEnumLabel(prayer.category)} · <span title={tx("Privacy")}>{privacyInfo.icon} {tx(privacyInfo.label)}</span></div>
           )}
         </div>
         <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${statusInfo.color}`}>
-          {statusInfo.label}
+          {tx(statusInfo.label)}
         </span>
       </div>
 
@@ -777,10 +763,10 @@ function PrayerCard({
       {/* Edit form */}
       {showEdit && (
         <div className="space-y-2 border-t border-border/30 pt-3">
-          <div className="text-xs font-medium text-muted-foreground">Edit your prayer request</div>
+          <div className="text-xs font-medium text-muted-foreground">{tx("Edit your prayer request")}</div>
           <input
             className="w-full text-sm border border-border/50 rounded-lg px-3 py-1.5 bg-background"
-            placeholder="Subject (optional)"
+            placeholder={tx("Subject (optional)")}
             value={editSubject}
             onChange={e => setEditSubject(e.target.value)}
             data-testid={`input-prayer-subject-${prayer.id}`}
@@ -800,10 +786,8 @@ function PrayerCard({
               onClick={() => { onEdit(prayer.id, editSubject || undefined, editMessage); setShowEdit(false); }}
               data-testid={`button-save-prayer-edit-${prayer.id}`}
             >
-              {editPending ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-              Save changes
-            </Button>
-            <Button size="sm" variant="ghost" className="text-xs" onClick={() => setShowEdit(false)}>Cancel</Button>
+              {editPending ? <Loader2 className="w-3 h-3 animate-spin" /> : null} {tx("Save changes")} </Button>
+            <Button size="sm" variant="ghost" className="text-xs" onClick={() => setShowEdit(false)}>{tx("Cancel")}</Button>
           </div>
         </div>
       )}
@@ -811,11 +795,11 @@ function PrayerCard({
       {/* Mark as answered form */}
       {showAnswerForm && (
         <div className="space-y-2 border-t border-border/30 pt-3">
-          <div className="text-xs font-medium text-amber-700 dark:text-amber-400">God has answered this prayer!</div>
+          <div className="text-xs font-medium text-amber-700 dark:text-amber-400">{tx("God has answered this prayer!")}</div>
           <textarea
             className="w-full text-sm border border-border/50 rounded-lg px-3 py-2 bg-background resize-none"
             rows={2}
-            placeholder="Briefly describe how God answered (optional)…"
+            placeholder={tx("Briefly describe how God answered (optional)…")}
             value={answerNote}
             onChange={e => setAnswerNote(e.target.value)}
             data-testid={`input-prayer-answer-note-${prayer.id}`}
@@ -828,10 +812,8 @@ function PrayerCard({
               onClick={() => { onAnswer(prayer.id, answerNote || undefined); setShowAnswerForm(false); }}
               data-testid={`button-confirm-answered-${prayer.id}`}
             >
-              {answerPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
-              Mark as Answered
-            </Button>
-            <Button size="sm" variant="ghost" className="text-xs" onClick={() => setShowAnswerForm(false)}>Cancel</Button>
+              {answerPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />} {tx("Mark as Answered")} </Button>
+            <Button size="sm" variant="ghost" className="text-xs" onClick={() => setShowAnswerForm(false)}>{tx("Cancel")}</Button>
           </div>
         </div>
       )}
@@ -841,9 +823,7 @@ function PrayerCard({
         <div className="flex items-center gap-2 flex-wrap border-t border-border/20 pt-2">
           <Link href="/prayer">
             <Button size="sm" variant="outline" className="text-xs gap-1 h-7" data-testid={`button-open-prayer-${prayer.id}`}>
-              <ExternalLink className="w-3 h-3" />
-              View Thread
-            </Button>
+              <ExternalLink className="w-3 h-3" /> {tx("View Thread")} </Button>
           </Link>
           {canAnswer && (
             <Button
@@ -853,9 +833,7 @@ function PrayerCard({
               onClick={() => setShowAnswerForm(true)}
               data-testid={`button-answer-prayer-${prayer.id}`}
             >
-              <CheckCircle2 className="w-3 h-3" />
-              Answered
-            </Button>
+              <CheckCircle2 className="w-3 h-3" /> {tx("Answered")} </Button>
           )}
           {canAddTestimony && (
             <Button
@@ -866,7 +844,7 @@ function PrayerCard({
               data-testid={`button-testimony-prayer-${prayer.id}`}
             >
               <BookOpen className="w-3 h-3" />
-              {existingTestimony && !existingTestimony.isDraft ? "View Testimony" : "Add Testimony"}
+              {existingTestimony && !existingTestimony.isDraft ? tx("View Testimony") : tx("Add Testimony")}
             </Button>
           )}
           {canEdit && (
@@ -877,9 +855,7 @@ function PrayerCard({
               onClick={() => setShowEdit(true)}
               data-testid={`button-edit-prayer-${prayer.id}`}
             >
-              <Pencil className="w-3 h-3" />
-              Edit
-            </Button>
+              <Pencil className="w-3 h-3" /> {tx("Edit")} </Button>
           )}
           {canWithdraw && (
             <Button
@@ -890,9 +866,7 @@ function PrayerCard({
               onClick={() => onWithdraw(prayer.id)}
               data-testid={`button-withdraw-prayer-${prayer.id}`}
             >
-              {withdrawPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
-              Withdraw
-            </Button>
+              {withdrawPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />} {tx("Withdraw")} </Button>
           )}
         </div>
       )}
@@ -903,26 +877,23 @@ function PrayerCard({
           {existingTestimony && !existingTestimony.isDraft ? (
             <div className="space-y-2">
               <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-                <BookOpen className="w-3 h-3" /> Testimony submitted for review
-              </div>
+                <BookOpen className="w-3 h-3" /> {tx("Testimony submitted for review")} </div>
               <div className="text-xs text-foreground/80 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg px-3 py-2 italic">
                 "{existingTestimony.message}"
               </div>
-              <p className="text-xs text-muted-foreground">Your testimony is pending ministry approval before it appears publicly.</p>
-              <Button size="sm" variant="ghost" className="text-xs" onClick={() => setShowTestimony(false)}>Close</Button>
+              <p className="text-xs text-muted-foreground">{tx("Your testimony is pending ministry approval before it appears publicly.")}</p>
+              <Button size="sm" variant="ghost" className="text-xs" onClick={() => setShowTestimony(false)}>{tx("Close")}</Button>
             </div>
           ) : (
             <div className="space-y-2">
               {existingTestimony?.isDraft && existingTestimony?.message ? (
-                <div className="text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 rounded-lg">
-                  Your testimony was returned for revision — please edit and resubmit below.
-                </div>
+                <div className="text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 rounded-lg"> {tx("Your testimony was returned for revision — please edit and resubmit below.")} </div>
               ) : (
-                <div className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Share how God answered your prayer</div>
+                <div className="text-xs font-medium text-emerald-700 dark:text-emerald-400">{tx("Share how God answered your prayer")}</div>
               )}
               <input
                 className="w-full text-sm border border-border/50 rounded-lg px-3 py-1.5 bg-background"
-                placeholder="Your name (optional, leave blank to share anonymously)"
+                placeholder={tx("Your name (optional, leave blank to share anonymously)")}
                 value={testimonyName}
                 onChange={e => setTestimonyName(e.target.value)}
                 data-testid={`input-testimony-name-${prayer.id}`}
@@ -930,7 +901,7 @@ function PrayerCard({
               <textarea
                 className="w-full text-sm border border-border/50 rounded-lg px-3 py-2 bg-background resize-none"
                 rows={4}
-                placeholder="Share how God worked in your situation… (max 2000 characters)"
+                placeholder={tx("Share how God worked in your situation… (max 2000 characters)")}
                 value={testimonyText}
                 onChange={e => setTestimonyText(e.target.value)}
                 maxLength={2000}
@@ -946,9 +917,7 @@ function PrayerCard({
                   onClick={() => saveTestimonyMutation.mutate()}
                   data-testid={`button-save-testimony-${prayer.id}`}
                 >
-                  {saveTestimonyMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-                  Save Draft
-                </Button>
+                  {saveTestimonyMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : null} {tx("Save Draft")} </Button>
                 {(existingTestimony?.isDraft || saveTestimonyMutation.isSuccess) && (
                   <Button
                     size="sm"
@@ -957,11 +926,9 @@ function PrayerCard({
                     onClick={() => submitTestimonyMutation.mutate()}
                     data-testid={`button-submit-testimony-${prayer.id}`}
                   >
-                    {submitTestimonyMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <BookOpen className="w-3 h-3" />}
-                    Submit for Ministry Review
-                  </Button>
+                    {submitTestimonyMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <BookOpen className="w-3 h-3" />} {tx("Submit for Ministry Review")} </Button>
                 )}
-                <Button size="sm" variant="ghost" className="text-xs" onClick={() => setShowTestimony(false)}>Cancel</Button>
+                <Button size="sm" variant="ghost" className="text-xs" onClick={() => setShowTestimony(false)}>{tx("Cancel")}</Button>
               </div>
               {submitTestimonyMutation.isError && (
                 <p className="text-xs text-destructive">{(submitTestimonyMutation.error as Error).message}</p>

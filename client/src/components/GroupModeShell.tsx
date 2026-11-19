@@ -1,3 +1,6 @@
+import { translateEnumLabel } from "@/utils/i18n";
+import { translateAppText as tx } from "@/utils/i18n";
+import { useI18n } from "@/hooks/useI18n";
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { Home, HandHeart, MessageSquare, BookOpen, Megaphone, Users, ChevronLeft, Menu, X, Copy, Check, LogOut, Settings, Link2, Music2 } from "lucide-react";
@@ -13,6 +16,7 @@ interface GroupModeShellProps {
 }
 
 function GroupLogo({ group, size = 44 }: { group: Group; size?: number }) {
+  useI18n();
   if (group.logoUrl) {
     return (
       <img
@@ -34,6 +38,7 @@ function GroupLogo({ group, size = 44 }: { group: Group; size?: number }) {
 }
 
 export default function GroupModeShell({ group, myMember, children }: GroupModeShellProps) {
+  useI18n();
   const [, navigate] = useLocation();
   const [location] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -64,7 +69,7 @@ export default function GroupModeShell({ group, myMember, children }: GroupModeS
     navigator.clipboard.writeText(group.inviteCode).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      toast({ title: "Invite code copied!" });
+      toast({ title: tx("Invite code copied!") });
     });
   }
 
@@ -73,7 +78,7 @@ export default function GroupModeShell({ group, myMember, children }: GroupModeS
     navigator.clipboard.writeText(link).then(() => {
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);
-      toast({ title: "Invitation link copied!", description: "Share this link to invite people." });
+      toast({ title: tx("Invitation link copied!"), description: tx("Share this link to invite people.") });
     });
   }
 
@@ -85,7 +90,7 @@ export default function GroupModeShell({ group, myMember, children }: GroupModeS
           <button
             onClick={() => navigate("/groups")}
             className="p-2 -ml-2 rounded-lg hover:bg-muted/60 transition-colors text-muted-foreground"
-            aria-label="Back to groups"
+            aria-label={tx("Back to groups")}
             data-testid="button-group-back"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -93,7 +98,7 @@ export default function GroupModeShell({ group, myMember, children }: GroupModeS
           <GroupLogo group={group} size={36} />
           <div className="flex-1 min-w-0">
             <h1 className="font-semibold text-foreground text-sm truncate leading-tight">{group.name}</h1>
-            <p className="text-xs text-muted-foreground capitalize">{role}</p>
+            <p className="text-xs text-muted-foreground capitalize">{translateEnumLabel(role)}</p>
           </div>
           {/* Now-playing indicator */}
           {currentSong && (
@@ -119,7 +124,7 @@ export default function GroupModeShell({ group, myMember, children }: GroupModeS
           <button
             onClick={() => setMenuOpen(v => !v)}
             className="p-2 rounded-lg hover:bg-muted/60 transition-colors"
-            aria-label="Group options"
+            aria-label={tx("Group options")}
             data-testid="button-group-menu"
           >
             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -136,7 +141,7 @@ export default function GroupModeShell({ group, myMember, children }: GroupModeS
             >
               {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
               <div>
-                <span className="font-medium">Invite Code: </span>
+                <span className="font-medium">{tx("Invite Code:")} </span>
                 <span className="font-mono text-primary">{group.inviteCode}</span>
               </div>
             </button>
@@ -146,7 +151,7 @@ export default function GroupModeShell({ group, myMember, children }: GroupModeS
               data-testid="button-copy-invite-link"
             >
               {copiedLink ? <Check className="w-4 h-4 text-green-500" /> : <Link2 className="w-4 h-4 text-muted-foreground" />}
-              <span className="font-medium">{copiedLink ? "Link copied!" : "Copy Invitation Link"}</span>
+              <span className="font-medium">{copiedLink ? tx("Link copied!") : tx("Copy Invitation Link")}</span>
             </button>
             {role === "owner" && (
               <Link
@@ -156,7 +161,7 @@ export default function GroupModeShell({ group, myMember, children }: GroupModeS
                 data-testid="link-group-settings"
               >
                 <Settings className="w-4 h-4 text-muted-foreground" />
-                <span>Group Settings</span>
+                <span>{tx("Group Settings")}</span>
               </Link>
             )}
             <button
@@ -165,7 +170,7 @@ export default function GroupModeShell({ group, myMember, children }: GroupModeS
               data-testid="button-leave-group"
             >
               <LogOut className="w-4 h-4" />
-              <span>{role === "owner" ? "Delete Group" : "Leave Group"}</span>
+              <span>{role === "owner" ? tx("Delete Group") : tx("Leave Group")}</span>
             </button>
           </div>
         )}
@@ -177,7 +182,7 @@ export default function GroupModeShell({ group, myMember, children }: GroupModeS
       </main>
 
       {/* Bottom nav */}
-      <nav className="sticky bottom-0 z-20 bg-card border-t border-border/50 safe-area-bottom" aria-label="Group navigation">
+      <nav className="sticky bottom-0 z-20 bg-card border-t border-border/50 safe-area-bottom" aria-label={tx("Group navigation")}>
         <div className="flex max-w-2xl mx-auto">
           {navLinks.map(({ path, label, icon: Icon }) => (
             <Link

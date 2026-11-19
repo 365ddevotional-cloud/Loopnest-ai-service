@@ -1,3 +1,4 @@
+import { translateAppText as tx } from "@/utils/i18n";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ interface ChurchModeShellProps {
 }
 
 function DefaultEmblem({ size = 52 }: { size?: number }) {
+  useI18n();
   return (
     <svg width={size} height={size} viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <rect width="52" height="52" rx="12" fill="#b8962e" fillOpacity="0.18" />
@@ -79,7 +81,7 @@ function LangPicker({ headerTextSecondary, headerBorder }: { headerTextSecondary
           onClick={handleToggle}
           className="flex items-center gap-1 text-xs font-medium px-2.5 py-2 rounded-lg transition-all"
           style={{ color: headerTextSecondary, border: `1px solid ${headerBorder}`, backgroundColor: "transparent" }}
-          title="Language"
+          title={tx("Language")}
           data-testid="button-church-lang"
         >
           <Globe className="w-3.5 h-3.5" />
@@ -236,7 +238,7 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
                 </p>
               )}
               {roleLabel && !church?.denomination && (
-                <p className="text-xs mt-0.5 truncate" style={{ color: `${headerAccent}aa` }}>{roleLabel}</p>
+                <p className="text-xs mt-0.5 truncate" style={{ color: `${headerAccent}aa` }}>{tx(roleLabel)}</p>
               )}
             </div>
           </div>
@@ -297,7 +299,7 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
               data-testid="button-return-to-365"
             >
               <ChevronRight className="w-4 h-4 rotate-180" />
-              <span className="hidden sm:inline">365 Daily Devotional</span>
+              <span className="hidden sm:inline">{tx("365 Daily Devotional")}</span>
             </button>
           </div>
         </div>
@@ -342,7 +344,7 @@ export function ChurchModeShell({ church, currentRole, children, unreadMessages 
                       />
                     )}
                     <Icon className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-sm">{item.label}</span>
+                    <span className="text-sm">{tx(item.label)}</span>
                     {badge > 0 && (
                       <span className="ml-auto min-w-[20px] h-5 px-1.5 text-[11px] font-bold rounded-full flex items-center justify-center"
                         style={{ backgroundColor: "#e53e3e", color: "#fff" }}>

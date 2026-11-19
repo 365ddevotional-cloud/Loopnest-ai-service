@@ -1,3 +1,4 @@
+import { translateAppText as tx } from "@/utils/i18n";
 import { useParams } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
@@ -81,7 +82,7 @@ export default function ChurchPublicContact() {
                 <div className="rounded-2xl overflow-hidden border h-56" style={{ borderColor: "#ece8e0" }}>
                   <iframe
                     src={church.mapEmbedUrl ?? `https://maps.google.com/maps?q=${encodeURIComponent(church.address)}&output=embed`}
-                    title="Location" className="w-full h-full" style={{ border: 0 }} loading="lazy" allowFullScreen />
+                    title={tx("Location")} className="w-full h-full" style={{ border: 0 }} loading="lazy" allowFullScreen />
                 </div>
               )}
             </div>

@@ -1,3 +1,4 @@
+import { translateAppText as tx } from "@/utils/i18n";
 import { useState, useEffect, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -321,7 +322,7 @@ export default function ChurchMemberProfilePage() {
             <div className="flex flex-wrap gap-2">
               {myRole?.role && (
                 <Badge variant="outline" className="text-xs flex items-center gap-1">
-                  <Shield className="w-3 h-3" />{roleLabel}
+                  <Shield className="w-3 h-3" />{tx(roleLabel)}
                 </Badge>
               )}
               {joinDate && (

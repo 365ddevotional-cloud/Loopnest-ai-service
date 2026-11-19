@@ -1,3 +1,5 @@
+import { translateAppText as tx } from "@/utils/i18n";
+import { useI18n } from "@/hooks/useI18n";
 import { DownloadAccessCard } from "@/components/DownloadAccessCard";
 import { useState, useRef } from "react";
 import { useLocation } from "wouter";
@@ -55,6 +57,7 @@ const ROLE_ICON: Record<string, JSX.Element> = {
 };
 
 export default function AccountPage() {
+  useI18n();
   const [, setLocation] = useLocation();
   const { user, emailVerified, getIdToken, signUserOut, resetPassword } = useUser();
   const { toast } = useToast();
@@ -110,11 +113,11 @@ export default function AccountPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user/profile"] });
-      toast({ title: "Profile updated", description: "Your changes have been saved." });
+      toast({ title: tx("Profile updated"), description: tx("Your changes have been saved.") });
       setEditing(false);
     },
     onError: () => {
-      toast({ title: "Update failed", description: "Please try again.", variant: "destructive" });
+      toast({ title: tx("Update failed"), description: tx("Please try again."), variant: "destructive" });
     },
   });
 
@@ -137,17 +140,17 @@ export default function AccountPage() {
 
     const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!ALLOWED.includes(file.type)) {
-      toast({ title: "Unsupported format", description: "Please use JPG, PNG, or WebP.", variant: "destructive" });
+      toast({ title: tx("Unsupported format"), description: tx("Please use JPG, PNG, or WebP."), variant: "destructive" });
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "File too large", description: "Please use an image under 5 MB.", variant: "destructive" });
+      toast({ title: tx("File too large"), description: tx("Please use an image under 5 MB."), variant: "destructive" });
       return;
     }
 
     const result = await uploadFile(file);
     if (!result) {
-      toast({ title: "Upload failed", description: "Please try again.", variant: "destructive" });
+      toast({ title: tx("Upload failed"), description: tx("Please try again."), variant: "destructive" });
       return;
     }
 
@@ -170,9 +173,9 @@ export default function AccountPage() {
     const result = await resetPassword(user.email);
     if (result.success) {
       setPasswordSent(true);
-      toast({ title: "Reset email sent", description: `Check ${user.email} for instructions.` });
+      toast({ title: tx("Reset email sent"), description: `Check ${user.email} for instructions.` });
     } else {
-      toast({ title: "Could not send reset email", description: result.error, variant: "destructive" });
+      toast({ title: tx("Could not send reset email"), description: result.error, variant: "destructive" });
     }
   };
 
@@ -185,8 +188,8 @@ export default function AccountPage() {
       <div className="max-w-lg mx-auto py-16 px-4 text-center space-y-4">
         <UserCircle className="w-16 h-16 mx-auto text-muted-foreground/40" />
         <DownloadAccessCard />
-        <p className="text-muted-foreground">Please sign in with a verified email to manage your account.</p>
-        <Button onClick={() => setLocation("/signin")} data-testid="button-account-signin">Sign In</Button>
+        <p className="text-muted-foreground">{tx("Please sign in with a verified email to manage your account.")}</p>
+        <Button onClick={() => setLocation("/signin")} data-testid="button-account-signin">{tx("Sign In")}</Button>
       </div>
     );
   }
@@ -211,14 +214,12 @@ export default function AccountPage() {
       <DownloadAccessCard />
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-2xl font-semibold text-foreground">My Account</h1>
-          <p className="text-sm text-muted-foreground">Manage your profile and preferences.</p>
+          <h1 className="font-serif text-2xl font-semibold text-foreground">{tx("My Account")}</h1>
+          <p className="text-sm text-muted-foreground">{tx("Manage your profile and preferences.")}</p>
         </div>
         {!editing && (
           <Button variant="outline" size="sm" onClick={handleStartEdit} data-testid="button-edit-profile">
-            <Pencil className="w-3.5 h-3.5 mr-1.5" />
-            Edit Profile
-          </Button>
+            <Pencil className="w-3.5 h-3.5 mr-1.5" /> {tx("Edit Profile")} </Button>
         )}
       </div>
 
@@ -234,7 +235,7 @@ export default function AccountPage() {
                 ) : pictureUrl ? (
                   <img
                     src={pictureUrl}
-                    alt={displayName ?? "Profile"}
+                    alt={displayName ?? tx("Profile")}
                     className="w-full h-full object-cover"
                     data-testid="img-profile-picture"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
@@ -248,7 +249,7 @@ export default function AccountPage() {
                 disabled={isUploading || updateProfileMutation.isPending}
                 className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm hover:bg-primary/90 transition-colors"
                 data-testid="button-upload-picture"
-                title="Change profile picture"
+                title={tx("Change profile picture")}
               >
                 {isUploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3" />}
               </button>
@@ -265,12 +266,12 @@ export default function AccountPage() {
             <div className="flex-1 min-w-0">
               {editing ? (
                 <div className="space-y-1">
-                  <Label htmlFor="edit-name" className="text-xs text-muted-foreground">Full name</Label>
+                  <Label htmlFor="edit-name" className="text-xs text-muted-foreground">{tx("Full name")}</Label>
                   <Input
                     id="edit-name"
                     value={editName}
                     onChange={e => setEditName(e.target.value)}
-                    placeholder="Your name"
+                    placeholder={tx("Your name")}
                     className="h-8 text-sm"
                     data-testid="input-edit-name"
                   />
@@ -281,7 +282,7 @@ export default function AccountPage() {
                     {displayName ?? email.split("@")[0]}
                   </p>
                   <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary" data-testid="text-account-type">
-                    {accountTypeLabel}
+                    {tx(accountTypeLabel)}
                   </span>
                 </>
               )}
@@ -294,7 +295,7 @@ export default function AccountPage() {
           <div className="flex items-start gap-3">
             <Mail className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground mb-0.5">Email address</p>
+              <p className="text-xs text-muted-foreground mb-0.5">{tx("Email address")}</p>
               <p className="text-sm font-medium text-foreground break-all" data-testid="text-account-email">{email}</p>
             </div>
           </div>
@@ -303,17 +304,17 @@ export default function AccountPage() {
           <div className="flex items-start gap-3">
             <Globe className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-muted-foreground mb-0.5">Country</p>
+              <p className="text-xs text-muted-foreground mb-0.5">{tx("Country")}</p>
               {editing ? (
                 <CountrySelect
                   value={editCountry}
                   onChange={setEditCountry}
-                  placeholder="Select your country"
+                  placeholder={tx("Select your country")}
                   data-testid="select-edit-country"
                 />
               ) : (
                 <p className="text-sm font-medium text-foreground" data-testid="text-account-country">
-                  {country ? getCountryName(country) : <span className="text-muted-foreground italic">Not set</span>}
+                  {country ? getCountryName(country) : <span className="text-muted-foreground italic">{tx("Not set")}</span>}
                 </p>
               )}
             </div>
@@ -324,7 +325,7 @@ export default function AccountPage() {
             <div className="flex items-start gap-3">
               <Calendar className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Member since</p>
+                <p className="text-xs text-muted-foreground mb-0.5">{tx("Member since")}</p>
                 <p className="text-sm text-foreground" data-testid="text-account-created">
                   {createdAt.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                 </p>
@@ -344,18 +345,14 @@ export default function AccountPage() {
                   disabled={updateProfileMutation.isPending}
                   data-testid="button-cancel-edit"
                 >
-                  <X className="w-3.5 h-3.5 mr-1" />
-                  Cancel
-                </Button>
+                  <X className="w-3.5 h-3.5 mr-1" /> {tx("Cancel")} </Button>
                 <Button
                   size="sm"
                   onClick={handleSaveEdit}
                   disabled={updateProfileMutation.isPending}
                   data-testid="button-save-profile"
                 >
-                  {updateProfileMutation.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1" />}
-                  Save
-                </Button>
+                  {updateProfileMutation.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1" />} {tx("Save")} </Button>
               </div>
             </>
           )}
@@ -370,8 +367,8 @@ export default function AccountPage() {
               <HandHeart className="w-4 h-4 text-primary" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-foreground">My Groups</p>
-              <p className="text-xs text-muted-foreground">Family, friends &amp; prayer circles</p>
+              <p className="text-sm font-semibold text-foreground">{tx("My Groups")}</p>
+              <p className="text-xs text-muted-foreground">{tx("Family, friends & prayer circles")}</p>
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </CardContent>
@@ -381,7 +378,7 @@ export default function AccountPage() {
       {/* Church memberships */}
       {memberships && memberships.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">My Churches</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">{tx("My Churches")}</p>
           {memberships.map(m => (
             <Link key={m.id} href={`/church/${m.church.slug}`}>
               <Card className="border-primary/10 cursor-pointer hover:shadow-md transition-shadow" data-testid={`card-account-church-${m.church.slug}`}>
@@ -397,7 +394,7 @@ export default function AccountPage() {
                     <div className="flex items-center gap-1 mt-0.5">
                       {ROLE_ICON[m.role] ?? <Users className="w-3.5 h-3.5 text-muted-foreground" />}
                       <span className="text-xs text-muted-foreground">
-                        {CHURCH_ROLE_LABELS[m.role as ChurchRole] ?? m.role}
+                        {tx(CHURCH_ROLE_LABELS[m.role as ChurchRole] ?? m.role)}
                       </span>
                       {m.church.country && (
                         <span className="text-xs text-muted-foreground ml-2 flex items-center gap-0.5">
@@ -417,20 +414,19 @@ export default function AccountPage() {
       {/* Password / security */}
       <Card className="border-primary/10">
         <CardContent className="pt-5 pb-5 space-y-3">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Security</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{tx("Security")}</p>
           {isEmailAuth ? (
             <div className="flex items-center justify-between">
               <div className="flex items-start gap-3">
                 <KeyRound className="w-4 h-4 text-muted-foreground mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium">Password</p>
-                  <p className="text-xs text-muted-foreground">Reset via secure email link</p>
+                  <p className="text-sm font-medium">{tx("Password")}</p>
+                  <p className="text-xs text-muted-foreground">{tx("Reset via secure email link")}</p>
                 </div>
               </div>
               {passwordSent ? (
                 <span className="text-xs text-green-600 font-medium flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Email sent
-                </span>
+                  <CheckCircle2 className="w-3.5 h-3.5" /> {tx("Email sent")} </span>
               ) : (
                 <Button
                   variant="outline"
@@ -438,19 +434,15 @@ export default function AccountPage() {
                   className="text-xs"
                   onClick={handlePasswordReset}
                   data-testid="button-reset-password"
-                >
-                  Change Password
-                </Button>
+                > {tx("Change Password")} </Button>
               )}
             </div>
           ) : (
             <div className="flex items-start gap-3">
               <KeyRound className="w-4 h-4 text-muted-foreground mt-0.5" />
               <div>
-                <p className="text-sm font-medium">Sign-in provider</p>
-                <p className="text-xs text-muted-foreground">
-                  Your account uses a third-party provider. Manage your password there.
-                </p>
+                <p className="text-sm font-medium">{tx("Sign-in provider")}</p>
+                <p className="text-xs text-muted-foreground"> {tx("Your account uses a third-party provider. Manage your password there.")} </p>
               </div>
             </div>
           )}
@@ -460,18 +452,15 @@ export default function AccountPage() {
       {/* Email consent preferences */}
       <Card className="border-primary/10">
         <CardContent className="pt-5 pb-5 space-y-4">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Communication Preferences</p>
-          <p className="text-xs text-muted-foreground">
-            Account-related emails (password reset, security notices) are always sent.
-            All other communications are optional.
-          </p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{tx("Communication Preferences")}</p>
+          <p className="text-xs text-muted-foreground"> {tx("Account-related emails (password reset, security notices) are always sent. All other communications are optional.")} </p>
 
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-start gap-3 flex-1">
               <Bell className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium">Ministry news &amp; announcements</p>
-                <p className="text-xs text-muted-foreground">Updates from the 365 Daily Devotional ministry</p>
+                <p className="text-sm font-medium">{tx("Ministry news & announcements")}</p>
+                <p className="text-xs text-muted-foreground">{tx("Updates from the 365 Daily Devotional ministry")}</p>
               </div>
             </div>
             <Switch
@@ -485,8 +474,8 @@ export default function AccountPage() {
             <div className="flex items-start gap-3 flex-1">
               <Bell className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium">New devotional &amp; song notifications</p>
-                <p className="text-xs text-muted-foreground">Optional email alerts for new daily content</p>
+                <p className="text-sm font-medium">{tx("New devotional & song notifications")}</p>
+                <p className="text-xs text-muted-foreground">{tx("Optional email alerts for new daily content")}</p>
               </div>
             </div>
             <Switch
@@ -507,13 +496,11 @@ export default function AccountPage() {
             >
               <BellOff className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-amber-800">
-                  Music notifications are blocked
-                </p>
+                <p className="text-sm font-medium text-amber-800"> {tx("Music notifications are blocked")} </p>
                 <p className="text-xs text-amber-700 mt-0.5">
                   {isAndroid
-                    ? "Tap below to open notification settings and re-enable them for 365 Daily Devotional."
-                    : "To re-enable notifications, open your browser or device settings and allow notifications for this site."}
+                    ? tx("Tap below to open notification settings and re-enable them for 365 Daily Devotional.")
+                    : tx("To re-enable notifications, open your browser or device settings and allow notifications for this site.")}
                 </p>
                 {isAndroid && (
                   <Button
@@ -523,9 +510,7 @@ export default function AccountPage() {
                     onClick={() => openNotifSettings()}
                     data-testid="button-open-notif-settings"
                   >
-                    <ExternalLink className="w-3 h-3 mr-1.5" />
-                    Open notification settings
-                  </Button>
+                    <ExternalLink className="w-3 h-3 mr-1.5" /> {tx("Open notification settings")} </Button>
                 )}
               </div>
             </div>
@@ -536,19 +521,17 @@ export default function AccountPage() {
       {/* Promise Card Preferences */}
       <Card className="border-primary/15">
         <CardContent className="pt-6 pb-6 space-y-4">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Daily Promise Card</p>
-          <p className="text-xs text-muted-foreground">
-            Personalise how the "God's Promise for You" card appears to you. Your picture is never included when you share a promise publicly.
-          </p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{tx("Daily Promise Card")}</p>
+          <p className="text-xs text-muted-foreground"> {tx("Personalise how the \"God's Promise for You\" card appears to you. Your picture is never included when you share a promise publicly.")} </p>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-start gap-3 flex-1">
               <UserCircle className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium">Show my picture on my daily promise card</p>
+                <p className="text-sm font-medium">{tx("Show my picture on my daily promise card")}</p>
                 <p className="text-xs text-muted-foreground">
                   {profile?.profilePictureUrl
-                    ? "Your profile photo will appear in the card footer (only visible to you)."
-                    : "Upload a profile photo above first, then enable this setting."}
+                    ? tx("Your profile photo will appear in the card footer (only visible to you).")
+                    : tx("Upload a profile photo above first, then enable this setting.")}
                 </p>
               </div>
             </div>
@@ -570,23 +553,17 @@ export default function AccountPage() {
           onClick={handleSwitchAccount}
           data-testid="button-switch-account"
         >
-          <RefreshCw className="w-4 h-4" />
-          Switch Account
-        </Button>
+          <RefreshCw className="w-4 h-4" /> {tx("Switch Account")} </Button>
         <Button
           variant="destructive"
           className="w-full justify-start gap-2"
           onClick={handleSignOut}
           data-testid="button-account-signout"
         >
-          <LogOut className="w-4 h-4" />
-          Sign Out
-        </Button>
+          <LogOut className="w-4 h-4" /> {tx("Sign Out")} </Button>
       </div>
 
-      <p className="text-xs text-muted-foreground text-center pt-2">
-        Signing out clears all local session data. Your account and church data are always preserved on the server.
-      </p>
+      <p className="text-xs text-muted-foreground text-center pt-2"> {tx("Signing out clears all local session data. Your account and church data are always preserved on the server.")} </p>
     </div>
   );
 }

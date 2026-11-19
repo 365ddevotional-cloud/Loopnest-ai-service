@@ -1,3 +1,5 @@
+import { translateAppText as tx } from "@/utils/i18n";
+import { useI18n } from "@/hooks/useI18n";
 import { useUser } from "@/contexts/UserContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
@@ -34,6 +36,7 @@ function statusColor(status: string) {
 }
 
 export default function GroupPrayers() {
+  useI18n();
   const [, params] = useRoute("/group/:id/prayers");
   const [, navigate] = useLocation();
   const groupId = Number((params as any)?.id);
@@ -70,9 +73,9 @@ export default function GroupPrayers() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/groups", groupId, "prayers"] });
       setText(""); setOpen(false);
-      toast({ title: "Prayer request submitted" });
+      toast({ title: tx("Prayer request submitted") });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: tx("Error"), description: e.message, variant: "destructive" }),
   });
 
   const statusMutation = useMutation({
@@ -105,10 +108,9 @@ export default function GroupPrayers() {
     <GroupModeShell group={groupData.group} myMember={groupData.myMember}>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-serif text-xl font-bold">Prayer Requests</h2>
+          <h2 className="font-serif text-xl font-bold">{tx("Prayer Requests")}</h2>
           <Button size="sm" onClick={() => setOpen(true)} data-testid="button-new-prayer" className="gap-1">
-            <Plus className="w-4 h-4" /> Request
-          </Button>
+            <Plus className="w-4 h-4" /> {tx("Request")} </Button>
         </div>
 
         {loadingPrayers ? (
@@ -116,7 +118,7 @@ export default function GroupPrayers() {
         ) : prayers.length === 0 ? (
           <div className="text-center py-10 space-y-2">
             <HandHeart className="w-10 h-10 text-muted-foreground mx-auto" />
-            <p className="text-muted-foreground text-sm">No prayer requests yet. Be the first to share.</p>
+            <p className="text-muted-foreground text-sm">{tx("No prayer requests yet. Be the first to share.")}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -129,7 +131,7 @@ export default function GroupPrayers() {
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-muted-foreground">
-                      <span className="font-medium">{p.displayName ?? "Member"}</span>
+                      <span className="font-medium">{p.displayName ?? tx("Member")}</span>
                       {" · "}{p.createdAt ? format(new Date(p.createdAt), "MMM d") : ""}
                     </div>
                     <div className="flex items-center gap-2">
@@ -138,16 +140,14 @@ export default function GroupPrayers() {
                         className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
                         data-testid={`button-pray-${p.id}`}
                       >
-                        <Heart className="w-3.5 h-3.5" /> {p.prayingCount > 0 ? p.prayingCount : ""} Praying
-                      </button>
+                        <Heart className="w-3.5 h-3.5" /> {p.prayingCount > 0 ? p.prayingCount : ""} {tx("Praying")} </button>
                       {p.firebaseUid === user?.uid && p.status === "active" && (
                         <button
                           onClick={() => statusMutation.mutate({ id: p.id, status: "answered" })}
                           className="flex items-center gap-1 text-xs text-green-600 hover:text-green-700 transition-colors"
                           data-testid={`button-answered-${p.id}`}
                         >
-                          <CheckCircle className="w-3.5 h-3.5" /> Answered
-                        </button>
+                          <CheckCircle className="w-3.5 h-3.5" /> {tx("Answered")} </button>
                       )}
                     </div>
                   </div>
@@ -160,21 +160,19 @@ export default function GroupPrayers() {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>New Prayer Request</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{tx("New Prayer Request")}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <Textarea
-              placeholder="Share your prayer request with the group…"
+              placeholder={tx("Share your prayer request with the group…")}
               rows={5}
               value={text}
               onChange={e => setText(e.target.value)}
               data-testid="textarea-prayer-content"
             />
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setOpen(false)}>{tx("Cancel")}</Button>
               <Button onClick={() => submitMutation.mutate(text)} disabled={!text.trim() || submitMutation.isPending} data-testid="button-submit-prayer">
-                {submitMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                Submit
-              </Button>
+                {submitMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null} {tx("Submit")} </Button>
             </div>
           </div>
         </DialogContent>

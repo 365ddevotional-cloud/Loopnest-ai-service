@@ -1,3 +1,5 @@
+import { translateAppText as tx } from "@/utils/i18n";
+import { useI18n } from "@/hooks/useI18n";
 import { isAndroidReader } from "@/lib/android-reader";
 import SpiritToneTimedPreview from "@/components/SpiritToneTimedPreview";
 import { songLanguageCategories } from "@shared/song-languages";
@@ -47,15 +49,17 @@ function mixMusicSources(products: ShopProduct[]): ShopProduct[] {
 
 
 function ProductViews({ total }: { total?: number }) {
+  useI18n();
   if (total === undefined) return null;
   return (
     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-      <Eye size={13} aria-hidden="true" /> {total.toLocaleString()} {total === 1 ? "visit" : "visits"}
+      <Eye size={13} aria-hidden="true" /> {total.toLocaleString()} {total === 1 ? tx("visit") : tx("visits")}
     </span>
   );
 }
 
 function ProductArtwork({ product, detail = false, artworkUrl }: { product: CatalogProduct; detail?: boolean; artworkUrl?: string }) {
+  useI18n();
   const Icon = icons[product.kind as keyof typeof icons];
   const [failed, setFailed] = useState(false);
   const slug = "spiritToneSlug" in product && typeof product.spiritToneSlug === "string" ? product.spiritToneSlug : null;
@@ -112,6 +116,7 @@ const praisePackTracks = [
 
 
 function SongPreview({ product }: { product: CatalogProduct }) {
+  useI18n();
   const [selected, setSelected] = useState(0);
   const [audioFailed, setAudioFailed] = useState(false);
   const titles = product.id === "x29Tw" ? praisePackTracks : [product.title];
@@ -125,17 +130,15 @@ function SongPreview({ product }: { product: CatalogProduct }) {
       "spiritToneSongId" in product && typeof product.spiritToneSongId === "number") {
     return <SpiritToneTimedPreview songId={product.spiritToneSongId} title={product.title} slug={product.spiritToneSlug} />;
   }
-  if (!track) return product.lyrics ? <details className="mt-4 rounded-lg border p-4"><summary className="font-semibold">Lyrics</summary><p className="mt-3 whitespace-pre-wrap text-sm">{product.lyrics}</p></details> : null;
+  if (!track) return product.lyrics ? <details className="mt-4 rounded-lg border p-4"><summary className="font-semibold">{tx("Lyrics")}</summary><p className="mt-3 whitespace-pre-wrap text-sm">{product.lyrics}</p></details> : null;
 
   return (
-    <section className="mt-4 rounded-xl border border-border bg-muted/30 p-4" aria-label="Song preview">
+    <section className="mt-4 rounded-xl border border-border bg-muted/30 p-4" aria-label={tx("Song preview")}>
       <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-        <Headphones size={16} aria-hidden="true" /> {tracks.length > 1 ? "30-second samples" : "30-second sample"}
+        <Headphones size={16} aria-hidden="true" /> {tracks.length > 1 ? tx("30-second samples") : tx("30-second sample")}
       </h2>
       {tracks.length > 1 && (
-        <label className="mb-3 block text-sm font-medium">
-          Choose a track
-          <select
+        <label className="mb-3 block text-sm font-medium"> {tx("Choose a track")} <select
             className="mt-1 min-h-10 w-full rounded-md border border-input bg-background px-2"
             value={selected}
             onChange={event => {
@@ -148,7 +151,7 @@ function SongPreview({ product }: { product: CatalogProduct }) {
         </label>
       )}
       {audioFailed ? (
-        <p role="status" className="text-sm text-muted-foreground">The sample is temporarily unavailable.</p>
+        <p role="status" className="text-sm text-muted-foreground">{tx("The sample is temporarily unavailable.")}</p>
       ) : (
         <audio
           key={track.src}
@@ -158,25 +161,24 @@ function SongPreview({ product }: { product: CatalogProduct }) {
           className="w-full"
           src={track.src}
           onError={() => setAudioFailed(true)}
-        >
-          Your browser does not support this audio player.
-        </audio>
+        > {tx("Your browser does not support this audio player.")} </audio>
       )}
     </section>
   );
 }
 
 function ProductPreview({ product }: { product: CatalogProduct }) {
+  useI18n();
   if (product.kind === "Book" && product.previewText?.trim()) {
     return (
-      <section className="mt-5 rounded-xl border border-orange-200 bg-orange-50/40 p-5 dark:border-orange-900 dark:bg-orange-950/10" aria-label="Book preview">
-        <h2 className="flex items-center gap-2 text-lg font-bold"><BookOpen size={20} aria-hidden="true" /> Read a chapter sample</h2>
-        <p className="mt-1 text-sm text-muted-foreground">An excerpt from inside the book. The complete chapter is included in your purchase.</p>
+      <section className="mt-5 rounded-xl border border-orange-200 bg-orange-50/40 p-5 dark:border-orange-900 dark:bg-orange-950/10" aria-label={tx("Book preview")}>
+        <h2 className="flex items-center gap-2 text-lg font-bold"><BookOpen size={20} aria-hidden="true" /> {tx("Read a chapter sample")}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{tx("An excerpt from inside the book. The complete chapter is included in your purchase.")}</p>
         <details className="mt-4 text-base leading-8">
-          <summary className="cursor-pointer font-semibold text-primary">{product.previewTitle || "Open the book preview"}</summary>
+          <summary className="cursor-pointer font-semibold text-primary">{product.previewTitle || tx("Open the book preview")}</summary>
           <div className="mt-4 space-y-4 break-words">
             {product.previewText.split(/\n\n+/).map((paragraph, index) => <p className="whitespace-pre-wrap" key={index}>{paragraph}</p>)}
-            <p className="border-t pt-4 font-semibold">{product.previewEnding || "The chapter continues in the complete book."}</p>
+            <p className="border-t pt-4 font-semibold">{product.previewEnding || tx("The chapter continues in the complete book.")}</p>
           </div>
         </details>
       </section>
@@ -185,16 +187,15 @@ function ProductPreview({ product }: { product: CatalogProduct }) {
   const book = product.kind === "Book" ? bookPreviews[product.id] : undefined;
   if (book) {
     return (
-      <section className="mt-4 rounded-xl border border-border bg-muted/30 p-4" aria-label="Book preview">
+      <section className="mt-4 rounded-xl border border-border bg-muted/30 p-4" aria-label={tx("Book preview")}>
         <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <BookOpen size={16} aria-hidden="true" /> Read a sample
-        </h2>
+          <BookOpen size={16} aria-hidden="true" /> {tx("Read a sample")} </h2>
         {book.quote && <blockquote className="mt-2 border-l-2 border-orange-500 pl-3 text-base font-medium">“{book.quote}”</blockquote>}
         <details className="mt-3 text-sm leading-relaxed">
           <summary className="min-h-8 cursor-pointer font-semibold text-primary">{book.section}</summary>
           <div className="mt-2 space-y-3">
             {book.excerpt.split("\n\n").map((paragraph, index) => <p key={index}>{paragraph}</p>)}
-            {book.exercise && <p><strong className="mr-1">Try this.</strong> {book.exercise}</p>}
+            {book.exercise && <p><strong className="mr-1">{tx("Try this.")}</strong> {book.exercise}</p>}
           </div>
         </details>
       </section>
@@ -215,6 +216,7 @@ type SpiritToneSongDetails = {
 };
 
 function SpiritToneReleaseDetails({ slug }: { slug: string }) {
+  useI18n();
   const { data: song, isLoading } = useQuery<SpiritToneSongDetails>({
     queryKey: ["spirit-tone-shop-release", slug],
     queryFn: async ({ signal }) => {
@@ -226,7 +228,7 @@ function SpiritToneReleaseDetails({ slug }: { slug: string }) {
     retry: false,
   });
   if (!song || song.slug !== slug) {
-    return isLoading ? <p className="mt-3 text-sm text-muted-foreground">Loading original song credits…</p> : null;
+    return isLoading ? <p className="mt-3 text-sm text-muted-foreground">{tx("Loading original song credits…")}</p> : null;
   }
   const credits = [
     // Song records historically mislabeled the producer as a performer.
@@ -240,24 +242,25 @@ function SpiritToneReleaseDetails({ slug }: { slug: string }) {
     ["Release year", song.releaseYear], ["Copyright", song.copyrightNotice],
   ].filter((entry): entry is [string, string | number] => entry[1] !== null && entry[1] !== undefined && entry[1] !== "");
   return (
-    <section className="mt-5 rounded-xl border border-border p-4" aria-label="SpiritTone Records release details">
-      <h2 className="text-lg font-bold">SpiritTone Records — Song information</h2>
+    <section className="mt-5 rounded-xl border border-border p-4" aria-label={tx("SpiritTone Records release details")}>
+      <h2 className="text-lg font-bold">{tx("SpiritTone Records — Song information")}</h2>
       <dl className="mt-3 grid gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
         {credits.map(([label, value]) => <div key={label}><dt className="font-semibold text-foreground">{label}</dt><dd className="break-words text-muted-foreground">{value}</dd></div>)}
       </dl>
       {song.scriptureText && <p className="mt-3 text-sm italic">{song.scriptureText}</p>}
       {song.lyrics && (
         <details className="mt-4 rounded-lg bg-muted/30 p-3">
-          <summary className="cursor-pointer font-semibold">Read complete lyrics</summary>
+          <summary className="cursor-pointer font-semibold">{tx("Read complete lyrics")}</summary>
           <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{song.lyrics}</p>
         </details>
       )}
-      <p className="mt-3 text-xs text-muted-foreground">Complete packages are provided only for recordings with verified original audio, artwork, and lyrics.</p>
+      <p className="mt-3 text-xs text-muted-foreground">{tx("Complete packages are provided only for recordings with verified original audio, artwork, and lyrics.")}</p>
     </section>
   );
 }
 
 function ProductDetail({ id, views, price }: { id: string; views?: Record<string, number>; price?: { amount: number; currency: string; country: string; ready: boolean } }) {
+  useI18n();
   const catalog = useContext(CatalogContext);
   const product = catalog.find(item => item.id === id);
   const queryClient = useQueryClient();
@@ -297,46 +300,45 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
   if (replacements) {
     return (
       <main className="mx-auto max-w-4xl space-y-4 py-6">
-        <Link href="/shop" className="text-sm font-semibold text-primary hover:underline">← Back to 365 Ministry Shop</Link>
+        <Link href="/shop" className="text-sm font-semibold text-primary hover:underline">{tx("← Back to 365 Ministry Shop")}</Link>
         <h1 className="text-2xl font-bold">{product.title}</h1>
         <p>{product.kind === "Music"
-          ? "The available recording is listed below. Open it to listen to the sample."
-          : "The Old and New Testament volumes are now listed separately."}</p>
+          ? tx("The available recording is listed below. Open it to listen to the sample.")
+          : tx("The Old and New Testament volumes are now listed separately.")}</p>
         <ul className="space-y-2">
           {catalog.filter(item => replacements.includes(item.id)).map(item => (
             <li key={item.id}><Link href={`/shop/${item.id}`} className="text-primary underline">{item.title}</Link></li>
           ))}
         </ul>
-        <Link href="/shop/purchases" className="text-primary underline">View past shop purchases</Link>
+        <Link href="/shop/purchases" className="text-primary underline">{tx("View past shop purchases")}</Link>
       </main>
     );
   }
 
   return (
     <main className="mx-auto max-w-6xl py-3 sm:px-4 sm:py-6">
-      <Link href="/shop" className="text-sm font-semibold text-primary hover:underline">← Back to 365 Ministry Shop</Link>
+      <Link href="/shop" className="text-sm font-semibold text-primary hover:underline">{tx("← Back to 365 Ministry Shop")}</Link>
       <section className="mt-4 rounded-2xl border border-border bg-card p-4 sm:p-7">
         {product ? (
           <>
-            <Helmet><title>{product.title} | 365 Ministry Shop</title></Helmet>
+            <Helmet><title>{product.title} {tx("| 365 Ministry Shop")}</title></Helmet>
             <div className="grid gap-5 md:grid-cols-2 md:gap-8">
               <ProductArtwork key={product.id} product={product} detail />
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{product.kind}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{tx(product.kind)}</p>
                 <h1 className="mb-2 mt-1 break-words text-2xl font-bold tracking-tight text-teal-900 dark:text-teal-200 sm:text-3xl">{product.title}</h1>
                 <ProductViews total={views?.[product.id]} />
                 {price && <p className="mt-2 text-xl font-bold text-orange-800 dark:text-orange-300">{formatShopPrice(price)}</p>}
                 {!price && product.sourcePrice && /^\$\d+\.\d{2}$/.test(product.sourcePrice) && (
-                  <p className="mt-2 text-sm font-semibold text-orange-800 dark:text-orange-300">
-                    US catalog reference: {product.sourcePrice}
+                  <p className="mt-2 text-sm font-semibold text-orange-800 dark:text-orange-300"> {tx("US catalog reference:")} {product.sourcePrice}
                   </p>
                 )}
-                {isSpiritTonePreview && !completePackageReady && <p className="mt-2 text-sm font-semibold text-orange-700 dark:text-orange-300">Catalog preview · Complete purchase package being prepared</p>}
+                {isSpiritTonePreview && !completePackageReady && <p className="mt-2 text-sm font-semibold text-orange-700 dark:text-orange-300">{tx("Catalog preview · Complete purchase package being prepared")}</p>}
                 <ProductPreview key={`preview-${product.id}`} product={product} />
                 {product.kind !== "Membership" && (!isSpiritTonePreview || completePackageReady) && (
                   isAndroidReader() || product.sourcePrice
                     ? <ShopCheckout key={product.id} productId={product.id} price={price} />
-                    : <p className="mt-3 text-sm font-semibold text-orange-800 dark:text-orange-300">Coming soon. Pricing and downloads are being prepared.</p>
+                    : <p className="mt-3 text-sm font-semibold text-orange-800 dark:text-orange-300">{tx("Coming soon. Pricing and downloads are being prepared.")}</p>
                 )}
               </div>
             </div>
@@ -344,21 +346,22 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
               <SpiritToneReleaseDetails slug={product.spiritToneSlug} />
             )}
             <div className="mt-6 border-t border-border pt-5">
-              <h2 className="text-lg font-bold">{product.kind === "Book" ? "About this book" : product.kind === "Music" ? "About this release" : "About this membership"}</h2>
+              <h2 className="text-lg font-bold">{product.kind === "Book" ? tx("About this book") : product.kind === "Music" ? tx("About this release") : tx("About this membership")}</h2>
               <div className="mt-3 space-y-3 break-words text-sm leading-relaxed text-muted-foreground sm:text-base">
                 {description?.length
                   ? description.map((paragraph, index) => <p className="whitespace-pre-wrap" key={index}>{paragraph}</p>)
-                  : <p>{isSpiritTonePreview && !completePackageReady ? "Explore this SpiritTone recording and its original credits below. The downloadable package will be available after original master, artwork, and lyrics verification." : isPending ? "Loading description…" : "The description is currently unavailable."}</p>}
+                  : <p>{isSpiritTonePreview && !completePackageReady ? tx("Explore this SpiritTone recording and its original credits below. The downloadable package will be available after original master, artwork, and lyrics verification.") : isPending ? tx("Loading description…") : tx("The description is currently unavailable.")}</p>}
               </div>
             </div>
           </>
-        ) : <h1 className="font-serif text-3xl font-bold">Product not found</h1>}
+        ) : <h1 className="font-serif text-3xl font-bold">{tx("Product not found")}</h1>}
       </section>
     </main>
   );
 }
 
 function ShopCatalog() {
+  useI18n();
   const catalog = useContext(CatalogContext);
   const [, params] = useRoute("/shop/:productId");
   const { data: prices, locationResolved, retryDeviceLocation } = useShopPrices();
@@ -433,61 +436,55 @@ function ShopCatalog() {
           <h1 className="flex items-center gap-2 font-sans text-lg font-bold tracking-tight text-white sm:text-2xl">
             <ShoppingBag size={17} className="shrink-0 text-orange-300" aria-hidden="true" /> 365 Ministry Shop
           </h1>
-          <Link href="/shop/purchases" className="inline-flex min-h-9 items-center rounded-md px-1.5 text-xs font-semibold text-white underline decoration-white/40 underline-offset-4 hover:bg-white/10 sm:text-sm">Shop purchases</Link>
+          <Link href="/shop/purchases" className="inline-flex min-h-9 items-center rounded-md px-1.5 text-xs font-semibold text-white underline decoration-white/40 underline-offset-4 hover:bg-white/10 sm:text-sm">{tx("Shop purchases")}</Link>
         </div>
         {prices && !Object.values(prices.products).some(price => price.ready) && (
-          <p className="text-xs leading-tight text-orange-200">Checkout is currently unavailable.</p>
+          <p className="text-xs leading-tight text-orange-200">{tx("Checkout is currently unavailable.")}</p>
         )}
       </header>
 
       <section aria-labelledby="shop-catalog">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 id="shop-catalog" className="sr-only sm:not-sr-only sm:font-sans sm:text-lg sm:font-bold">Explore the catalog</h2>
+          <h2 id="shop-catalog" className="sr-only sm:not-sr-only sm:font-sans sm:text-lg sm:font-bold">{tx("Explore the catalog")}</h2>
           <label className="relative w-full sm:max-w-xs">
-            <span className="sr-only">Search books and music</span>
+            <span className="sr-only">{tx("Search books and music")}</span>
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-            <Input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search books and music" className="h-9 pl-9" />
+            <Input value={query} onChange={event => setQuery(event.target.value)} placeholder={tx("Search books and music")} className="h-9 pl-9" />
           </label>
         </div>
-        <div className="my-2 flex flex-wrap items-center gap-1.5" aria-label="Product categories">
+        <div className="my-2 flex flex-wrap items-center gap-1.5" aria-label={tx("Product categories")}>
           {filters.map(value => (
             <Button type="button" key={value} size="sm" className="px-2.5 text-xs sm:text-sm" variant={filter === value ? "default" : "outline"} aria-pressed={filter === value} onClick={() => setFilter(value)}>
-              {value === "Book" ? "Books" : value}
+              {value === "Book" ? tx("Books") : tx(value)}
             </Button>
           ))}
         </div>
         {(filter === "All" || filter === "Music") && (
-          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-muted/20 p-2" aria-label="Music discovery filters">
-            <label className="min-w-28 flex-1 text-xs font-semibold text-muted-foreground sm:max-w-52">
-              Song language
-              <select value={musicLanguage} onChange={event => setMusicLanguage(event.target.value)}
+          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-muted/20 p-2" aria-label={tx("Music discovery filters")}>
+            <label className="min-w-28 flex-1 text-xs font-semibold text-muted-foreground sm:max-w-52"> {tx("Song language")} <select value={musicLanguage} onChange={event => setMusicLanguage(event.target.value)}
                 className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground">
-                <option value="all">All languages</option>
+                <option value="all">{tx("All languages")}</option>
                 {languages.map(value => <option key={value} value={value}>{value}</option>)}
               </select>
             </label>
-            <label className="min-w-28 flex-1 text-xs font-semibold text-muted-foreground sm:max-w-52">
-              Genre / format
-              <select value={musicGenre} onChange={event => setMusicGenre(event.target.value)}
+            <label className="min-w-28 flex-1 text-xs font-semibold text-muted-foreground sm:max-w-52"> {tx("Genre / format")} <select value={musicGenre} onChange={event => setMusicGenre(event.target.value)}
                 className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground">
-                <option value="all">All genres and formats</option>
+                <option value="all">{tx("All genres and formats")}</option>
                 {genres.map(value => <option key={value} value={value}>{value}</option>)}
               </select>
             </label>
-            <label className="min-w-28 flex-1 text-xs font-semibold text-muted-foreground sm:max-w-52">
-              Song order
-              <select value={musicOrder} onChange={event => setMusicOrder(event.target.value as "mixed" | "az")}
+            <label className="min-w-28 flex-1 text-xs font-semibold text-muted-foreground sm:max-w-52"> {tx("Song order")} <select value={musicOrder} onChange={event => setMusicOrder(event.target.value as "mixed" | "az")}
                 className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground">
-                <option value="mixed">Mixed — all catalogs</option>
-                <option value="az">Song title A–Z</option>
+                <option value="mixed">{tx("Mixed — all catalogs")}</option>
+                <option value="az">{tx("Song title A–Z")}</option>
               </select>
             </label>
           </div>
         )}
         <p aria-live="polite" className="mb-2 text-xs text-muted-foreground">
-          {products.length ? `${products.length} ${products.length === 1 ? "item" : "items"}` : "No matching items. Try a different title or category."}
+          {products.length ? `${products.length} ${products.length === 1 ? "item" : "items"}` : tx("No matching items. Try a different title or category.")}
         </p>
-        {!isAndroidReader() && locationResolved && !prices?.country && <button type="button" className="mb-2 text-xs text-primary underline" onClick={retryDeviceLocation}>Refresh local pricing</button>}
+        {!isAndroidReader() && locationResolved && !prices?.country && <button type="button" className="mb-2 text-xs text-primary underline" onClick={retryDeviceLocation}>{tx("Refresh local pricing")}</button>}
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
           {products.map(product => {
             const price = prices?.products[product.id];
@@ -495,19 +492,19 @@ function ShopCatalog() {
               <li key={product.id}>
                 <Link href={`/shop/${product.id}`} className="flex h-full min-w-0 flex-col rounded-xl border border-border bg-card p-2.5 font-sans shadow-sm transition-colors hover:border-teal-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:p-3">
                   <ProductArtwork product={product} artworkUrl={spiritToneArt?.artwork[product.id]} />
-                  <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{product.kind}</p>
+                  <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{tx(product.kind)}</p>
                   <h3 title={product.title} className="mb-2 mt-0.5 line-clamp-2 break-words text-sm font-bold leading-snug text-teal-900 dark:text-teal-200 sm:text-base">{product.title}</h3>
                   <div className="mt-auto flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
                     <div className="min-w-0 space-y-1">
                       {price
                         ? <span className="block text-sm font-bold tabular-nums text-orange-800 dark:text-orange-300">{formatShopPrice(price)}</span>
                         : /^\$\d+\.\d{2}$/.test(product.sourcePrice || "")
-                          ? <span className="block text-xs font-bold text-orange-800 dark:text-orange-300">{product.sourcePrice} <span className="font-normal">(US reference)</span></span>
+                          ? <span className="block text-xs font-bold text-orange-800 dark:text-orange-300">{product.sourcePrice} <span className="font-normal">{tx("(US reference)")}</span></span>
                           : null}
                       {"spiritToneSlug" in product && !price?.ready &&
-                        <span className="block text-xs font-semibold text-muted-foreground">45-sec preview · Sales coming soon</span>}
+                        <span className="block text-xs font-semibold text-muted-foreground">{tx("45-sec preview · Sales coming soon")}</span>}
                     </div>
-                    {!isAndroidReader() && product.requiredFileCount && !price?.ready && <span className="text-xs font-semibold text-orange-800 dark:text-orange-300">Checkout unavailable</span>}
+                    {!isAndroidReader() && product.requiredFileCount && !price?.ready && <span className="text-xs font-semibold text-orange-800 dark:text-orange-300">{tx("Checkout unavailable")}</span>}
                     <ProductViews total={views?.[product.id]} />
                   </div>
                 </Link>
@@ -518,12 +515,10 @@ function ShopCatalog() {
       </section>
 
       <section className="rounded-2xl border border-orange-500/25 bg-orange-500/5 p-6 sm:p-8">
-        <h2 className="font-serif text-2xl font-semibold">Have something to share?</h2>
-        <p className="mt-2 max-w-2xl text-muted-foreground">
-          If you create books, music, or other resources, tell us what you would like to sell through the 365 Ministry Shop. We review each proposal before accepting products.
-        </p>
+        <h2 className="font-serif text-2xl font-semibold">{tx("Have something to share?")}</h2>
+        <p className="mt-2 max-w-2xl text-muted-foreground"> {tx("If you create books, music, or other resources, tell us what you would like to sell through the 365 Ministry Shop. We review each proposal before accepting products.")} </p>
         <Button asChild className="mt-4">
-          <Link href="/contact/partnership?source=ministry-shop">Tell us about your product</Link>
+          <Link href="/contact/partnership?source=ministry-shop">{tx("Tell us about your product")}</Link>
         </Button>
       </section>
     </main>
@@ -531,6 +526,7 @@ function ShopCatalog() {
 }
 
 export default function MinistryShop() {
+  useI18n();
   const catalog = useQuery<CatalogProduct[]>({ queryKey: ["/api/ministry-shop/catalog"], staleTime: 30000 });
   const [purchases] = useRoute("/shop/purchases");
   return <CatalogContext.Provider value={catalog.data ?? staticCatalog}>{purchases ? <MinistryShopPurchases /> : <ShopCatalog />}</CatalogContext.Provider>;

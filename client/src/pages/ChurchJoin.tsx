@@ -1,3 +1,4 @@
+import { translateAppText as tx } from "@/utils/i18n";
 import { useState, useEffect } from "react";
 import { useLocation, useRoute } from "wouter";
 import { useUser } from "@/contexts/UserContext";
@@ -233,7 +234,7 @@ export default function ChurchJoin() {
                     id="invite-code"
                     value={code}
                     onChange={e => { setCode(e.target.value.toUpperCase()); setPreview(null); setPreviewError(null); }}
-                    placeholder="e.g. AXJ-4823"
+                    placeholder={tx("e.g. AXJ-4823")}
                     className="font-mono tracking-widest uppercase"
                     maxLength={12}
                     data-testid="input-invite-code"
@@ -322,7 +323,7 @@ export default function ChurchJoin() {
                       <Copy className="w-3 h-3 mr-1.5" />{t("cm_copyLink")}
                     </Button>
                     <Button size="sm" variant="outline" onClick={handleShare} data-testid="button-share-invite">
-                      <Share2 className="w-3 h-3 mr-1.5" />{t("cm_share") ?? "Share"}</Button>
+                      <Share2 className="w-3 h-3 mr-1.5" />{t("cm_share") ?? tx("Share")}</Button>
                   </div>
                 </div>
               )}

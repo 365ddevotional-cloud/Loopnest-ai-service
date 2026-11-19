@@ -1,3 +1,5 @@
+import { translateAppText as tx } from "@/utils/i18n";
+import { useI18n } from "@/hooks/useI18n";
 import { useUser } from "@/contexts/UserContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
@@ -34,6 +36,7 @@ const REACTIONS = [
 ];
 
 export default function GroupDevotionals() {
+  useI18n();
   const [, params] = useRoute("/group/:id/devotionals");
   const [, navigate] = useLocation();
   const groupId = Number((params as any)?.id);
@@ -71,9 +74,9 @@ export default function GroupDevotionals() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/groups", groupId, "devotionals"] });
       setNote(""); setOpen(false);
-      toast({ title: "Devotional shared with the group!" });
+      toast({ title: tx("Devotional shared with the group!") });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: tx("Error"), description: e.message, variant: "destructive" }),
   });
 
   const reactMutation = useMutation({
@@ -100,10 +103,9 @@ export default function GroupDevotionals() {
     <GroupModeShell group={groupData.group} myMember={groupData.myMember}>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-serif text-xl font-bold">Devotional Sharing</h2>
+          <h2 className="font-serif text-xl font-bold">{tx("Devotional Sharing")}</h2>
           <Button size="sm" onClick={() => setOpen(true)} data-testid="button-share-devotional" className="gap-1">
-            <Plus className="w-4 h-4" /> Share
-          </Button>
+            <Plus className="w-4 h-4" /> {tx("Share")} </Button>
         </div>
 
         {isLoading ? (
@@ -111,7 +113,7 @@ export default function GroupDevotionals() {
         ) : shares.length === 0 ? (
           <div className="text-center py-10 space-y-2">
             <BookOpen className="w-10 h-10 text-muted-foreground mx-auto" />
-            <p className="text-muted-foreground text-sm">No devotionals shared yet. Share today's devotional with your group!</p>
+            <p className="text-muted-foreground text-sm">{tx("No devotionals shared yet. Share today's devotional with your group!")}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -128,12 +130,11 @@ export default function GroupDevotionals() {
                       <div className="flex items-center gap-2 mb-1">
                         <BookOpen className="w-3.5 h-3.5 text-primary" />
                         <span className="text-xs font-semibold text-primary">
-                          {share.devotionalDate ? `Devotional · ${format(new Date(share.devotionalDate + "T00:00:00"), "MMM d, yyyy")}` : "Devotional"}
+                          {share.devotionalDate ? `Devotional · ${format(new Date(share.devotionalDate + "T00:00:00"), "MMM d, yyyy")}` : tx("Devotional")}
                         </span>
                       </div>
                       {share.note && <p className="text-sm text-foreground italic">"{share.note}"</p>}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Shared by <span className="font-medium">{share.displayName ?? "Member"}</span>
+                      <p className="text-xs text-muted-foreground mt-1"> {tx("Shared by")} <span className="font-medium">{share.displayName ?? tx("Member")}</span>
                         {share.createdAt ? ` · ${format(new Date(share.createdAt), "MMM d")}` : ""}
                       </p>
                     </div>
@@ -163,22 +164,20 @@ export default function GroupDevotionals() {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Share Today's Devotional</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{tx("Share Today's Devotional")}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">Share today's devotional with your group. Add a personal note if you'd like.</p>
+            <p className="text-sm text-muted-foreground">{tx("Share today's devotional with your group. Add a personal note if you'd like.")}</p>
             <Textarea
-              placeholder="Add a reflection or encouraging note (optional)…"
+              placeholder={tx("Add a reflection or encouraging note (optional)…")}
               rows={4}
               value={note}
               onChange={e => setNote(e.target.value)}
               data-testid="textarea-devotional-note"
             />
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setOpen(false)}>{tx("Cancel")}</Button>
               <Button onClick={() => shareMutation.mutate(note)} disabled={shareMutation.isPending} data-testid="button-submit-share">
-                {shareMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                Share Devotional
-              </Button>
+                {shareMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null} {tx("Share Devotional")} </Button>
             </div>
           </div>
         </DialogContent>

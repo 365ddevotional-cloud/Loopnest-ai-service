@@ -1,3 +1,4 @@
+import { translateAppText as tx } from "@/utils/i18n";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -101,7 +102,7 @@ export default function ChurchLanding() {
                         <div className="flex items-center gap-1 mt-1">
                           {roleIcon[m.role]}
                           <span className="text-xs" style={{ color: "#b8962e" }}>
-                            {CHURCH_ROLE_LABELS[m.role as ChurchRole] ?? m.role}
+                            {tx(CHURCH_ROLE_LABELS[m.role as ChurchRole] ?? m.role)}
                           </span>
                         </div>
                       </div>

@@ -1,3 +1,4 @@
+import { translateAppText as tx } from "@/utils/i18n";
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Calendar, Settings, Info, BookOpen, Heart, ShoppingBag, MessageCircleHeart, HelpCircle, LogOut, LogIn, Menu, X, Bell, BellOff, Book, GraduationCap, Star, HandHeart, Sparkles, Inbox, Music2, Library, UserCircle, Building2, ChevronDown, Smartphone } from "lucide-react";
@@ -72,6 +73,7 @@ interface MobileNavGroupProps {
 }
 
 function MobileNavGroup({ label, isOpen, onToggle, children, "data-testid": testId }: MobileNavGroupProps) {
+  useI18n();
   return (
     <div className="border border-primary/10 rounded-xl overflow-hidden">
       <button
@@ -104,6 +106,7 @@ interface MobileNavItemProps {
 }
 
 function MobileNavItem({ onClick, isActive, icon: Icon, label, "data-testid": testId, href, external }: MobileNavItemProps) {
+  useI18n();
   const inner = (
     <>
       <Icon className="w-4 h-4 flex-shrink-0" />
@@ -297,10 +300,10 @@ export function Header() {
           rel="noopener noreferrer"
           className="hidden lg:inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-orange-600 px-3 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-orange-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
           data-testid="header-continue-to-app"
-          aria-label="Continue to App — install 365 Daily Devotional from Google Play"
+          aria-label={tx("Continue to App — install 365 Daily Devotional from Google Play")}
         >
           <Smartphone className="h-4 w-4" />
-          <span>Continue to App</span>
+          <span>{tx("Continue to App")}</span>
         </a>
 
         {/* Desktop Navigation — separate scrollable row so the brand and app button remain visible. */}
@@ -318,9 +321,7 @@ export function Header() {
                 )}
                 data-testid="button-my-library-nav"
               >
-                <Library className="w-4 h-4" />
-                My Library
-              </button>
+                <Library className="w-4 h-4" /> {tx("My Library")} </button>
               <button
                 onClick={() => navigateWithTransition("/account")}
                 className={cn(
@@ -331,17 +332,13 @@ export function Header() {
                 )}
                 data-testid="button-my-account-nav"
               >
-                <UserCircle className="w-4 h-4" />
-                My Account
-              </button>
+                <UserCircle className="w-4 h-4" /> {tx("My Account")} </button>
               <button
                 onClick={async () => { await signUserOut(); setLocation("/signin"); }}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 data-testid="button-user-signout-nav"
               >
-                <LogOut className="w-4 h-4" />
-                Sign Out
-              </button>
+                <LogOut className="w-4 h-4" /> {tx("Sign Out")} </button>
             </>
           ) : (
             <button
@@ -379,7 +376,7 @@ export function Header() {
                   data-testid={`link-${item.label.toLowerCase().replace(/\s+/g, '-')}-nav`}
                 >
                   <item.icon className="w-4 h-4" />
-                  {item.label}
+                  {tx(item.label)}
                 </a>
               );
             }
@@ -396,7 +393,7 @@ export function Header() {
                 data-testid={`link-${item.label.toLowerCase().replace(/\s+/g, '-')}-nav`}
               >
                 <item.icon className="w-4 h-4" />
-                {item.label}
+                {tx(item.label)}
               </button>
             );
           })}
@@ -406,7 +403,7 @@ export function Header() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild><Button variant="ghost" size="sm" className="shrink-0" data-testid="nav-more">{t("ui_more")} <ChevronDown className="ml-1 h-4 w-4" /></Button></DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="max-h-[70vh] overflow-y-auto">
-              {secondaryNavItems.map(item => <DropdownMenuItem key={item.href} onSelect={() => { if (item.external) window.open(item.href, "_blank", "noopener,noreferrer"); else navigateWithTransition(item.href); }}>{item.label}</DropdownMenuItem>)}
+              {secondaryNavItems.map(item => <DropdownMenuItem key={item.href} onSelect={() => { if (item.external) window.open(item.href, "_blank", "noopener,noreferrer"); else navigateWithTransition(item.href); }}>{tx(item.label)}</DropdownMenuItem>)}
             </DropdownMenuContent>
           </DropdownMenu>
           {isAdmin && (
@@ -464,7 +461,7 @@ export function Header() {
                   ? "text-primary" 
                   : "text-muted-foreground"
               )}
-              title={notificationsEnabled ? "Disable daily reminders" : "Enable daily reminders"}
+              title={notificationsEnabled ? tx("Disable daily reminders") : tx("Enable daily reminders")}
               data-testid="button-notifications-desktop"
             >
               {notificationsEnabled && notificationPermission === "granted" ? (
@@ -533,7 +530,7 @@ export function Header() {
               <MobileNavItem onClick={() => navigateWithTransition("/promotions")} icon={ShoppingBag} label={t("ui_promotions")} />
               <MobileNavItem onClick={() => navigateWithTransition("/updates")} icon={Sparkles} label={t("ui_updates")} />
               <MobileNavItem onClick={() => navigateWithTransition("/discipleship")} icon={GraduationCap} label={t("ui_discipleship")} />
-              <a href={GOOGLE_PLAY_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-lg bg-orange-600 p-3 font-semibold text-white" data-testid="mobile-continue-to-app"><Smartphone className="h-5 w-5"/>Continue to App</a>
+              <a href={GOOGLE_PLAY_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-lg bg-orange-600 p-3 font-semibold text-white" data-testid="mobile-continue-to-app"><Smartphone className="h-5 w-5"/>{tx("Continue to App")}</a>
               {/* Sign In / Account — first item */}
               {appUser && appEmailVerified ? (
                 <div className="flex flex-col gap-1 border border-primary/10 rounded-xl overflow-hidden">
@@ -541,14 +538,14 @@ export function Header() {
                     onClick={() => navigateWithTransition("/my-library")}
                     isActive={location === "/my-library"}
                     icon={Library}
-                    label="My Library"
+                    label={tx("My Library")}
                     data-testid="button-my-library-nav-mobile-top"
                   />
                   <MobileNavItem
                     onClick={() => navigateWithTransition("/account")}
                     isActive={location === "/account"}
                     icon={UserCircle}
-                    label="My Account"
+                    label={tx("My Account")}
                     data-testid="button-my-account-nav-mobile-top"
                   />
                   <button
@@ -556,9 +553,7 @@ export function Header() {
                     className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                     data-testid="button-user-signout-nav-mobile-top"
                   >
-                    <LogOut className="w-4 h-4" />
-                    Sign Out
-                  </button>
+                    <LogOut className="w-4 h-4" /> {tx("Sign Out")} </button>
                 </div>
               ) : (
                 <MobileNavItem
@@ -572,7 +567,7 @@ export function Header() {
 
               {/* Daily Faith */}
               <MobileNavGroup
-                label="Daily Faith"
+                label={tx("Daily Faith")}
                 isOpen={openGroup === "daily-faith"}
                 onToggle={() => toggleGroup("daily-faith")}
                 data-testid="group-daily-faith"
@@ -623,7 +618,7 @@ export function Header() {
 
               {/* Worship & Media */}
               <MobileNavGroup
-                label="Worship & Media"
+                label={tx("Worship & Media")}
                 isOpen={openGroup === "worship-media"}
                 onToggle={() => toggleGroup("worship-media")}
                 data-testid="group-worship-media"
@@ -647,14 +642,14 @@ export function Header() {
                   onClick={() => navigateWithTransition("/interactive/tap-the-promise")}
                   isActive={location === "/interactive/tap-the-promise"}
                   icon={GameConsoleIcon as any}
-                  label="Tap The Promise"
+                  label={tx("Tap The Promise")}
                   data-testid="link-tap-the-promise-nav-mobile"
                 />
               </MobileNavGroup>
 
               {/* Prayer & Community */}
               <MobileNavGroup
-                label="Prayer & Community"
+                label={tx("Prayer & Community")}
                 isOpen={openGroup === "prayer-community"}
                 onToggle={() => toggleGroup("prayer-community")}
                 data-testid="group-prayer-community"
@@ -670,7 +665,7 @@ export function Header() {
                   onClick={() => navigateWithTransition("/quick-prayer")}
                   isActive={location === "/quick-prayer"}
                   icon={HandHeart}
-                  label="Pray Now"
+                  label={tx("Pray Now")}
                   data-testid="link-quick-prayer-nav-mobile"
                 />
                 <MobileNavItem
@@ -691,7 +686,7 @@ export function Header() {
 
               {/* Church & Ministry */}
               <MobileNavGroup
-                label="Church & Ministry"
+                label={tx("Church & Ministry")}
                 isOpen={openGroup === "church-ministry"}
                 onToggle={() => toggleGroup("church-ministry")}
                 data-testid="group-church-ministry"
@@ -715,7 +710,7 @@ export function Header() {
               {/* My Account — only shown when authenticated; Sign In is shown at the top when not */}
               {appUser && appEmailVerified && (
                 <MobileNavGroup
-                  label="My Account"
+                  label={tx("My Account")}
                   isOpen={openGroup === "my-account"}
                   onToggle={() => toggleGroup("my-account")}
                   data-testid="group-my-account"
@@ -724,14 +719,14 @@ export function Header() {
                     onClick={() => navigateWithTransition("/my-library")}
                     isActive={location === "/my-library"}
                     icon={Library}
-                    label="My Library"
+                    label={tx("My Library")}
                     data-testid="button-my-library-nav-mobile"
                   />
                   <MobileNavItem
                     onClick={() => navigateWithTransition("/account")}
                     isActive={location === "/account"}
                     icon={UserCircle}
-                    label="My Account"
+                    label={tx("My Account")}
                     data-testid="button-my-account-nav-mobile"
                   />
                   <button
@@ -739,15 +734,13 @@ export function Header() {
                     className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                     data-testid="button-user-signout-nav-mobile"
                   >
-                    <LogOut className="w-4 h-4" />
-                    Sign Out
-                  </button>
+                    <LogOut className="w-4 h-4" /> {tx("Sign Out")} </button>
                 </MobileNavGroup>
               )}
 
               {/* Administration */}
               <MobileNavGroup
-                label="Administration"
+                label={tx("Administration")}
                 isOpen={openGroup === "administration"}
                 onToggle={() => toggleGroup("administration")}
                 data-testid="group-administration"

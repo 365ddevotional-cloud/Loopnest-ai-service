@@ -1,3 +1,5 @@
+import { translateAppText as tx } from "@/utils/i18n";
+import { useI18n } from "@/hooks/useI18n";
 import { GooglePlayReviewLink } from "@/components/GooglePlayReviewLink";
 import { Settings, Type, Moon, Sun, Monitor, Volume2 } from "lucide-react";
 import {
@@ -45,6 +47,7 @@ const themeOptions = [
 const VOICE_STORAGE_KEY = "audio-reader-voice";
 
 export function MobileSettingsSection() {
+  useI18n();
   const { fontSize, setFontSize } = useFontSize();
   const { theme, setTheme } = useTheme();
   
@@ -56,9 +59,7 @@ export function MobileSettingsSection() {
       <div className="mt-4 border-t border-primary/10 pt-4">
         <div className="px-4 pb-2">
           <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-            <Moon className="w-4 h-4" />
-            Theme
-          </span>
+            <Moon className="w-4 h-4" /> {tx("Theme")} </span>
         </div>
         <div className="flex flex-col gap-1 px-2">
           {themeOptions.map((opt) => (
@@ -75,7 +76,7 @@ export function MobileSettingsSection() {
               data-testid={`button-theme-mobile-${opt.value}`}
             >
               <opt.icon className="w-4 h-4" />
-              {opt.label}
+              {tx(opt.label)}
             </button>
           ))}
         </div>
@@ -83,9 +84,7 @@ export function MobileSettingsSection() {
       <div className="mt-4 border-t border-primary/10 pt-4">
         <div className="px-4 pb-2">
           <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-            <Type className="w-4 h-4" />
-            Text Size
-          </span>
+            <Type className="w-4 h-4" /> {tx("Text Size")} </span>
         </div>
         <div className="flex flex-col gap-1 px-2">
           {fontSizeLevels.map((level) => (
@@ -105,10 +104,8 @@ export function MobileSettingsSection() {
                 level === "medium" ? "text-base" :
                 level === "large" ? "text-lg" :
                 "text-xl"
-              )}>
-                Aa
-              </span>
-              {fontSizeLabels[level]}
+              )}> {tx("Aa")} </span>
+              {tx(fontSizeLabels[level])}
             </button>
           ))}
         </div>
@@ -118,6 +115,7 @@ export function MobileSettingsSection() {
 }
 
 export function SettingsModal() {
+  useI18n();
   const { fontSize, setFontSize } = useFontSize();
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
@@ -188,7 +186,7 @@ export function SettingsModal() {
           variant="ghost" 
           size="icon" 
           className="text-muted-foreground hover:text-primary"
-          title="Settings - Adjust text size"
+          title={tx("Settings - Adjust text size")}
           data-testid="button-settings"
         >
           <Settings className="w-5 h-5" />
@@ -197,12 +195,8 @@ export function SettingsModal() {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-serif text-xl">
-            <Settings className="w-5 h-5" />
-            Settings
-          </DialogTitle>
-          <DialogDescription>
-            Customize your reading experience
-          </DialogDescription>
+            <Settings className="w-5 h-5" /> {tx("Settings")} </DialogTitle>
+          <DialogDescription> {tx("Customize your reading experience")} </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
@@ -210,7 +204,7 @@ export function SettingsModal() {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Type className="w-4 h-4 text-primary" />
-              <h3 className="font-medium">Text Size</h3>
+              <h3 className="font-medium">{tx("Text Size")}</h3>
             </div>
             
             <div className="space-y-3">
@@ -230,14 +224,14 @@ export function SettingsModal() {
                     key={level}
                     className={fontSize === level ? "text-primary font-medium" : ""}
                   >
-                    {fontSizeLabels[level]}
+                    {tx(fontSizeLabels[level])}
                   </span>
                 ))}
               </div>
             </div>
 
             <div className="p-4 bg-muted/30 rounded-lg border">
-              <p className="text-muted-foreground text-xs mb-2">Preview:</p>
+              <p className="text-muted-foreground text-xs mb-2">{tx("Preview:")}</p>
               <p className={`leading-relaxed ${
                 fontSize === "small" ? "text-sm" :
                 fontSize === "medium" ? "text-base" :
@@ -252,7 +246,7 @@ export function SettingsModal() {
           <div className="border-t pt-6 space-y-4">
             <div className="flex items-center gap-2">
               <Moon className="w-4 h-4 text-primary" />
-              <h3 className="font-medium">Theme</h3>
+              <h3 className="font-medium">{tx("Theme")}</h3>
             </div>
             
             <div className="flex gap-2">
@@ -270,7 +264,7 @@ export function SettingsModal() {
                   data-testid={`button-theme-${opt.value}`}
                 >
                   <opt.icon className="w-4 h-4" />
-                  {opt.label}
+                  {tx(opt.label)}
                 </button>
               ))}
             </div>
@@ -279,21 +273,17 @@ export function SettingsModal() {
           <div className="border-t pt-6 space-y-4">
             <div className="flex items-center gap-2">
               <Volume2 className="w-4 h-4 text-primary" />
-              <h3 className="font-medium">Audio Voice</h3>
+              <h3 className="font-medium">{tx("Audio Voice")}</h3>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Choose a voice for the Listen feature. Available voices depend on your browser and device.
-            </p>
+            <p className="text-xs text-muted-foreground"> {tx("Choose a voice for the Listen feature. Available voices depend on your browser and device.")} </p>
 
             <div className="flex items-center gap-2">
               <Select value={selectedVoice} onValueChange={handleVoiceChange}>
                 <SelectTrigger className="flex-1" data-testid="select-voice">
-                  <SelectValue placeholder="Auto (Best Available)" />
+                  <SelectValue placeholder={tx("Auto (Best Available)")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="auto" data-testid="voice-option-auto">
-                    Auto (Best Available)
-                  </SelectItem>
+                  <SelectItem value="auto" data-testid="voice-option-auto"> {tx("Auto (Best Available)")} </SelectItem>
                   {voices.map((v, idx) => (
                     <SelectItem key={v.voiceURI} value={v.voiceURI} data-testid={`voice-option-${idx}`}>
                       {v.name} ({v.lang})
@@ -306,9 +296,7 @@ export function SettingsModal() {
                 size="sm"
                 onClick={previewVoice}
                 data-testid="button-preview-voice"
-              >
-                Test
-              </Button>
+              > {tx("Test")} </Button>
             </div>
           </div>
         </div>

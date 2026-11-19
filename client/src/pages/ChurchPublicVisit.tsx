@@ -1,3 +1,4 @@
+import { translateAppText as tx } from "@/utils/i18n";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useI18n } from "@/hooks/useI18n";
@@ -72,7 +73,7 @@ export default function ChurchPublicVisit() {
                   <div className="rounded-2xl overflow-hidden border h-52 mt-3" style={{ borderColor: "#ece8e0" }}>
                     <iframe
                       src={church.mapEmbedUrl ?? `https://maps.google.com/maps?q=${encodeURIComponent(church.address)}&output=embed`}
-                      title="Location" className="w-full h-full" style={{ border: 0 }} loading="lazy" allowFullScreen />
+                      title={tx("Location")} className="w-full h-full" style={{ border: 0 }} loading="lazy" allowFullScreen />
                   </div>
                 </div>
               )}

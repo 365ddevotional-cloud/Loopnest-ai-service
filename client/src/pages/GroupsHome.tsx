@@ -1,3 +1,5 @@
+import { translateEnumLabel } from "@/utils/i18n";
+import { translateAppText as tx } from "@/utils/i18n";
 import { useUser } from "@/contexts/UserContext";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
@@ -35,10 +37,10 @@ function GroupCard({ item }: { item: GroupWithMember }) {
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-foreground truncate">{group.name}</h3>
             <div className="mt-1">
-              <GroupTypeBadge groupType={group.groupType} />
+              <GroupTypeBadge groupType={tx(group.groupType)} />
             </div>
             {group.description && <p className="text-xs text-muted-foreground truncate mt-1">{group.description}</p>}
-            <p className="text-xs text-muted-foreground capitalize mt-0.5">{role}</p>
+            <p className="text-xs text-muted-foreground capitalize mt-0.5">{translateEnumLabel(role)}</p>
           </div>
           <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
         </CardContent>
