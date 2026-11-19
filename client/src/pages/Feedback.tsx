@@ -1,3 +1,4 @@
+import { useI18n } from "@/hooks/useI18n";
 import { FeedbackReplies } from "@/components/FeedbackReplies";
 import { useUser } from "@/contexts/UserContext";
 import { Card } from "@/components/ui/card";
@@ -40,15 +41,17 @@ const feedbackFormSchema = z.object({
 
 type FeedbackFormValues = z.infer<typeof feedbackFormSchema>;
 
-const feedbackTypes = [
-  { value: "app_design", label: "App Design" },
-  { value: "content_quality", label: "Content Quality" },
-  { value: "feature_request", label: "Feature Request" },
-  { value: "bug_issue", label: "Bug / Issue" },
-  { value: "other", label: "Other" },
+export default function Feedback() {
+  const {t}=useI18n();
+  const feedbackTypes = [
+  { value: "app_design", label: t("ui_appDesign") },
+  { value: "content_quality", label: t("ui_contentQuality") },
+  { value: "feature_request", label: t("ui_featureRequest") },
+  { value: "bug_issue", label: t("ui_bugIssue") },
+  { value: "other", label: t("ui_other") },
 ];
 
-export default function Feedback() {
+
   const { toast } = useToast();
   const {user,getIdToken}=useUser();
   const cache=useQueryClient();
@@ -56,7 +59,7 @@ export default function Feedback() {
   const [submitted, setSubmitted] = useState(false);
 
   const form = useForm<FeedbackFormValues>({
-    resolver: zodResolver(feedbackFormSchema),
+    resolver: zodResolver(feedbackFormSchema.extend({email:z.string().email(t("ui_emailInvalid")).optional().or(z.literal("")),feedbackType:z.string().min(1,t("ui_chooseType")),message:z.string().min(10,t("ui_messageMin")).max(10000)})),
     defaultValues: {
       name: "",
       email: "",
@@ -69,21 +72,21 @@ export default function Feedback() {
     mutationFn: async (data: FeedbackFormValues) => {
       const token=user?await getIdToken():null;
       const res=await fetch("/api/feedback",{method:"POST",headers:{"Content-Type":"application/json",...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(data)});
-      if(!res.ok)throw new Error("Unable to send feedback. Please check your choices and try again.");return res.json();
+      if(!res.ok)throw new Error(t("ui_feedbackFailed"));return res.json();
     },
     onSuccess: (data) => {
       if(data.token)setRecovery(`${data.id}.${data.token}`);
       void cache.invalidateQueries({queryKey:["feedback-private"]});
       setSubmitted(true);
       toast({
-        title: "Thank you",
-        description: "Thank you for helping us improve.",
+        title: t("ui_thankYou"),
+        description: t("ui_thankYouNote"),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to send feedback. Please try again.",
+        title: t("ui_bugIssue"),
+        description: error.message || t("ui_feedbackFailed"),
         variant: "destructive",
       });
     },
@@ -100,21 +103,21 @@ export default function Feedback() {
   if (submitted) {
     return (
       <div className="max-w-2xl mx-auto py-8">
-        {recovery&&<div className="rounded border p-4 mb-4"><h2 className="font-bold">Save your private recovery code</h2><p className="break-all select-all">{recovery}</p><Button onClick={()=>navigator.clipboard.writeText(recovery).then(()=>toast({title:"Recovery code copied"})).catch(()=>toast({title:"Copy the recovery code above manually"}))}>Copy recovery code</Button><p>Keep this outside your browser. Anyone with this code can read the conversation. Access expires after one year unless revoked sooner.</p></div>}
+        {recovery&&<div className="rounded border p-4 mb-4"><h2 className="font-bold">{t("ui_saveCode")}</h2><p className="break-all select-all">{recovery}</p><Button onClick={()=>navigator.clipboard.writeText(recovery).then(()=>toast({title:t("ui_codeSaved")})).catch(()=>toast({title:t("ui_codeManual")}))}>{t("ui_copyCode")}</Button><p>{t("ui_keepCode")}</p></div>}
         <FeedbackReplies initialCode={recovery}/>
 
         <Card className="bg-card border-card-border shadow-xl shadow-primary/10 p-8 md:p-12 text-center">
           <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
           </div>
-          <h2 className="font-serif text-2xl font-bold text-primary mb-4">Thank You</h2>
+          <h2 className="font-serif text-2xl font-bold text-primary mb-4">{t("ui_thankYou")}</h2>
           <p className="text-foreground/80 mb-6">
-            Thank you for helping us improve.
+            {t("ui_thankYouNote")}
           </p>
           <Link href="/contact">
             <Button variant="outline" data-testid="button-back-contact">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Contact
+              {t("ui_backContact")}
             </Button>
           </Link>
         </Card>
@@ -129,16 +132,16 @@ export default function Feedback() {
         <Link href="/contact">
           <Button variant="ghost" size="sm" data-testid="button-back-contact">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Contact
+            {t("ui_backContact")}
           </Button>
         </Link>
       </div>
 
       <div className="text-center space-y-4">
-        <h1 className="font-serif text-3xl md:text-4xl font-bold text-primary">Feedback & Suggestions</h1>
+        <h1 className="font-serif text-3xl md:text-4xl font-bold text-primary">{t("ui_feedbackTitle")}</h1>
         <div className="decorative-divider" />
         <p className="text-foreground/80 max-w-xl mx-auto">
-          Your feedback helps us improve. Share ideas, suggestions, or concerns to help us serve you better.
+          {t("ui_feedbackIntro")}
         </p>
       </div>
 
@@ -157,10 +160,10 @@ export default function Feedback() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name (optional)</FormLabel>
+                    <FormLabel>{t("ui_nameOptional")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Your name"
+                        placeholder={t("ui_nameOptional")}
                         data-testid="input-name"
                         {...field}
                       />
@@ -175,7 +178,7 @@ export default function Feedback() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email (optional)</FormLabel>
+                    <FormLabel>{t("ui_emailOptional")}</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
@@ -195,12 +198,12 @@ export default function Feedback() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Feedback Type <span className="text-destructive">*</span>
+                      {t("ui_feedbackType")} <span className="text-destructive">*</span>
                     </FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-feedback-type">
-                          <SelectValue placeholder="Select feedback type" />
+                          <SelectValue placeholder={t("ui_chooseType")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -222,11 +225,11 @@ export default function Feedback() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Message <span className="text-destructive">*</span>
+                      {t("ui_message")} <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Share your feedback, ideas, or suggestions..."
+                        placeholder={t("ui_feedbackIntro")}
                         className="min-h-[120px] resize-none"
                         data-testid="textarea-message"
                         {...field}
@@ -238,9 +241,9 @@ export default function Feedback() {
               />
 
               <div className="space-y-3 pt-4">
-                <label className="flex gap-2"><input type="checkbox" {...form.register("receiveReplies")}/>Yes, I would like private ministry replies inside the app.</label>
-                <p className="text-sm">Optional. {user?"This links the conversation privately to your signed-in account.":"As a guest, save the private recovery code provided after submission and return to check for replies."} Leave unchecked to submit without a reply channel.</p>
-                {form.watch("receiveReplies")&&<label className="flex gap-2"><input type="checkbox" {...form.register("emailConsent")}/>Also email replies to the address I provided (optional).</label>}
+                <label className="flex gap-2"><input type="checkbox" {...form.register("receiveReplies")}/>{t("ui_replyConsent")}</label>
+                <p className="text-sm">{user?t("ui_accountOptIn"):t("ui_guestOptIn")} {t("ui_noReplyOptIn")}</p>
+                {form.watch("receiveReplies")&&<label className="flex gap-2"><input type="checkbox" {...form.register("emailConsent")}/>{t("ui_emailConsent")}</label>}
 
                 <Button
                   type="submit"
@@ -248,7 +251,7 @@ export default function Feedback() {
                   disabled={submitMutation.isPending}
                   data-testid="button-submit-feedback"
                 >
-                  {submitMutation.isPending ? "Sending..." : "Submit Feedback"}
+                  {submitMutation.isPending ? t("ui_sending") : t("ui_send")}
                 </Button>
                 
                 <button
@@ -258,7 +261,7 @@ export default function Feedback() {
                   data-testid="link-fallback-email"
                 >
                   <AlertCircle className="w-3 h-3" />
-                  <span>Having trouble? Open in email app instead</span>
+                  <span>{t("ui_emailFallback")}</span>
                 </button>
               </div>
             </form>

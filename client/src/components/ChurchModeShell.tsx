@@ -5,7 +5,7 @@ import type { Church } from "@shared/schema";
 import { CHURCH_ROLE_LABELS, type ChurchRole } from "@shared/schema";
 import { Home, Mic2, Megaphone, Users, Heart, Shield, Settings, ChevronRight, HandCoins, MessageSquare, UserCircle, Building2, Globe, Check, Menu, X, CalendarDays, ClipboardList, LayoutDashboard, BookText, Music2 } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
-import { getCurrentLang } from "@/utils/i18n";
+import { applyAppLanguage, type AppLanguage } from "@/utils/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
@@ -42,7 +42,7 @@ function hexIsBright(hex: string): boolean {
   return (r * 299 + g * 587 + b * 114) / 1000 > 155;
 }
 
-const CHURCH_LANGS = [
+const CHURCH_LANGS: {code: AppLanguage; label: string}[] = [
   { code: "en", label: "English" },
   { code: "es", label: "Español" },
   { code: "fr", label: "Français" },
@@ -50,16 +50,13 @@ const CHURCH_LANGS = [
 
 function LangPicker({ headerTextSecondary, headerBorder }: { headerTextSecondary: string; headerBorder: string }) {
   const [open, setOpen] = useState(false);
-  const [current, setCurrent] = useState(() => getCurrentLang());
+  const { lang: current } = useI18n();
 
-  const handleSelect = (code: string, e: React.MouseEvent | React.TouchEvent) => {
+  const handleSelect = (code: AppLanguage, e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    if (code === "en") localStorage.removeItem("devotionalLang");
-    else localStorage.setItem("devotionalLang", code);
-    setCurrent(code);
+    applyAppLanguage(code);
     setOpen(false);
-    window.location.reload();
   };
 
   const handleToggle = (e: React.MouseEvent) => {
