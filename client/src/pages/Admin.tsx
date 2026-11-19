@@ -1,3 +1,4 @@
+import { FeedbackAdmin } from "@/components/FeedbackAdmin";
 import MinistryShopAdmin from "@/components/MinistryShopAdmin";
 import { SongLanguagePicker } from "@/components/SongLanguagePicker";
 import { SONG_LANGUAGES, songLanguageCategories, serializeSongLanguages } from "@shared/song-languages";
@@ -2619,6 +2620,7 @@ export default function Admin() {
               </p>
             </CardHeader>
             <CardContent className="p-6">
+              <FeedbackAdmin />
               <MessagesInbox />
             </CardContent>
           </Card>

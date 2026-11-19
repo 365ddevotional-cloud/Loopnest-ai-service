@@ -1,3 +1,5 @@
+import { FeedbackReplies } from "@/components/FeedbackReplies";
+import { useUser } from "@/contexts/UserContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +8,7 @@ import { ArrowLeft, CheckCircle, AlertCircle, MessageSquare } from "lucide-react
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -31,7 +33,9 @@ const feedbackFormSchema = z.object({
   name: z.string().optional(),
   email: z.string().email("Please enter a valid email").optional().or(z.literal("")),
   feedbackType: z.string().min(1, "Please select a feedback type"),
-  message: z.string().min(10, "Please enter your feedback (at least 10 characters)"),
+  message: z.string().min(10, "Please enter your feedback (at least 10 characters)").max(10000),
+  receiveReplies:z.boolean().default(false),
+  emailConsent:z.boolean().default(false),
 });
 
 type FeedbackFormValues = z.infer<typeof feedbackFormSchema>;
@@ -46,6 +50,9 @@ const feedbackTypes = [
 
 export default function Feedback() {
   const { toast } = useToast();
+  const {user,getIdToken}=useUser();
+  const cache=useQueryClient();
+  const [recovery,setRecovery]=useState("");
   const [submitted, setSubmitted] = useState(false);
 
   const form = useForm<FeedbackFormValues>({
@@ -60,9 +67,13 @@ export default function Feedback() {
 
   const submitMutation = useMutation({
     mutationFn: async (data: FeedbackFormValues) => {
-      return apiRequest("POST", "/api/feedback", data);
+      const token=user?await getIdToken():null;
+      const res=await fetch("/api/feedback",{method:"POST",headers:{"Content-Type":"application/json",...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(data)});
+      if(!res.ok)throw new Error("Unable to send feedback. Please check your choices and try again.");return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if(data.token)setRecovery(`${data.id}.${data.token}`);
+      void cache.invalidateQueries({queryKey:["feedback-private"]});
       setSubmitted(true);
       toast({
         title: "Thank you",
@@ -79,7 +90,7 @@ export default function Feedback() {
   });
 
   const onSubmit = (data: FeedbackFormValues) => {
-    submitMutation.mutate(data);
+    submitMutation.mutate({...data,emailConsent:data.receiveReplies&&data.emailConsent});
   };
 
   const handleFallbackEmail = () => {
@@ -89,6 +100,9 @@ export default function Feedback() {
   if (submitted) {
     return (
       <div className="max-w-2xl mx-auto py-8">
+        {recovery&&<div className="rounded border p-4 mb-4"><h2 className="font-bold">Save your private recovery code</h2><p className="break-all select-all">{recovery}</p><Button onClick={()=>navigator.clipboard.writeText(recovery).then(()=>toast({title:"Recovery code copied"})).catch(()=>toast({title:"Copy the recovery code above manually"}))}>Copy recovery code</Button><p>Keep this outside your browser. Anyone with this code can read the conversation. Access expires after one year unless revoked sooner.</p></div>}
+        <FeedbackReplies initialCode={recovery}/>
+
         <Card className="bg-card border-card-border shadow-xl shadow-primary/10 p-8 md:p-12 text-center">
           <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
@@ -110,6 +124,7 @@ export default function Feedback() {
 
   return (
     <div className="max-w-2xl mx-auto py-8 space-y-6">
+      <FeedbackReplies initialCode={recovery}/>
       <div className="mb-6">
         <Link href="/contact">
           <Button variant="ghost" size="sm" data-testid="button-back-contact">
@@ -223,6 +238,10 @@ export default function Feedback() {
               />
 
               <div className="space-y-3 pt-4">
+                <label className="flex gap-2"><input type="checkbox" {...form.register("receiveReplies")}/>Yes, I would like private ministry replies inside the app.</label>
+                <p className="text-sm">Optional. {user?"This links the conversation privately to your signed-in account.":"As a guest, save the private recovery code provided after submission and return to check for replies."} Leave unchecked to submit without a reply channel.</p>
+                {form.watch("receiveReplies")&&<label className="flex gap-2"><input type="checkbox" {...form.register("emailConsent")}/>Also email replies to the address I provided (optional).</label>}
+
                 <Button
                   type="submit"
                   className="w-full"

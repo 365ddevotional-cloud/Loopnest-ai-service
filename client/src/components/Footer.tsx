@@ -51,9 +51,9 @@ export default function Footer() {
               {t("bibleTranslationsUsed")}
             </p>
             <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground/70">
-              <span>King James Version (KJV) – Public Domain</span>
-              <span>World English Bible (WEB) – Public Domain</span>
-              <span>American Standard Version (ASV 1901) – Public Domain</span>
+              <span>King James Version (KJV) – Public domain outside the UK; UK Crown rights apply</span>
+              <a href="https://ebible.org/eng-web/webfaq.htm" target="_blank" rel="noopener noreferrer">World English Bible (WEB) – Public Domain</a>
+              <a href="https://ebible.org/find/details.php?id=eng-asv" target="_blank" rel="noopener noreferrer">American Standard Version (ASV 1901) – Public Domain</a>
               <span>Douay-Rheims Bible (DRB) – Public Domain</span>
             </div>
             <p className="text-xs text-muted-foreground/60 italic">

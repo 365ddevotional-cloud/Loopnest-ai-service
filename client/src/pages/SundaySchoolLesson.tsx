@@ -1,3 +1,4 @@
+import { ScriptureLinks } from "@/components/ScriptureReading";
 import { ShopFeature } from "@/components/ShopFeature";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
@@ -240,6 +241,7 @@ export default function SundaySchoolLessonPage() {
             <blockquote className="border-l-4 border-primary/30 pl-4 italic text-foreground/85 leading-relaxed">
               {lesson.scriptureText}
             </blockquote>
+            <ScriptureLinks text={`${lesson.scriptureReferences}; ${lesson.lessonContent}; ${lesson.discussionQuestions.join(" ")}`}/>
           </CardContent>
         </Card>
 
