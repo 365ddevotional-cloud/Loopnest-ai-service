@@ -1,6 +1,7 @@
 import { ContentLanguageNotice } from "@/components/ContentLanguageNotice";
 import { ScriptureLinks } from "@/components/ScriptureReading";
 import { useState, useEffect } from "react";
+import { useQuery } from '@tanstack/react-query';
 import { format, parseISO } from "date-fns";
 import { type DevotionalResponse } from "@shared/schema";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -54,6 +55,21 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
   const { resolvedTheme, setTheme } = useTheme();
   const audio = useAudioReader();
   const { t } = useI18n();
+  const contentLanguage = (devotional as DevotionalResponse & {_translatedTo?:string})._translatedTo || 'en';
+  // Preload the existing English text so fallback speech still starts inside a
+  // fresh tap on iPhone. This endpoint only reads saved content; it generates none.
+  const englishAudio = useQuery<DevotionalResponse>({
+    queryKey: ['devotional-audio-original', devotional.id, devotional.date],
+    enabled: contentLanguage !== 'en', retry: false, staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const response = await fetch(`/api/devotionals/date/${encodeURIComponent(devotional.date)}?lang=en`, {credentials:'include'});
+      if (!response.ok) throw new Error('English original unavailable');
+      const original = await response.json();
+      if (original.id !== devotional.id || typeof original.content !== 'string' ||
+          !Array.isArray(original.prayerPoints) || !Array.isArray(original.faithDeclarations)) throw new Error('English original does not match');
+      return original;
+    },
+  });
   const sizeClasses = fontSizeClasses[fontSize];
   const { text: scriptureText, isLoading, isFallback } = useScriptureText(
     devotional.scriptureReference,
@@ -171,7 +187,7 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
                   ...(propheticItems.length > 0 ? [`${t("propheticDeclaration")}:`, ...propheticItems.map(d => d + ".")] : []),
                   ...(invitation ? [`Need Prayer or Counseling? ${invitation}`] : []),
                 ].join(" ");
-                audio.play(listenText, devotional.title, { devotional: true });
+                audio.play(listenText, devotional.title, { devotional: true, language: contentLanguage });
               }}
               className="min-h-8 rounded-full px-2 text-[11px] font-bold gap-1"
               data-testid="button-listen-devotional"
@@ -203,6 +219,17 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
               compact
             />
           </div>
+          {audio.error && contentLanguage !== 'en' && <div className="mb-4 space-y-2" data-testid="devotional-english-audio-fallback">
+            <Button size="sm" variant="outline" disabled={!englishAudio.data} onClick={() => {
+              const original = englishAudio.data;
+              if (!original) return;
+              const text = [original.title, original.scriptureText, original.scriptureReference, original.content,
+                ...original.prayerPoints, ...original.faithDeclarations, original.christianQuotes, original.propheticDeclaration].filter(Boolean).join('\n\n');
+              audio.play(text, original.title, {devotional:true,language:'en'});
+            }}>{t('ui_listenEnglishOriginal')}</Button>
+            {englishAudio.isLoading && <p className="text-sm">{t('ui_preparingEnglishAudio')}</p>}
+            {englishAudio.isError && <p className="text-sm">{t('ui_englishAudioUnavailable')}</p>}
+          </div>}
           
           <h1 className="font-serif text-3xl md:text-5xl font-bold text-foreground mb-3 sm:mb-6 leading-tight">
             {devotional.title}

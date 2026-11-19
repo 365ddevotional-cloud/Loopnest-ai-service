@@ -33,9 +33,9 @@ test('language changes update mounted controls and notices while preserving an u
  await act(async()=>applyAppLanguage('fr'));
  assert.equal(container.querySelector('button')!.textContent,getUIText('ui_send','fr'));
  assert.equal(container.querySelector('textarea')!.value,'Edited private message');
- assert.equal(container.querySelectorAll('[data-testid="content-language-notice"]').length,3);
- assert.ok(container.textContent!.includes(getUIText('ui_savedTranslation','fr')));
- assert.ok(container.textContent!.includes(getUIText('ui_approvedTranslation','fr')));
+ assert.equal(container.querySelectorAll('[data-testid="content-language-notice"]').length,1);
+ assert.ok(!container.textContent!.includes(getUIText('ui_savedTranslation','fr')));
+ assert.ok(!container.textContent!.includes(getUIText('ui_approvedTranslation','fr')));
  assert.ok(container.textContent!.includes(getUIText('ui_originalContent','fr')));
  assert.equal(document.documentElement.lang,'fr');assert.equal(window.history.length,before);
  assert.equal(new URL(window.location.href).searchParams.get('source'),'menu');assert.equal(window.location.hash,'#reply');

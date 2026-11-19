@@ -1664,5 +1664,10 @@
   "screen_89cc335ef9fa": "Ka tabbata kana son barin \"{name}\"?",
   "screen_508e7c108500": " · Ya shiga {date}",
   "screen_faa0783d73ee": "Shafi {page} · ",
-  "ui_approvedTranslation": "Fassarar da aka shirya da taimakon AI, wadda ma’aikatar bishara ta amince a wallafa. Ka kwatanta da asalin Turanci idan wani lafazi bai bayyana ba."
+  "ui_approvedTranslation": "Fassarar da aka shirya da taimakon AI, wadda ma’aikatar bishara ta amince a wallafa. Ka kwatanta da asalin Turanci idan wani lafazi bai bayyana ba.",
+  "ui_audioMissingVoice": "Wannan na’ura ba ta da muryar da ta dace da {language}. Gwada wata murya da aka riga aka girka ko ka saurari asalin Turanci.",
+  "ui_audioDidNotStart": "Sauti bai fara ba. Duba ƙarar sauti da yanayin shiru, sannan ka sake danna Saurara.",
+  "ui_listenEnglishOriginal": "Saurari asalin Turanci",
+  "ui_preparingEnglishAudio": "Ana shirya asalin Turanci…",
+  "ui_englishAudioUnavailable": "Ba a iya loda asalin Turanci ba. Sake buɗe shafin ka sake gwadawa."
 }

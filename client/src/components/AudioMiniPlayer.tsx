@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAudioReader } from "@/hooks/useAudioReader";
+import { useI18n } from '@/hooks/useI18n';
 
 const SPEED_OPTIONS = [
   { label: "0.75x", value: 0.75 },
@@ -19,11 +20,12 @@ const SPEED_OPTIONS = [
 ];
 
 export function AudioMiniPlayer() {
-  const { isSpeaking, isPaused, rate, currentLabel, error, pause, resume, stop, setSpeed } = useAudioReader();
+  const { isSpeaking, isPaused, rate, currentLabel, error, errorCode, language, pause, resume, stop, setSpeed } = useAudioReader();
+  const {t} = useI18n();
 
   if (error) return (
     <div role="alert" className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-card border border-border rounded-md shadow-lg px-4 py-3 w-[90vw] max-w-lg" data-testid="audio-reader-error">
-      <p className="text-sm">{error}</p>
+      <p className="text-sm">{errorCode === 'voice-unavailable' ? t('ui_audioMissingVoice').replace('{language}', language) : errorCode === 'start-timeout' ? t('ui_audioDidNotStart') : error}</p>
       <Button variant="ghost" size="icon" onClick={stop} aria-label="Dismiss audio message" className="shrink-0">
         <X className="h-4 w-4" />
       </Button>

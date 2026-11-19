@@ -1921,5 +1921,10 @@
   "screen_89cc335ef9fa": "Voulez-vous vraiment quitter « {name} » ?",
   "screen_508e7c108500": " · Membre depuis le {date}",
   "screen_faa0783d73ee": "Page {page} · ",
-  "ui_approvedTranslation": "Traduction réalisée avec l’aide de l’IA et approuvée pour publication par le ministère. En cas de doute sur la formulation, comparez avec l’original anglais."
+  "ui_approvedTranslation": "Traduction réalisée avec l’aide de l’IA et approuvée pour publication par le ministère. En cas de doute sur la formulation, comparez avec l’original anglais.",
+  "ui_audioMissingVoice": "Cet appareil ne dispose pas de voix adaptée à {language}. Essayez une autre voix installée ou écoutez l’original anglais.",
+  "ui_audioDidNotStart": "La lecture audio n’a pas démarré. Vérifiez le volume multimédia et le mode silencieux, puis appuyez de nouveau sur Écouter.",
+  "ui_listenEnglishOriginal": "Écouter l’original anglais",
+  "ui_preparingEnglishAudio": "Préparation de l’original anglais…",
+  "ui_englishAudioUnavailable": "L’original anglais n’a pas pu être chargé. Actualisez la page et réessayez."
 }

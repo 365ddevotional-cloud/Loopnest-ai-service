@@ -118,3 +118,57 @@ test("a reader's saved voice and chosen devotional speed take precedence", () =>
   assert.equal(spoken[0].rate,1.15);
   reader().stop();
 });
+
+test('translated readings choose their own language rather than a saved English voice', () => {
+  setup();
+  availableVoices = [{name:'English',voiceURI:'saved',lang:'en-US'},{name:'Yoruba',voiceURI:'yoruba',lang:'yo-NG'},{name:'Hausa',voiceURI:'hausa',lang:'ha-NG'}] as SpeechSynthesisVoice[];
+  (globalThis as any).localStorage.getItem=()=> 'saved';
+  reader().play('Jésù ni ìmọ́lẹ̀ ayé.', 'Yoruba', {language:'yo'});
+  assert.equal(spoken[0].voice.voiceURI, 'yoruba'); assert.equal(spoken[0].lang, 'yo-NG');
+  reader().play('Yesu ne hasken duniya.', 'Hausa', {language:'ha'});
+  assert.equal(spoken[1].voice.voiceURI, 'hausa'); assert.equal(spoken[1].lang, 'ha-NG');
+  reader().stop();
+});
+
+test('a missing translated voice produces a visible failure and English can be started explicitly', () => {
+  setup(); availableVoices=[{name:'English',voiceURI:'english',lang:'en-US'}] as SpeechSynthesisVoice[];
+  reader().play('Jésù ni ìmọ́lẹ̀ ayé.', 'Yoruba', {language:'yo'});
+  assert.equal(spoken.length, 0); assert.equal(reader().isSpeaking, false);
+  assert.equal(reader().errorCode, 'voice-unavailable'); assert.equal(reader().language, 'yo-NG');
+  reader().play('Jesus is the light of the world.', 'English original', {language:'en'});
+  assert.equal(spoken.length, 1); assert.equal(spoken[0].voice.voiceURI, 'english');
+  assert.equal(reader().error, null); reader().stop();
+});
+
+test('an asynchronously loaded voice list does not replace the requested language with English', () => {
+  setup(); reader().play('Haske mai ɗaukaka.', 'Hausa', {language:'ha'});
+  assert.equal(spoken.length,1); assert.equal(spoken[0].lang,'ha-NG');
+  spoken[0].onerror({error:'language-unavailable'});
+  assert.equal(reader().errorCode,'voice-unavailable'); reader().stop();
+});
+
+test('Pidgin prefers a Nigerian English voice when no dedicated Pidgin voice is installed', () => {
+  setup(); availableVoices=[{name:'English US',voiceURI:'us',lang:'en-US'},{name:'Nigerian English',voiceURI:'ng',lang:'en-NG'}] as SpeechSynthesisVoice[];
+  reader().play('Jesus na the light of the world.', 'Pidgin', {language:'pcm'});
+  assert.equal(spoken[0].voice.voiceURI,'ng'); reader().stop();
+});
+
+test('resume clears a paused speech queue before a new utterance is queued', () => {
+  setup(); let paused=true; const resume=synth.resume; const speak=synth.speak;
+  synth.resume=()=> {paused=false;};
+  synth.speak=(utterance)=> {assert.equal(paused,false); spoken.push(utterance);};
+  try {reader().play('Start inside this tap.');assert.equal(spoken.length,1);}
+  finally {reader().stop(); synth.resume=resume; synth.speak=speak;}
+});
+
+test('a speech engine that never starts cannot leave a false playing indicator forever', context => {
+  setup(); context.mock.timers.enable({apis:['setTimeout']});
+  try {
+    reader().play('This engine stays silent.');
+    context.mock.timers.tick(8001);
+    assert.equal(reader().isSpeaking,false);assert.equal(reader().errorCode,'start-timeout');
+    reader().play('This reading actually starts.');spoken[1].onstart();
+    context.mock.timers.tick(8001);
+    assert.equal(reader().isSpeaking,true);assert.equal(reader().error,null);
+  } finally {reader().stop();context.mock.timers.reset();}
+});

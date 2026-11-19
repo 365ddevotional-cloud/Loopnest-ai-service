@@ -306,6 +306,7 @@ function AppContent() {
       <>
         <Router />
         <PromisePopup />
+        <AudioMiniPlayer />
       </>
     );
   }

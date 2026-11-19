@@ -1664,5 +1664,10 @@
   "screen_89cc335ef9fa": "Ṣé ó dá ọ lójú pé o fẹ́ fi \"{name}\" sílẹ̀?",
   "screen_508e7c108500": " · Darapọ̀ ní {date}",
   "screen_faa0783d73ee": "Ojú ìwé {page} · ",
-  "ui_approvedTranslation": "Ìtumọ̀ tí a ṣe pẹ̀lú ìrànlọ́wọ́ AI, tí iṣẹ́ ìránṣẹ́ sì fọwọ́ sí fún ìtẹ̀jáde. Fi wé èdè Gẹ̀ẹ́sì àkọ́kọ́ bí ọ̀rọ̀ kan kò bá ṣe kedere."
+  "ui_approvedTranslation": "Ìtumọ̀ tí a ṣe pẹ̀lú ìrànlọ́wọ́ AI, tí iṣẹ́ ìránṣẹ́ sì fọwọ́ sí fún ìtẹ̀jáde. Fi wé èdè Gẹ̀ẹ́sì àkọ́kọ́ bí ọ̀rọ̀ kan kò bá ṣe kedere.",
+  "ui_audioMissingVoice": "Ẹrọ yìí kò ní ohùn tó yẹ fún {language}. Gbìyànjú ohùn mìíràn tí a ti fi sí ẹrọ tàbí gbọ́ èdè Gẹ̀ẹ́sì àkọ́kọ́.",
+  "ui_audioDidNotStart": "Ohùn kò bẹ̀rẹ̀. Ṣàyẹ̀wò bí ohùn ẹrọ ṣe ga àti ètò ìdákẹ́jẹ́, kí o sì tẹ Gbọ́ lẹ́ẹ̀kan sí i.",
+  "ui_listenEnglishOriginal": "Gbọ́ èdè Gẹ̀ẹ́sì àkọ́kọ́",
+  "ui_preparingEnglishAudio": "A ń mú èdè Gẹ̀ẹ́sì àkọ́kọ́ ṣetán…",
+  "ui_englishAudioUnavailable": "A kò lè gbé èdè Gẹ̀ẹ́sì àkọ́kọ́ wá. Tún ojú ìwé ṣí, kí o sì gbìyànjú lẹ́ẹ̀kan sí i."
 }
