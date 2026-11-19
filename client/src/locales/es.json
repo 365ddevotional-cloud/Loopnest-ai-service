@@ -1921,5 +1921,10 @@
   "screen_89cc335ef9fa": "¿Seguro que deseas salir de «{name}»?",
   "screen_508e7c108500": " · Se unió el {date}",
   "screen_faa0783d73ee": "Página {page} · ",
-  "ui_approvedTranslation": "Traducción realizada con ayuda de IA y aprobada por el ministerio para su publicación. Compárala con el original en inglés si alguna expresión no está clara."
+  "ui_approvedTranslation": "Traducción realizada con ayuda de IA y aprobada por el ministerio para su publicación. Compárala con el original en inglés si alguna expresión no está clara.",
+  "ui_audioMissingVoice": "Este dispositivo no tiene una voz adecuada para {language}. Prueba otra voz instalada o escucha el original en inglés.",
+  "ui_audioDidNotStart": "El audio no comenzó. Comprueba el volumen multimedia y el modo silencio; después pulsa Escuchar de nuevo.",
+  "ui_listenEnglishOriginal": "Escuchar el original en inglés",
+  "ui_preparingEnglishAudio": "Preparando el original en inglés…",
+  "ui_englishAudioUnavailable": "No se pudo cargar el original en inglés. Actualiza la página e inténtalo de nuevo."
 }
