@@ -86,8 +86,9 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
   );
 
   const scriptureEdition=(devotional as any)._scriptureTranslation;
-  const scriptureText=scriptureEdition?devotional.scriptureText:selectedScriptureText;
-  const isLoading=!scriptureEdition&&scriptureLoading;
+  const preparedScripture=!!(devotional as any)._preparationSourceHash;
+  const scriptureText=preparedScripture?devotional.scriptureText:selectedScriptureText;
+  const isLoading=!preparedScripture&&scriptureLoading;
 
   const {
     isSignedIn,
@@ -281,7 +282,7 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
                 — {devotional.scriptureReference}
               </p>
               <Badge variant="outline" className="text-xs font-bold no-default-active-elevate" data-testid="badge-translation">
-                {scriptureEdition || (isFallback ? "KJV" : translation)}
+                {scriptureEdition || (preparedScripture ? (contentLanguage==='ha'?'Hausa — translated quotation':'Nigerian Pidgin — translated quotation') : (isFallback ? "KJV" : translation))}
               </Badge>
             </div>
           </div>
