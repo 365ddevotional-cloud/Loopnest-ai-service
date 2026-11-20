@@ -141,7 +141,19 @@ export function createContentPreparation(deps:{read:(kind:Kind,id:number)=>Promi
   const latest=await readPlan();if(!latest||latest.value.lease?.token!==token)throw new Error('LEASE_CHANGED');const updated=latest.value.jobs.find(j=>j.key===job.key)!;Object.assign(updated,{status:nextStatus,textReady:job.textReady,part:job.part,textFailures:job.textFailures,...(error?{error}:{error:undefined})});latest.value.textBlockedUntil=state.textBlockedUntil;latest.value.audioBlockedUntil=state.audioBlockedUntil;delete latest.value.lease;await store!.write(key,latest.value,latest.etag);return {result:nextStatus,kind:job.kind,id:job.id,language:job.language,stage,error};
  }finally{busy=false;}}
  function register(app:Express,requireAdmin:RequestHandler){const guard:RequestHandler=(_q,r,n)=>{r.set('Cache-Control','private, no-store');n();};const origin:RequestHandler=(q,r,n)=>{try{if(new URL(q.get('origin')??'').host===q.get('host'))return n();}catch{}r.sendStatus(403);};const route=(fn:RequestHandler):RequestHandler=>(q,r,n)=>Promise.resolve(fn(q,r,n)).catch(()=>r.status(503).json({message:'Content preparation is unavailable. No automatic retry was made.'}));
-  app.get('/api/admin/content-preparation',guard,requireAdmin,route(async(_q,r)=>{r.json(await status());}));
+  app.get('/api/admin/content-preparation',guard,requireAdmin,route(async(q,r)=>{
+   const snapshot=await status();
+   if(q.query.reviewIssues!=='1')return void r.json(snapshot);
+   const held=snapshot.jobs.filter(j=>j.error==='LANGUAGE_REVIEW_FAILED' && !j.textReady);
+   const reviews=await Promise.all(held.map(async j=>{
+    const prefix=preparationPrefix(j.kind,j.id,j.language,j.hash);
+    const draft=await store?.read<{sourceHash:string;issues?:unknown[]}>(prefix+'/draft.json');
+    const issues=draft?.value.sourceHash===j.hash && Array.isArray(draft.value.issues)
+      ? draft.value.issues.filter((v):v is string=>typeof v==='string').slice(0,20) : [];
+    return {kind:j.kind,id:j.id,language:j.language,date:j.date,issues};
+   }));
+   r.json({...snapshot,reviews});
+  }));
   app.post('/api/admin/content-preparation/plan',guard,requireAdmin,origin,route(async(q,r)=>{const input=z.object({start:z.string(),end:z.string()}).strict().parse(q.body);r.json(await plan(input.start,input.end));}));
   app.post('/api/admin/content-preparation/step',guard,requireAdmin,origin,route(async(_q,r)=>{r.json(await step());}));
   const base='/api/prepared-audio/:kind/:id/:language/:hash';
