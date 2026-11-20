@@ -82,3 +82,11 @@ test('known text 503 gets a bounded backoff; audio is never repeated as a text r
  const plan=f.json.get('content-preparation/plan.json')!;plan.value.textBlockedUntil='2000-01-01';plan.value.jobs[0].textFailures=3;
  assert.equal((await f.service.step()).result,'blocked');assert.equal(f.textCalls(),2);assert.equal(f.audioCalls(),0);
 });
+
+
+test('text model selection is limited to verified free-tier Flash models',async()=>{
+ const f=fixture(),env={...f.env,CONTENT_PREPARATION_TEXT_MODEL:'gemini-3.6-flash'};
+ let calls=0;const translator=createPreparationTranslator(env,async url=>{calls++;assert.match(String(url),/gemini-3\.6-flash:generateContent$/);throw new PreparationProviderError(503);});
+ await assert.rejects(()=>translator('devotional',f.devotional,'ha'),PreparationProviderError);assert.equal(calls,1);
+ env.CONTENT_PREPARATION_TEXT_MODEL='paid-model';await assert.rejects(()=>translator('devotional',f.devotional,'ha'),/FREE_TEXT_MODEL_REQUIRED/);assert.equal(calls,1);
+});

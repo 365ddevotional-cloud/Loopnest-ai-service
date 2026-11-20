@@ -49,7 +49,8 @@ export class PreparationProviderError extends Error {constructor(public status:n
 export function createPreparationTranslator(env:NodeJS.ProcessEnv=process.env,request:typeof fetch=fetch,draftStore?:ArtifactStore|null){
  async function json(prompt:string){
   const config=googleVoiceConfig(env);if(!config)throw new Error('FREE_PROVIDER_DISABLED');
-  const response=await request('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',{method:'POST',signal:AbortSignal.timeout(120000),headers:{'Content-Type':'application/json','x-goog-api-key':config.key},body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:.2,maxOutputTokens:32768,responseMimeType:'application/json'}})});
+  const model=env.CONTENT_PREPARATION_TEXT_MODEL??'gemini-3.8-flash';if(!['gemini-3.8-flash','gemini-3.6-flash'].includes(model))throw new Error('FREE_TEXT_MODEL_REQUIRED');
+  const response=await request(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{method:'POST',signal:AbortSignal.timeout(120000),headers:{'Content-Type':'application/json','x-goog-api-key':config.key},body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:.2,maxOutputTokens:32768,responseMimeType:'application/json'}})});
   if(!response.ok)throw new PreparationProviderError(response.status);
   const raw=await response.text();if(raw.length>1024*1024)throw new Error('TEXT_RESPONSE_SIZE');const data=JSON.parse(raw);if(data.candidates?.length!==1||data.candidates[0].finishReason!=='STOP')throw new Error('INCOMPLETE_TRANSLATION');
   return JSON.parse(data.candidates[0].content.parts.filter((p:any)=>typeof p.text==='string'&&!p.thought).map((p:any)=>p.text).join(''));
