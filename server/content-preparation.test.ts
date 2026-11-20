@@ -102,3 +102,14 @@ test('an interrupted text job reuses its saved reviewed document without another
  assert.equal((await f.service.status()).textReady,1);
  assert.equal(f.audioCalls(),0);
 });
+
+test('targeted review edits retain unaffected text and enforce unique matches and locked quotations',async()=>{
+ const {applyReviewEdits}=await import('./content-preparation');
+ const draft={content:'One paragraph.\n\nDone in the past.',prayerPoints:['First','Second'],scriptureText:'Exact verse.'};
+ const edit={field:'content',index:-1,original:'Done in the past',replacement:'That followed'};
+ assert.deepEqual(applyReviewEdits(draft,[edit,{field:'prayerPoints',index:1,original:'Second',replacement:'Next'}],true),
+  {...draft,content:'One paragraph.\n\nThat followed.',prayerPoints:['First','Next']});
+ assert.throws(()=>applyReviewEdits({...draft,content:'Done in the past. Done in the past.'},[edit],true),/INVALID_REVIEW_EDIT/);
+ assert.throws(()=>applyReviewEdits(draft,[{...edit,field:'scriptureText',original:'Exact'}],true),/INVALID_REVIEW_EDIT/);
+ assert.equal(draft.prayerPoints[1],'Second');
+});
