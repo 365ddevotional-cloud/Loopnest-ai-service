@@ -1,3 +1,4 @@
+import { useI18n } from '@/hooks/useI18n';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useTodayDevotional } from "@/hooks/use-devotionals";
 import { DevotionalCard } from "@/components/DevotionalCard";
@@ -10,7 +11,17 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { ShopFeature } from "@/components/ShopFeature";
 
+const languageNotice = {
+  en: 'Choose Yorùbá, Hausa, Igbo or Nigerian Pidgin for today’s devotional. Tap Listen to hear it in your language.',
+  yo: 'Yan èdè tí o fẹ́ fún ìfọkànsìn òní. Tẹ “Gbọ́” láti gbọ́ ọ ní èdè rẹ.',
+  ha: 'Zaɓi harshen da kake so don ibadar yau. Danna “Saurara” don ka ji saƙon a harshenka.',
+  ig: 'Họrọ asụsụ ị chọrọ maka ozi taa. Pịa bọtịnụ ntị ka ị nụ ozi ahụ n’asụsụ gị.',
+  pcm: 'Choose the language wey you want for today message. Tap Listen make you hear am for your language.',
+  es: 'Elige tu idioma para el devocional de hoy y pulsa Escuchar para oírlo.',
+  fr: 'Choisissez votre langue pour la méditation du jour, puis appuyez sur Écouter.',
+};
 export default function Home() {
+  const {lang}=useI18n();
   const { data: devotional, isLoading, error } = useTodayDevotional();
 
   if (isLoading) {
@@ -121,7 +132,7 @@ export default function Home() {
         transition={{ duration: 0.5, ease: "easeOut", delay: 0.15 }}
       >
         <aside aria-label="Devotional languages" className="flex items-center justify-between gap-2 rounded-lg border bg-card px-4 py-2 text-sm">
-          <p>Today’s devotional is available in Yorùbá, Hausa, Igbo and Nigerian Pidgin. Choose your language here, then tap Listen.</p>
+          <p>{languageNotice[lang] ?? languageNotice.en}</p>
           <LanguageSwitcher />
         </aside>
         <DevotionalCard devotional={devotional} today />

@@ -46,7 +46,6 @@ export function TodayLanguageListen({source,language,onPlay}:{source:any;languag
  }
  const hash=result?.hash??source._preparationSourceHash;
  function playbackStarted(){
-  onPlay();
   if(played.current)return;
   played.current=true;
   void fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'play',timezoneOffset:new Date().getTimezoneOffset()})}).catch(()=>{});
@@ -54,6 +53,6 @@ export function TodayLanguageListen({source,language,onPlay}:{source:any;languag
  return <div className="space-y-1">
   <Button type="button" size="sm" className="rounded-full" disabled={sending} onClick={()=>void listen()} data-testid="button-listen-devotional"><Volume2 className="mr-1 h-4 w-4"/>{t('listen')}</Button>
   <div role="status" className="text-sm">{error || (result?.state==='preparing'?'Preparing your recording. The player will appear here.':result?.state==='quota'?'Your request is saved. Audio preparation will resume when capacity returns.':result?.state==='review'?'This edition needs a language review before it can be heard.':'')}</div>
-  {result?.state==='ready'&&hash&&<PreparedAudioPlayer ref={audio} kind="devotional" language={language} source={{...source,_preparationSourceHash:hash}} autoStart onPlay={playbackStarted}/>}
+  {result?.state==='ready'&&hash&&<PreparedAudioPlayer ref={audio} kind="devotional" language={language} source={{...source,_preparationSourceHash:hash}} autoStart onPlay={onPlay} onPlaying={playbackStarted}/>}
  </div>;
 }
