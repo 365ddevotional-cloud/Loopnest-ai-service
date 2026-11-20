@@ -4,7 +4,33 @@ import { readFileSync } from 'node:fs';
 import express from 'express';
 import request from 'supertest';
 import pilot from './content-translations/2026-11-19-glorious-light.json';
+import igbo from './content-translations/2026-11-19-glorious-light-igbo.json';
 import { validateTranslationBatch, sourceHash, registerContentTranslationReview } from './content-translation-review';
+
+test('Igbo is a complete separate private draft, without extending the existing approval', async () => {
+  const batch = validateTranslationBatch(igbo);
+  assert.deepEqual(batch.source, pilot.source);
+  assert.equal(batch.sourceHash, pilot.sourceHash);
+  assert.deepEqual(batch.drafts.map(d => d.language), ['ig']);
+  assert.equal(batch.drafts[0].content.split(/\n\s*\n/).length, 4);
+  assert.equal(batch.drafts[0].prayerPoints.length, 7);
+  assert.equal(batch.drafts[0].faithDeclarations.length, 4);
+  const app = express();
+  registerContentTranslationReview(app, { batches: [pilot, igbo],
+    requireAdmin: (req, res, next) => req.headers['x-test-admin'] === 'yes' ? next() : void res.sendStatus(401),
+    readSource: async () => pilot.source,
+    publicationApproval: id => id === pilot.batchId ? { approvedBy: 'Moses Afolabi', approvedOn: '2026-11-19', independentLanguageReview: 'not-recorded' } : undefined,
+  });
+  await request(app).get('/api/admin/content-translations').expect(401);
+  const response = await request(app).get('/api/admin/content-translations').set('x-test-admin','yes').expect(200);
+  assert.equal(response.body[0].publicAvailability, 'published');
+  assert.equal(response.body[1].publicAvailability, 'not-published');
+  assert.equal(response.body[1].publicationApproval, undefined);
+  await request(app).get('/api/content-translations').expect(404);
+  for (const drafts of [[], [igbo.drafts[0], igbo.drafts[0]]]) {
+    assert.throws(() => validateTranslationBatch({...igbo, drafts}));
+  }
+});
 
 test('pilot includes five private complete drafts tied to the exact English source', () => {
   const batch = validateTranslationBatch(pilot);
@@ -96,3 +122,4 @@ test('review has no provider, public-reader import or write capability', () => {
   const client = readFileSync('client/src/components/ContentTranslationReview.tsx', 'utf8');
   assert.doesNotMatch(client, /dangerouslySetInnerHTML|server\/content-translations/);
 });
+

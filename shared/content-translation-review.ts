@@ -1,4 +1,4 @@
-export type TranslationDraftLanguage = 'es' | 'fr' | 'yo' | 'pcm' | 'ha';
+export type TranslationDraftLanguage = 'es' | 'fr' | 'yo' | 'pcm' | 'ha' | 'ig';
 export interface TranslationText {
   title: string;
   content: string;
@@ -36,3 +36,4 @@ export interface TranslationPublicationApproval {
   approvedOn: string;
   independentLanguageReview: 'not-recorded';
 }
+

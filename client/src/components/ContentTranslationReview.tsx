@@ -5,7 +5,7 @@ import {DevotionalRecordingStudio} from '@/components/DevotionalRecordingStudio'
 import type { ContentTranslationReview as Review, TranslationText, TranslationDraftLanguage } from '@shared/content-translation-review';
 
 const languages: Record<TranslationDraftLanguage, string> = {
-  es: 'Spanish', fr: 'French', yo: 'Yoruba', pcm: 'Nigerian Pidgin', ha: 'Hausa',
+  es: 'Spanish', fr: 'French', yo: 'Yoruba', pcm: 'Nigerian Pidgin', ha: 'Hausa', ig: 'Igbo',
 };
 function TextColumn({ text, lang, heading }: { text: TranslationText; lang: string; heading: string }) {
   return <article lang={lang} className="min-w-0 space-y-4 rounded-lg border p-4 break-words">
@@ -39,8 +39,10 @@ export function ContentTranslationReview() {
     {review.isLoading && <p role="status">Loading private drafts…</p>}
     {review.isError && <p role="alert">Drafts could not be loaded. Check your admin sign-in and refresh. No drafts were published.</p>}
     {review.data?.length === 0 && <p>No draft batches are available.</p>}
+    {language==='ig' && <p role="status" className="rounded border p-3 text-sm">Igbo text is prepared for review. Igbo speech quality has not been verified. No full Igbo recording has been released.</p>}
     {review.data?.map(batch => {
       const draft = batch.drafts.find(d => d.language === language);
+      if (!draft) return null;
       return <div key={batch.batchId} className="space-y-4">
         <h3 className="text-lg font-semibold">{batch.source.date} · {batch.source.title}</h3>
         <p role="status">{batch.publicAvailability === 'published' ? 'Published · Saved translation' : batch.publicAvailability === 'source-changed' ? 'Publication held · Source changed' : 'Not published · Language review pending · Ministry review pending'}</p>
@@ -59,3 +61,4 @@ export function ContentTranslationReview() {
     <p className="rounded border p-3 text-sm">Translation text is read-only. Publication requires a recorded approval covering the exact English source and translated text. Recordings have their own audition and publication controls. A text correction requires a new recording review.</p>
   </section>;
 }
+

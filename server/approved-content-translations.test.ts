@@ -4,11 +4,18 @@ import express from 'express';
 import request from 'supertest';
 import pilot from './content-translations/2026-11-19-glorious-light.json';
 import approval from './content-translations/2026-11-19-glorious-light.approval.json';
+import igbo from './content-translations/2026-11-19-glorious-light-igbo.json';
 import { createApprovedContentRelease, translationBatchHash } from './approved-content-translations';
 import { createDevotionalTranslator } from './devotional-translation';
 import { registerContentTranslationReview } from './content-translation-review';
 
 const release = createApprovedContentRelease(pilot, approval);
+test('existing approval cannot authorize the new private Igbo batch', () => {
+  assert.throws(() => createApprovedContentRelease(igbo, approval));
+  assert.throws(() => createApprovedContentRelease(igbo, { ...approval,
+    batchId: igbo.batchId, translationHash: translationBatchHash(igbo) }));
+  assert.equal(release.forBatch(igbo.batchId, igbo.sourceHash), undefined);
+});
 test('owner approval binds all five exact translations without inventing independent review', () => {
   assert.equal(translationBatchHash(pilot), approval.translationHash);
   for (const draft of pilot.drafts) {
@@ -113,3 +120,4 @@ test('admin release status reports publication and holds edited sources without 
   assert.equal(held.body[0].publicAvailability, 'source-changed');
   assert.equal(held.body[0].publicationApproval.approvedBy, 'Moses Afolabi');
 });
+
