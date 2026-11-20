@@ -1933,5 +1933,6 @@
   "ui_voiceSelected": "Selected voice",
   "ui_pidginDeviceVoice": "This device uses an English voice for Pidgin. Pronunciation may differ from a native Pidgin speaker.",
   "ui_refreshVoices": "Refresh voices",
-  "ui_retryDefaultVoice": "No sound? Use default voice"
+  "ui_retryDefaultVoice": "No sound? Use default voice",
+  "ui_audioIphoneSilentMode": "On iPhone/iPad, turn Silent Mode off to hear the reader. Music may still play in Silent Mode."
 }

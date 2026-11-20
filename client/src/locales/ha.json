@@ -1676,5 +1676,6 @@
   "ui_voiceSelected": "Muryar da aka zaɓa",
   "ui_pidginDeviceVoice": "Wannan na’ura tana amfani da muryar Turanci don Pidgin. Furucin na iya bambanta da na mai magana da Pidgin na asali.",
   "ui_refreshVoices": "Sake duba muryoyi",
-  "ui_retryDefaultVoice": "Babu sauti? Yi amfani da muryar asali"
+  "ui_retryDefaultVoice": "Babu sauti? Yi amfani da muryar asali",
+  "ui_audioIphoneSilentMode": "A iPhone/iPad, kashe Silent Mode don jin karatun. Waƙa na iya ci gaba da sauti ko da Silent Mode yana kunne."
 }

@@ -22,14 +22,20 @@ const SPEED_OPTIONS = [
 export function AudioMiniPlayer() {
   const { isSpeaking, isPaused, rate, currentLabel, error, errorCode, language, pause, resume, stop, setSpeed, retryDefaultVoice } = useAudioReader();
   const {t} = useI18n();
+  const isAppleMobile = typeof navigator !== 'undefined' && (
+    /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+  const soundHelp = isAppleMobile && <p className="basis-full text-xs text-muted-foreground" data-testid="audio-reader-ios-help">{t('ui_audioIphoneSilentMode')}</p>;
 
   if (error) return (
-    <div role="alert" className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-card border border-border rounded-md shadow-lg px-4 py-3 w-[90vw] max-w-lg" data-testid="audio-reader-error">
+    <div role="alert" className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-wrap items-center gap-3 bg-card border border-border rounded-md shadow-lg px-4 py-3 w-[90vw] max-w-lg" data-testid="audio-reader-error">
       <p className="text-sm">{errorCode === 'voice-unavailable' ? t('ui_audioMissingVoice').replace('{language}', language) : errorCode === 'start-timeout' ? t('ui_audioDidNotStart') : error}</p>
       {errorCode !== 'voice-unavailable' && <Button variant="outline" size="sm" onClick={retryDefaultVoice} data-testid="button-audio-retry-default">{t('ui_retryDefaultVoice')}</Button>}
       <Button variant="ghost" size="icon" onClick={stop} aria-label="Dismiss audio message" className="shrink-0">
         <X className="h-4 w-4" />
       </Button>
+      {errorCode !== 'voice-unavailable' && soundHelp}
     </div>
   );
 
@@ -99,6 +105,7 @@ export function AudioMiniPlayer() {
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
+      {soundHelp}
     </div>
   );
 }

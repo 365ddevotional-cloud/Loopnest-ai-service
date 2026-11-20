@@ -1676,5 +1676,6 @@
   "ui_voiceSelected": "Ohùn tí a yàn",
   "ui_pidginDeviceVoice": "Ẹ̀rọ yìí ń lo ohùn Gẹ̀ẹ́sì fún Pidgin. Bí ó ṣe ń pe ọ̀rọ̀ lè yàtọ̀ sí ti ẹni tó sọ Pidgin láti kékeré.",
   "ui_refreshVoices": "Tún àwọn ohùn ṣàyẹ̀wò",
-  "ui_retryDefaultVoice": "Kò sí ohùn? Lo ohùn àkọ́kọ́"
+  "ui_retryDefaultVoice": "Kò sí ohùn? Lo ohùn àkọ́kọ́",
+  "ui_audioIphoneSilentMode": "Lórí iPhone/iPad, pa Silent Mode kí o lè gbọ́ kíkà. Orin lè ṣì máa dún nígbà tí Silent Mode bá wà ní títan."
 }
