@@ -130,3 +130,15 @@ test('enabled Sola generation is private, concurrency safe, reused and requires 
   for(let i=0;i<4;i++)await request(f.app).get(`${path}/audio`).expect(302);
   assert.equal(f.calls(),1);
 });
+
+test('Sola replacement requires an explicit private replacement and can never overwrite a published recording',async()=>{
+  const f=fixture('yo',true);const old=(await f.upload()).body.audioHash;
+  const generate=(replacePrivate=false)=>request(f.app).post(`${f.base}/generate`).set('x-admin','fixture').set('Origin','http://127.0.0.1').set('Host','127.0.0.1').send({version:f.version(),replacePrivate});
+  await generate().expect(409);assert.equal(f.calls(),0);
+  await f.publish(old).expect(200);await generate(true).expect(409);assert.equal(f.calls(),0);
+  await f.publish(old,{published:false}).expect(200);
+  await generate(true).expect(200);assert.equal(f.calls(),1);
+  const status=(await request(f.app).get(f.base).set('x-admin','fixture')).body;
+  assert.equal(status.recording.provider,'google-sola');assert.equal(status.recording.published,false);assert.notEqual(status.recording.audioHash,old);
+  assert.equal(f.audio.size,2,'earlier private bytes are retained');
+});

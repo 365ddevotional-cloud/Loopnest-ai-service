@@ -2,7 +2,7 @@ import {useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {apiRequest} from '@/lib/queryClient';
 
-type RecordingStatus={version:string;script:string;storageReady:boolean;generationEnabled:boolean;generationProvider?:string;generationVoice?:string;generationDailyCharacterLimit?:number;recording:null|{audioHash:string;published:boolean;bytes:number;audioPath:string}};
+type RecordingStatus={version:string;script:string;storageReady:boolean;generationEnabled:boolean;generationProvider?:string;generationVoice?:string;generationDailyCharacterLimit?:number;recording:null|{audioHash:string;published:boolean;bytes:number;provider?:string;audioPath:string}};
 export function DevotionalRecordingStudio({id,language}:{id:number;language:string}) {
   const path=`/api/admin/devotional-recordings/${id}/${language}`;
   const status=useQuery<RecordingStatus>({queryKey:[path],queryFn:async()=>(await apiRequest('GET',path)).json(),retry:false});
@@ -14,7 +14,7 @@ export function DevotionalRecordingStudio({id,language}:{id:number;language:stri
     setBusy(true);setMessage('');
     try {
       if(upload==='generate') {
-        await apiRequest('POST',`${path}/generate`,{version:status.data.version});
+        await apiRequest('POST',`${path}/generate`,{version:status.data.version,replacePrivate:!!status.data.recording});
         setReviewed(false);setRights(false);setMessage('Google Sola recording saved privately. Listen to the full recording before publishing.');
       } else if(upload) {
         if(!file || file.size>20*1024*1024)throw new Error('Choose an MP3 or PCM WAV recording up to 20 MB.');
@@ -38,7 +38,7 @@ export function DevotionalRecordingStudio({id,language}:{id:number;language:stri
     {status.isError && <p role="alert">Recording status could not be loaded. Refresh your admin session.</p>}
     {data && <>
       <p className="text-sm">Google Sola · {data.generationEnabled?`Enabled, daily allowance ${data.generationDailyCharacterLimit?.toLocaleString()} characters.`:'Generation off until a server API key, verified free-tier project and daily allowance are configured.'}</p>
-      {data.generationEnabled && !data.recording && <button type="button" className="rounded border px-3 py-2 disabled:opacity-50" disabled={busy||!data.storageReady} onClick={()=>void action('generate')}>Generate private Sola recording</button>}
+      {data.generationEnabled && !data.recording?.published && data.recording?.provider!=='google-sola' && <button type="button" className="rounded border px-3 py-2 disabled:opacity-50" disabled={busy||!data.storageReady} onClick={()=>void action('generate')}>{data.recording?'Generate private Sola replacement':'Generate private Sola recording'}</button>}
       <p role="status">{!data.storageReady?'Private storage is unavailable.':data.recording?(data.recording.published?'Published recording':'Private recording · Review pending'):'No recording saved yet.'}</p>
       <details><summary className="cursor-pointer">Recording script · {data.script.length.toLocaleString()} characters</summary><textarea readOnly aria-label="Recording script" className="mt-2 min-h-48 w-full rounded border bg-background p-3" value={data.script} /></details>
       {data.recording && <audio key={data.recording.audioHash} controls preload="none" src={data.recording.audioPath} className="w-full" aria-label="Audition saved recording" />}

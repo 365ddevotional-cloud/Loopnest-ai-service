@@ -8,7 +8,7 @@ import {devotionalRecordingScript, devotionalRecordingSnapshot, type RecordingTe
 
 const langInput = z.enum(['en','es','fr','yo','pcm','ha','ig']);
 const hashInput = z.string().regex(/^[a-f0-9]{64}$/);
-const manifestInput = z.object({audioHash:hashInput, key:z.string(), bytes:z.number().int().positive(), published:z.boolean(),format:z.enum(['mp3','wav']).optional()});
+const manifestInput = z.object({audioHash:hashInput, key:z.string(), bytes:z.number().int().positive(), published:z.boolean(),format:z.enum(['mp3','wav']).optional(),provider:z.literal('google-sola').optional()});
 export type RecordingManifest = z.infer<typeof manifestInput>;
 export interface RecordingStore {
   generationLedger?:GenerationLedgerStore;
@@ -105,7 +105,7 @@ export function registerDevotionalRecordings(app:Express, deps:{
     const item=await current(req,true);
     if(!item)return void res.status(404).json({message:'No saved text is available for this language.'});
     const saved=deps.store?await read(item.prefix):null;
-    res.json({version:item.version,script:item.script,storageReady:!!deps.store,generationEnabled:!!googleVoiceConfig(env)&&!!deps.store?.generationLedger&&googleRecordingLanguages.includes(req.params.lang as any),generationProvider:'Google Gemini',generationVoice:'Sola',generationDailyCharacterLimit:googleVoiceConfig(env)?.cap??0,recording:saved?{audioHash:saved.manifest.audioHash,published:saved.manifest.published,bytes:saved.manifest.bytes,audioPath:`/api/devotional-recordings/${req.params.id}/${req.params.lang}/${item.version}/audio`}:null});
+    res.json({version:item.version,script:item.script,storageReady:!!deps.store,generationEnabled:!!googleVoiceConfig(env)&&!!deps.store?.generationLedger&&googleRecordingLanguages.includes(req.params.lang as any),generationProvider:'Google Gemini',generationVoice:'Sola',generationDailyCharacterLimit:googleVoiceConfig(env)?.cap??0,recording:saved?{audioHash:saved.manifest.audioHash,published:saved.manifest.published,bytes:saved.manifest.bytes,provider:saved.manifest.provider,audioPath:`/api/devotional-recordings/${req.params.id}/${req.params.lang}/${item.version}/audio`}:null});
   }));
   app.post(adminBase,guard,deps.requireAdmin,sameOrigin,express.raw({type:['audio/mpeg','audio/wav'],limit:'20mb'}),route(async(req,res)=>{
     const item=await current(req,true);
@@ -125,23 +125,25 @@ export function registerDevotionalRecordings(app:Express, deps:{
     res.json({saved:true,audioHash});
   }));
   app.post(`${adminBase}/generate`,guard,deps.requireAdmin,sameOrigin,route(async(req,res)=>{
-    const input=z.object({version:hashInput}).strict().parse(req.body);
+    const input=z.object({version:hashInput,replacePrivate:z.boolean().optional()}).strict().parse(req.body);
     const item=await current(req,true);
     if(!item||item.version!==input.version)return void res.sendStatus(409);
     const config=googleVoiceConfig(env);
     if(!config||!deps.store?.generationLedger||!googleRecordingLanguages.includes(req.params.lang as any))return void res.status(503).json({message:'Google narration is off. Configure the server key, confirm the free-tier project and set a daily character allowance first.'});
     if(item.script.length>6000)return void res.status(400).json({message:'This recording exceeds the single-generation limit. Prepare a reviewed recording manually.'});
     const previous=await read(item.prefix);
-    if(previous)return void res.json({saved:true,reused:true});
+    if(previous?.manifest.provider==='google-sola')return void res.json({saved:true,reused:true});
+    if(previous&&(previous.manifest.published||!input.replacePrivate))return void res.status(409).json({message:'Unpublish a public recording first. Explicitly choose a Sola replacement for an existing private recording.'});
     const result=await reserveGoogleRecording(deps.store.generationLedger,googleGenerationId(item.prefix),item.script.length,config.cap,new Date().toISOString().slice(0,10));
     if(result!=='reserved')return void res.status(409).json({message:result==='capacity'?'Daily narration allowance exhausted. Saved recordings still play.':'This script already has a generation claim. Check the saved recording or failed request before any manual repair.'});
     const bytes=await synthesize(item.script);
     if(!isPcmWave(bytes)||bytes.length>20*1024*1024)throw new Error('Invalid generated audio');
     // A concurrent manual upload wins. Never replace a reviewed recording.
-    if(await read(item.prefix))return void res.json({saved:true,reused:true});
+    const latest=await read(item.prefix);
+    if(latest?.etag!==previous?.etag)return void res.status(409).json({message:'The recording changed during generation. The newer recording was retained; no automatic retry was made.'});
     const key=`${item.prefix}/audio-${randomUUID()}.wav`,audioHash=sha(bytes);
     await deps.store.saveAudio(key,bytes,'wav');
-    await deps.store.saveManifest(`${item.prefix}/manifest.json`,{key,audioHash,bytes:bytes.length,published:false,format:'wav'});
+    await deps.store.saveManifest(`${item.prefix}/manifest.json`,{key,audioHash,bytes:bytes.length,published:false,format:'wav',provider:'google-sola'},previous?.etag);
     res.json({saved:true,reviewRequired:true});
   }));
   app.patch(adminBase,guard,deps.requireAdmin,sameOrigin,route(async(req,res)=>{
