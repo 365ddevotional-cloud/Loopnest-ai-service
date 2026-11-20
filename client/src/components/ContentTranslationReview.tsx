@@ -39,7 +39,7 @@ export function ContentTranslationReview() {
     {review.isLoading && <p role="status">Loading private drafts…</p>}
     {review.isError && <p role="alert">Drafts could not be loaded. Check your admin sign-in and refresh. No drafts were published.</p>}
     {review.data?.length === 0 && <p>No draft batches are available.</p>}
-    {language==='ig' && <p role="status" className="rounded border p-3 text-sm">Igbo text is prepared for review. Igbo speech is not available from the current ElevenLabs model. No Igbo narration has been generated or released.</p>}
+    {language==='ig' && <p role="status" className="rounded border p-3 text-sm">Igbo text is prepared for review. Igbo speech quality has not been verified. No full Igbo recording has been released.</p>}
     {review.data?.map(batch => {
       const draft = batch.drafts.find(d => d.language === language);
       if (!draft) return null;
