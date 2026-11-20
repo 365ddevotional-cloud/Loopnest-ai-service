@@ -20,6 +20,7 @@ const LANGUAGES = [
   { code: "yo", label: "Èdè Yorùbá" },
   { code: "pcm", label: "Naijá Pidgin" },
   { code: "ha", label: "Hausa" },
+  { code: "ig", label: "Igbo" },
 ] as const;
 
 export function useLanguageAutoApply() {

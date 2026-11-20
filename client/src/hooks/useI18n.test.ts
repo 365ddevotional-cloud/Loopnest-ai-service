@@ -22,6 +22,16 @@ test('reader translations have complete keys and preserve interpolation placehol
  }
 });
 
+test('Igbo selection persists its language and retains English fallback for other app sections',()=>{
+ assert.equal(isAppLanguage('ig'),true);
+ applyAppLanguage('ig');
+ assert.equal(getCurrentLang(),'ig');assert.equal(document.documentElement.lang,'ig');
+ assert.equal(new URL(window.location.href).searchParams.get('lang'),'ig');
+ assert.equal(getUIText('listen','ig'),'Gee ntị');
+ assert.equal(getUIText('ui_language','ig'),'Asụsụ');
+ assert.equal(getUIText('cm_admin','ig'),getUIText('cm_admin','en'));
+ applyAppLanguage('en');
+});
 test('language changes update mounted controls and notices while preserving an unsent draft',async()=>{
  function Reader(){const {t}=useI18n();const[draft,setDraft]=useState('Private unsent message');return React.createElement('div',null,
   React.createElement('button',{onClick:()=>setDraft('Edited private message')},t('ui_send')),

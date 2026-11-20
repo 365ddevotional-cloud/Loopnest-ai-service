@@ -78,7 +78,7 @@ test('Igbo selection shows only the complete private Igbo batch and no recording
     await act(async () => { select.value = 'ig'; select.dispatchEvent(new dom.window.Event('change', { bubbles: true })); });
     assert.ok(container.textContent?.includes(igbo.drafts[0].title));
     assert.ok(container.textContent?.includes(igbo.drafts[0].content));
-    assert.ok(container.textContent?.includes('Igbo speech quality has not been verified'));
+    assert.ok(container.textContent?.includes('Igbo — prepared translation'));
     assert.ok(container.textContent?.includes('Not published'));
     assert.ok(!container.textContent?.includes('Published · Saved translation'));
     assert.equal(container.querySelectorAll('article[lang="ig"]').length, 1);

@@ -6,6 +6,7 @@ import contentTranslationApproval from "./content-translations/2026-11-19-glorio
 import { registerContentTranslationReview } from "./content-translation-review";
 import contentTranslationPilot from "./content-translations/2026-11-19-glorious-light.json";
 import contentTranslationIgbo from "./content-translations/2026-11-19-glorious-light-igbo.json";
+import contentTranslationIgboApproval from "./content-translations/2026-11-19-glorious-light-igbo.approval.json";
 import { conversationDDL, registerFeedbackConversations } from "./feedback-conversations";
 import { pool as conversationPool } from "./db";
 import { getUncachableSendGridClient } from "./sendgrid";
@@ -46,8 +47,12 @@ import { eq, sql, desc, gte } from "drizzle-orm";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 const approvedContent = createApprovedContentRelease(contentTranslationPilot, contentTranslationApproval);
+const approvedIgboContent = createApprovedContentRelease(contentTranslationIgbo, contentTranslationIgboApproval);
 const { applyTranslation, applyTranslationToList } = createDevotionalTranslator({
-  resolveApproved: approvedContent.resolve,
+  resolveApproved: (source, lang) => {
+    const existing = approvedContent.resolve(source, lang);
+    return existing.covered ? existing : approvedIgboContent.resolve(source, lang);
+  },
   readLegacy: getOrCreateTranslation,
   readLegacyList: getCachedTranslationsForLanguage,
 });
@@ -172,7 +177,7 @@ export async function registerRoutes(
   });
   registerContentTranslationReview(app, {
     requireAdmin, batches: [contentTranslationPilot, contentTranslationIgbo],
-    publicationApproval: approvedContent.forBatch,
+    publicationApproval: (batchId, hash) => approvedContent.forBatch(batchId, hash) ?? approvedIgboContent.forBatch(batchId, hash),
     readSource: id => storage.getDevotional(id),
   });
   // The shop can fail closed without preventing the rest of the app from starting.

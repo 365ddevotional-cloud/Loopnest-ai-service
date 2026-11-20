@@ -6,10 +6,10 @@ import type { TranslationPublicationApproval, TranslationSource } from '../share
 const approvalSchema = z.object({
   version: z.literal(1), batchId: z.string(), sourceHash: z.string().regex(/^[a-f0-9]{64}$/),
   translationHash: z.string().regex(/^[a-f0-9]{64}$/),
-  languages: z.array(z.enum(['es', 'fr', 'yo', 'pcm', 'ha'])).length(5),
+  languages: z.array(z.enum(['es', 'fr', 'yo', 'pcm', 'ha', 'ig'])).min(1).max(6),
   status: z.literal('approved-for-publication'), approvedBy: z.string().min(1),
   approvedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  approvalSource: z.literal('User instruction: Approved all translations'),
+  approvalSource: z.enum(['User instruction: Approved all translations', 'User instruction: approved']),
   independentLanguageReview: z.literal('not-recorded'),
 }).strict();
 
@@ -46,7 +46,7 @@ export function createApprovedContentRelease(batchInput: unknown, approvalInput:
   const approvedLanguages = new Set<string>(approval.languages);
   if (approval.batchId !== batch.batchId || approval.sourceHash !== batch.sourceHash ||
       approval.translationHash !== translationBatchHash(batch) ||
-      approvedLanguages.size !== 5 || batch.drafts.length !== approvedLanguages.size ||
+      approvedLanguages.size !== approval.languages.length || batch.drafts.length !== approvedLanguages.size ||
       !batch.drafts.every(d => approvedLanguages.has(d.language))) throw new Error('Approval does not match the saved translations');
   const publicationApproval: TranslationPublicationApproval = {
     approvedBy: approval.approvedBy, approvedOn: approval.approvedOn,

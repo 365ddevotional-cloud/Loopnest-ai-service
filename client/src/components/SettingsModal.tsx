@@ -46,7 +46,7 @@ const themeOptions = [
   { value: "system" as const, label: "Follow device", icon: Monitor },
 ];
 
-const readerLanguages=[['en','English'],['es','Español'],['fr','Français'],['yo','Èdè Yorùbá'],['pcm','Naijá Pidgin'],['ha','Hausa']] as const;
+const readerLanguages=[['en','English'],['es','Español'],['fr','Français'],['yo','Èdè Yorùbá'],['pcm','Naijá Pidgin'],['ha','Hausa'],['ig','Igbo']] as const;
 const voiceSamples:Record<string,string>={
   en:'The Lord is my shepherd, I shall not want.',
   es:'Bienvenido. Escucha el devocional de hoy.',
@@ -54,6 +54,7 @@ const voiceSamples:Record<string,string>={
   yo:'Ẹ káàbọ̀. Ẹ gbọ́ ìfọkànsìn ojoojúmọ́ wa.',
   pcm:'Welcome. Make we listen to today devotional.',
   ha:'Barka da zuwa. Ku saurari karatun ibada na yau.',
+  ig:'Nnọọ. Geenụ ntị n’ofufe anyị nke taa.',
 };
 
 export function MobileSettingsSection() {
