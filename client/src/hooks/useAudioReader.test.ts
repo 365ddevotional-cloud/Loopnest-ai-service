@@ -32,6 +32,20 @@ function setup() {
   spoken.length = 0;
 }
 
+test('Igbo keeps its own voice identity and never silently substitutes English', () => {
+  setup();
+  availableVoices = [{name:'English',voiceURI:'en',lang:'en-US'}] as SpeechSynthesisVoice[];
+  reader().play('Jizọs bụ ìhè nke ụwa.', 'Igbo', {language:'ig'});
+  assert.equal(spoken.length,0);
+  assert.equal(reader().errorCode,'voice-unavailable');
+  assert.equal(reader().language,'ig-NG');
+  reader().stop();
+  availableVoices.push({name:'Igbo',voiceURI:'ig',lang:'ig-NG'} as SpeechSynthesisVoice);
+  reader().play('Jizọs bụ ìhè nke ụwa.', 'Igbo', {language:'ig'});
+  assert.equal(spoken[0].lang,'ig-NG');
+  assert.equal(spoken[0].voice.voiceURI,'ig');
+  reader().stop();
+});
 test("starts on the user's click even while voices are unavailable", () => {
   setup();
   getAvailableEnglishVoices(); // The settings/startup preload may already be pending.
@@ -229,4 +243,5 @@ test('a speech engine that never starts cannot leave a false playing indicator f
     assert.equal(reader().isSpeaking,true);assert.equal(reader().error,null);
   } finally {reader().stop();context.mock.timers.reset();}
 });
+
 

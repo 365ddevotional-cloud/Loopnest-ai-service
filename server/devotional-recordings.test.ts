@@ -7,7 +7,7 @@ import {registerDevotionalRecordings, privateRecordingStore, type RecordingManif
 import {devotionalRecordingSnapshot} from '../shared/devotional-recording';
 import pilot from './content-translations/2026-11-19-glorious-light.json';
 
-function fixture() {
+function fixture(language='yo') {
   let source:any=structuredClone(pilot.source), translation:any={...pilot.source,...pilot.drafts.find(d=>d.language==='yo'),_translatedTo:'yo'};
   const manifests=new Map<string,{manifest:RecordingManifest;etag:string}>(),audio=new Map<string,Buffer>();
   let sequence=0, signs=0, conflict=false;
@@ -26,14 +26,26 @@ function fixture() {
     requireAdmin:(req,res,next)=>req.session.isAdmin?next():void res.sendStatus(401),store,
     readSource:async()=>source,translate:async(s,lang)=>lang==='en'?s:translation,today:()=> '2026-11-19',
   });
-  const base='/api/admin/devotional-recordings/318/yo';
-  const version=()=>createHash('sha256').update(devotionalRecordingSnapshot(translation,'yo')).digest('hex');
+  if(language==='ig') translation={...translation,_translatedTo:'ig'};
+  const base=`/api/admin/devotional-recordings/318/${language}`;
+  const version=()=>createHash('sha256').update(devotionalRecordingSnapshot(translation,language)).digest('hex');
   const mp3=Buffer.concat([Buffer.from('ID3'),Buffer.alloc(256)]);
   const upload=(bytes=mp3)=>request(app).post(`${base}?version=${version()}`).set('x-admin','fixture').set('Origin','http://127.0.0.1').set('Host','127.0.0.1').set('Content-Type','audio/mpeg').send(bytes);
   const publish=(audioHash:string,extra:any={})=>request(app).patch(base).set('x-admin','fixture').set('Origin','http://127.0.0.1').set('Host','127.0.0.1').send({version:version(),audioHash,published:true,reviewed:true,rightsConfirmed:true,...extra});
   return {app,base,version,upload,publish,manifests,audio,setSource:(s:any)=>source=s,setTranslation:(s:any)=>translation=s,setConflict:()=>conflict=true,signs:()=>signs};
 }
 
+test('Igbo uses the same private recording and exact review gates, then reuses saved audio',async()=>{
+  const f=fixture('ig');
+  const path=`/api/devotional-recordings/318/ig/${f.version()}`;
+  const upload=(await f.upload().expect(200)).body;
+  assert.equal((await request(f.app).get(path)).body.available,false);
+  await request(f.app).get(`${path}/audio`).expect(404);
+  await f.publish(upload.audioHash,{reviewed:false}).expect(400);
+  await f.publish(upload.audioHash).expect(200);
+  for(let i=0;i<4;i++) await request(f.app).get(`${path}/audio`).expect(302);
+  assert.equal(f.audio.size,1);
+});
 test('recordings require admin and same origin for writes; public requests never upload or generate',async()=>{
   const f=fixture();
   await request(f.app).get(f.base).expect(401);

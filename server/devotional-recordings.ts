@@ -5,7 +5,7 @@ import {getSignedUrl} from '@aws-sdk/s3-request-presigner';
 import {z} from 'zod';
 import {devotionalRecordingScript, devotionalRecordingSnapshot, type RecordingText} from '../shared/devotional-recording';
 
-const langInput = z.enum(['en','es','fr','yo','pcm','ha']);
+const langInput = z.enum(['en','es','fr','yo','pcm','ha','ig']);
 const hashInput = z.string().regex(/^[a-f0-9]{64}$/);
 const manifestInput = z.object({audioHash:hashInput, key:z.string(), bytes:z.number().int().positive(), published:z.boolean()});
 export type RecordingManifest = z.infer<typeof manifestInput>;

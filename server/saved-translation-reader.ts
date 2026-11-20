@@ -1,5 +1,5 @@
 export const APP_LANGUAGES = {
-  en: "English", es: "Spanish", fr: "French", yo: "Yoruba", pcm: "Nigerian Pidgin", ha: "Hausa",
+  en: "English", es: "Spanish", fr: "French", yo: "Yoruba", pcm: "Nigerian Pidgin", ha: "Hausa", ig: "Igbo",
 } as const;
 
 // No spending has been approved for new content translations.

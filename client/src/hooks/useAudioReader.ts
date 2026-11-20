@@ -148,7 +148,7 @@ function chooseVoice(englishVoices: SpeechSynthesisVoice[], language = 'en'): Sp
   return englishVoices[0];
 }
 
-const speechLanguages: Record<string, string> = { en: 'en-US', es: 'es-ES', fr: 'fr-FR', yo: 'yo-NG', ha: 'ha-NG', pcm: 'pcm-NG' };
+const speechLanguages: Record<string, string> = { en: 'en-US', es: 'es-ES', fr: 'fr-FR', yo: 'yo-NG', ha: 'ha-NG', pcm: 'pcm-NG', ig: 'ig-NG' };
 function speechLanguage(language = 'en') {
   const base = language.toLowerCase().replace('_', '-').split('-')[0];
   return Object.hasOwn(speechLanguages, base) ? speechLanguages[base] : 'en-US';

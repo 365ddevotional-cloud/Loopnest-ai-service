@@ -5,11 +5,32 @@ import request from 'supertest';
 import pilot from './content-translations/2026-11-19-glorious-light.json';
 import approval from './content-translations/2026-11-19-glorious-light.approval.json';
 import igbo from './content-translations/2026-11-19-glorious-light-igbo.json';
+import igboApproval from './content-translations/2026-11-19-glorious-light-igbo.approval.json';
 import { createApprovedContentRelease, translationBatchHash } from './approved-content-translations';
 import { createDevotionalTranslator } from './devotional-translation';
 import { registerContentTranslationReview } from './content-translation-review';
 
 const release = createApprovedContentRelease(pilot, approval);
+test('separate Igbo approval covers only the exact reviewed Igbo text', async () => {
+  const igboRelease = createApprovedContentRelease(igbo, igboApproval);
+  assert.equal(translationBatchHash(igbo), igboApproval.translationHash);
+  const translator = createDevotionalTranslator({
+    resolveApproved: (source, lang) => {
+      const original = release.resolve(source, lang);
+      return original.covered ? original : igboRelease.resolve(source, lang);
+    }, readLegacy: async () => { throw Error('no provider or cache generation'); }, readLegacyList: async () => [],
+  });
+  const text = await translator.applyTranslation(pilot.source, 'ig');
+  assert.equal(text.title, igbo.drafts[0].title);
+  assert.equal(text.content, igbo.drafts[0].content);
+  assert.equal(text.scriptureText, pilot.source.scriptureText);
+  assert.equal(text._translatedTo, 'ig');
+  assert.equal((await translator.applyTranslation(pilot.source, 'ha')).content, pilot.drafts.find(d => d.language === 'ha')!.content);
+  assert.equal((await translator.applyTranslation({...pilot.source, content: 'Source changed'}, 'ig'))._translatedTo, undefined);
+  const edited = structuredClone(igbo); edited.drafts[0].prayerPoints.reverse();
+  assert.throws(() => createApprovedContentRelease(edited, igboApproval));
+  assert.throws(() => createApprovedContentRelease(igbo, {...igboApproval, languages:['ig','ig']}));
+});
 test('existing approval cannot authorize the new private Igbo batch', () => {
   assert.throws(() => createApprovedContentRelease(igbo, approval));
   assert.throws(() => createApprovedContentRelease(igbo, { ...approval,
