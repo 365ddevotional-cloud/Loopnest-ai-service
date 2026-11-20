@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {googleVoiceConfig,reserveGoogleRecording,createGoogleDevotionalNarrator,isPcmWave,type GenerationLedgerStore} from './devotional-google-voice';
+import {googleVoiceConfig,reserveGoogleRecording,createGoogleDevotionalNarrator,isPcmWave,normalizePcmWave,type GenerationLedgerStore} from './devotional-google-voice';
 import {narrationScripture} from '../shared/devotional-narration-scripture';
 import {devotionalRecordingScript,devotionalRecordingSnapshot} from '../shared/devotional-recording';
 import pilot from './content-translations/2026-11-19-glorious-light.json';
@@ -54,4 +54,16 @@ test('diagnostics expose only a safe status or known finish reason, never provid
   await assert.rejects(()=>invoke(new Response('SECRET PROVIDER BODY',{status:429})),/Google narration http \(429\)/);
   await assert.rejects(()=>invoke(new Response(JSON.stringify({candidates:[{finishReason:'MAX_TOKENS'}]}))),/incomplete \(MAX_TOKENS\)/);
   await assert.rejects(()=>invoke(new Response(JSON.stringify({candidates:[{finishReason:'SECRET PROVIDER BODY'}]}))),/NO_COMPLETE_CANDIDATE/);
+});
+
+test('valid provider WAV with optional chunks and extended fmt is normalized without losing PCM',()=>{
+  const pcm=Buffer.alloc(4800,13);
+  const fmt=Buffer.alloc(26);fmt.write('fmt ');fmt.writeUInt32LE(18,4);fmt.writeUInt16LE(1,8);fmt.writeUInt16LE(1,10);fmt.writeUInt32LE(24000,12);fmt.writeUInt32LE(48000,16);fmt.writeUInt16LE(2,20);fmt.writeUInt16LE(16,22);
+  const metadata=Buffer.from('LIST\x04\x00\x00\x00INFO','binary');
+  const data=Buffer.alloc(8);data.write('data');data.writeUInt32LE(pcm.length,4);
+  const header=Buffer.alloc(12);header.write('RIFF');header.write('WAVE',8);
+  const wave=Buffer.concat([header,fmt,metadata,data,pcm]);wave.writeUInt32LE(wave.length-8,4);
+  const normalized=normalizePcmWave(wave);assert.ok(isPcmWave(normalized));assert.deepEqual(normalized.subarray(44),pcm);
+  assert.throws(()=>normalizePcmWave(wave.subarray(0,-2)),/INVALID_WAV/);
+  const wrongRate=Buffer.from(wave);wrongRate.writeUInt32LE(44100,24);assert.throws(()=>normalizePcmWave(wrongRate),/UNSUPPORTED_PCM/);
 });

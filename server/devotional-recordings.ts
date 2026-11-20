@@ -141,7 +141,14 @@ export function registerDevotionalRecordings(app:Express, deps:{
     const previous=await read(item.prefix);
     if(previous?.manifest.provider==='google-sola')return void res.json({saved:true,reused:true});
     if(previous&&(previous.manifest.published||!input.replacePrivate))return void res.status(409).json({message:'Unpublish a public recording first. Explicitly choose a Sola replacement for an existing private recording.'});
-    const result=await generationStep('ALLOWANCE_RESERVATION',()=>reserveGoogleRecording(deps.store!.generationLedger!,googleGenerationId(item.prefix),item.script.length,config.cap,new Date().toISOString().slice(0,10)));
+    const claimId=googleGenerationId(item.prefix);
+    const day=new Date().toISOString().slice(0,10);
+    let result=await generationStep('ALLOWANCE_RESERVATION',()=>reserveGoogleRecording(deps.store!.generationLedger!,claimId,item.script.length,config.cap,day));
+    // An operator may authorize ONE manual recovery for a specific failed script.
+    // The original claim and character reservation are retained. Concurrent or
+    // repeated clicks cannot obtain another recovery claim, and public GETs never generate.
+    const recoveryIds=(env.DEVOTIONAL_TTS_MANUAL_RECOVERY_IDS??'').split(',').map(v=>v.trim()).filter(v=>/^[a-f0-9]{64}$/.test(v));
+    if(result==='claimed' && recoveryIds.includes(claimId))result=await generationStep('ALLOWANCE_RESERVATION',()=>reserveGoogleRecording(deps.store!.generationLedger!,`${claimId}:manual-recovery-1`,item.script.length,config.cap,day));
     if(result!=='reserved')return void res.status(409).json({message:result==='capacity'?'Daily narration allowance exhausted. Saved recordings still play.':'This script already has a generation claim. Check the saved recording or failed request before any manual repair.'});
     const bytes=await generationStep('PROVIDER_REQUEST',()=>synthesize(item.script));
     if(!isPcmWave(bytes)||bytes.length>20*1024*1024)throw new Error('Invalid generated audio');
