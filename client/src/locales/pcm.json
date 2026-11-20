@@ -1676,5 +1676,6 @@
   "ui_voiceSelected": "Voice wey you choose",
   "ui_pidginDeviceVoice": "This device dey use English voice read Pidgin. How e pronounce words fit different from person wey dey speak Pidgin well.",
   "ui_refreshVoices": "Check voices again",
-  "ui_retryDefaultVoice": "No sound? Use default voice"
+  "ui_retryDefaultVoice": "No sound? Use default voice",
+  "ui_audioIphoneSilentMode": "For iPhone/iPad, switch Silent Mode off to hear the reading. Music fit still play when Silent Mode dey on."
 }
