@@ -90,3 +90,15 @@ test('text model selection is limited to verified free-tier Flash models',async(
  await assert.rejects(()=>translator('devotional',f.devotional,'ha'),PreparationProviderError);assert.equal(calls,1);
  env.CONTENT_PREPARATION_TEXT_MODEL='paid-model';await assert.rejects(()=>translator('devotional',f.devotional,'ha'),/FREE_TEXT_MODEL_REQUIRED/);assert.equal(calls,1);
 });
+
+test('an interrupted text job reuses its saved reviewed document without another provider request',async()=>{
+ const f=fixture();
+ await f.service.plan('2026-11-20','2027-04-20');
+ await f.service.step();
+ const plan=f.json.get('content-preparation/plan.json')!.value;
+ Object.assign(plan.jobs[0],{status:'blocked',error:'INTERRUPTED_CHECK_SAVED_FILES',textReady:false});
+ await f.service.step();
+ assert.equal(f.textCalls(),1);
+ assert.equal((await f.service.status()).textReady,1);
+ assert.equal(f.audioCalls(),0);
+});
