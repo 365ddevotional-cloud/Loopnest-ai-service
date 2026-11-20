@@ -8,7 +8,7 @@ import {devotionalRecordingScript, devotionalRecordingSnapshot, type RecordingTe
 
 const langInput = z.enum(['en','es','fr','yo','pcm','ha','ig']);
 const hashInput = z.string().regex(/^[a-f0-9]{64}$/);
-const manifestInput = z.object({audioHash:hashInput, key:z.string(), bytes:z.number().int().positive(), published:z.boolean(),format:z.enum(['mp3','wav']).optional(),provider:z.literal('google-sola').optional()});
+const manifestInput = z.object({audioHash:hashInput, key:z.string(), bytes:z.number().int().positive(), published:z.boolean(),format:z.enum(['mp3','wav']).optional(),provider:z.literal('google-sola').optional(),reviewMethod:z.enum(['owner-authorized-automated-review','owner-listened']).optional()});
 export type RecordingManifest = z.infer<typeof manifestInput>;
 export interface RecordingStore {
   generationLedger?:GenerationLedgerStore;
@@ -112,7 +112,7 @@ export function registerDevotionalRecordings(app:Express, deps:{
     const item=await current(req,true);
     if(!item)return void res.status(404).json({message:'No saved text is available for this language.'});
     const saved=deps.store?await read(item.prefix):null;
-    res.json({version:item.version,script:item.script,storageReady:!!deps.store,generationEnabled:!!googleVoiceConfig(env)&&!!deps.store?.generationLedger&&googleRecordingLanguages.includes(req.params.lang as any),generationProvider:'Google Gemini',generationVoice:'Sola',generationDailyCharacterLimit:googleVoiceConfig(env)?.cap??0,recording:saved?{audioHash:saved.manifest.audioHash,published:saved.manifest.published,bytes:saved.manifest.bytes,provider:saved.manifest.provider,audioPath:`/api/devotional-recordings/${req.params.id}/${req.params.lang}/${item.version}/audio`}:null});
+    res.json({ownerDelegatedPublication:env.CONTENT_PREPARATION_OWNER_AUTHORIZED==='true',version:item.version,script:item.script,storageReady:!!deps.store,generationEnabled:!!googleVoiceConfig(env)&&!!deps.store?.generationLedger&&googleRecordingLanguages.includes(req.params.lang as any),generationProvider:'Google Gemini',generationVoice:'Sola',generationDailyCharacterLimit:googleVoiceConfig(env)?.cap??0,recording:saved?{audioHash:saved.manifest.audioHash,published:saved.manifest.published,bytes:saved.manifest.bytes,provider:saved.manifest.provider,audioPath:`/api/devotional-recordings/${req.params.id}/${req.params.lang}/${item.version}/audio`}:null});
   }));
   app.post(adminBase,guard,deps.requireAdmin,sameOrigin,express.raw({type:['audio/mpeg','audio/wav'],limit:'20mb'}),route(async(req,res)=>{
     const item=await current(req,true);
@@ -161,13 +161,14 @@ export function registerDevotionalRecordings(app:Express, deps:{
     res.json({saved:true,reviewRequired:true});
   }));
   app.patch(adminBase,guard,deps.requireAdmin,sameOrigin,route(async(req,res)=>{
-    const input=z.object({version:hashInput,audioHash:hashInput,published:z.boolean(),reviewed:z.boolean(),rightsConfirmed:z.boolean()}).strict().parse(req.body);
+    const input=z.object({version:hashInput,audioHash:hashInput,published:z.boolean(),reviewed:z.boolean(),rightsConfirmed:z.boolean(),reviewMethod:z.literal('owner-authorized-automated-review').optional()}).strict().parse(req.body);
     const item=await current(req,true);
     if(!item || item.version!==input.version || !deps.store)return void res.sendStatus(409);
     const saved=await read(item.prefix);
     if(!saved || saved.manifest.audioHash!==input.audioHash)return void res.status(409).json({message:'The recording changed. Review the current recording.'});
-    if(input.published && (!input.reviewed || !input.rightsConfirmed))return void res.status(400).json({message:'Listen to the full recording and confirm publication rights first.'});
-    await deps.store.saveManifest(`${item.prefix}/manifest.json`,{...saved.manifest,published:input.published},saved.etag);
+    const delegated=env.CONTENT_PREPARATION_OWNER_AUTHORIZED==='true'&&input.reviewMethod==='owner-authorized-automated-review'&&saved.manifest.provider==='google-sola';
+    if(input.published && !delegated && (!input.reviewed || !input.rightsConfirmed))return void res.status(400).json({message:'Listen to the full recording and confirm publication rights first.'});
+    await deps.store.saveManifest(`${item.prefix}/manifest.json`,{...saved.manifest,published:input.published,...(input.published?{reviewMethod:delegated?'owner-authorized-automated-review' as const:'owner-listened' as const}:{})},saved.etag);
     res.json({published:input.published});
   }));
 }

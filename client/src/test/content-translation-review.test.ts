@@ -21,7 +21,7 @@ await build({
   external: ['react', 'react/*', 'react-dom', 'react-dom/*', '@tanstack/react-query'],
   plugins: [{ name: 'fixture-api', setup(builder) {
     builder.onResolve({ filter: /^@\/lib\/queryClient$/ }, () => ({ path: 'fixture', namespace: 'fixture' }));
-    builder.onLoad({ filter: /.*/, namespace: 'fixture' }, () => ({ contents: `let data;export const setReviewFixture=value=>data=value;export const apiRequest=async(_method,path)=>({json:async()=>path.startsWith('/api/admin/devotional-recordings/')?{version:'0'.repeat(64),script:'Recording fixture',storageReady:true,generationEnabled:false,recording:null}:data});`, loader: 'js' }));
+    builder.onLoad({ filter: /.*/, namespace: 'fixture' }, () => ({ contents: `let data;export const setReviewFixture=value=>data=value;export const apiRequest=async(_method,path)=>({json:async()=>path==='/api/admin/content-preparation'?{enabled:false,total:0,textReady:0,audioReady:0,blocked:0,jobs:[],start:'2026-11-20',end:'2027-04-20',textRequestLimit:80,audioRequestLimit:10}:path.startsWith('/api/admin/devotional-recordings/')?{version:'0'.repeat(64),script:'Recording fixture',storageReady:true,generationEnabled:false,recording:null}:data});`, loader: 'js' }));
   } }],
 });
 const screen = await import(pathToFileURL(outfile).href);
@@ -41,7 +41,8 @@ test('private review switches actual draft language, preserves Scripture and ren
     assert.ok(container.textContent?.includes('The English source has changed'));
     assert.ok(container.textContent?.includes('<img src=x onerror=alert(1)>'));
     assert.equal(container.querySelector('img'), null);
-    assert.equal(container.querySelector('button'), null, 'no action can publish a draft');
+    assert.equal(container.querySelectorAll('article button').length, 0, 'a private translation draft cannot be published by the preparation controls');
+    assert.ok(Array.from(container.querySelectorAll('section[aria-label="Content preparation queue"] button')).every(button=>(button as HTMLButtonElement).disabled), 'preparation requires an enabled server policy');
     const select = container.querySelector('select')!;
     assert.equal(select.options.length, 6);
     await act(async () => { select.value = 'fr'; select.dispatchEvent(new dom.window.Event('change', { bubbles: true })); });
@@ -58,7 +59,7 @@ test('private review switches actual draft language, preserves Scripture and ren
     assert.ok(container.textContent?.includes('Approved for publication by Moses Afolabi'));
     assert.ok(container.textContent?.includes('Independent language review is not recorded'));
     assert.ok(!container.textContent?.includes('Language review pending'));
-    assert.equal(container.querySelector('button'), null);
+    assert.equal(container.querySelectorAll('article button').length, 0);
   } finally {
     await act(async () => root.unmount()); client.clear(); container.remove();
   }
