@@ -1675,5 +1675,6 @@
   "ui_noDeviceVoice": "Kò sí ohùn tó bá èdè yìí mu lórí ẹ̀rọ yìí. Gbìyànjú èdè mìíràn tàbí ohùn tí a ti gbà sílẹ̀ pẹ̀lú àṣẹ.",
   "ui_voiceSelected": "Ohùn tí a yàn",
   "ui_pidginDeviceVoice": "Ẹ̀rọ yìí ń lo ohùn Gẹ̀ẹ́sì fún Pidgin. Bí ó ṣe ń pe ọ̀rọ̀ lè yàtọ̀ sí ti ẹni tó sọ Pidgin láti kékeré.",
-  "ui_refreshVoices": "Tún àwọn ohùn ṣàyẹ̀wò"
+  "ui_refreshVoices": "Tún àwọn ohùn ṣàyẹ̀wò",
+  "ui_retryDefaultVoice": "Kò sí ohùn? Lo ohùn àkọ́kọ́"
 }

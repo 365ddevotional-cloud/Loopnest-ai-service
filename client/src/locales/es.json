@@ -1932,5 +1932,6 @@
   "ui_noDeviceVoice": "No hay una voz compatible en este dispositivo. Prueba otro idioma o una grabación guardada autorizada.",
   "ui_voiceSelected": "Voz seleccionada",
   "ui_pidginDeviceVoice": "Este dispositivo usa una voz inglesa para el pidgin. La pronunciación puede diferir de la de un hablante nativo.",
-  "ui_refreshVoices": "Actualizar voces"
+  "ui_refreshVoices": "Actualizar voces",
+  "ui_retryDefaultVoice": "¿Sin sonido? Usar voz predeterminada"
 }

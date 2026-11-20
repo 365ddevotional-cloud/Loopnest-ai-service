@@ -1675,5 +1675,6 @@
   "ui_noDeviceVoice": "This device no get voice for this language. Try another language or saved recording wey you get permission to use.",
   "ui_voiceSelected": "Voice wey you choose",
   "ui_pidginDeviceVoice": "This device dey use English voice read Pidgin. How e pronounce words fit different from person wey dey speak Pidgin well.",
-  "ui_refreshVoices": "Check voices again"
+  "ui_refreshVoices": "Check voices again",
+  "ui_retryDefaultVoice": "No sound? Use default voice"
 }

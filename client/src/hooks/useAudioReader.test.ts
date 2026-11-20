@@ -14,12 +14,14 @@ function reader() {
 const spoken: any[] = [];
 let availableVoices: SpeechSynthesisVoice[] = [];
 const synth = {
+  paused: false,
   getVoices: () => availableVoices,
   addEventListener() {}, removeEventListener() {},
-  speak: (utterance: any) => spoken.push(utterance),
+  speak: (utterance: any) => { spoken.push(utterance); },
   cancel() {}, pause() {}, resume() {},
 };
 function setup() {
+  synth.paused = false;
   availableVoices = [];
   Object.assign(globalThis, {
     window: { speechSynthesis: synth },
@@ -175,11 +177,45 @@ test('voice discovery refreshes installed voices and never offers English as Yor
 });
 
 test('resume clears a paused speech queue before a new utterance is queued', () => {
-  setup(); let paused=true; const resume=synth.resume; const speak=synth.speak;
-  synth.resume=()=> {paused=false;};
-  synth.speak=(utterance)=> {assert.equal(paused,false); spoken.push(utterance);};
+  setup(); synth.paused=true; const resume=synth.resume; const speak=synth.speak;
+  synth.resume=()=> {synth.paused=false;};
+  synth.speak=(utterance)=> {assert.equal(synth.paused,false); spoken.push(utterance);};
   try {reader().play('Start inside this tap.');assert.equal(spoken.length,1);}
   finally {reader().stop(); synth.resume=resume; synth.speak=speak;}
+});
+
+test('an idle engine starts directly without cancel or resume side effects', () => {
+  setup(); const cancel=synth.cancel; const resume=synth.resume;
+  synth.cancel=()=>{throw new Error('An idle engine must not be cancelled');};
+  synth.resume=()=>{throw new Error('An idle engine must not be resumed');};
+  try {reader().play('Read immediately.');assert.equal(spoken.length,1);assert.equal(reader().error,null);}
+  finally {synth.cancel=cancel;synth.resume=resume;reader().stop();}
+});
+
+test('automatic voice selection prefers a device default over an optional natural voice',()=>{
+  setup();availableVoices=[{name:'Online Natural',voiceURI:'online',lang:'en-US'},
+    {name:'Device English',voiceURI:'default',lang:'en-US',default:true,localService:true}] as SpeechSynthesisVoice[];
+  reader().play('Use the device voice.');assert.equal(spoken[0].voice.voiceURI,'default');reader().stop();
+});
+
+test('English discovery failures do not block the browser default voice',()=>{
+  setup();const getVoices=synth.getVoices;synth.getVoices=()=>{throw new Error('Discovery unavailable');};
+  try {reader().play('English remains available.');assert.equal(spoken.length,1);assert.equal(spoken[0].voice,undefined);}
+  finally {synth.getVoices=getVoices;reader().stop();}
+});
+
+test('silent or failed selected voices can be retried in a new tap with no forced voice',()=>{
+  setup();availableVoices=[{name:'Saved voice',voiceURI:'saved',lang:'en-US'}] as SpeechSynthesisVoice[];
+  (globalThis as any).localStorage.getItem=()=>'saved';
+  reader().play('First paragraph.\n\nSecond paragraph.','English',{devotional:true});
+  const old=spoken[0];old.onstart(); // A start event does not prove audible output.
+  reader().retryDefaultVoice();
+  assert.equal(spoken.length,2);assert.equal(spoken[1].voice,undefined);
+  assert.equal(spoken[1].lang,'en-US');assert.equal(spoken[1].text,'First paragraph.');
+  old.onend();assert.equal(spoken.length,2);
+  spoken[1].onerror({error:'synthesis-failed'});assert.equal(reader().isSpeaking,false);
+  reader().retryDefaultVoice();assert.equal(spoken.length,3);assert.equal(spoken[2].voice,undefined);
+  reader().stop();reader().retryDefaultVoice();assert.equal(spoken.length,3);
 });
 
 test('a speech engine that never starts cannot leave a false playing indicator forever', context => {
@@ -193,3 +229,4 @@ test('a speech engine that never starts cannot leave a false playing indicator f
     assert.equal(reader().isSpeaking,true);assert.equal(reader().error,null);
   } finally {reader().stop();context.mock.timers.reset();}
 });
+

@@ -1932,5 +1932,6 @@
   "ui_noDeviceVoice": "No matching voice is available on this device. Try another language or an authorized saved recording.",
   "ui_voiceSelected": "Selected voice",
   "ui_pidginDeviceVoice": "This device uses an English voice for Pidgin. Pronunciation may differ from a native Pidgin speaker.",
-  "ui_refreshVoices": "Refresh voices"
+  "ui_refreshVoices": "Refresh voices",
+  "ui_retryDefaultVoice": "No sound? Use default voice"
 }
