@@ -21,7 +21,7 @@ await build({
   external: ['react', 'react/*', 'react-dom', 'react-dom/*', '@tanstack/react-query'],
   plugins: [{ name: 'fixture-api', setup(builder) {
     builder.onResolve({ filter: /^@\/lib\/queryClient$/ }, () => ({ path: 'fixture', namespace: 'fixture' }));
-    builder.onLoad({ filter: /.*/, namespace: 'fixture' }, () => ({ contents: `let data;export const setReviewFixture=value=>data=value;export const apiRequest=async()=>({json:async()=>data});`, loader: 'js' }));
+    builder.onLoad({ filter: /.*/, namespace: 'fixture' }, () => ({ contents: `let data;export const setReviewFixture=value=>data=value;export const apiRequest=async(_method,path)=>({json:async()=>path.startsWith('/api/admin/devotional-recordings/')?{version:'0'.repeat(64),script:'Recording fixture',storageReady:true,generationEnabled:false,recording:null}:data});`, loader: 'js' }));
   } }],
 });
 const screen = await import(pathToFileURL(outfile).href);
