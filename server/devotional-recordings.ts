@@ -3,7 +3,7 @@ import {createHash, randomUUID} from 'node:crypto';
 import {S3Client, GetObjectCommand, PutObjectCommand, HeadObjectCommand} from '@aws-sdk/client-s3';
 import {getSignedUrl} from '@aws-sdk/s3-request-presigner';
 import {z} from 'zod';
-import {googleVoiceConfig,createGoogleDevotionalNarrator,googleRecordingLanguages,reserveGoogleRecording,googleGenerationId,isPcmWave,type GenerationLedgerStore} from './devotional-google-voice';
+import {GoogleNarrationError,googleVoiceConfig,createGoogleDevotionalNarrator,googleRecordingLanguages,reserveGoogleRecording,googleGenerationId,isPcmWave,type GenerationLedgerStore} from './devotional-google-voice';
 import {devotionalRecordingScript, devotionalRecordingSnapshot, type RecordingText} from '../shared/devotional-recording';
 
 const langInput = z.enum(['en','es','fr','yo','pcm','ha','ig']);
@@ -66,6 +66,7 @@ export function registerDevotionalRecordings(app:Express, deps:{
     res.status(403).json({message:'Open the admin dashboard to change recordings.'});
   };
   const route=(fn:RequestHandler):RequestHandler=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch((e:any)=>{
+    if(e instanceof GoogleNarrationError){res.status(503).json({message:e.message});return;}
     const code=e instanceof z.ZodError?400:e?.$metadata?.httpStatusCode===412?409:503;
     res.status(code).json({message:code===409?'The recording changed. Refresh and review it again.':code===400?'Check the recording and language.':'Saved recording storage is temporarily unavailable.'});
   });
