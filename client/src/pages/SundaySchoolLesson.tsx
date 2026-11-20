@@ -1,3 +1,5 @@
+import {useRef} from 'react';
+import {PreparedAudioPlayer,PreparedScriptureCredit} from '@/components/PreparedAudioPlayer';
 import { useI18n } from "@/hooks/useI18n";
 import { ContentLanguageNotice } from "@/components/ContentLanguageNotice";
 import { ScriptureLinks } from "@/components/ScriptureReading";
@@ -57,12 +59,13 @@ function formatLessonForCopy(lesson: SundaySchoolLesson): string {
 
 export default function SundaySchoolLessonPage() {
   const params = useParams<{ id: string }>();
-  const {t}=useI18n();
+  const {t,lang}=useI18n();
+  const preparedRef=useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
   const audio = useAudioReader();
 
   const { data: lesson, isLoading, error } = useQuery<SundaySchoolLesson>({
-    queryKey: ["/api/sunday-school", params.id],
+    queryKey: ["/api/sunday-school", params.id,lang],
     queryFn: async () => {
       const lessonId = parseInt(params.id || "0", 10);
 
@@ -89,7 +92,7 @@ export default function SundaySchoolLessonPage() {
       }
 
       try {
-        const res = await fetch(`/api/sunday-school/${params.id}`, { credentials: "include" });
+        const res = await fetch(`/api/sunday-school/${params.id}?lang=${encodeURIComponent(lang)}`, { credentials: "include" });
         if (!res.ok) {
           const offline = await getFromIndexedDB();
           if (offline) return offline;
@@ -176,7 +179,9 @@ export default function SundaySchoolLessonPage() {
 
       <div className="max-w-3xl mx-auto space-y-6">
         <ShopFeature />
-        <ContentLanguageNotice />
+        {!(lesson as any)._translatedTo&&<ContentLanguageNotice />}
+        <PreparedScriptureCredit source={lesson}/>
+        <PreparedAudioPlayer ref={preparedRef} kind="school" source={lesson} language={(lesson as any)._translatedTo??'en'} onPlay={()=>audio.stop()}/>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <Link href="/sunday-school">
             <Button variant="ghost" className="gap-2" data-testid="button-back-sunday-school">
@@ -189,6 +194,7 @@ export default function SundaySchoolLessonPage() {
             <Button
               onClick={() => {
                 if (!lesson) return;
+                if(preparedRef.current){audio.stop();void preparedRef.current.play().catch(()=>toast({title:"Tap the saved audio player to listen."}));return;}
                 const listenText = [
                   `${lesson.title}.`,
                   `Scripture: ${lesson.scriptureReferences}.`,
@@ -310,3 +316,4 @@ export default function SundaySchoolLessonPage() {
     </>
   );
 }
+

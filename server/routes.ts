@@ -1,3 +1,4 @@
+import {createContentPreparation,privatePreparationStore} from './content-preparation';
 import { registerAsvChapters } from "./asv-chapters";
 import { registerDevotionalRecordings, privateRecordingStore } from './devotional-recordings';
 import { createApprovedContentRelease } from "./approved-content-translations";
@@ -48,7 +49,8 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 const approvedContent = createApprovedContentRelease(contentTranslationPilot, contentTranslationApproval);
 const approvedIgboContent = createApprovedContentRelease(contentTranslationIgbo, contentTranslationIgboApproval);
-const { applyTranslation, applyTranslationToList } = createDevotionalTranslator({
+const contentPreparation=createContentPreparation({store:privatePreparationStore(),recordings:privateRecordingStore(),read:(kind,id)=>kind==='devotional'?storage.getDevotional(id):storage.getSundaySchoolLesson(id),list:kind=>kind==='devotional'?storage.getDevotionals():storage.getSundaySchoolLessons(),today:getTodayDateString});
+const originalTranslator = createDevotionalTranslator({
   resolveApproved: (source, lang) => {
     const existing = approvedContent.resolve(source, lang);
     return existing.covered ? existing : approvedIgboContent.resolve(source, lang);
@@ -56,6 +58,9 @@ const { applyTranslation, applyTranslationToList } = createDevotionalTranslator(
   readLegacy: getOrCreateTranslation,
   readLegacyList: getCachedTranslationsForLanguage,
 });
+
+async function applyTranslation(source:any,lang:string|undefined){const prepared=await contentPreparation.overlay('devotional',source,lang);return prepared._preparationSourceHash?prepared:originalTranslator.applyTranslation(source,lang);}
+async function applyTranslationToList(sources:any[],lang:string|undefined){const translated=await originalTranslator.applyTranslationToList(sources,lang);return Promise.all(sources.map(async(s,i)=>{const prepared=await contentPreparation.overlay('devotional',s,lang);return prepared._preparationSourceHash?prepared:translated[i];}));}
 
 if (!ADMIN_PASSWORD) {
   console.warn("WARNING: ADMIN_PASSWORD not set. Admin login will be disabled.");
@@ -171,6 +176,8 @@ export async function registerRoutes(
     requireAdmin,
   });
   registerAdminAuth(app, ADMIN_PASSWORD);
+  contentPreparation.register(app,requireAdmin);
+  contentPreparation.start();
   registerDevotionalRecordings(app, {
     requireAdmin, store: privateRecordingStore(),
     readSource: id => storage.getDevotional(id), translate: applyTranslation, today: getTodayDateString,
@@ -1118,7 +1125,7 @@ export async function registerRoutes(
   // Sunday School Routes
 
   // GET Sunday School preview - returns current + next 3 upcoming lessons using cyclical loop
-  app.get("/api/sunday-school/preview", async (_req, res) => {
+  app.get("/api/sunday-school/preview", async (req, res) => {
     const allLessons = await storage.getSundaySchoolLessons();
     if (allLessons.length === 0) {
       return res.json([]);
@@ -1164,12 +1171,12 @@ export async function registerRoutes(
       }
     }
 
-    res.json(preview);
+    res.json(await Promise.all(preview.map(s=>contentPreparation.overlay('school',s,typeof req.query.lang==='string'?req.query.lang:undefined))));
   });
 
-  app.get(api.sundaySchool.list.path, async (_req, res) => {
+  app.get(api.sundaySchool.list.path, async (req, res) => {
     const lessons = await storage.getSundaySchoolLessons();
-    res.json(lessons);
+    res.json(await Promise.all(lessons.map(s=>contentPreparation.overlay('school',s,typeof req.query.lang==='string'?req.query.lang:undefined))));
   });
 
   app.get(api.sundaySchool.get.path, async (req, res) => {
@@ -1181,7 +1188,7 @@ export async function registerRoutes(
     if (!lesson) {
       return res.status(404).json({ message: "Lesson not found" });
     }
-    res.json(lesson);
+    res.json(await contentPreparation.overlay('school',lesson,typeof req.query.lang==='string'?req.query.lang:undefined));
   });
 
   app.post(api.sundaySchool.create.path, requireAdmin, async (req, res) => {

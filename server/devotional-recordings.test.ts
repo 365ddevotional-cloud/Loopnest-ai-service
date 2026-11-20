@@ -158,3 +158,16 @@ test('one specifically authorized manual recovery keeps old reservation, prevent
   assert.equal(f.ledger().ledger.days[new Date().toISOString().slice(0,10)],reserved*2);
   assert.equal((await generate().expect(200)).body.reused,true);assert.equal(f.calls(),2);
 });
+
+test('delegated publication needs the explicit owner policy and a saved Sola recording; no listening attestation is fabricated',async()=>{
+ const f=fixture('yo',true),extra={reviewed:false,rightsConfirmed:false,reviewMethod:'owner-authorized-automated-review'};
+ await request(f.app).post(`${f.base}/generate`).set('x-admin','fixture').set('Origin','http://127.0.0.1').set('Host','127.0.0.1').send({version:f.version()}).expect(200);
+ const status=(await request(f.app).get(f.base).set('x-admin','fixture')).body;
+ await f.publish(status.recording.audioHash,extra).expect(400);
+ f.generationEnv.CONTENT_PREPARATION_OWNER_AUTHORIZED='true';
+ await f.publish(status.recording.audioHash,extra).expect(200);
+ assert.equal([...f.manifests.values()][0].manifest.reviewMethod,'owner-authorized-automated-review');
+ const uploaded=fixture('yo',true);uploaded.generationEnv.CONTENT_PREPARATION_OWNER_AUTHORIZED='true';
+ const file=(await uploaded.upload()).body;
+ await uploaded.publish(file.audioHash,extra).expect(400);
+});

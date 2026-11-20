@@ -35,18 +35,18 @@ function buildUpcomingLessons(allLessons: any[], todayStr: string): any[] {
     .slice(0, 4);
 }
 
-async function fetchLessonsWithFallback(): Promise<any[]> {
+async function fetchLessonsWithFallback(lang:string): Promise<any[]> {
   if (!navigator.onLine) {
     const offline = await getAllSundayLessons();
     if (offline.length > 0) return offline;
     throw new Error("offline_no_data");
   }
   try {
-    const res = await fetch("/api/sunday-school", { credentials: "include" });
+    const res = await fetch(`/api/sunday-school?lang=${encodeURIComponent(lang)}`, { credentials: "include" });
     if (!res.ok) throw new Error("API error");
     const data = await res.json();
     if (Array.isArray(data) && data.length > 0) {
-      saveSundayLessons(data).catch(() => {});
+      if(lang==='en')saveSundayLessons(data).catch(() => {});
       return data;
     }
     throw new Error("Empty response");
@@ -59,14 +59,14 @@ async function fetchLessonsWithFallback(): Promise<any[]> {
 }
 
 export default function SundaySchool() {
-  const { t } = useI18n();
+  const { t,lang } = useI18n();
   const { isOnline } = useConnectionStatus();
   const { user } = useUser();
   const { toast } = useToast();
 
   const { data: lessons, isLoading } = useQuery<SundaySchoolLesson[]>({
-    queryKey: ["/api/sunday-school"],
-    queryFn: fetchLessonsWithFallback,
+    queryKey: ["/api/sunday-school",lang],
+    queryFn: ()=>fetchLessonsWithFallback(lang),
     staleTime: 10 * 60 * 1000,
     retry: (failureCount, error) => {
       if (error instanceof Error && error.message === "offline_no_data") return false;
@@ -427,3 +427,4 @@ export default function SundaySchool() {
     </>
   );
 }
+

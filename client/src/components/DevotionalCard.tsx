@@ -1,3 +1,4 @@
+import {PreparedAudioPlayer,PreparedScriptureCredit} from './PreparedAudioPlayer';
 import { ContentLanguageNotice } from "@/components/ContentLanguageNotice";
 import { ScriptureLinks } from "@/components/ScriptureReading";
 import { useState, useEffect, useRef } from "react";
@@ -59,9 +60,10 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
   const contentLanguage = (devotional as DevotionalResponse & {_translatedTo?:string})._translatedTo || 'en';
   const savedRecording=useSavedDevotionalRecording(devotional,contentLanguage);
   const recordingRef=useRef<HTMLAudioElement>(null);
+  const preparedRef=useRef<HTMLAudioElement>(null);
   const [recordingError,setRecordingError]=useState(false);
   useEffect(()=>{setRecordingError(false);},[devotional.id,devotional.content,contentLanguage]);
-  useEffect(()=>{if(audio.isSpeaking)recordingRef.current?.pause();},[audio.isSpeaking]);
+  useEffect(()=>{if(audio.isSpeaking){recordingRef.current?.pause();preparedRef.current?.pause();}},[audio.isSpeaking]);
   useEffect(()=>{const player=recordingRef.current;return()=>{player?.pause();};},[savedRecording.data?.audioPath]);
   // Preload the existing English text so fallback speech still starts inside a
   // fresh tap on iPhone. This endpoint only reads saved content; it generates none.
@@ -78,10 +80,14 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
     },
   });
   const sizeClasses = fontSizeClasses[fontSize];
-  const { text: scriptureText, isLoading, isFallback } = useScriptureText(
+  const { text: selectedScriptureText, isLoading: scriptureLoading, isFallback } = useScriptureText(
     devotional.scriptureReference,
     devotional.scriptureText
   );
+
+  const scriptureEdition=(devotional as any)._scriptureTranslation;
+  const scriptureText=scriptureEdition?devotional.scriptureText:selectedScriptureText;
+  const isLoading=!scriptureEdition&&scriptureLoading;
 
   const {
     isSignedIn,
@@ -182,6 +188,7 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
             <Button
               size="sm"
               onClick={() => {
+                if(preparedRef.current){audio.stop();void preparedRef.current.play().catch(()=>setRecordingError(true));return;}
                 if(savedRecording.data?.available && recordingRef.current) {
                   audio.stop(); setRecordingError(false);
                   void recordingRef.current.play().catch(()=>setRecordingError(true));
@@ -231,9 +238,10 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
               compact
             />
           </div>
+          <PreparedAudioPlayer ref={preparedRef} kind="devotional" source={devotional} language={contentLanguage} onPlay={()=>audio.stop()}/>
           {savedRecording.data?.available && <audio key={savedRecording.data.audioPath} ref={recordingRef} controls preload="none"
             src={savedRecording.data.audioPath} className="mb-4 w-full" data-testid="saved-devotional-audio"
-            onPlay={()=>{audio.stop();setRecordingError(false);}} onError={()=>setRecordingError(true)} />}
+            onLoadedMetadata={e=>{e.currentTarget.playbackRate=contentLanguage==='ha'?.85:.92;}} onPlay={()=>{audio.stop();setRecordingError(false);}} onError={()=>setRecordingError(true)} />}
           {recordingError && <p role="alert" className="mb-4 text-sm">{t('ui_audioDidNotStart')}</p>}
           {(audio.error || recordingError) && contentLanguage !== 'en' && <div className="mb-4 space-y-2" data-testid="devotional-english-audio-fallback">
             <Button size="sm" variant="outline" disabled={!englishAudio.data} onClick={() => {
@@ -273,13 +281,14 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
                 — {devotional.scriptureReference}
               </p>
               <Badge variant="outline" className="text-xs font-bold no-default-active-elevate" data-testid="badge-translation">
-                {isFallback ? "KJV" : translation}
+                {scriptureEdition || (isFallback ? "KJV" : translation)}
               </Badge>
             </div>
           </div>
         </div>
       </div>
 
+      <div className="px-8"><PreparedScriptureCredit source={devotional}/></div>
       <div className="px-8 py-3"><ScriptureLinks text={devotional.scriptureReference}/></div>
       <div className="px-8"><ContentLanguageNotice translatedTo={(devotional as typeof devotional & {_translatedTo?:string})._translatedTo} publicationApproved={(devotional as typeof devotional & {_translationApproval?:string})._translationApproval === "ministry-approved"}/></div>
       {/* Main Content */}
@@ -452,3 +461,4 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
     </article>
   );
 }
+
