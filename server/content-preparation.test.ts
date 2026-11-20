@@ -4,9 +4,10 @@ import express from 'express';
 import request from 'supertest';
 import {createContentPreparation,preparationSourceHash,preparationPrefix,splitPreparationScript,translatedFields,validatePreparedFields,createPreparationTranslator,PreparationProviderError,type ArtifactStore} from './content-preparation';
 import type {RecordingStore} from './devotional-recordings';
+import preparedToday from './content-translations/prepared-2026-11-20.json';
 import catalog from './content-translations/verified-scriptures-2026-11-20.json';
 function fixture(){
- let sequence=0,textCalls=0,audioCalls=0,failAudio:Error|null=null;
+ let sequence=0,textCalls=0,audioCalls=0,failAudio:Error|null=null,failText:Error|null=null;
  const json=new Map<string,{value:any;etag:string}>(),audio=new Map<string,Buffer>();
  const store:ArtifactStore={async read<T>(key:string){return structuredClone(json.get(key)??null) as {value:T;etag:string}|null;},async write(key,value,etag){if(json.get(key)?.etag!==etag)throw Object.assign(new Error('conflict'),{$metadata:{httpStatusCode:412}});json.set(key,{value:structuredClone(value),etag:String(++sequence)});}};
  let ledger:any=null;
@@ -14,9 +15,9 @@ function fixture(){
  const devotional:any={id:319,date:'2026-11-20',title:'A source',scriptureReference:'Acts 16:25',scriptureText:'source quote',content:'One paragraph.\n\nAnother paragraph.',prayerPoints:['Prayer'],faithDeclarations:['Declaration'],christianQuotes:null,propheticDeclaration:null,author:'Moses Afolabi'};
  const school:any={id:7,date:'2026-11-22',title:'A lesson',scriptureReferences:'Acts 16:25',scriptureText:'source quote',lessonContent:'First outline.\n\nSecond outline.',discussionQuestions:['Question'],prayerFocus:'Prayer',weeklyAssignment:'Assignment'};
  const env:NodeJS.ProcessEnv={CONTENT_PREPARATION_ENABLED:'true',CONTENT_PREPARATION_OWNER_AUTHORIZED:'true',DEVOTIONAL_TTS_ENABLED:'true',DEVOTIONAL_TTS_FREE_TIER_CONFIRMED:'true',GEMINI_API_KEY:'fixture',DEVOTIONAL_TTS_DAILY_CHARACTER_LIMIT:'50000'};
- const deps={env,store,recordings,today:()=> '2026-11-20',read:async(kind:any,id:number)=>kind==='devotional'&&id===devotional.id?devotional:kind==='school'&&id===school.id?school:undefined,list:async(kind:any)=>[kind==='devotional'?devotional:school],translate:async(kind:any,source:any,language:any)=>{textCalls++;const fields=translatedFields(kind,source);for(const key of Object.keys(fields)){const v=fields[key];fields[key]=Array.isArray(v)?v.map(x=>language+' '+x):v===null?null:language+' '+v;}return {sourceHash:preparationSourceHash(kind,source),fields,translationHash:(await import('node:crypto')).createHash('sha256').update(JSON.stringify(fields)).digest('hex'),approval:{method:'owner-authorized-automated-review' as const,date:'2026-11-20'},parts:['A complete recording.']};},synthesize:async()=>{audioCalls++;if(failAudio)throw failAudio;return Buffer.from('fixture audio');}};
+ const deps={env,store,recordings,today:()=> '2026-11-20',read:async(kind:any,id:number)=>kind==='devotional'&&id===devotional.id?devotional:kind==='school'&&id===school.id?school:undefined,list:async(kind:any)=>[kind==='devotional'?devotional:school],translate:async(kind:any,source:any,language:any)=>{textCalls++;if(failText)throw failText;const fields=translatedFields(kind,source);for(const key of Object.keys(fields)){const v=fields[key];fields[key]=Array.isArray(v)?v.map(x=>language+' '+x):v===null?null:language+' '+v;}return {sourceHash:preparationSourceHash(kind,source),fields,translationHash:(await import('node:crypto')).createHash('sha256').update(JSON.stringify(fields)).digest('hex'),approval:{method:'owner-authorized-automated-review' as const,date:'2026-11-20'},parts:['A complete recording.']};},synthesize:async()=>{audioCalls++;if(failAudio)throw failAudio;return Buffer.from('fixture audio');}};
  const service=createContentPreparation(deps);const app=express();app.use(express.json());service.register(app,(q,r,n)=>q.get('x-admin')==='fixture'?n():void r.sendStatus(401));
- return {service,second:()=>createContentPreparation(deps),app,env,devotional,school,json,audio,textCalls:()=>textCalls,audioCalls:()=>audioCalls,failAudio:(e:Error)=>failAudio=e};
+ return {service,second:()=>createContentPreparation(deps),app,env,devotional,school,json,audio,textCalls:()=>textCalls,audioCalls:()=>audioCalls,failText:(e:Error)=>failText=e,failAudio:(e:Error)=>failAudio=e};
 }
 test('five-month plan covers both kinds, four languages; read-only requests never generate',async()=>{
  const f=fixture();await f.service.plan('2026-11-20','2027-04-20');assert.equal((await f.service.status()).total,8);
@@ -60,4 +61,32 @@ test('official Yoruba and Igbo quotations are pinned; all scheduled references h
 test('translation client uses only the server key and free model; rejected review never publishes',async()=>{
  const f=fixture();let calls=0;const translate=createPreparationTranslator(f.env,(async(url:any,opts:any)=>{assert.match(url,/gemini-3.8-flash:generateContent$/);assert.equal(opts.headers['x-goog-api-key'],'fixture');calls++;const fields={...translatedFields('devotional',f.devotional),title:'Taken',content:'Changed paragraph.\n\nSecond changed paragraph.',prayerPoints:['changed'],faithDeclarations:['changed']};return new Response(JSON.stringify({candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify(calls===1?fields:{approved:false,issues:['MEANING_CHANGED']})}]}}]}));}) as typeof fetch);
  await assert.rejects(()=>translate('devotional',f.devotional,'pcm'),/LANGUAGE_REVIEW_FAILED/);assert.equal(calls,2);
+});
+
+
+test('today uses the exact source-checked seed with full paragraphs, prayers and licensed quotes without provider text requests',async()=>{
+ assert.equal(preparationSourceHash('devotional',preparedToday.source),preparedToday.sourceHash);
+ const env=fixture().env;
+ const translate=createPreparationTranslator(env,async()=>{throw new Error('no provider needed for checked seed');});
+ for(const language of ['yo','ha','ig','pcm'] as const){
+  const d=await translate('devotional',preparedToday.source,language);
+  assert.equal(d.sourceHash,preparedToday.sourceHash);assert.equal(d.fields.prayerPoints.length,7);assert.equal(d.fields.faithDeclarations.length,4);
+  assert.equal(d.fields.content.split('\n\n').length,4);assert.ok(d.parts.join('\n\n').includes('Moses Afolabi'));assert.equal(d.parts.length,1);
+  if(language==='yo'||language==='ig')assert.equal(d.fields.scriptureText,catalog['Acts 16:25'].quotes[language].text);
+ }
+});
+test('known text 503 gets a bounded backoff; audio is never repeated as a text retry',async()=>{
+ const f=fixture();await f.service.plan('2026-11-20','2027-04-20');f.failText(new PreparationProviderError(503));
+ const first=await f.service.step();assert.equal(first.error,'GOOGLE_503_RETRY_WAIT');assert.equal(f.textCalls(),1);
+ await f.service.step();assert.equal(f.textCalls(),1);assert.equal(f.audioCalls(),0);
+ const plan=f.json.get('content-preparation/plan.json')!;plan.value.textBlockedUntil='2000-01-01';plan.value.jobs[0].textFailures=3;
+ assert.equal((await f.service.step()).result,'blocked');assert.equal(f.textCalls(),2);assert.equal(f.audioCalls(),0);
+});
+
+
+test('text model selection is limited to verified free-tier Flash models',async()=>{
+ const f=fixture(),env={...f.env,CONTENT_PREPARATION_TEXT_MODEL:'gemini-3.6-flash'};
+ let calls=0;const translator=createPreparationTranslator(env,async url=>{calls++;assert.match(String(url),/gemini-3\.6-flash:generateContent$/);throw new PreparationProviderError(503);});
+ await assert.rejects(()=>translator('devotional',f.devotional,'ha'),PreparationProviderError);assert.equal(calls,1);
+ env.CONTENT_PREPARATION_TEXT_MODEL='paid-model';await assert.rejects(()=>translator('devotional',f.devotional,'ha'),/FREE_TEXT_MODEL_REQUIRED/);assert.equal(calls,1);
 });
