@@ -3,6 +3,12 @@ import {z} from 'zod';
 
 export const DEVOTIONAL_GOOGLE_VOICE='Sola';
 export const DEVOTIONAL_GOOGLE_MODEL='gemini-3.8-flash-tts';
+export class GoogleNarrationError extends Error {
+  constructor(public readonly reason:'http'|'incomplete'|'format'|'response',public readonly detail:string) {
+    // detail is an application-generated enum/status, never provider text or a key.
+    super(`Google narration ${reason} (${detail}). No automatic retry was made.`);
+  }
+}
 export const googleRecordingLanguages=['yo','ha','ig','pcm'] as const;
 export function googleVoiceConfig(env:NodeJS.ProcessEnv=process.env) {
   const cap=Number(env.DEVOTIONAL_TTS_DAILY_CHARACTER_LIMIT??0);
@@ -54,19 +60,22 @@ export function createGoogleDevotionalNarrator(env:NodeJS.ProcessEnv=process.env
       method:'POST',signal:AbortSignal.timeout(120000),headers:{'x-goog-api-key':config.key,'Content-Type':'application/json'},
       body:JSON.stringify({contents:[{role:'user',parts:[{text:`## Transcript:\n${script}`}]}],generationConfig:{temperature:1,maxOutputTokens:8192,responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:DEVOTIONAL_GOOGLE_VOICE}}}}}),
     });
-    if(!res.ok)throw new Error('Google narration unavailable. No automatic retry was made.');
+    if(!res.ok)throw new GoogleNarrationError('http',String(res.status));
     if(Number(res.headers.get('content-length')??0)>28*1024*1024)throw new Error('Narration response too large');
     const raw=await res.text();if(raw.length>28*1024*1024)throw new Error('Narration response too large');
     const data=JSON.parse(raw);
-    if(data.candidates?.length!==1||data.candidates[0].finishReason!=='STOP')throw new Error('Incomplete narration. Review before retrying.');
+    if(data.candidates?.length!==1||data.candidates[0].finishReason!=='STOP'){
+      const finish=data.candidates?.[0]?.finishReason;
+      throw new GoogleNarrationError('incomplete',['MAX_TOKENS','SAFETY','RECITATION','OTHER','STOP'].includes(finish)?finish:'NO_COMPLETE_CANDIDATE');
+    }
     const parts=data.candidates[0].content?.parts;
-    if(!Array.isArray(parts)||parts.length!==1)throw new Error('Unexpected narration response');
+    if(!Array.isArray(parts)||parts.length!==1)throw new GoogleNarrationError('response','PARTS');
     const audio=parts[0].inlineData;
-    if(typeof audio?.data!=='string'||!/^[A-Za-z0-9+/]+={0,2}$/.test(audio.data))throw new Error('Missing narration');
+    if(typeof audio?.data!=='string'||!/^[A-Za-z0-9+/]+={0,2}$/.test(audio.data))throw new GoogleNarrationError('response','NO_AUDIO');
     let bytes=Buffer.from(audio.data,'base64');
     if(/^audio\/L16;.*rate=24000/i.test(audio.mimeType??''))bytes=pcmWave(bytes);
-    else if(!/^audio\/wav$/i.test(audio.mimeType??''))throw new Error('Unsupported narration format');
-    if(!isPcmWave(bytes)||bytes.length<4800||bytes.length>20*1024*1024)throw new Error('Invalid narration audio');
+    else if(!/^audio\/wav$/i.test(audio.mimeType??''))throw new GoogleNarrationError('format','UNSUPPORTED');
+    if(!isPcmWave(bytes)||bytes.length<4800||bytes.length>20*1024*1024)throw new GoogleNarrationError('format','INVALID_PCM');
     return bytes;
   };
 }

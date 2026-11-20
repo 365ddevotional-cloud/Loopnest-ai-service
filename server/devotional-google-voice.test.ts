@@ -48,3 +48,10 @@ test('verified Yoruba and Igbo quotes affect recording identity; English and unv
   assert.equal(narrationScripture('John 8:13','yo','original'),'original');
   assert.notEqual(devotionalRecordingSnapshot(original,'yo'),devotionalRecordingSnapshot(original,'en'));
 });
+
+test('diagnostics expose only a safe status or known finish reason, never provider content',async()=>{
+  const invoke=(response:Response)=>createGoogleDevotionalNarrator(env,(async()=>response) as typeof fetch)('script');
+  await assert.rejects(()=>invoke(new Response('SECRET PROVIDER BODY',{status:429})),/Google narration http \(429\)/);
+  await assert.rejects(()=>invoke(new Response(JSON.stringify({candidates:[{finishReason:'MAX_TOKENS'}]}))),/incomplete \(MAX_TOKENS\)/);
+  await assert.rejects(()=>invoke(new Response(JSON.stringify({candidates:[{finishReason:'SECRET PROVIDER BODY'}]}))),/NO_COMPLETE_CANDIDATE/);
+});
