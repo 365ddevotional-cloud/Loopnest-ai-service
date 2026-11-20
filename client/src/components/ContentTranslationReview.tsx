@@ -31,7 +31,7 @@ export function ContentTranslationReview() {
   return <section aria-label="Content translation review" className="space-y-5 rounded-lg border bg-card p-4 sm:p-6">
     <h2 className="text-2xl font-bold">Content translations</h2>
     <ContentPreparationStudio />
-    <p>Compare saved translations with the English source and check each batch’s publication status. Paid translation generation is off.</p>
+    <p>Compare saved translations with the English source and check each batch’s publication status.</p>
     <p className="text-sm text-muted-foreground">Check accuracy, natural wording, theology, Scripture references and paragraph order with a fluent speaker. Review does not translate the selected Bible edition, publish books or generate narration.</p>
     <label className="block font-semibold">Draft language
       <select className="mt-1 block w-full rounded border bg-background p-2 sm:max-w-xs" value={language} onChange={e => setLanguage(e.target.value as TranslationDraftLanguage)}>

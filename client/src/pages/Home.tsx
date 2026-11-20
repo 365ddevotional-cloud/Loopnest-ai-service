@@ -1,3 +1,4 @@
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useTodayDevotional } from "@/hooks/use-devotionals";
 import { DevotionalCard } from "@/components/DevotionalCard";
 import { DailyBibleVerse } from "@/components/DailyBibleVerse";
@@ -119,7 +120,11 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut", delay: 0.15 }}
       >
-        <DevotionalCard devotional={devotional} />
+        <aside aria-label="Devotional languages" className="flex items-center justify-between gap-2 rounded-lg border bg-card px-4 py-2 text-sm">
+          <p>Today’s devotional is available in Yorùbá, Hausa, Igbo and Nigerian Pidgin. Choose your language here, then tap Listen.</p>
+          <LanguageSwitcher />
+        </aside>
+        <DevotionalCard devotional={devotional} today />
       </motion.div>
       <motion.div
         initial={{ opacity: 0, y: 20 }}

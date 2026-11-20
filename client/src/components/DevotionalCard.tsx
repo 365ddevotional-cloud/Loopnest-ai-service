@@ -1,3 +1,4 @@
+import {TodayLanguageListen} from './TodayLanguageListen';
 import {PreparedAudioPlayer,PreparedScriptureCredit} from './PreparedAudioPlayer';
 import { ContentLanguageNotice } from "@/components/ContentLanguageNotice";
 import { ScriptureLinks } from "@/components/ScriptureReading";
@@ -49,14 +50,16 @@ const fontSizeClasses = {
 interface DevotionalCardProps {
   devotional: DevotionalResponse;
   showNotes?: boolean;
+  today?: boolean;
 }
 
-export function DevotionalCard({ devotional, showNotes = false }: DevotionalCardProps) {
+export function DevotionalCard({ devotional, showNotes = false, today = false }: DevotionalCardProps) {
   const { translation } = useTranslation();
   const { fontSize } = useFontSize();
   const { resolvedTheme, setTheme } = useTheme();
   const audio = useAudioReader();
-  const { t } = useI18n();
+  const { t,lang } = useI18n();
+  const demandListen=today && ['yo','ha','ig','pcm'].includes(lang);
   const contentLanguage = (devotional as DevotionalResponse & {_translatedTo?:string})._translatedTo || 'en';
   const savedRecording=useSavedDevotionalRecording(devotional,contentLanguage);
   const recordingRef=useRef<HTMLAudioElement>(null);
@@ -186,7 +189,7 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
             </Button>
           </div>
           <div className="flex items-center justify-center gap-2 mb-4 flex-wrap" data-testid="devotional-compact-actions">
-            <Button
+            {demandListen ? <TodayLanguageListen key={devotional.id+lang} source={devotional} language={lang} onPlay={()=>audio.stop()}/> : <Button
               size="sm"
               onClick={() => {
                 if(preparedRef.current){audio.stop();void preparedRef.current.play().catch(()=>setRecordingError(true));return;}
@@ -214,7 +217,7 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
             >
               <Volume2 className="w-3.5 h-3.5" />
               {t("listen")}
-            </Button>
+            </Button>}
             <Button
               size="sm"
               variant={isSaved ? "default" : "outline"}
@@ -239,7 +242,7 @@ export function DevotionalCard({ devotional, showNotes = false }: DevotionalCard
               compact
             />
           </div>
-          <PreparedAudioPlayer ref={preparedRef} kind="devotional" source={devotional} language={contentLanguage} onPlay={()=>audio.stop()}/>
+          {!demandListen && <PreparedAudioPlayer ref={preparedRef} kind="devotional" source={devotional} language={contentLanguage} onPlay={()=>audio.stop()}/>}
           {savedRecording.data?.available && <audio key={savedRecording.data.audioPath} ref={recordingRef} controls preload="none"
             src={savedRecording.data.audioPath} className="mb-4 w-full" data-testid="saved-devotional-audio"
             onLoadedMetadata={e=>{e.currentTarget.playbackRate=contentLanguage==='ha'?.85:.92;}} onPlay={()=>{audio.stop();setRecordingError(false);}} onError={()=>setRecordingError(true)} />}

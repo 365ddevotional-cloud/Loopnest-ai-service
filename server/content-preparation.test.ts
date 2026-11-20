@@ -128,3 +128,23 @@ test('funded text resumes past the free request limit while retaining the provid
  assert.equal((await f.service.step()).result,'daily-limit-or-finished');
  assert.equal(f.audioCalls(),0);
 });
+
+test('on-demand mode generates only a requested devotional, reuses audio, and reports taps',async()=>{
+ const f=fixture();await f.service.plan('2026-11-20','2027-04-20');
+ f.env.CONTENT_PREPARATION_MODE='on-demand';f.env.CONTENT_PREPARATION_ENABLED='false';
+ assert.equal((await f.service.step()).result,'daily-limit-or-finished');
+ const path='/api/devotionals/319/listen/ig';
+ await request(f.app).get(path).expect(200);
+ await request(f.app).post(path).set('Origin','https://other.example').expect(403);
+ assert.equal(f.textCalls(),0);
+ function tap(){return request(f.app).post(path).set('Host','fixture.test').set('Origin','https://fixture.test').send({});}
+ await tap().expect(200);
+ await f.service.step();
+ assert.equal((await request(f.app).get(path)).body.state,'ready');
+ await tap().expect(200);
+ assert.equal(f.textCalls(),1);assert.equal(f.audioCalls(),1);
+ assert.equal((await f.service.step()).result,'daily-limit-or-finished');
+ await request(f.app).post(path).set('Host','fixture.test').set('Origin','https://fixture.test').send({event:'play'}).expect(204);
+ const admin=await request(f.app).get('/api/admin/content-preparation').set('x-admin','fixture');
+ assert.deepEqual(admin.body.listenerDemand.find((x:any)=>x.language==='ig'),{language:'ig',editions:1,taps:2,plays:1});
+});

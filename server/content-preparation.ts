@@ -120,7 +120,20 @@ export function createPreparationTranslator(env:NodeJS.ProcessEnv=process.env,re
 }
 export function createContentPreparation(deps:{read:(kind:Kind,id:number)=>Promise<Source|undefined>;list:(kind:Kind)=>Promise<Source[]>;today:()=>string;store:ArtifactStore|null;recordings:RecordingStore|null;env?:NodeJS.ProcessEnv;translate?:(kind:Kind,source:Source,language:Language)=>Promise<Document>;synthesize?:(script:string)=>Promise<Buffer>}){
  const env=deps.env??process.env,store=deps.store,key=`${root}plan.json`,cache=new Map<string,{expires:number;value:Document|null}>();let busy=false;
- const enabled=()=>env.CONTENT_PREPARATION_ENABLED==='true'&&env.CONTENT_PREPARATION_OWNER_AUTHORIZED==='true'&&!!googleVoiceConfig(env)&&!!store&&!!deps.recordings?.generationLedger;
+ const demandMode=()=>env.CONTENT_PREPARATION_MODE==='on-demand';
+ type Interest=Record<string,{language:Language;date:string;taps:number;plays?:number}>;
+ const demandKey=root+'listener-requests.json';
+ async function interests(){return await store?.read<Interest>(demandKey);}
+ async function recordTap(job:Job,playback=false){
+  for(let i=0;i<6;i++){
+   const old=await interests(), rows=old?.value??{}, current=rows[job.key];
+   if(playback && !current)return;
+   rows[job.key]={language:job.language,date:job.date,taps:(current?.taps??0)+(playback?0:1),plays:(current?.plays??0)+(playback?1:0)};
+   try{await store!.write(demandKey,rows,old?.etag);return;}
+   catch(e:any){if(e?.$metadata?.httpStatusCode!==412 || i===5)throw e;}
+  }
+ }
+ const enabled=()=>(env.CONTENT_PREPARATION_ENABLED==='true'||demandMode())&&env.CONTENT_PREPARATION_OWNER_AUTHORIZED==='true'&&!!googleVoiceConfig(env)&&!!store&&!!deps.recordings?.generationLedger;
  const limit=(name:string,fallback:number,max:number)=>{const n=Number(env[name]??fallback);return Number.isInteger(n)&&n>0&&n<=max?n:fallback;};
  const translate=deps.translate??createPreparationTranslator(env,fetch,store),synthesize=deps.synthesize??createGoogleDevotionalNarrator(env);
  const readPlan=async()=>{const p=await store?.read<Plan>(key);if(p&&(p.value.version!==1||!Array.isArray(p.value.jobs)||p.value.jobs.length>1000))throw new Error('INVALID_PLAN');return p??null;};
@@ -132,6 +145,8 @@ export function createContentPreparation(deps:{read:(kind:Kind,id:number)=>Promi
  async function step(){if(!enabled()||busy)return {result:'disabled-or-busy'};busy=true;try{
   const p=await readPlan();if(!p?.value.enabled)return {result:'no-active-plan'};const state=p.value,day=new Date().toISOString().slice(0,10);if(state.lease&&state.lease.expires>Date.now())return {result:'busy'};
   if(state.lease){const old=state.jobs.find(j=>j.key===state.lease!.job);if(old){old.status='blocked';old.error='INTERRUPTED_CHECK_SAVED_FILES';}delete state.lease;}
+  const requested=demandMode()?((await interests())?.value??{}):null;
+  const eligible=(j:Job)=>requested===null||Object.hasOwn(requested,j.key);
   const mode=env.CONTENT_PREPARATION_TEXT_API_KEY?.trim()?'dedicated':'free';
   if(mode==='dedicated' && state.textCredentialMode!==mode)delete state.textBlockedUntil;
   state.textCredentialMode=mode;
@@ -150,7 +165,7 @@ export function createContentPreparation(deps:{read:(kind:Kind,id:number)=>Promi
   const canAudio=usage.audio<limit('CONTENT_PREPARATION_AUDIO_REQUEST_LIMIT',10,10)&&(!state.audioBlockedUntil||state.audioBlockedUntil<=new Date().toISOString());
   const canText=(job:Job)=>(fundedTextKey(env,job.date)||usage.text+2<=limit('CONTENT_PREPARATION_TEXT_REQUEST_LIMIT',80,100))&&(!state.textBlockedUntil||state.textBlockedUntil<=new Date().toISOString());
   const seeded=(j:Job)=>Boolean(checkedEdition(j.kind,j.id,j.hash));
-  const job=state.jobs.find(j=>j.status==='pending'&&j.textReady&&canAudio)??state.jobs.find(j=>j.status==='pending'&&!j.textReady&&(seeded(j)||canText(j)));if(!job)return {result:'daily-limit-or-finished'};
+  const job=state.jobs.find(j=>eligible(j)&&j.status==='pending'&&j.textReady&&canAudio)??state.jobs.find(j=>eligible(j)&&j.status==='pending'&&!j.textReady&&(seeded(j)||canText(j)));if(!job)return {result:'daily-limit-or-finished'};
   const stage=job.textReady?'audio':'text',token=randomUUID();job.status='running';state.lease={token,job:job.key,expires:Date.now()+300000};if(stage==='text')usage.text+=seeded(job)?0:2;else usage.audio++;
   try{await store!.write(key,state,p.etag);}catch(e:any){if(e?.$metadata?.httpStatusCode===412)return {result:'busy'};throw e;}
   let nextStatus:Job['status']='pending',error:string|undefined,doc:Document|null=null;
@@ -168,8 +183,46 @@ export function createContentPreparation(deps:{read:(kind:Kind,id:number)=>Promi
   const latest=await readPlan();if(!latest||latest.value.lease?.token!==token)throw new Error('LEASE_CHANGED');const updated=latest.value.jobs.find(j=>j.key===job.key)!;Object.assign(updated,{status:nextStatus,textReady:job.textReady,part:job.part,textFailures:job.textFailures,...(error?{error}:{error:undefined})});latest.value.textBlockedUntil=state.textBlockedUntil;latest.value.audioBlockedUntil=state.audioBlockedUntil;delete latest.value.lease;await store!.write(key,latest.value,latest.etag);return {result:nextStatus,kind:job.kind,id:job.id,language:job.language,stage,error};
  }finally{busy=false;}}
  function register(app:Express,requireAdmin:RequestHandler){const guard:RequestHandler=(_q,r,n)=>{r.set('Cache-Control','private, no-store');n();};const origin:RequestHandler=(q,r,n)=>{try{if(new URL(q.get('origin')??'').host===q.get('host'))return n();}catch{}r.sendStatus(403);};const route=(fn:RequestHandler):RequestHandler=>(q,r,n)=>Promise.resolve(fn(q,r,n)).catch(()=>r.status(503).json({message:'Content preparation is unavailable. No automatic retry was made.'}));
+  const demandPath='/api/devotionals/:id/listen/:language';
+  const listenStatus=(j:Job,p:Plan)=>{
+   const wait=j.textReady?p.audioBlockedUntil:p.textBlockedUntil;
+   return {state:j.status==='done'?'ready':j.status==='blocked'?'review':wait&&Date.parse(wait)>Date.now()?'quota':'preparing',hash:j.hash,textReady:j.textReady};
+  };
+  const listenerRoute=(registerTap:boolean):RequestHandler=>route(async(q,r)=>{
+   if(!demandMode()||!enabled())return void r.sendStatus(503);
+   const id=Number(q.params.id), lang=languages.safeParse(q.params.language);
+   if(!Number.isSafeInteger(id)||id<=0||!lang.success)return void r.sendStatus(404);
+   const source=await deps.read('devotional',id);
+   if(!source||source.isDeleted)return void r.sendStatus(404);
+   const plan=(await readPlan())?.value,hash=preparationSourceHash('devotional',source);
+   const job=plan?.jobs.find(j=>j.kind==='devotional'&&j.id===id&&j.language===lang.data&&j.hash===hash);
+   if(!job||!plan)return void r.sendStatus(404);
+   if(registerTap){
+    const offset=q.body?.timezoneOffset;
+    const localDay=Number.isInteger(offset)&&offset>=-840&&offset<=720?new Date(Date.now()-offset*60000).toISOString().slice(0,10):deps.today();
+    if(source.date!==deps.today()&&source.date!==localDay)return void r.sendStatus(404);
+    if(q.body?.event==='play'){
+     if(job.status!=='done')return void r.sendStatus(409);
+     await recordTap(job,true);return void r.sendStatus(204);
+    }
+    await recordTap(job);
+    if(job.status==='pending')void (async()=>{
+     for(let i=0;i<21;i++){
+      const attempted=await step();
+      if(attempted.result!=='pending'||attempted.error)break;
+     }
+    })().catch(()=>console.error('[Content preparation] Requested edition awaits next worker tick.'));
+   }
+   r.json(listenStatus(job,plan));
+  });
+  app.post(demandPath,guard,origin,listenerRoute(true));
+  app.get(demandPath,guard,listenerRoute(false));
   app.get('/api/admin/content-preparation',guard,requireAdmin,route(async(q,r)=>{
-   const snapshot=await status();
+   const rows=demandMode()?(await interests())?.value??{}:{};
+   const snapshot={...await status(),onDemand:demandMode(),listenerDemand:preparationLanguages.map(language=>{
+    const editions=Object.values(rows).filter(row=>row.language===language);
+    return {language,editions:editions.length,taps:editions.reduce((n,row)=>n+row.taps,0),plays:editions.reduce((n,row)=>n+(row.plays??0),0)};
+   })};
    if(q.query.reviewIssues!=='1')return void r.json(snapshot);
    const held=snapshot.jobs.filter(j=>j.error==='LANGUAGE_REVIEW_FAILED' && !j.textReady);
    const reviews=await Promise.all(held.map(async j=>{
