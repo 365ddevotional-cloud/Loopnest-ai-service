@@ -19,3 +19,7 @@ Public devotional audio is unavailable before the devotional date. Previously pu
 `node --import tsx --test server/content-preparation.test.ts server/devotional-recordings.test.ts server/devotional-google-voice.test.ts`
 
 Coverage includes admin and same-origin protection, source changes, future-date access, private delivery, concurrent claims, ambiguous failures, daily limits, verified quotations, structural validation and saved-byte reuse. The full production workflow additionally performs TypeScript checks and app regression checks.
+
+## Temporary text-service interruptions
+
+Google returned an explicit HTTP 503 on the first live text request. Text preparation now backs off on that known status and stops after three transient failures, within the daily request reservation. This recovery never retries a voice-provider request. The exact-source November 20 translations were prepared and checked by the assistant under the owner authorization and included as a source-hashed seed, so today does not depend on Google's text endpoint. They still pass all structural and pinned-Scripture checks before saving; they are not labeled as independently native-speaker reviewed. A changed English source cannot use that seed.
