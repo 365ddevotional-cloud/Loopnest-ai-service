@@ -55,9 +55,10 @@ export default function Footer() {
               <a href="https://ebible.org/eng-web/webfaq.htm" target="_blank" rel="noopener noreferrer">World English Bible (WEB) – Public Domain</a>
               <a href="https://ebible.org/find/details.php?id=eng-asv" target="_blank" rel="noopener noreferrer">American Standard Version (ASV 1901) – Public Domain</a>
               <span>Douay-Rheims Bible (DRB) – Public Domain</span>
+              <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">Selected Yoruba and Igbo quotations: Biblica Open editions, © Biblica — CC BY-SA 4.0</a>
             </div>
             <p className="text-xs text-muted-foreground/60 italic">
-              {t("scriptureDisclaimer")}
+              Scripture quotations use the editions and permissions identified above. This app is not affiliated with or endorsed by any Bible publisher or denomination.
             </p>
           </div>
         </div>
