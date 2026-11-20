@@ -113,3 +113,18 @@ test('targeted review edits retain unaffected text and enforce unique matches an
  assert.throws(()=>applyReviewEdits(draft,[{...edit,field:'scriptureText',original:'Exact'}],true),/INVALID_REVIEW_EDIT/);
  assert.equal(draft.prayerPoints[1],'Second');
 });
+
+test('funded text resumes past the free request limit while retaining the provider pause',async()=>{
+ const f=fixture();
+ await f.service.plan('2026-11-20','2027-04-20');
+ const plan=f.json.get('content-preparation/plan.json')!.value;
+ plan.days[new Date().toISOString().slice(0,10)]={text:80,audio:10};
+ assert.equal((await f.service.step()).result,'daily-limit-or-finished');
+ f.env.CONTENT_PREPARATION_TEXT_API_KEY='prepaid-fixture';
+ await f.service.step();
+ assert.equal(f.textCalls(),1);
+ const current=f.json.get('content-preparation/plan.json')!.value;
+ current.textBlockedUntil='2099-01-01';
+ assert.equal((await f.service.step()).result,'daily-limit-or-finished');
+ assert.equal(f.audioCalls(),0);
+});
