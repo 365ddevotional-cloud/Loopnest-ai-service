@@ -17,6 +17,12 @@ export interface RecordingStore {
   saveManifest(key:string, manifest:RecordingManifest, etag?:string):Promise<void>;
   signAudio(key:string):Promise<string>;
 }
+class RecordingGenerationError extends Error {
+  constructor(stage:string){super(`Recording generation failed at ${stage}. No automatic retry was made.`);}
+}
+async function generationStep<T>(stage:string,action:()=>Promise<T>):Promise<T> {
+  try{return await action();}catch(e){if(e instanceof GoogleNarrationError)throw e;throw new RecordingGenerationError(stage);}
+}
 const sha = (s:string|Buffer) => createHash('sha256').update(s).digest('hex');
 export function privateRecordingStore(env:NodeJS.ProcessEnv = process.env):RecordingStore|null {
   const accessKeyId=env.SHOP_R2_ACCESS_KEY_ID ?? env.SHOP_IMPORT_R2_ACCESS_KEY_ID;
@@ -66,7 +72,7 @@ export function registerDevotionalRecordings(app:Express, deps:{
     res.status(403).json({message:'Open the admin dashboard to change recordings.'});
   };
   const route=(fn:RequestHandler):RequestHandler=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch((e:any)=>{
-    if(e instanceof GoogleNarrationError){res.status(503).json({message:e.message});return;}
+    if(e instanceof GoogleNarrationError || e instanceof RecordingGenerationError){res.status(503).json({message:e.message});return;}
     const code=e instanceof z.ZodError?400:e?.$metadata?.httpStatusCode===412?409:503;
     res.status(code).json({message:code===409?'The recording changed. Refresh and review it again.':code===400?'Check the recording and language.':'Saved recording storage is temporarily unavailable.'});
   });
@@ -135,16 +141,16 @@ export function registerDevotionalRecordings(app:Express, deps:{
     const previous=await read(item.prefix);
     if(previous?.manifest.provider==='google-sola')return void res.json({saved:true,reused:true});
     if(previous&&(previous.manifest.published||!input.replacePrivate))return void res.status(409).json({message:'Unpublish a public recording first. Explicitly choose a Sola replacement for an existing private recording.'});
-    const result=await reserveGoogleRecording(deps.store.generationLedger,googleGenerationId(item.prefix),item.script.length,config.cap,new Date().toISOString().slice(0,10));
+    const result=await generationStep('ALLOWANCE_RESERVATION',()=>reserveGoogleRecording(deps.store!.generationLedger!,googleGenerationId(item.prefix),item.script.length,config.cap,new Date().toISOString().slice(0,10)));
     if(result!=='reserved')return void res.status(409).json({message:result==='capacity'?'Daily narration allowance exhausted. Saved recordings still play.':'This script already has a generation claim. Check the saved recording or failed request before any manual repair.'});
-    const bytes=await synthesize(item.script);
+    const bytes=await generationStep('PROVIDER_REQUEST',()=>synthesize(item.script));
     if(!isPcmWave(bytes)||bytes.length>20*1024*1024)throw new Error('Invalid generated audio');
     // A concurrent manual upload wins. Never replace a reviewed recording.
     const latest=await read(item.prefix);
     if(latest?.etag!==previous?.etag)return void res.status(409).json({message:'The recording changed during generation. The newer recording was retained; no automatic retry was made.'});
     const key=`${item.prefix}/audio-${randomUUID()}.wav`,audioHash=sha(bytes);
-    await deps.store.saveAudio(key,bytes,'wav');
-    await deps.store.saveManifest(`${item.prefix}/manifest.json`,{key,audioHash,bytes:bytes.length,published:false,format:'wav',provider:'google-sola'},previous?.etag);
+    await generationStep('PRIVATE_AUDIO_SAVE',()=>deps.store!.saveAudio(key,bytes,'wav'));
+    await generationStep('MANIFEST_SAVE',()=>deps.store!.saveManifest(`${item.prefix}/manifest.json`,{key,audioHash,bytes:bytes.length,published:false,format:'wav',provider:'google-sola'},previous?.etag));
     res.json({saved:true,reviewRequired:true});
   }));
   app.patch(adminBase,guard,deps.requireAdmin,sameOrigin,route(async(req,res)=>{
