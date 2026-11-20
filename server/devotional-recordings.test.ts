@@ -5,12 +5,14 @@ import request from 'supertest';
 import {createHash} from 'node:crypto';
 import {registerDevotionalRecordings, privateRecordingStore, type RecordingManifest, type RecordingStore} from './devotional-recordings';
 import {devotionalRecordingSnapshot} from '../shared/devotional-recording';
+import {googleGenerationId} from './devotional-google-voice';
 import pilot from './content-translations/2026-11-19-glorious-light.json';
 
 function fixture(language='yo',generation=false) {
   let source:any=structuredClone(pilot.source), translation:any={...pilot.source,...pilot.drafts.find(d=>d.language==='yo'),_translatedTo:'yo'};
   const manifests=new Map<string,{manifest:RecordingManifest;etag:string}>(),audio=new Map<string,Buffer>();
-  let sequence=0, signs=0, conflict=false,calls=0,ledger:any=null;
+  let sequence=0, signs=0, conflict=false,calls=0,ledger:any=null,failSynthesis=false;
+  const generationEnv:NodeJS.ProcessEnv=generation?{DEVOTIONAL_TTS_ENABLED:'true',DEVOTIONAL_TTS_FREE_TIER_CONFIRMED:'true',GEMINI_API_KEY:'fixture',DEVOTIONAL_TTS_DAILY_CHARACTER_LIMIT:'10000'}:{};
   const wav=Buffer.alloc(4844);wav.write('RIFF');wav.writeUInt32LE(4836,4);wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(24000,24);wav.writeUInt32LE(48000,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(4800,40);
   const store:RecordingStore={
     ...(generation?{generationLedger:{readLedger:async()=>structuredClone(ledger),saveLedger:async(value:any,etag?:string)=>{if(ledger?.etag!==etag)throw Object.assign(new Error('fixture conflict'),{$metadata:{httpStatusCode:412}});ledger={ledger:structuredClone(value),etag:String(++sequence)};}}}:{}),
@@ -26,7 +28,7 @@ function fixture(language='yo',generation=false) {
   app.use((req,_res,next)=>{(req as any).session={isAdmin:req.get('x-admin')==='fixture'};next();});
   registerDevotionalRecordings(app,{
     requireAdmin:(req,res,next)=>req.session.isAdmin?next():void res.sendStatus(401),store,
-    generationEnv:generation?{DEVOTIONAL_TTS_ENABLED:'true',DEVOTIONAL_TTS_FREE_TIER_CONFIRMED:'true',GEMINI_API_KEY:'fixture',DEVOTIONAL_TTS_DAILY_CHARACTER_LIMIT:'10000'}:{},synthesize:async()=>{calls++;return wav;},
+    generationEnv,synthesize:async()=>{calls++;if(failSynthesis)throw new Error('private provider detail');return wav;},
     readSource:async()=>source,translate:async(s,lang)=>lang==='en'?s:translation,today:()=> '2026-11-19',
   });
   if(language==='ig') translation={...translation,_translatedTo:'ig'};
@@ -35,7 +37,7 @@ function fixture(language='yo',generation=false) {
   const mp3=Buffer.concat([Buffer.from('ID3'),Buffer.alloc(256)]);
   const upload=(bytes=mp3)=>request(app).post(`${base}?version=${version()}`).set('x-admin','fixture').set('Origin','http://127.0.0.1').set('Host','127.0.0.1').set('Content-Type','audio/mpeg').send(bytes);
   const publish=(audioHash:string,extra:any={})=>request(app).patch(base).set('x-admin','fixture').set('Origin','http://127.0.0.1').set('Host','127.0.0.1').send({version:version(),audioHash,published:true,reviewed:true,rightsConfirmed:true,...extra});
-  return {app,base,version,upload,publish,manifests,audio,calls:()=>calls,setSource:(s:any)=>source=s,setTranslation:(s:any)=>translation=s,setConflict:()=>conflict=true,signs:()=>signs};
+  return {generationEnv,ledger:()=>ledger,setSynthesisFailure:(v:boolean)=>failSynthesis=v,app,base,version,upload,publish,manifests,audio,calls:()=>calls,setSource:(s:any)=>source=s,setTranslation:(s:any)=>translation=s,setConflict:()=>conflict=true,signs:()=>signs};
 }
 
 test('Igbo uses the same private recording and exact review gates, then reuses saved audio',async()=>{
@@ -141,4 +143,18 @@ test('Sola replacement requires an explicit private replacement and can never ov
   const status=(await request(f.app).get(f.base).set('x-admin','fixture')).body;
   assert.equal(status.recording.provider,'google-sola');assert.equal(status.recording.published,false);assert.notEqual(status.recording.audioHash,old);
   assert.equal(f.audio.size,2,'earlier private bytes are retained');
+});
+
+test('one specifically authorized manual recovery keeps old reservation, prevents duplicate recovery and reuses saved audio',async()=>{
+  const f=fixture('yo',true);
+  const generate=()=>request(f.app).post(`${f.base}/generate`).set('x-admin','fixture').set('Origin','http://127.0.0.1').set('Host','127.0.0.1').send({version:f.version()});
+  f.setSynthesisFailure(true);const failed=await generate().expect(503);assert.match(failed.body.message,/PROVIDER_REQUEST/);assert.doesNotMatch(failed.body.message,/private provider detail/);
+  const reserved=f.ledger().ledger.days[new Date().toISOString().slice(0,10)];
+  f.setSynthesisFailure(false);await generate().expect(409);assert.equal(f.calls(),1);
+  const id=googleGenerationId(`devotional-recordings/318/yo/${f.version()}`);
+  f.generationEnv.DEVOTIONAL_TTS_MANUAL_RECOVERY_IDS=id;
+  const results=await Promise.all([generate(),generate()]);assert.ok(results.some(r=>r.status===200));assert.ok(results.every(r=>r.status===200||r.status===409));assert.equal(f.calls(),2);
+  assert.ok(f.ledger().ledger.claims[id]);assert.ok(f.ledger().ledger.claims[`${id}:manual-recovery-1`]);
+  assert.equal(f.ledger().ledger.days[new Date().toISOString().slice(0,10)],reserved*2);
+  assert.equal((await generate().expect(200)).body.reused,true);assert.equal(f.calls(),2);
 });

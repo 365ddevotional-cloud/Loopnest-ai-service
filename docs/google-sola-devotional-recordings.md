@@ -14,10 +14,8 @@ before publication. A short audition does not establish a full recording review.
 Google AI Studio exports can also be uploaded as MP3 or 24 kHz mono 16-bit PCM WAV.
 Existing MP3 uploads and English/device-voice playback are retained.
 
-The live service currently has **no GEMINI_API_KEY**. No generation is enabled by
-this release; no billing project, subscription, API key or spending allowance is
-created or changed. After connecting an existing **unbilled free-tier** Gemini
-project, a server operator must set all of:
+The existing unbilled free-tier Gemini key was connected privately on 2026-11-20.
+Paid Google billing remains off. Generation requires all of:
 
 - GEMINI_API_KEY (server secret, never VITE-prefixed)
 - DEVOTIONAL_TTS_ENABLED=true
@@ -80,3 +78,20 @@ daily allowance exhaustion, admin/origin isolation, private publication, exact
 script hashes, reusable delivery and existing English voice behavior.
 A live generated full devotional and playback on the owner's physical phone
 remain separate activation checks after the free-tier API key is connected.
+
+## WAV compatibility and manual recovery
+
+Provider WAV files may include optional metadata chunks or a larger fmt chunk.
+Accept complete mono 24 kHz 16-bit PCM WAV, extract its data without changing
+samples, and save a canonical WAV. Reject truncated or unsupported encodings.
+The first full Yoruba and Hausa requests generated audio but the old rigid
+44-byte-header validator rejected the provider WAV before storage.
+
+An operator can authorize one manual recovery for an exact script/model/voice
+claim with DEVOTIONAL_TTS_MANUAL_RECOVERY_IDS (comma-separated SHA-256 claim IDs).
+This is only for checked missing/failed recordings. It does not retry by itself: an
+administrator must issue the existing Generate POST again. The original claim
+and reservation remain, the additional request reserves allowance atomically
+under `<id>:manual-recovery-1`, and a second recovery cannot generate again.
+Clear the allowlist after recovery. Published/saved Sola recordings are reused,
+never replaced by this mechanism. Paid billing must stay off for this activation.

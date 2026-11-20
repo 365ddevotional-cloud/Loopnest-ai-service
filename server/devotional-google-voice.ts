@@ -46,6 +46,28 @@ export function isPcmWave(bytes:Buffer) {
     bytes.subarray(36,40).toString()==='data' && bytes.readUInt32LE(40)===bytes.length-44 &&
     bytes.readUInt32LE(4)===bytes.length-8 && (bytes.length-44)%2===0;
 }
+// WAV permits optional chunks and an extended fmt chunk. Canonicalize only
+// complete, mono 24 kHz, 16-bit PCM; never assume all WAV files have 44-byte headers.
+export function normalizePcmWave(bytes:Buffer):Buffer {
+  if(bytes.length<44 || bytes.subarray(0,4).toString()!=='RIFF' || bytes.subarray(8,12).toString()!=='WAVE' || bytes.readUInt32LE(4)!==bytes.length-8)throw new GoogleNarrationError('format','INVALID_WAV');
+  let offset=12,format=false,pcm:Buffer|undefined;
+  while(offset<bytes.length){
+    if(offset+8>bytes.length)throw new GoogleNarrationError('format','TRUNCATED_WAV');
+    const tag=bytes.subarray(offset,offset+4).toString(),size=bytes.readUInt32LE(offset+4),start=offset+8,end=start+size;
+    if(end>bytes.length)throw new GoogleNarrationError('format','TRUNCATED_WAV');
+    if(tag==='fmt '){
+      if(format || size<16 || bytes.readUInt16LE(start)!==1 || bytes.readUInt16LE(start+2)!==1 || bytes.readUInt32LE(start+4)!==24000 || bytes.readUInt32LE(start+8)!==48000 || bytes.readUInt16LE(start+12)!==2 || bytes.readUInt16LE(start+14)!==16)throw new GoogleNarrationError('format','UNSUPPORTED_PCM');
+      format=true;
+    }
+    if(tag==='data'){
+      if(pcm || size<4800 || size%2)throw new GoogleNarrationError('format','INVALID_DATA');
+      pcm=bytes.subarray(start,end);
+    }
+    offset=end+(size%2);
+  }
+  if(offset!==bytes.length || !format || !pcm)throw new GoogleNarrationError('format','INVALID_WAV');
+  return pcmWave(pcm);
+}
 function pcmWave(pcm:Buffer) {
   const b=Buffer.alloc(44);b.write('RIFF');b.writeUInt32LE(36+pcm.length,4);b.write('WAVEfmt ',8);b.writeUInt32LE(16,16);
   b.writeUInt16LE(1,20);b.writeUInt16LE(1,22);b.writeUInt32LE(24000,24);b.writeUInt32LE(48000,28);b.writeUInt16LE(2,32);b.writeUInt16LE(16,34);b.write('data',36);b.writeUInt32LE(pcm.length,40);return Buffer.concat([b,pcm]);
@@ -74,7 +96,8 @@ export function createGoogleDevotionalNarrator(env:NodeJS.ProcessEnv=process.env
     if(typeof audio?.data!=='string'||!/^[A-Za-z0-9+/]+={0,2}$/.test(audio.data))throw new GoogleNarrationError('response','NO_AUDIO');
     let bytes=Buffer.from(audio.data,'base64');
     if(/^audio\/L16;.*rate=24000/i.test(audio.mimeType??''))bytes=pcmWave(bytes);
-    else if(!/^audio\/wav$/i.test(audio.mimeType??''))throw new GoogleNarrationError('format','UNSUPPORTED');
+    else if(/^audio\/(?:x-)?wav(?:;|$)/i.test(audio.mimeType??''))bytes=normalizePcmWave(bytes);
+    else throw new GoogleNarrationError('format','UNSUPPORTED');
     if(!isPcmWave(bytes)||bytes.length<4800||bytes.length>20*1024*1024)throw new GoogleNarrationError('format','INVALID_PCM');
     return bytes;
   };
