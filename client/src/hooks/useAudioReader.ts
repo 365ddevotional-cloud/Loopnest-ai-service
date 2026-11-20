@@ -10,7 +10,7 @@ export interface AudioReaderState {
   language: string;
 }
 
-export interface AudioReaderOptions { devotional?: boolean; language?: string; }
+export interface AudioReaderOptions { devotional?: boolean; language?: string; useDefaultVoice?: boolean; }
 
 export interface AudioReaderActions {
   play: (text: string, label?: string, options?: AudioReaderOptions) => void;
@@ -18,6 +18,7 @@ export interface AudioReaderActions {
   resume: () => void;
   stop: () => void;
   setSpeed: (rate: number) => void;
+  retryDefaultVoice: () => void;
 }
 
 const VOICE_STORAGE_KEY = "audio-reader-voice";
@@ -50,6 +51,7 @@ let activeUtterance: SpeechSynthesisUtterance | null = null;
 let startTimer: ReturnType<typeof setTimeout> | null = null;
 let activeStarted = false;
 let globalLanguage = 'en-US';
+let useDefaultVoice = false;
 const listeners = new Set<() => void>();
 
 function notify() {
@@ -130,17 +132,18 @@ function chooseVoice(englishVoices: SpeechSynthesisVoice[], language = 'en'): Sp
     if (saved) return saved;
   }
 
+  // Prefer the device's working default/local voice before optional network voices.
+  const defaultVoice = englishVoices.find((v) => v.default);
+  if (defaultVoice) return defaultVoice;
+  const localVoice = englishVoices.find((v) => v.localService);
+  if (localVoice) return localVoice;
+
   for (const keyword of VOICE_PRIORITY) {
     const match = englishVoices.find(
       (v) => v.name.toLowerCase().includes(keyword.toLowerCase())
     );
     if (match) return match;
   }
-
-  const defaultVoice = englishVoices.find((v) => v.default);
-  if (defaultVoice) return defaultVoice;
-  const localVoice = englishVoices.find((v) => v.localService);
-  if (localVoice) return localVoice;
 
   return englishVoices[0];
 }
@@ -256,7 +259,7 @@ function speakFromSegment(startIndex: number, session = playbackSession) {
       utterance.rate = getEffectiveRate();
       utterance.pitch = 1;
       utterance.volume = 1;
-      const voice = preferredVoice(globalLanguage);
+      const voice = useDefaultVoice ? null : preferredVoice(globalLanguage);
       if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
       utterance.onstart = () => {
         if (session !== playbackSession || activeUtterance !== utterance) return;
@@ -275,8 +278,8 @@ function speakFromSegment(startIndex: number, session = playbackSession) {
         }
         failSpeech("Unable to read aloud on this device. Tap Listen again. If it still fails, try Chrome or Safari and check your device's speech settings.");
       };
-      // cancel() need not clear a browser's paused state. Resume in the same tap.
-      window.speechSynthesis.resume();
+      // Leave an idle engine alone. Only resume an actually paused queue.
+      if (window.speechSynthesis.paused) window.speechSynthesis.resume();
       watchSpeechStart(utterance, session);
       window.speechSynthesis.speak(utterance);
     } catch {
@@ -295,6 +298,7 @@ function doPlay(text: string, label: string, options?: AudioReaderOptions) {
   }
   if (!text.trim()) return;
   globalLanguage = speechLanguage(options?.language);
+  useDefaultVoice = options?.useDefaultVoice ?? false;
   globalIsDevotional = options?.devotional ?? false;
   const processedText = globalIsDevotional ? prepareDevotionalText(text) : text;
   globalOriginalText = processedText;
@@ -305,9 +309,9 @@ function doPlay(text: string, label: string, options?: AudioReaderOptions) {
   // Never wait for voices here: mobile browsers require speak() in the tap handler.
   // The default English voice can start while the optional voice list loads.
   try { cachedVoices = window.speechSynthesis.getVoices(); }
-  catch { failSpeech('Unable to load speech voices. Tap Listen again, or try Chrome or Safari.'); return; }
+  catch { cachedVoices = []; } // Voice discovery must not prevent default speech.
   if (cachedVoices.length) voicesLoaded = true;
-  if (cachedVoices.length && !preferredVoice(globalLanguage)) {
+  if (!useDefaultVoice && globalLanguage !== 'en-US' && cachedVoices.length && !preferredVoice(globalLanguage)) {
     failSpeech(`This device has no usable voice for ${globalLanguage}. Try an installed voice or the English original.`, 'voice-unavailable');
     return;
   }
@@ -315,8 +319,11 @@ function doPlay(text: string, label: string, options?: AudioReaderOptions) {
 }
 
 function doStop() {
+  const synth = typeof window !== 'undefined' ? window.speechSynthesis : undefined;
+  const needsCancel = activeUtterance !== null || synth?.speaking || synth?.pending || synth?.paused;
   ++playbackSession;
-  cancelSpeech();
+  clearStartTimer();
+  if (needsCancel) cancelSpeech();
   activeUtterance = null;
   globalState = { ...globalState, isSpeaking: false, isPaused: false, currentLabel: "", error: null, errorCode: null };
   globalOriginalText = "";
@@ -395,6 +402,12 @@ export function useAudioReader(): AudioReaderState & AudioReaderActions {
   const resume = useCallback(() => doResume(), []);
   const stop = useCallback(() => doStop(), []);
   const setSpeed = useCallback((rate: number) => doSetSpeed(rate), []);
+  const retryDefaultVoice = useCallback(() => {
+    if (!globalOriginalText) return;
+    doPlay(globalOriginalText, globalState.currentLabel, {
+      devotional: globalIsDevotional, language: globalLanguage, useDefaultVoice: true,
+    });
+  }, []);
 
   return {
     ...globalState,
@@ -403,6 +416,7 @@ export function useAudioReader(): AudioReaderState & AudioReaderActions {
     resume,
     stop,
     setSpeed,
+    retryDefaultVoice,
   };
 }
 
@@ -411,3 +425,4 @@ export function stopAudioOnNavigate() {
     doStop();
   }
 }
+

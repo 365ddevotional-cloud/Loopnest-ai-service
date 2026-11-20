@@ -1675,5 +1675,6 @@
   "ui_noDeviceVoice": "Babu muryar da ta dace da wannan harshe a na’urar. Gwada wani harshe ko rikodin da aka adana kuma aka ba da izinin amfani da shi.",
   "ui_voiceSelected": "Muryar da aka zaɓa",
   "ui_pidginDeviceVoice": "Wannan na’ura tana amfani da muryar Turanci don Pidgin. Furucin na iya bambanta da na mai magana da Pidgin na asali.",
-  "ui_refreshVoices": "Sake duba muryoyi"
+  "ui_refreshVoices": "Sake duba muryoyi",
+  "ui_retryDefaultVoice": "Babu sauti? Yi amfani da muryar asali"
 }

@@ -20,12 +20,13 @@ const SPEED_OPTIONS = [
 ];
 
 export function AudioMiniPlayer() {
-  const { isSpeaking, isPaused, rate, currentLabel, error, errorCode, language, pause, resume, stop, setSpeed } = useAudioReader();
+  const { isSpeaking, isPaused, rate, currentLabel, error, errorCode, language, pause, resume, stop, setSpeed, retryDefaultVoice } = useAudioReader();
   const {t} = useI18n();
 
   if (error) return (
     <div role="alert" className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-card border border-border rounded-md shadow-lg px-4 py-3 w-[90vw] max-w-lg" data-testid="audio-reader-error">
       <p className="text-sm">{errorCode === 'voice-unavailable' ? t('ui_audioMissingVoice').replace('{language}', language) : errorCode === 'start-timeout' ? t('ui_audioDidNotStart') : error}</p>
+      {errorCode !== 'voice-unavailable' && <Button variant="outline" size="sm" onClick={retryDefaultVoice} data-testid="button-audio-retry-default">{t('ui_retryDefaultVoice')}</Button>}
       <Button variant="ghost" size="icon" onClick={stop} aria-label="Dismiss audio message" className="shrink-0">
         <X className="h-4 w-4" />
       </Button>
@@ -38,12 +39,13 @@ export function AudioMiniPlayer() {
 
   return (
     <div
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-card border border-border rounded-md shadow-lg px-3 py-2 max-w-[90vw]"
+      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-wrap justify-center items-center gap-2 bg-card border border-border rounded-md shadow-lg px-3 py-2 w-max max-w-[90vw]"
       data-testid="audio-mini-player"
     >
       <span className="text-xs text-muted-foreground truncate max-w-[120px] sm:max-w-[200px]" data-testid="text-audio-label">
         {currentLabel}
       </span>
+      <Button variant="outline" size="sm" className="whitespace-normal text-xs" onClick={retryDefaultVoice} data-testid="button-audio-retry-default">{t('ui_retryDefaultVoice')}</Button>
 
       {isPaused ? (
         <Button
@@ -100,3 +102,4 @@ export function AudioMiniPlayer() {
     </div>
   );
 }
+
