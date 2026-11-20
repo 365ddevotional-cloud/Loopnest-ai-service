@@ -7,6 +7,7 @@ import { build } from 'esbuild';
 import React, { act } from 'react';
 import { JSDOM } from 'jsdom';
 import pilot from '../../../server/content-translations/2026-11-19-glorious-light.json';
+import igbo from '../../../server/content-translations/2026-11-19-glorious-light-igbo.json';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'https://example.invalid/admin' });
 for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'Element', 'Node', 'Event'])
@@ -42,7 +43,7 @@ test('private review switches actual draft language, preserves Scripture and ren
     assert.equal(container.querySelector('img'), null);
     assert.equal(container.querySelector('button'), null, 'no action can publish a draft');
     const select = container.querySelector('select')!;
-    assert.equal(select.options.length, 5);
+    assert.equal(select.options.length, 6);
     await act(async () => { select.value = 'fr'; select.dispatchEvent(new dom.window.Event('change', { bubbles: true })); });
     assert.ok(container.textContent?.includes('Lumière glorieuse'));
     assert.ok(container.textContent?.includes(pilot.drafts[1].content));
@@ -62,4 +63,31 @@ test('private review switches actual draft language, preserves Scripture and ren
     await act(async () => root.unmount()); client.clear(); container.remove();
   }
 });
+test('Igbo selection shows only the complete private Igbo batch and no recording publication controls', async () => {
+  screen.setReviewFixture([
+    { ...pilot, sourceMatches: true, sourceAvailable: true, publicAvailability: 'published' },
+    { ...igbo, sourceMatches: true, sourceAvailable: true, publicAvailability: 'not-published' },
+  ]);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  const container = document.createElement('div'); document.body.append(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(React.createElement(QueryClientProvider, { client }, React.createElement(screen.ContentTranslationReview))));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });
+    const select = container.querySelector('select')!;
+    await act(async () => { select.value = 'ig'; select.dispatchEvent(new dom.window.Event('change', { bubbles: true })); });
+    assert.ok(container.textContent?.includes(igbo.drafts[0].title));
+    assert.ok(container.textContent?.includes(igbo.drafts[0].content));
+    assert.ok(container.textContent?.includes('Igbo speech is not available'));
+    assert.ok(container.textContent?.includes('Not published'));
+    assert.ok(!container.textContent?.includes('Published · Saved translation'));
+    assert.equal(container.querySelectorAll('article[lang="ig"]').length, 1);
+    assert.equal(container.querySelector('audio'), null);
+    assert.equal(container.querySelector('input[type="file"]'), null);
+    assert.equal(container.querySelector('blockquote')?.textContent, pilot.source.scriptureText);
+  } finally {
+    await act(async () => root.unmount()); client.clear(); container.remove();
+  }
+});
 after(() => dom.window.close());
+

@@ -5,6 +5,7 @@ import { createDevotionalTranslator } from "./devotional-translation";
 import contentTranslationApproval from "./content-translations/2026-11-19-glorious-light.approval.json";
 import { registerContentTranslationReview } from "./content-translation-review";
 import contentTranslationPilot from "./content-translations/2026-11-19-glorious-light.json";
+import contentTranslationIgbo from "./content-translations/2026-11-19-glorious-light-igbo.json";
 import { conversationDDL, registerFeedbackConversations } from "./feedback-conversations";
 import { pool as conversationPool } from "./db";
 import { getUncachableSendGridClient } from "./sendgrid";
@@ -170,7 +171,7 @@ export async function registerRoutes(
     readSource: id => storage.getDevotional(id), translate: applyTranslation, today: getTodayDateString,
   });
   registerContentTranslationReview(app, {
-    requireAdmin, batches: [contentTranslationPilot],
+    requireAdmin, batches: [contentTranslationPilot, contentTranslationIgbo],
     publicationApproval: approvedContent.forBatch,
     readSource: id => storage.getDevotional(id),
   });
@@ -6397,3 +6398,4 @@ async function seedAutoReplyTemplates() {
     console.log("Auto-reply templates seeded.");
   }
 }
+

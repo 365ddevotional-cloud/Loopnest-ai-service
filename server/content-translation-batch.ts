@@ -14,7 +14,7 @@ const sourceSchema = translatedText.extend({
   scriptureReference: text, scriptureText: text, author: text.nullable(),
 }).strict();
 const draftSchema = translatedText.extend({
-  language: z.enum(['es', 'fr', 'yo', 'pcm', 'ha']),
+  language: z.enum(['es', 'fr', 'yo', 'pcm', 'ha', 'ig']),
   status: z.literal('draft'), languageReview: z.literal('pending'), ministryReview: z.literal('pending'),
 }).strict();
 const batchSchema = z.object({
@@ -22,7 +22,7 @@ const batchSchema = z.object({
   preparedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   generation: z.literal('assistant-draft-no-provider-call'),
   source: sourceSchema, sourceHash: z.string().regex(/^[a-f0-9]{64}$/),
-  drafts: z.array(draftSchema).length(5),
+  drafts: z.array(draftSchema).min(1).max(6),
 }).strict();
 
 // Fixed field order makes hashes reproducible across JSON serializers. Include
@@ -44,7 +44,7 @@ const paragraphCount = (value: string) => value.split(/\n\s*\n/).filter(p => p.t
 export function validateTranslationBatch(value: unknown) {
   const batch = batchSchema.parse(value);
   if (sourceHash(batch.source) !== batch.sourceHash) throw new Error('Source hash mismatch');
-  if (new Set(batch.drafts.map(d => d.language)).size !== 5) throw new Error('Duplicate or missing language');
+  if (new Set(batch.drafts.map(d => d.language)).size !== batch.drafts.length) throw new Error('Duplicate language');
   for (const draft of batch.drafts) {
     if (draft.content === batch.source.content) throw new Error('Untranslated draft');
     if (paragraphCount(draft.content) !== paragraphCount(batch.source.content)) throw new Error('Paragraph count mismatch');
@@ -56,4 +56,5 @@ export function validateTranslationBatch(value: unknown) {
   }
   return batch;
 }
+
 
