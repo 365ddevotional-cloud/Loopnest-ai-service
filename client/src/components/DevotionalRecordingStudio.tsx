@@ -22,7 +22,7 @@ export function DevotionalRecordingStudio({id,language}:{id:number;language:stri
         if(!response.ok){const error=await response.json().catch(()=>null);throw new Error(error?.message || 'Upload failed. Your existing recording is retained.');}
         setReviewed(false);setRights(false);setMessage('Saved privately. Listen and review before publication.');
       } else {
-        await apiRequest('PATCH',path,{version:status.data.version,audioHash:status.data.recording?.audioHash,published:!status.data.recording?.published,reviewed,rightsConfirmed:rights,...(status.data.ownerDelegatedPublication?{reviewMethod:'owner-authorized-automated-review'}:{})});
+        await apiRequest('PATCH',path,{version:status.data.version,audioHash:status.data.recording?.audioHash,published:!status.data.recording?.published,reviewed,rightsConfirmed:rights,...(status.data.ownerDelegatedPublication&&status.data.recording?.provider==='google-sola'?{reviewMethod:'owner-authorized-automated-review'}:{})});
         setMessage(status.data.recording?.published?'Recording unpublished.':'Reviewed recording published.');
       }
       await status.refetch();
@@ -30,10 +30,11 @@ export function DevotionalRecordingStudio({id,language}:{id:number;language:stri
     finally{setBusy(false);}
   }
   const data=status.data;
+  const delegated=data?.ownerDelegatedPublication&&data.recording?.provider==='google-sola';
   return <section aria-label="Saved devotional recording" className="space-y-3 rounded border p-4">
     <h4 className="font-semibold">Saved recording · {language}</h4>
     <p className="text-sm">Save one recording for everyone to replay. Listener playback never generates audio. Upload an MP3 or Google PCM WAV you have permission to publish; no microphone access is needed.</p>
-    <p className="text-sm">John 8:12 uses the approved Biblica Open Yoruba or Igbo Bible wording for those narration languages. Other Scripture quotations retain the original source text until verified. Listen to the entire recording, check pronunciation and confirm it matches the script before publishing.</p>
+    <p className="text-sm">John 8:12 uses the approved Biblica Open Yoruba or Igbo Bible wording for those narration languages. Other Scripture quotations retain the original source text until verified. {data?.ownerDelegatedPublication?'Saved Sola recordings can publish under your delegated review authorization.':'Listen to the entire recording, check pronunciation and confirm it matches the script before publishing.'}</p>
     {status.isLoading && <p role="status">Checking saved recording…</p>}
     {status.isError && <p role="alert">Recording status could not be loaded. Refresh your admin session.</p>}
     {data && <>
@@ -47,11 +48,11 @@ export function DevotionalRecordingStudio({id,language}:{id:number;language:stri
         <button type="button" disabled={!file||busy||!data.storageReady} className="rounded border px-3 py-2 disabled:opacity-50" onClick={()=>void action(true)}>Upload private recording</button>
       </>}
       {data.recording && <>
-        {!data.recording.published && !data.ownerDelegatedPublication && <>
+        {!data.recording.published && !delegated && <>
           <label className="flex gap-2 text-sm"><input type="checkbox" checked={reviewed} onChange={e=>setReviewed(e.target.checked)} />I listened to the complete recording and approve its wording and pronunciation.</label>
           <label className="flex gap-2 text-sm"><input type="checkbox" checked={rights} onChange={e=>setRights(e.target.checked)} />I have permission to publish this recording, including any voice-provider license.</label>
         </>}
-        <button type="button" disabled={busy||(!data.recording.published&&!data.ownerDelegatedPublication&&(!reviewed||!rights))} className="rounded border px-3 py-2 disabled:opacity-50" onClick={()=>void action(false)}>{data.recording.published?'Unpublish recording':data.ownerDelegatedPublication?'Publish under owner authorization':'Publish reviewed recording'}</button>
+        <button type="button" disabled={busy||(!data.recording.published&&!delegated&&(!reviewed||!rights))} className="rounded border px-3 py-2 disabled:opacity-50" onClick={()=>void action(false)}>{data.recording.published?'Unpublish recording':delegated?'Publish under owner authorization':'Publish reviewed recording'}</button>
       </>}
     </>}
     {busy && <p role="status">Saving…</p>}
