@@ -43,10 +43,11 @@ export type ApprovedTranslationDecision = { covered: boolean; translation: Saved
 export function createApprovedContentRelease(batchInput: unknown, approvalInput: unknown) {
   const batch = validateTranslationBatch(batchInput);
   const approval = approvalSchema.parse(approvalInput);
+  const approvedLanguages = new Set<string>(approval.languages);
   if (approval.batchId !== batch.batchId || approval.sourceHash !== batch.sourceHash ||
       approval.translationHash !== translationBatchHash(batch) ||
-      new Set(approval.languages).size !== 5 ||
-      !batch.drafts.every(d => approval.languages.includes(d.language))) throw new Error('Approval does not match the saved translations');
+      approvedLanguages.size !== 5 || batch.drafts.length !== approvedLanguages.size ||
+      !batch.drafts.every(d => approvedLanguages.has(d.language))) throw new Error('Approval does not match the saved translations');
   const publicationApproval: TranslationPublicationApproval = {
     approvedBy: approval.approvedBy, approvedOn: approval.approvedOn,
     independentLanguageReview: approval.independentLanguageReview,
@@ -70,3 +71,4 @@ export function createApprovedContentRelease(batchInput: unknown, approvalInput:
     },
   };
 }
+
