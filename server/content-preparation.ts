@@ -189,19 +189,31 @@ export function createContentPreparation(deps:{read:(kind:Kind,id:number)=>Promi
    const wait=j.textReady?p.audioBlockedUntil:p.textBlockedUntil;
    return {state:j.status==='done'?'ready':j.status==='blocked'?'review':wait&&Date.parse(wait)>Date.now()?'quota':'preparing',hash:j.hash,textReady:j.textReady};
   };
-  const listenerRoute=(registerTap:boolean):RequestHandler=>route(async(q,r)=>{
+  const listenerRoute=(kind:Kind,registerTap:boolean):RequestHandler=>route(async(q,r)=>{
    if(!demandMode()||!enabled())return void r.sendStatus(503);
    const id=Number(q.params.id), lang=languages.safeParse(q.params.language);
    if(!Number.isSafeInteger(id)||id<=0||!lang.success)return void r.sendStatus(404);
-   const source=await deps.read('devotional',id);
+   const source=await deps.read(kind,id);
    if(!source||source.isDeleted)return void r.sendStatus(404);
-   const plan=(await readPlan())?.value,hash=preparationSourceHash('devotional',source);
-   const job=plan?.jobs.find(j=>j.kind==='devotional'&&j.id===id&&j.language===lang.data&&j.hash===hash);
+   let snapshot=await readPlan();
+   const hash=preparationSourceHash(kind,source);
+   if(kind==='school'&&registerTap&&!q.body?.event){
+    const keyForLesson=`school:${id}:${lang.data}:${hash}`;
+    for(let attempt=0;attempt<4;attempt++){
+     if(!snapshot?.value.enabled||snapshot.value.jobs.some(j=>j.key===keyForLesson))break;
+     if(snapshot.value.jobs.length>=1000)return void r.sendStatus(503);
+     const job:Job={key:keyForLesson,kind,id,language:lang.data,date:source.date,hash,status:'pending',textReady:false,part:0};
+     try{await store!.write(key,{...snapshot.value,jobs:[...snapshot.value.jobs,job]},snapshot.etag);snapshot=await readPlan();break;}
+     catch(e:any){if(e?.$metadata?.httpStatusCode!==412)throw e;snapshot=await readPlan();}
+    }
+   }
+   const plan=snapshot?.value;
+   const job=plan?.jobs.find(j=>j.kind===kind&&j.id===id&&j.language===lang.data&&j.hash===hash);
    if(!job||!plan)return void r.sendStatus(404);
    if(registerTap){
     const offset=q.body?.timezoneOffset;
     const localDay=Number.isInteger(offset)&&offset>=-840&&offset<=720?new Date(Date.now()-offset*60000).toISOString().slice(0,10):deps.today();
-    if(source.date!==deps.today()&&source.date!==localDay)return void r.sendStatus(404);
+    if(kind==='devotional'&&source.date!==deps.today()&&source.date!==localDay)return void r.sendStatus(404);
     if(q.body?.event==='play'){
      if(job.status!=='done')return void r.sendStatus(409);
      await recordTap(job,true);return void r.sendStatus(204);
@@ -216,8 +228,10 @@ export function createContentPreparation(deps:{read:(kind:Kind,id:number)=>Promi
    }
    r.json(listenStatus(job,plan));
   });
-  app.post(demandPath,guard,origin,listenerRoute(true));
-  app.get(demandPath,guard,listenerRoute(false));
+  app.post(demandPath,guard,origin,listenerRoute('devotional',true));
+  app.get(demandPath,guard,listenerRoute('devotional',false));
+  app.post('/api/sunday-school/:id/listen/:language',guard,origin,listenerRoute('school',true));
+  app.get('/api/sunday-school/:id/listen/:language',guard,listenerRoute('school',false));
   registerAudioListening(app, requireAdmin, origin);
   app.get('/api/admin/content-preparation',guard,requireAdmin,route(async(q,r)=>{
    const rows=demandMode()?(await interests())?.value??{}:{};
