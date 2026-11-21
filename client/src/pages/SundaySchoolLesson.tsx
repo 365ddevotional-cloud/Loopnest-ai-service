@@ -1,4 +1,5 @@
 import {useListeningStats} from "@/hooks/useListeningStats";
+import {TodayLanguageListen} from "@/components/TodayLanguageListen";
 import {ReadingLanguageNotice} from "@/components/ReadingLanguageNotice";
 import {useRef} from 'react';
 import {PreparedAudioPlayer,PreparedScriptureCredit} from '@/components/PreparedAudioPlayer';
@@ -62,6 +63,7 @@ function formatLessonForCopy(lesson: SundaySchoolLesson): string {
 export default function SundaySchoolLessonPage() {
   const params = useParams<{ id: string }>();
   const {t,lang}=useI18n();
+  const demandListen=['yo','ha','ig','pcm'].includes(lang);
   const preparedRef=useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
   const track = useListeningStats("school", params.id);
@@ -185,7 +187,7 @@ export default function SundaySchoolLessonPage() {
         <ReadingLanguageNotice/>
         {!(lesson as any)._translatedTo&&<ContentLanguageNotice />}
         <PreparedScriptureCredit source={lesson}/>
-        <PreparedAudioPlayer ref={preparedRef} kind="school" onPlaying={()=>track((lesson as any)._translatedTo??'en')} source={lesson} language={(lesson as any)._translatedTo??'en'} onPlay={()=>audio.stop()}/>
+        {!demandListen && <PreparedAudioPlayer ref={preparedRef} kind="school" onPlaying={()=>track((lesson as any)._translatedTo??'en')} source={lesson} language={(lesson as any)._translatedTo??'en'} onPlay={()=>audio.stop()}/>}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <Link href="/sunday-school">
             <Button variant="ghost" className="gap-2" data-testid="button-back-sunday-school">
@@ -195,7 +197,7 @@ export default function SundaySchoolLessonPage() {
           </Link>
           <div className="flex items-center gap-2 flex-wrap">
             <SundaySchoolDownloadButton lesson={lesson} />
-            <Button
+            {demandListen ? <TodayLanguageListen key={lesson.id+':'+lang} kind="school" source={lesson} language={lang} onPlay={()=>audio.stop()} onStarted={()=>track(lang)}/> : <Button
               onClick={() => {
                 if (!lesson) return;
                 if(preparedRef.current){audio.stop();void preparedRef.current.play().catch(()=>toast({title:"Tap the saved audio player to listen."}));return;}
@@ -219,7 +221,7 @@ export default function SundaySchoolLessonPage() {
             >
               <Volume2 className="w-4 h-4" />
               {t("listen")}
-            </Button>
+            </Button>}
             <Button onClick={handleCopy} className="gap-2" data-testid="button-copy-lesson">
               <Copy className="w-4 h-4" />
               {t("ui_copyLesson")}
