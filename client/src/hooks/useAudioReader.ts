@@ -10,7 +10,7 @@ export interface AudioReaderState {
   language: string;
 }
 
-export interface AudioReaderOptions { devotional?: boolean; language?: string; useDefaultVoice?: boolean; }
+export interface AudioReaderOptions { devotional?: boolean; language?: string; useDefaultVoice?: boolean; onStarted?: () => void; }
 
 export interface AudioReaderActions {
   play: (text: string, label?: string, options?: AudioReaderOptions) => void;
@@ -50,6 +50,7 @@ let playbackSession = 0;
 let activeUtterance: SpeechSynthesisUtterance | null = null;
 let startTimer: ReturnType<typeof setTimeout> | null = null;
 let activeStarted = false;
+let pendingStart: (()=>void) | undefined;
 let globalLanguage = 'en-US';
 let useDefaultVoice = false;
 const listeners = new Set<() => void>();
@@ -264,6 +265,9 @@ function speakFromSegment(startIndex: number, session = playbackSession) {
       utterance.onstart = () => {
         if (session !== playbackSession || activeUtterance !== utterance) return;
         activeStarted = true; clearStartTimer();
+        const started = pendingStart;
+        pendingStart = undefined;
+        started?.();
       };
       utterance.onend = () => {
         if (session !== playbackSession || activeUtterance !== utterance) return;
@@ -297,6 +301,7 @@ function doPlay(text: string, label: string, options?: AudioReaderOptions) {
     return;
   }
   if (!text.trim()) return;
+  pendingStart = options?.onStarted;
   globalLanguage = speechLanguage(options?.language);
   useDefaultVoice = options?.useDefaultVoice ?? false;
   globalIsDevotional = options?.devotional ?? false;
@@ -405,7 +410,7 @@ export function useAudioReader(): AudioReaderState & AudioReaderActions {
   const retryDefaultVoice = useCallback(() => {
     if (!globalOriginalText) return;
     doPlay(globalOriginalText, globalState.currentLabel, {
-      devotional: globalIsDevotional, language: globalLanguage, useDefaultVoice: true,
+      devotional: globalIsDevotional, language: globalLanguage, useDefaultVoice: true, onStarted: pendingStart,
     });
   }, []);
 

@@ -1,3 +1,4 @@
+import {ReadingLanguageNotice} from "@/components/ReadingLanguageNotice";
 import { ShopFeature } from "@/components/ShopFeature";
 import { GooglePlayReviewLink } from "@/components/GooglePlayReviewLink";
 import { useQuery } from "@tanstack/react-query";
@@ -202,6 +203,7 @@ export default function SundaySchool() {
 
       <div className="max-w-4xl mx-auto space-y-10">
         <ShopFeature />
+        <ReadingLanguageNotice/>
         <div className="text-center space-y-3">
           <div className="flex items-center justify-center gap-3">
             <GraduationCap className="w-8 h-8 text-primary" />

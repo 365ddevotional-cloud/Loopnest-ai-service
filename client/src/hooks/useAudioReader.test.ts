@@ -244,4 +244,16 @@ test('a speech engine that never starts cannot leave a false playing indicator f
   } finally {reader().stop();context.mock.timers.reset();}
 });
 
-
+test('a playback start counts once across speech segments', () => {
+  setup();
+  let starts = 0;
+  reader().play('First paragraph.\n\nSecond paragraph.', 'Devotional', {
+    devotional: true, onStarted: () => { starts++; },
+  });
+  assert.equal(starts, 0);
+  spoken[0].onstart();
+  spoken[0].onend();
+  spoken[1].onstart();
+  assert.equal(starts, 1);
+  reader().stop();
+});

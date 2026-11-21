@@ -1,3 +1,4 @@
+import {registerAudioListening} from "./audio-listening";
 import {createHash,randomUUID} from 'node:crypto';
 import type {Express,RequestHandler} from 'express';
 import {S3Client,GetObjectCommand,PutObjectCommand} from '@aws-sdk/client-s3';
@@ -217,6 +218,7 @@ export function createContentPreparation(deps:{read:(kind:Kind,id:number)=>Promi
   });
   app.post(demandPath,guard,origin,listenerRoute(true));
   app.get(demandPath,guard,listenerRoute(false));
+  registerAudioListening(app, requireAdmin, origin);
   app.get('/api/admin/content-preparation',guard,requireAdmin,route(async(q,r)=>{
    const rows=demandMode()?(await interests())?.value??{}:{};
    const snapshot={...await status(),onDemand:demandMode(),listenerDemand:preparationLanguages.map(language=>{

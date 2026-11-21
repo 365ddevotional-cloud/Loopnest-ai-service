@@ -1,3 +1,5 @@
+import {useListeningStats} from "@/hooks/useListeningStats";
+import {ReadingLanguageNotice} from "@/components/ReadingLanguageNotice";
 import {useRef} from 'react';
 import {PreparedAudioPlayer,PreparedScriptureCredit} from '@/components/PreparedAudioPlayer';
 import { useI18n } from "@/hooks/useI18n";
@@ -62,6 +64,7 @@ export default function SundaySchoolLessonPage() {
   const {t,lang}=useI18n();
   const preparedRef=useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
+  const track = useListeningStats("school", params.id);
   const audio = useAudioReader();
 
   const { data: lesson, isLoading, error } = useQuery<SundaySchoolLesson>({
@@ -179,9 +182,10 @@ export default function SundaySchoolLessonPage() {
 
       <div className="max-w-3xl mx-auto space-y-6">
         <ShopFeature />
+        <ReadingLanguageNotice/>
         {!(lesson as any)._translatedTo&&<ContentLanguageNotice />}
         <PreparedScriptureCredit source={lesson}/>
-        <PreparedAudioPlayer ref={preparedRef} kind="school" source={lesson} language={(lesson as any)._translatedTo??'en'} onPlay={()=>audio.stop()}/>
+        <PreparedAudioPlayer ref={preparedRef} kind="school" onPlaying={()=>track((lesson as any)._translatedTo??'en')} source={lesson} language={(lesson as any)._translatedTo??'en'} onPlay={()=>audio.stop()}/>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <Link href="/sunday-school">
             <Button variant="ghost" className="gap-2" data-testid="button-back-sunday-school">
@@ -206,7 +210,8 @@ export default function SundaySchoolLessonPage() {
                   `Prayer Focus: ${lesson.prayerFocus}.`,
                   `Weekly Assignment: ${lesson.weeklyAssignment}.`,
                 ].join(" ");
-                audio.play(listenText, lesson.title);
+                const language = (lesson as any)._translatedTo || 'en';
+                audio.play(listenText, lesson.title, {language, onStarted:()=>track(language)});
               }}
               variant="outline"
               className="gap-2"

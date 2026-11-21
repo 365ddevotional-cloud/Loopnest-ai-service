@@ -1,3 +1,5 @@
+import {ReadingLanguageNotice} from "./ReadingLanguageNotice";
+import {useListeningStats} from "@/hooks/useListeningStats";
 import {TodayLanguageListen} from './TodayLanguageListen';
 import {PreparedAudioPlayer,PreparedScriptureCredit} from './PreparedAudioPlayer';
 import { ContentLanguageNotice } from "@/components/ContentLanguageNotice";
@@ -59,6 +61,7 @@ export function DevotionalCard({ devotional, showNotes = false, today = false }:
   const { resolvedTheme, setTheme } = useTheme();
   const audio = useAudioReader();
   const { t,lang } = useI18n();
+  const track = useListeningStats("devotional", devotional.id);
   const demandListen=today && ['yo','ha','ig','pcm'].includes(lang);
   const contentLanguage = (devotional as DevotionalResponse & {_translatedTo?:string})._translatedTo || 'en';
   const savedRecording=useSavedDevotionalRecording(devotional,contentLanguage);
@@ -166,6 +169,7 @@ export function DevotionalCard({ devotional, showNotes = false, today = false }:
 
   return (
     <article className="max-w-4xl mx-auto bg-card shadow-xl shadow-primary/10 rounded-none md:rounded-xl overflow-hidden border border-card-border">
+      <ReadingLanguageNotice/>
       {/* Header Section with gradient */}
       <div className="relative bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10 px-3 py-4 sm:p-6 md:p-8 text-center border-b border-primary/10">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M0%200h20v20H0z%22%20fill%3D%22none%22%2F%3E%3Cpath%20d%3D%22M10%2010m-1%200a1%201%200%201%200%202%200a1%201%200%201%200-2%200%22%20fill%3D%22%237C3A2A%22%20fill-opacity%3D%220.03%22%2F%3E%3C%2Fsvg%3E')]" />
@@ -189,7 +193,7 @@ export function DevotionalCard({ devotional, showNotes = false, today = false }:
             </Button>
           </div>
           <div className="flex items-center justify-center gap-2 mb-4 flex-wrap" data-testid="devotional-compact-actions">
-            {demandListen ? <TodayLanguageListen key={devotional.id+lang} source={devotional} language={lang} onPlay={()=>audio.stop()}/> : <Button
+            {demandListen ? <TodayLanguageListen onStarted={()=>track(lang)} key={devotional.id+lang} source={devotional} language={lang} onPlay={()=>audio.stop()}/> : <Button
               size="sm"
               onClick={() => {
                 if(preparedRef.current){audio.stop();void preparedRef.current.play().catch(()=>setRecordingError(true));return;}
@@ -210,7 +214,7 @@ export function DevotionalCard({ devotional, showNotes = false, today = false }:
                   ...(propheticItems.length > 0 ? [`${t("propheticDeclaration")}:`, ...propheticItems.map(d => d + ".")] : []),
                   ...(invitation ? [`Need Prayer or Counseling? ${invitation}`] : []),
                 ].join(" ");
-                audio.play(listenText, devotional.title, { devotional: true, language: contentLanguage });
+                audio.play(listenText, devotional.title, { devotional: true, language: contentLanguage, onStarted:()=>track(contentLanguage) });
               }}
               className="min-h-8 rounded-full px-2 text-[11px] font-bold gap-1"
               data-testid="button-listen-devotional"
@@ -242,9 +246,9 @@ export function DevotionalCard({ devotional, showNotes = false, today = false }:
               compact
             />
           </div>
-          {!demandListen && <PreparedAudioPlayer ref={preparedRef} kind="devotional" source={devotional} language={contentLanguage} onPlay={()=>audio.stop()}/>}
+          {!demandListen && <PreparedAudioPlayer ref={preparedRef} kind="devotional" onPlaying={()=>track(contentLanguage)} source={devotional} language={contentLanguage} onPlay={()=>audio.stop()}/>}
           {savedRecording.data?.available && <audio key={savedRecording.data.audioPath} ref={recordingRef} controls preload="none"
-            src={savedRecording.data.audioPath} className="mb-4 w-full" data-testid="saved-devotional-audio"
+            onPlaying={()=>track(contentLanguage)} src={savedRecording.data.audioPath} className="mb-4 w-full" data-testid="saved-devotional-audio"
             onLoadedMetadata={e=>{e.currentTarget.playbackRate=contentLanguage==='ha'?.85:.92;}} onPlay={()=>{audio.stop();setRecordingError(false);}} onError={()=>setRecordingError(true)} />}
           {recordingError && <p role="alert" className="mb-4 text-sm">{t('ui_audioDidNotStart')}</p>}
           {(audio.error || recordingError) && contentLanguage !== 'en' && <div className="mb-4 space-y-2" data-testid="devotional-english-audio-fallback">
@@ -254,7 +258,7 @@ export function DevotionalCard({ devotional, showNotes = false, today = false }:
               recordingRef.current?.pause(); setRecordingError(false);
               const text = [original.title, original.scriptureText, original.scriptureReference, original.content,
                 ...original.prayerPoints, ...original.faithDeclarations, original.christianQuotes, original.propheticDeclaration].filter(Boolean).join('\n\n');
-              audio.play(text, original.title, {devotional:true,language:'en'});
+              audio.play(text, original.title, {devotional:true,language:'en',onStarted:()=>track('en')});
             }}>{t('ui_listenEnglishOriginal')}</Button>
             {englishAudio.isLoading && <p className="text-sm">{t('ui_preparingEnglishAudio')}</p>}
             {englishAudio.isError && <p className="text-sm">{t('ui_englishAudioUnavailable')}</p>}
