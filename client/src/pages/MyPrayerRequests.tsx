@@ -56,6 +56,7 @@ export default function MyPrayerRequests() {
       return res.json();
     },
     enabled: !!selectedRequest && !!searchedEmail,
+    refetchInterval: selectedRequest && searchedEmail ? 60_000 : false,
   });
 
   const { data: attachments = [] } = useQuery<PrayerAttachment[]>({
@@ -281,7 +282,7 @@ export default function MyPrayerRequests() {
                         >
                           <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
                             <span className="text-xs font-medium text-muted-foreground">
-                              {msg.senderType === "admin" ? tx("365 Daily Devotional Team") : msg.senderType === "automated" ? tx("Automated encouragement") : tx("You")}
+                              {msg.senderType === "admin" ? (/Moses Afolabi\s*$/i.test(msg.message) ? "Moses Afolabi" : tx("Ministry Team")) : msg.senderType === "automated" ? tx("365 Daily Devotional (automated)") : tx("You")}
                             </span>
                             <span className="text-xs text-muted-foreground">
                               {msg.createdAt ? format(new Date(msg.createdAt), "MMM d, h:mm a") : ""}

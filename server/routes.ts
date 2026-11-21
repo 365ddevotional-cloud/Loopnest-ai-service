@@ -882,13 +882,6 @@ export async function registerRoutes(
       };
       
       const prayerRequest = await storage.createPrayerRequest(sanitizedInput);
-      try {
-        const template = await storage.getAutoReplyTemplate(prayerRequest.priority);
-        if (template) {
-          await storage.createThreadMessage({ requestId: prayerRequest.id, senderType: "automated",
-            message: `${template.encouragement}\n\n“${template.scriptureText}” — ${template.scriptureReference}\n\n${template.prayer}` });
-        }
-      } catch (error) { console.error("Could not save the automated prayer encouragement:", error); }
       res.status(201).json(prayerRequest);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -994,6 +987,7 @@ export async function registerRoutes(
       }
       const { message, senderType } = req.body;
       
+      if (senderType !== "user" && senderType !== "admin") return res.sendStatus(400);
       // Only admins can send as "admin"
       if (senderType === "admin" && !req.session?.isAdmin) {
         return res.status(401).json({ message: "Unauthorized: Admin access required" });
@@ -2571,7 +2565,10 @@ export async function registerRoutes(
   });
 
   // Run prayer follow-ups on startup and every 6 hours
-  import("./prayer-followups").then(({ runPrayerFollowUps }) => {
+  import("./prayer-followups").then(({ runPrayerFollowUps, deliverDueInboxReceipts }) => {
+    const deliver = () => deliverDueInboxReceipts().catch(err => console.error("[Prayer] Delayed inbox delivery failed", err));
+    void deliver();
+    setInterval(deliver, 60_000).unref();
     runPrayerFollowUps().catch(err => console.error("[FollowUp] Initial run error:", err));
     setInterval(() => {
       runPrayerFollowUps().catch(err => console.error("[FollowUp] Scheduled run error:", err));
@@ -2604,7 +2601,7 @@ export async function registerRoutes(
         data.message
       );
 
-      generateAIEncouragement(data.category, data.message)
+      if (data.category !== "Prayer" && data.category !== "Counseling") generateAIEncouragement(data.category, data.message)
         .then(async (aiMessage) => {
           await storage.createInboxMessage({
             threadId: thread.id,

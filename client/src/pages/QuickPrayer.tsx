@@ -49,11 +49,7 @@ export default function QuickPrayer() {
               <HandHeart className="w-10 h-10 text-white" />
             </div>
             <h2 className="font-serif text-2xl md:text-3xl font-bold text-primary">{tx("Your Request Has Been Received")}</h2>
-            <div className="bg-primary/5 p-4 rounded-xl border border-primary/10">
-              <p className="text-foreground font-serif italic text-lg"> {tx("One of our prayer partners is praying for you right now.")} </p>
-            </div>
-            <p className="text-muted-foreground"> {tx("Someone is praying for you now. God hears every prayer, and we are standing in agreement with you.")} </p>
-            <p className="text-sm italic text-primary font-serif"> "For where two or three gather in my name, there am I with them." — Matthew 18:20 </p>
+            <p className="text-muted-foreground">{tx("Your request is in the prayer team’s inbox.")}</p>
             <div className="flex flex-col sm:flex-row justify-center gap-3 pt-2">
               <Button onClick={() => setSubmitted(false)} className="gap-2" data-testid="button-pray-again">
                 <Heart className="w-4 h-4" /> {tx("Submit Another Request")} </Button>
@@ -70,14 +66,14 @@ export default function QuickPrayer() {
       <div className="text-center mb-8 space-y-4">
         <h1 className="font-serif text-3xl md:text-4xl font-bold text-primary">{tx("Pray With Someone Now")}</h1>
         <div className="w-24 h-1 bg-primary mx-auto rounded-full opacity-30" />
-        <p className="text-muted-foreground max-w-lg mx-auto"> {tx("Share your prayer need and someone will begin praying for you immediately.")} </p>
+        <p className="text-muted-foreground max-w-lg mx-auto"> {tx("Share what you would like the prayer team to pray about.")} </p>
       </div>
 
       <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20 shadow-xl">
         <CardContent className="p-6 md:p-8 space-y-5">
           <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 text-center">
             <HandHeart className="w-8 h-8 text-primary mx-auto mb-2" />
-            <p className="text-sm text-foreground font-medium"> {tx("One of our prayer partners is ready to pray with you.")} </p>
+            <p className="text-sm text-foreground font-medium"> {tx("What would you like us to bring before God in prayer?")} </p>
           </div>
 
           <div>

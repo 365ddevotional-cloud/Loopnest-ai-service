@@ -215,7 +215,7 @@ import {
   type YoutubeConnection,
   type YoutubeSongUpload,
 } from "@shared/schema";
-import { eq, desc, asc, and, isNull, or, ilike, lte, notInArray, inArray, sql, gte, count, countDistinct } from "drizzle-orm";
+import { getTableColumns, ne, eq, desc, asc, and, isNull, or, ilike, lte, notInArray, inArray, sql, gte, count, countDistinct } from "drizzle-orm";
 
 export interface ChurchDashboardStats {
   activeMembers: number;
@@ -236,6 +236,8 @@ export interface ChurchDashboardStats {
   activePrayersList: Array<{ id: number; title: string; display_name: string }>;
   recentActivity: Array<{ type: string; description: string; created_at: string }>;
 }
+
+const prayerReceipt = "Thank you for sharing your request with 365 Daily Devotional. It is in the ministry inbox for a personal response.";
 
 export interface IStorage {
   getDevotionals(): Promise<Devotional[]>;
@@ -793,11 +795,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPrayerRequest(request: InsertPrayerRequest): Promise<PrayerRequest> {
-    const [created] = await db
-      .insert(prayerRequests)
-      .values(request)
-      .returning();
-    return created;
+    return db.transaction(async tx => {
+      const [created] = await tx.insert(prayerRequests).values(request).returning();
+      const [template] = await tx.select().from(autoReplyTemplates)
+        .where(eq(autoReplyTemplates.templateType, created.priority));
+      const message = template ? `${template.encouragement}\n\n“${template.scriptureText}” — ${template.scriptureReference}` : prayerReceipt;
+      await tx.insert(threadMessages).values({ requestId: created.id, senderType: "automated",
+        message, createdAt: sql`CURRENT_TIMESTAMP + INTERVAL '20 minutes'` });
+      return created;
+    });
   }
 
   async markPrayerRequestRead(id: number): Promise<PrayerRequest> {
@@ -829,9 +835,14 @@ export class DatabaseStorage implements IStorage {
   // Thread Messages
   async getThreadMessages(requestId: number): Promise<ThreadMessage[]> {
     return await db
-      .select()
+      .select({ ...getTableColumns(threadMessages),
+        senderType: sql<string>`CASE WHEN ${threadMessages.senderType} = 'admin' AND EXISTS (
+          SELECT 1 FROM prayer_follow_ups f WHERE f.request_id = ${threadMessages.requestId}
+          AND f.message = ${threadMessages.message}
+          AND abs(extract(epoch FROM (f.sent_at - ${threadMessages.createdAt}))) < 60
+        ) THEN 'automated' ELSE ${threadMessages.senderType} END` })
       .from(threadMessages)
-      .where(eq(threadMessages.requestId, requestId))
+      .where(and(eq(threadMessages.requestId, requestId), sql`(${threadMessages.createdAt} IS NULL OR ${threadMessages.createdAt} <= CURRENT_TIMESTAMP)`))
       .orderBy(threadMessages.createdAt);
   }
 
@@ -1257,14 +1268,15 @@ export class DatabaseStorage implements IStorage {
   }
   // Inbox methods
   async createInboxThread(thread: InsertInboxThread, firstMessage: string): Promise<InboxThread> {
-    const [created] = await db
-      .insert(inboxThreads)
-      .values({ ...thread, hasUnreadAdmin: true })
-      .returning();
-    await db
-      .insert(inboxMessages)
-      .values({ threadId: created.id, senderType: "user", message: firstMessage });
-    return created;
+    return db.transaction(async tx => {
+      const [created] = await tx.insert(inboxThreads).values({ ...thread, hasUnreadAdmin: true }).returning();
+      await tx.insert(inboxMessages).values({ threadId: created.id, senderType: "user", message: firstMessage });
+      if (thread.category === "Prayer" || thread.category === "Counseling") {
+        await tx.insert(inboxMessages).values({ threadId: created.id, senderType: "scheduled_365",
+          message: prayerReceipt, createdAt: sql`CURRENT_TIMESTAMP + INTERVAL '20 minutes'` });
+      }
+      return created;
+    });
   }
 
   async getInboxThreadsByEmail(email: string): Promise<InboxThread[]> {
@@ -1299,7 +1311,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(inboxMessages)
-      .where(and(eq(inboxMessages.threadId, threadId), eq(deletedCol, false)))
+      .where(and(eq(inboxMessages.threadId, threadId), eq(deletedCol, false), ne(inboxMessages.senderType, "scheduled_365")))
       .orderBy(inboxMessages.createdAt);
   }
 
@@ -1351,7 +1363,7 @@ export class DatabaseStorage implements IStorage {
     const [msg] = await db
       .select()
       .from(inboxMessages)
-      .where(eq(inboxMessages.threadId, threadId))
+      .where(and(eq(inboxMessages.threadId, threadId), ne(inboxMessages.senderType, "scheduled_365")))
       .orderBy(desc(inboxMessages.createdAt))
       .limit(1);
     return msg;

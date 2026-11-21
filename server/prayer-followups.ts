@@ -1,3 +1,5 @@
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 import { storage } from "./storage";
 
 const FOLLOW_UP_MESSAGES: Record<number, string> = {
@@ -17,7 +19,7 @@ export async function runPrayerFollowUps() {
           await storage.createThreadMessage({
             requestId: request.id,
             message,
-            senderType: "admin",
+            senderType: "automated",
           });
           console.log(`[FollowUp] Day ${dayNumber} follow-up sent for request #${request.id}`);
         } catch (err) {
@@ -28,4 +30,16 @@ export async function runPrayerFollowUps() {
       console.error(`[FollowUp] Error checking day ${dayNumber}:`, err);
     }
   }
+}
+
+export async function deliverDueInboxReceipts() {
+  await db.execute(sql`
+    WITH delivered AS (
+      UPDATE inbox_messages SET sender_type = 'automated'
+      WHERE sender_type = 'scheduled_365' AND created_at <= CURRENT_TIMESTAMP
+      RETURNING thread_id
+    )
+    UPDATE inbox_threads SET has_unread_user = true, updated_at = CURRENT_TIMESTAMP
+    WHERE id IN (SELECT thread_id FROM delivered)
+  `);
 }
