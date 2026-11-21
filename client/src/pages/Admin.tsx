@@ -1446,7 +1446,7 @@ function PrayerInbox() {
                     >
                       <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
                         <span className="text-xs font-medium text-muted-foreground">
-                          {msg.senderType === "admin" ? "Admin" : msg.senderType === "automated" ? "Automated encouragement" : "User"}
+                          {msg.senderType === "admin" ? (/Moses Afolabi\s*$/i.test(msg.message) ? "Moses Afolabi" : "Admin") : msg.senderType === "automated" ? "365 Daily Devotional (automated)" : "User"}
                         </span>
                         <div className="flex items-center gap-2">
                           {msg.senderType === "admin" && (
@@ -1509,7 +1509,7 @@ function PrayerInbox() {
                 <Textarea
                   ref={replyEditorRef}
                   disabled={sendReplyMutation.isPending}
-                  placeholder="Write your reply..."
+                  placeholder="Name the specific need the reader shared and pray for it directly."
                   value={replyMessage}
                   onChange={(e) => setReplyMessage(e.target.value)}
                   onPaste={(event) => pastePrayerReply(event, setReplyMessage)}
@@ -2163,7 +2163,7 @@ function MessagesInbox() {
                                 <Sparkles className="w-3 h-3" />
                                 AI Assistant
                               </>
-                            ) : "Admin"}
+                            ) : msg.senderType === "automated" ? "365 Daily Devotional (automated)" : "Admin"}
                           </span>
                           <span className="text-xs text-muted-foreground">
                             {msg.createdAt ? format(new Date(msg.createdAt), "MMM d, h:mm a") : ""}
