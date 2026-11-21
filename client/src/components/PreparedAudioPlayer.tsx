@@ -13,7 +13,12 @@ export const PreparedAudioPlayer=forwardRef<HTMLAudioElement,Props>(function Pre
  useEffect(()=>{if(autoStart && manifest.data?.available && audio.current && !started.current){
   started.current=true;void audio.current.play().catch(()=>setError('Tap play to start the recording.'));
  }},[autoStart,manifest.data?.available]);
- const parts=manifest.data?.parts;if(!manifest.data?.available||!parts?.length)return null;
+ const parts=manifest.data?.parts;
+ if(!manifest.data?.available||!parts?.length){
+  if(!autoStart)return null;
+  if(manifest.isFetching)return <p role="status">Opening the saved recording…</p>;
+  return <p role="status">The saved player could not open. <button className="underline" onClick={()=>void manifest.refetch()}>Try again</button></p>;
+ }
  return <section aria-label="Saved narration" className="my-4 space-y-2 rounded-lg border p-3">
   <audio key={parts[index]} ref={el=>{audio.current=el;if(typeof forwardedRef==='function')forwardedRef(el);else if(forwardedRef)forwardedRef.current=el;}} onPlaying={onPlaying} controls preload="none" src={parts[index]} className="w-full" data-testid="prepared-content-audio" onLoadedMetadata={e=>{e.currentTarget.playbackRate=speed;}} onPlay={()=>{onPlay?.();setError('');}} onError={()=>setError('The saved recording could not play. Refresh and tap play again.')} onEnded={()=>{if(index+1<parts.length){advance.current=true;setIndex(i=>i+1);}}}/>
   <div className="flex flex-wrap items-center gap-3 text-sm"><label>Playback speed <select aria-label="Saved narration speed" className="ml-2 rounded border bg-background p-1" value={speed} onChange={e=>setSpeed(Number(e.target.value))}>{[.75,.85,.92,1,1.15,1.25].map(v=><option key={v} value={v}>{v}×</option>)}</select></label>{parts.length>1&&<><button disabled={index===0} onClick={()=>setIndex(i=>i-1)}>Previous part</button><span>{index+1} / {parts.length}</span><button disabled={index+1===parts.length} onClick={()=>setIndex(i=>i+1)}>Next part</button></>}</div>
