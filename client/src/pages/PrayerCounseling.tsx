@@ -9,11 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useState, useRef } from "react";
 import { Loader2, Send, CheckCircle, AlertTriangle, Paperclip, X, FileText, Image, Star, HandHeart } from "lucide-react";
-import type { AutoReplyTemplate, PrayerRequest } from "@shared/schema";
+import type { PrayerRequest } from "@shared/schema";
 import { useUser } from "@/contexts/UserContext";
 
 const PRIORITY_OPTIONS = [
@@ -66,10 +66,6 @@ export default function PrayerCounseling() {
     privacy: "private",
   });
 
-  const { data: autoReplyTemplate } = useQuery<AutoReplyTemplate>({
-    queryKey: ["/api/auto-reply-templates", formData.priority],
-    enabled: submitted,
-  });
 
   const uploadFileMutation = useMutation({
     mutationFn: async ({ file, index }: { file: File; index: number }) => {
@@ -277,20 +273,6 @@ export default function PrayerCounseling() {
             )}
           </div>
 
-          {autoReplyTemplate && (
-            <div className="bg-primary/5 rounded-lg p-6 mb-8 space-y-4">
-              <p className="font-serif text-foreground leading-relaxed">
-                {autoReplyTemplate.encouragement}
-              </p>
-              <div className="border-l-4 border-primary/30 pl-4 italic text-muted-foreground">
-                <p className="font-serif">"{autoReplyTemplate.scriptureText}"</p>
-                <p className="text-sm mt-2 not-italic font-medium">— {autoReplyTemplate.scriptureReference}</p>
-              </div>
-              <p className="font-serif text-muted-foreground">
-                {autoReplyTemplate.prayer}
-              </p>
-            </div>
-          )}
 
           <div className="text-center space-y-4">
             <Button onClick={resetForm} data-testid="button-send-another"> {tx("Send Another Request")} </Button>
