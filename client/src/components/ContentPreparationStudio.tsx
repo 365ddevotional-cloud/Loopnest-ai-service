@@ -1,7 +1,11 @@
+import {AudioListeningReport} from "./AudioListeningReport";
 import {useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {apiRequest} from '@/lib/queryClient';
 export function ContentPreparationStudio(){
+ return <><AudioListeningReport/><PreparationQueue/></>;
+}
+function PreparationQueue(){
  const path='/api/admin/content-preparation';
  const status=useQuery<any>({queryKey:[path],queryFn:async()=>(await apiRequest('GET',path)).json(),retry:false,refetchInterval:30000});
  const [busy,setBusy]=useState(false),[message,setMessage]=useState('');

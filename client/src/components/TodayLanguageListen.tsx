@@ -7,7 +7,7 @@ import {api} from '@shared/routes';
 import {PreparedAudioPlayer} from './PreparedAudioPlayer';
 
 type Result={state:'ready'|'preparing'|'quota'|'review';hash:string;textReady:boolean};
-export function TodayLanguageListen({source,language,onPlay}:{source:any;language:string;onPlay:()=>void}){
+export function TodayLanguageListen({source,language,onPlay,onStarted}:{source:any;language:string;onPlay:()=>void;onStarted?:()=>void}){
  const {t}=useI18n(), client=useQueryClient();
  const endpoint=`/api/devotionals/${source.id}/listen/${language}`;
  const [result,setResult]=useState<Result|null>(null),[error,setError]=useState(''),[sending,setSending]=useState(false);
@@ -48,6 +48,7 @@ export function TodayLanguageListen({source,language,onPlay}:{source:any;languag
  function playbackStarted(){
   if(played.current)return;
   played.current=true;
+  onStarted?.();
   void fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'play',timezoneOffset:new Date().getTimezoneOffset()})}).catch(()=>{});
  }
  return <div className="space-y-1">
@@ -56,3 +57,4 @@ export function TodayLanguageListen({source,language,onPlay}:{source:any;languag
   {result?.state==='ready'&&hash&&<PreparedAudioPlayer ref={audio} kind="devotional" language={language} source={{...source,_preparationSourceHash:hash}} autoStart onPlay={onPlay} onPlaying={playbackStarted}/>}
  </div>;
 }
+
