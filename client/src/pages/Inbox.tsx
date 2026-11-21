@@ -80,6 +80,7 @@ export default function Inbox() {
       return res.json();
     },
     enabled: !!selectedThreadId && !!searchedEmail,
+    refetchInterval: selectedThreadId && searchedEmail ? 60_000 : false,
   });
 
   const createThreadMutation = useMutation({
@@ -239,7 +240,7 @@ export default function Inbox() {
                   </div>
                   {thread.lastMessage && (
                     <p className="text-sm text-muted-foreground line-clamp-1" data-testid={`thread-preview-${thread.id}`}>
-                      {thread.lastMessageSender === "admin" ? tx("Team:") : thread.lastMessageSender === "ai" ? tx("AI:") : tx("You:")}
+                      {thread.lastMessageSender === "admin" ? tx("Team:") : thread.lastMessageSender === "automated" ? tx("365 (automated):") : thread.lastMessageSender === "ai" ? tx("AI:") : tx("You:")}
                       {truncate(thread.lastMessage, 80)}
                     </p>
                   )}
@@ -395,7 +396,7 @@ export default function Inbox() {
                           >
                             <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
                               <span className={`text-xs font-medium ${isUser ? "text-blue-100" : "text-muted-foreground"}`}>
-                                {isUser ? tx("You") : isAi ? tx("AI Assistant") : tx("Ministry Team")}
+                                {isUser ? tx("You") : msg.senderType === "automated" ? tx("365 Daily Devotional (automated)") : isAi ? tx("AI Assistant") : /Moses Afolabi\s*$/i.test(msg.message) ? "Moses Afolabi" : tx("Ministry Team")}
                                 {isAi && <Bot className="w-3 h-3 inline ml-1" />}
                               </span>
                               <span className={`text-xs ${isUser ? "text-blue-200" : "text-muted-foreground"}`}>
