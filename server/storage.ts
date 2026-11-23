@@ -1,3 +1,4 @@
+import { christmasReleaseSlugs } from "../shared/christmas-2026-releases";
 import { db } from "./db";
 import {
   devotionals,
@@ -1396,14 +1397,13 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(songs.featuredWeekStart))
       .limit(1);
     if (dated) return dated;
-    // Only unscheduled songs can fill a gap in the calendar.
+    // Preserve the established fallback without featuring a Christmas release outside its dates.
     const [fallback] = await db
       .select()
       .from(songs)
       .where(and(
         eq(songs.isActive, true),
-        isNull(songs.featuredWeekStart),
-        isNull(songs.featuredWeekEnd),
+        notInArray(songs.slug, christmasReleaseSlugs),
       ))
       .orderBy(desc(songs.createdAt))
       .limit(1);
