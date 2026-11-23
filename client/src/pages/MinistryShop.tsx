@@ -122,9 +122,10 @@ function SongPreview({ product }: { product: CatalogProduct }) {
   const [selected, setSelected] = useState(0);
   const [audioFailed, setAudioFailed] = useState(false);
   const titles = product.id === "x29Tw" ? praisePackTracks : [product.title];
+  const releasePreview = "spiritToneSlug" in product && typeof product.spiritToneSlug === "string" ? christmasPreview(product.spiritToneSlug) : undefined;
   const tracks = titles.flatMap((title, index) => {
     const name = product.id === "x29Tw" ? `${product.id}-${index + 1}` : product.id;
-    const src = ("spiritToneSlug" in product && typeof product.spiritToneSlug === "string" ? christmasPreview(product.spiritToneSlug) : undefined) ?? audioPreviews[`/src/assets/shop-previews/${name}.mp3`];
+    const src = releasePreview ?? audioPreviews[`/src/assets/shop-previews/${name}.mp3`];
     return src ? [{ title, src }] : [];
   });
   const track = tracks[selected];
@@ -137,7 +138,7 @@ function SongPreview({ product }: { product: CatalogProduct }) {
   return (
     <section className="mt-4 rounded-xl border border-border bg-muted/30 p-4" aria-label={tx("Song preview")}>
       <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-        <Headphones size={16} aria-hidden="true" /> {tracks.length > 1 ? tx("30-second samples") : tx("30-second sample")}
+        <Headphones size={16} aria-hidden="true" /> {releasePreview ? tx("45-second stereo preview") : tracks.length > 1 ? tx("30-second samples") : tx("30-second sample")}
       </h2>
       {tracks.length > 1 && (
         <label className="mb-3 block text-sm font-medium"> {tx("Choose a track")} <select
