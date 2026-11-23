@@ -1,3 +1,4 @@
+import multilingual from "../../../shared/multilingual-releases.json";
 import type { Express } from "express";
 import { randomUUID } from "crypto";
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
@@ -52,6 +53,21 @@ export async function getMusicDownloadUrl(objectPath: string, title: string, ext
   if (!/^uploads\/[a-f0-9-]{36}$/.test(key)) throw new Error("Invalid music object path");
   const safeTitle = title.normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-zA-Z0-9 _!-]/g, "").trim().slice(0, 100);
+  const release = multilingual.find(item => key === `uploads/${item.uuid}` && extension === "mp3");
+  if (release) {
+    const privateBucket = process.env.SHOP_R2_PRIVATE_BUCKET;
+    const accessKeyId = process.env.SHOP_R2_ACCESS_KEY_ID ?? process.env.SHOP_IMPORT_R2_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.SHOP_R2_SECRET_ACCESS_KEY ?? process.env.SHOP_IMPORT_R2_SECRET_ACCESS_KEY;
+    if (!privateBucket || privateBucket === bucketName || !process.env.R2_ACCOUNT_ID || !accessKeyId || !secretAccessKey)
+      throw new Error("Private recording storage is unavailable");
+    const client = new S3Client({region:"auto", endpoint:`https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      credentials: { accessKeyId, secretAccessKey }});
+    try {
+      return await getSignedUrl(client,new GetObjectCommand({Bucket:privateBucket,Key:`music-releases/${release.master.sha256}.mp3`,
+        ResponseContentDisposition:`${inlineAudio ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(title)}.mp3`,
+        ResponseContentType:inlineAudio ? "audio/mpeg" : "application/octet-stream"}),{expiresIn:Math.min(900,Math.max(1,expiresInSeconds))});
+    } finally {client.destroy();}
+  }
   return getSignedUrl(getR2Client(), new GetObjectCommand({
     Bucket: bucketName, Key: `.private/${key}`,
     ResponseContentDisposition: `${inlineAudio ? "inline" : "attachment"}; filename="${safeTitle || "Song"} - from 365 Daily Devotional.${extension}"`,
@@ -127,3 +143,4 @@ export function registerObjectStorageRoutes(app: Express): void {
     return res.redirect(302, r2ObjectUrl);
   });
 }
+
