@@ -62,9 +62,10 @@ $christmas$::jsonb) AS t(title text, slug text, year integer, start date, "end" 
   RETURNING id, title, slug, lyrics, short_description, release_year
 )
 INSERT INTO ministry_shop_managed_products (id, payload, published)
-SELECT slug, jsonb_build_object('id', slug, 'kind', 'Music', 'title', title,
+SELECT shop_id, jsonb_build_object('id', shop_id, 'kind', 'Music', 'title', title,
   'description', short_description, 'lyrics', lyrics, 'releaseYear', release_year,
   'author', 'SpiritTone Records', 'spiritToneSongId', id, 'spiritToneSlug', slug,
   'packageFormat', 'zip', 'requiredFileCount', 1), false
-FROM added;
+FROM added
+CROSS JOIN LATERAL (SELECT 'str' || right(replace(slug, '-', ''), 8) AS shop_id) product;
 COMMIT;
