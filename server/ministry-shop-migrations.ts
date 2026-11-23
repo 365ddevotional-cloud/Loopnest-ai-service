@@ -34,6 +34,18 @@ export async function ensureMinistryShopTables() {
       WHERE EXISTS(SELECT 1 FROM ministry_shop_assets a WHERE a.product_id=d."productId"
         AND a.content_type='application/pdf' AND a.object_key='ministry-shop/' || d."productId" || '/' || d."assetSha256")
       ON CONFLICT(id) DO NOTHING`, [JSON.stringify(drafts)]);
+    // Prepare one private shop draft per existing recording. Keep the release and sales controls independent.
+    await client.query(`INSERT INTO ministry_shop_managed_products(id,payload,published)
+      SELECT release.id,jsonb_build_object('id',release.id,'kind','Music','title',s.title,
+        'sourcePrice','$1.49','useBasePrice',false,'requiredFileCount',1,'packageFormat','zip',
+        'spiritToneSongId',s.id,'spiritToneSlug',s.slug,'description',s.short_description,
+        'lyrics',s.lyrics,'author','SpiritTone Records','releaseYear',s.release_year),false
+      FROM (VALUES ('str02fec75c','celebrate-emmanuel-02fec75c'),
+             ('strfb6b9417','glory-hallelujah-born-this-day-fb6b9417'),
+             ('str8b10f8f5','navidad-don-land-8b10f8f5'),
+             ('stra124aabe','bethlehem-sound-a124aabe')) AS release(id,slug)
+      JOIN songs s ON s.slug=release.slug
+      ON CONFLICT(id) DO NOTHING`);
     await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});

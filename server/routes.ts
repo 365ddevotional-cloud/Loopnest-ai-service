@@ -1,3 +1,4 @@
+import { christmasPreview } from "../shared/christmas-2026-releases";
 import {createContentPreparation,privatePreparationStore} from './content-preparation';
 import { registerAsvChapters } from "./asv-chapters";
 import { registerDevotionalRecordings, privateRecordingStore } from './devotional-recordings';
@@ -40,7 +41,7 @@ import { seedAllDevotionals } from "./seed-devotionals";
 import { getOrCreateTranslation, isAllowedLanguage, getCachedTranslationsForLanguage } from "./translationService";
 import { getCurrentPromise, getNextPromise, advancePromise, resetRotation, toggleEnabled, getTotalPromises, startPromiseScheduler } from "./promiseEngine";
 import { generateAIEncouragement } from "./inbox-ai";
-import { promiseAmens, INBOX_CATEGORIES, churchTransactions } from "@shared/schema";
+import { songs, promiseAmens, INBOX_CATEGORIES, churchTransactions } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, desc, gte } from "drizzle-orm";
 
@@ -150,7 +151,10 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 
 // Keep the existing God Got Me artwork tied to that song across the featured
 // banner, library, collection, and detail API responses.
-function withSongArtwork<T extends { slug: string; title: string; coverImageUrl?: string | null }>(song: T): T {
+function withSongArtwork<T extends { id?: number; audioUrl?: string | null; slug: string; title: string; coverImageUrl?: string | null }>(song: T): T {
+  if (christmasPreview(song.slug) && song.audioUrl) {
+    return { ...song, audioUrl: `/api/songs/${song.id}/audio`, fiveSongEligible: /^\/objects\/uploads\/[a-f0-9-]{36}$/.test(song.audioUrl) };
+  }
   return song.slug === "god-got-me" || song.title.trim().toLowerCase() === "god got me"
     ? { ...song, coverImageUrl: "/music/god-got-me.jpg" }
     : song;
@@ -1666,6 +1670,12 @@ export async function registerRoutes(
         return res.status(404).json({ message: "No audio file" });
       }
 
+      const preview = christmasPreview(song.slug);
+      if (preview) {
+        res.setHeader("Cache-Control", "private, no-store");
+        if ((await storage.getFeaturedSong())?.id !== song.id) return res.redirect(302, preview);
+        return res.redirect(302, await getMusicDownloadUrl(song.audioUrl, song.title, "mp3", 300, true));
+      }
       const r2Base = process.env.R2_PUBLIC_URL;
       if (!r2Base) {
         console.error("R2_PUBLIC_URL is not configured");
@@ -6299,8 +6309,8 @@ async function seedDatabase() {
 }
 
 async function seedSampleSong() {
-  const existing = await storage.getFeaturedSong();
-  if (existing) return; // Already have a song
+  const [existing] = await db.select({ id: songs.id }).from(songs).limit(1);
+  if (existing) return;
   try {
     await storage.createSong({
       title: "The Lord Is My Shepherd",

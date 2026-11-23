@@ -1,3 +1,4 @@
+import { christmasReleaseSlugs } from "../shared/christmas-2026-releases";
 import { db } from "./db";
 import {
   devotionals,
@@ -1396,11 +1397,14 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(songs.featuredWeekStart))
       .limit(1);
     if (dated) return dated;
-    // Fall back to the most recently created active song
+    // Preserve the established fallback without featuring a Christmas release outside its dates.
     const [fallback] = await db
       .select()
       .from(songs)
-      .where(eq(songs.isActive, true))
+      .where(and(
+        eq(songs.isActive, true),
+        notInArray(songs.slug, christmasReleaseSlugs),
+      ))
       .orderBy(desc(songs.createdAt))
       .limit(1);
     return fallback;
