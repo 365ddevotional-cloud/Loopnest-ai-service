@@ -253,7 +253,7 @@ export function registerShopUploads(app: Express, requireAdmin: RequestHandler) 
         if (titleMatch.rows.length) throw new Error("Another recording already uses this title");
         await tx.execute(sql`INSERT INTO songs (title,slug,release_year,scripture_reference,language,lyrics,
           short_description,label_name,producer,composer,lyricist,sampler,is_active,audio_url,cover_image_url,download_status,song_type)
-          VALUES (${release.title},${release.slug},2025,${release.scripture},${release.language},${release.lyrics},
+          VALUES (${release.title},${release.slug},${"releaseYear" in release ? Number(release.releaseYear) : 2025},${release.scripture},${release.language},${release.lyrics},
           ${release.description},'SpiritTone Records','Moses Afolabi','Moses Afolabi','365 Daily Devotional','Avia Afolabi',
           true,${audioPath},${"/api/ministry-shop/art/"+release.id},'disabled','Praise & worship') ON CONFLICT (slug) DO NOTHING`);
         const song = await tx.execute<{ id:number }>(sql`SELECT id FROM songs WHERE slug=${release.slug} AND audio_url=${audioPath} AND is_active`);
