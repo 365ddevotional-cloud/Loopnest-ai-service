@@ -1,3 +1,4 @@
+import { christmasPreview } from "@shared/christmas-2026-releases";
 import { translateAppText as tx } from "@/utils/i18n";
 import { useI18n } from "@/hooks/useI18n";
 import { isAndroidReader } from "@/lib/android-reader";
@@ -122,7 +123,7 @@ function SongPreview({ product }: { product: CatalogProduct }) {
   const titles = product.id === "x29Tw" ? praisePackTracks : [product.title];
   const tracks = titles.flatMap((title, index) => {
     const name = product.id === "x29Tw" ? `${product.id}-${index + 1}` : product.id;
-    const src = audioPreviews[`/src/assets/shop-previews/${name}.mp3`];
+    const src = ("spiritToneSlug" in product && typeof product.spiritToneSlug === "string" ? christmasPreview(product.spiritToneSlug) : undefined) ?? audioPreviews[`/src/assets/shop-previews/${name}.mp3`];
     return src ? [{ title, src }] : [];
   });
   const track = tracks[selected];

@@ -1,5 +1,5 @@
 -- Explicit private draft import. Run as one transaction in a provisioned staging database.
--- Only newly inserted, inactive songs receive an unpublished shop draft.
+-- Link both newly inserted songs and matching existing recordings.
 BEGIN;
 WITH tracks AS (
   SELECT * FROM jsonb_to_recordset($christmas$
@@ -61,11 +61,18 @@ $christmas$::jsonb) AS t(title text, slug text, year integer, start date, "end" 
   ON CONFLICT (slug) DO NOTHING
   RETURNING id, title, slug, lyrics, short_description, release_year
 )
+, linked AS (
+  SELECT * FROM added
+  UNION ALL
+  SELECT s.id,s.title,s.slug,s.lyrics,s.short_description,s.release_year
+  FROM songs s JOIN tracks t ON s.slug=t.slug AND s.title=t.title AND s.release_year=t.year
+)
 INSERT INTO ministry_shop_managed_products (id, payload, published)
 SELECT shop_id, jsonb_build_object('id', shop_id, 'kind', 'Music', 'title', title,
   'description', short_description, 'lyrics', lyrics, 'releaseYear', release_year,
   'author', 'SpiritTone Records', 'spiritToneSongId', id, 'spiritToneSlug', slug,
-  'packageFormat', 'zip', 'requiredFileCount', 1), false
-FROM added
-CROSS JOIN LATERAL (SELECT 'str' || right(replace(slug, '-', ''), 8) AS shop_id) product;
+  'sourcePrice', '$1.49', 'useBasePrice', false, 'packageFormat', 'zip', 'requiredFileCount', 1), false
+FROM linked
+CROSS JOIN LATERAL (SELECT 'str' || right(replace(slug, '-', ''), 8) AS shop_id) product
+ON CONFLICT (id) DO NOTHING;
 COMMIT;

@@ -1,3 +1,4 @@
+import { christmasReleaseById } from "../shared/christmas-2026-releases";
 import type { Express, RequestHandler } from "express";
 import { Transform } from "node:stream";
 import { randomUUID, createHash } from "node:crypto";
@@ -9,6 +10,10 @@ import { db } from "./db";
 import { shopBundleId } from "./ministry-shop-pricing";
 import { getShopCatalog, getShopProduct, type ShopCatalogProduct } from "./ministry-shop-catalog";
 
+function downloadType(item: {id: string; kind: string; packageFormat?: string}) {
+  if (item.kind === "Music" && item.packageFormat === "zip" && christmasReleaseById(item.id)) return "application/zip";
+  return item.kind === "Book" ? "application/pdf" : "audio/mpeg";
+}
 const productInput = z.object({
   id: z.string().regex(/^[a-zA-Z0-9]{3,80}$/).optional(),
   title: z.string().trim().min(3).max(180),
@@ -25,7 +30,7 @@ const uploadInput = z.object({
   slot: z.enum(["download", "cover"]), name: z.string().min(1).max(180),
   bytes: z.number().int().positive().max(250 * 1024 * 1024),
   sha256: z.string().regex(/^[a-f0-9]{64}$/),
-  contentType: z.enum(["application/pdf", "audio/mpeg", "image/jpeg", "image/png", "image/webp"]),
+  contentType: z.enum(["application/pdf", "application/zip", "audio/mpeg", "image/jpeg", "image/png", "image/webp"]),
 }).strict();
 type Upload = {
   created_at: string; id: string; product_id: string; slot: string; object_key: string;
@@ -82,13 +87,13 @@ export function registerShopUploads(app: Express, requireAdmin: RequestHandler) 
         res.status(409).json({ message: "A product with this title already exists. Select it to update its files." }); return;
       }
       if (previous && (previous.id === shopBundleId || previous.kind !== input.kind || (previous.requiredFileCount ?? 1) !== 1 ||
-          previous.packageFormat === "zip" || previous.replacedBy)) {
+          (previous.packageFormat === "zip" && !christmasReleaseById(id)) || previous.replacedBy)) {
         res.status(409).json({ message: "This uploader supports individual PDF books and MP3 recordings. Choose a single-file product." });
         return;
       }
       const payload = {
         ...previous, ...input, id, sourcePrice: `$${(input.priceCents / 100).toFixed(2)}`,
-        requiredFileCount: 1, useBasePrice: true,
+        requiredFileCount: 1, useBasePrice: christmasReleaseById(id) ? false : true,
       };
       await tx.execute(sql`INSERT INTO ministry_shop_managed_products (id,payload,published)
         VALUES (${id},${JSON.stringify(payload)}::jsonb,${previous?.published === true})
@@ -100,7 +105,10 @@ export function registerShopUploads(app: Express, requireAdmin: RequestHandler) 
     const product = await getShopProduct(req.params.id, true);
     if (!product) { res.status(404).json({ message: "Save the product first." }); return; }
     const input = uploadInput.parse(req.body);
-    const expected = product.kind === "Book" ? "application/pdf" : "audio/mpeg";
+    const expected = downloadType(product);
+    if (input.slot === "download" && expected === "application/zip" && input.sha256 !== christmasReleaseById(product.id)?.zipHash) {
+      res.status(400).json({ message: "Choose the verified release ZIP for this recording." }); return;
+    }
     if ((input.slot === "download" && input.contentType !== expected) ||
         (input.slot === "cover" && (!input.contentType.startsWith("image/") || input.bytes > 10 * 1024 * 1024))) {
       res.status(400).json({ message: "Choose a PDF for a book, MP3 for music, or a JPEG, PNG or WebP cover up to 10 MB." }); return;
@@ -179,6 +187,7 @@ export function registerShopUploads(app: Express, requireAdmin: RequestHandler) 
         if (signature.length < 16) signature = Buffer.concat([signature, Buffer.from(chunk)]).subarray(0,16);
       }
       const validSignature = upload.content_type === "application/pdf" ? signature.subarray(0,5).toString() === "%PDF-"
+        : upload.content_type === "application/zip" ? signature.readUInt32LE(0) === 0x04034b50
         : upload.content_type === "audio/mpeg" ? signature.subarray(0,3).toString() === "ID3" || (signature[0] === 255 && (signature[1] & 224) === 224)
         : upload.content_type === "image/jpeg" ? signature[0] === 255 && signature[1] === 216
         : upload.content_type === "image/png" ? signature.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))
@@ -192,7 +201,7 @@ export function registerShopUploads(app: Express, requireAdmin: RequestHandler) 
           SELECT payload FROM ministry_shop_managed_products WHERE id=${upload.product_id} FOR UPDATE`);
         if (!products.length) throw new Error("Save the product before attaching files.");
         if (upload.slot === "download") {
-          const expected = products[0].payload.kind === "Book" ? "application/pdf" : "audio/mpeg";
+          const expected = downloadType(products[0].payload);
           if (upload.content_type !== expected) throw new Error("Product type changed.");
           await tx.execute(sql`DELETE FROM ministry_shop_assets WHERE product_id=${upload.product_id}`);
           await tx.execute(sql`INSERT INTO ministry_shop_assets
@@ -220,7 +229,7 @@ export function registerShopUploads(app: Express, requireAdmin: RequestHandler) 
       const item = rows[0]?.payload;
       const assets = await tx.execute<{ content_type: string }>(sql`SELECT content_type FROM ministry_shop_assets WHERE product_id=${req.params.id}`);
       if (!item?.coverKey || assets.rows.length !== 1 ||
-          assets.rows[0].content_type !== (item.kind === "Book" ? "application/pdf" : "audio/mpeg")) {
+          assets.rows[0].content_type !== downloadType(item)) {
         res.status(409).json({ message: "Upload and verify a cover and a download before publishing." }); return;
       }
       await tx.execute(sql`UPDATE ministry_shop_managed_products SET published=true,updated_at=now() WHERE id=${req.params.id}`);
