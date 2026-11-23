@@ -32,3 +32,9 @@ export function christmasPreview(slug: string) {
 }
 
 export const christmasReleaseSlugs = releases.map(release => release.slug);
+
+// Approved private customer packages, keyed by the existing shop product.
+export function verifiedReleaseById(id: string) {
+  if (id === "st001") return { zipHash: "2f30519c940d70f15552345cb877fea9af8aaf29418caa6a2131d7a5f57f210c" };
+  return christmasReleaseById(id);
+}
