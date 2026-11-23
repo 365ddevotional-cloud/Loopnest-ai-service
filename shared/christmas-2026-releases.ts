@@ -1,4 +1,6 @@
 // Recording-specific links for the December SpiritTone release.
+import multilingual from "./multilingual-releases.json";
+
 const releases = [
   {
     "id": "str02fec75c",
@@ -27,14 +29,17 @@ export function christmasReleaseById(id: string) {
 }
 
 export function christmasPreview(slug: string) {
+  const recording = multilingual.find(item => item.slug === slug);
+  if (recording) return `/api/ministry-shop/preview/${recording.id}`;
   const release = releases.find(item => item.slug === slug);
   return release ? `/music/previews/${release.id}.mp3` : undefined;
 }
 
-export const christmasReleaseSlugs = releases.map(release => release.slug);
+export const christmasReleaseSlugs = [...releases, ...multilingual].map(release => release.slug);
 
 // Approved private customer packages, keyed by the existing shop product.
 export function verifiedReleaseById(id: string) {
   if (id === "st001") return { zipHash: "2f30519c940d70f15552345cb877fea9af8aaf29418caa6a2131d7a5f57f210c" };
-  return christmasReleaseById(id);
+  return christmasReleaseById(id) ?? multilingual.find(item => item.id === id);
 }
+
