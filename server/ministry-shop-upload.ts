@@ -1,4 +1,4 @@
-import { christmasReleaseById } from "../shared/christmas-2026-releases";
+import { verifiedReleaseById } from "../shared/christmas-2026-releases";
 import type { Express, RequestHandler } from "express";
 import { Transform } from "node:stream";
 import { randomUUID, createHash } from "node:crypto";
@@ -11,7 +11,7 @@ import { shopBundleId } from "./ministry-shop-pricing";
 import { getShopCatalog, getShopProduct, type ShopCatalogProduct } from "./ministry-shop-catalog";
 
 function downloadType(item: {id: string; kind: string; packageFormat?: string}) {
-  if (item.kind === "Music" && item.packageFormat === "zip" && christmasReleaseById(item.id)) return "application/zip";
+  if (item.kind === "Music" && item.packageFormat === "zip" && verifiedReleaseById(item.id)) return "application/zip";
   return item.kind === "Book" ? "application/pdf" : "audio/mpeg";
 }
 const productInput = z.object({
@@ -87,13 +87,13 @@ export function registerShopUploads(app: Express, requireAdmin: RequestHandler) 
         res.status(409).json({ message: "A product with this title already exists. Select it to update its files." }); return;
       }
       if (previous && (previous.id === shopBundleId || previous.kind !== input.kind || (previous.requiredFileCount ?? 1) !== 1 ||
-          (previous.packageFormat === "zip" && !christmasReleaseById(id)) || previous.replacedBy)) {
+          (previous.packageFormat === "zip" && !verifiedReleaseById(id)) || previous.replacedBy)) {
         res.status(409).json({ message: "This uploader supports individual PDF books and MP3 recordings. Choose a single-file product." });
         return;
       }
       const payload = {
         ...previous, ...input, id, sourcePrice: `$${(input.priceCents / 100).toFixed(2)}`,
-        requiredFileCount: 1, useBasePrice: christmasReleaseById(id) ? false : true,
+        requiredFileCount: 1, useBasePrice: verifiedReleaseById(id) ? false : true,
       };
       await tx.execute(sql`INSERT INTO ministry_shop_managed_products (id,payload,published)
         VALUES (${id},${JSON.stringify(payload)}::jsonb,${previous?.published === true})
@@ -106,7 +106,7 @@ export function registerShopUploads(app: Express, requireAdmin: RequestHandler) 
     if (!product) { res.status(404).json({ message: "Save the product first." }); return; }
     const input = uploadInput.parse(req.body);
     const expected = downloadType(product);
-    if (input.slot === "download" && expected === "application/zip" && input.sha256 !== christmasReleaseById(product.id)?.zipHash) {
+    if (input.slot === "download" && expected === "application/zip" && input.sha256 !== verifiedReleaseById(product.id)?.zipHash) {
       res.status(400).json({ message: "Choose the verified release ZIP for this recording." }); return;
     }
     if ((input.slot === "download" && input.contentType !== expected) ||
