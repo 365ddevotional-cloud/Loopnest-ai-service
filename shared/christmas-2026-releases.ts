@@ -30,3 +30,5 @@ export function christmasPreview(slug: string) {
   const release = releases.find(item => item.slug === slug);
   return release ? `/music/previews/${release.id}.mp3` : undefined;
 }
+
+export const christmasReleaseSlugs = releases.map(release => release.slug);
