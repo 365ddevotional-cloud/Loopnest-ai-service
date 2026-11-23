@@ -3,22 +3,22 @@ const releases = [
   {
     "id": "str02fec75c",
     "slug": "celebrate-emmanuel-02fec75c",
-    "zipHash": "4e06f18e36d1e4d1648d8ee6ef2aafa95426a61b44fb63326d8c393c2dbe61c4"
+    "zipHash": "cf42627076f9a289ae3b3a4108687362d96244d27282b6f04e37d2789f9e7fa1"
   },
   {
     "id": "strfb6b9417",
     "slug": "glory-hallelujah-born-this-day-fb6b9417",
-    "zipHash": "f2aed70652373df4543e15bba4ae93a8d15cf8d56cc7300355ed43b96f07bfae"
+    "zipHash": "5fdfe039da9ba3cad67dc7127751814dfe6d02a9b27a315d9caefa731f03934e"
   },
   {
     "id": "str8b10f8f5",
     "slug": "navidad-don-land-8b10f8f5",
-    "zipHash": "ce3362e1c95f854fff6cff2d15b2bf8208914cee20230ac0022f54f33ac2bfc1"
+    "zipHash": "4a381acdcb249cb0ac424693aaae318f7727c4d0e875171d6f14c8e9bbab5dfc"
   },
   {
     "id": "stra124aabe",
     "slug": "bethlehem-sound-a124aabe",
-    "zipHash": "52f90a138212cbdafa509b661b80790c6b6f6c6da417aea39753dbbd8e422874"
+    "zipHash": "3de17df3868500e0087cebf7606ca56be2691b68c17ae0269f995d5079d5b01e"
   }
 ];
 
