@@ -336,6 +336,11 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
                 )}
                 {isSpiritTonePreview && !completePackageReady && <p className="mt-2 text-sm font-semibold text-orange-700 dark:text-orange-300">{tx("Catalog preview · Complete purchase package being prepared")}</p>}
                 <ProductPreview key={`preview-${product.id}`} product={product} />
+                {isSpiritTonePreview && !completePackageReady && product.spiritToneSlug && !isAndroidReader() && (
+                  <Link href={`/music/${encodeURIComponent(product.spiritToneSlug)}`} className="mt-3 inline-flex min-h-11 items-center rounded-lg bg-teal-800 px-4 text-sm font-semibold text-white hover:bg-teal-900">
+                    {tx("View MP3 purchase options")}
+                  </Link>
+                )}
                 {product.kind !== "Membership" && (!isSpiritTonePreview || completePackageReady) && (
                   isAndroidReader() || product.sourcePrice
                     ? <ShopCheckout key={product.id} productId={product.id} price={price} />
@@ -504,9 +509,9 @@ function ShopCatalog() {
                           ? <span className="block text-xs font-bold text-orange-800 dark:text-orange-300">{product.sourcePrice} <span className="font-normal">{tx("(US reference)")}</span></span>
                           : null}
                       {"spiritToneSlug" in product && !price?.ready &&
-                        <span className="block text-xs font-semibold text-muted-foreground">{tx("45-sec preview · Sales coming soon")}</span>}
+                        <span className="block text-xs font-semibold text-muted-foreground">{tx("45-sec preview · View recording options")}</span>}
                     </div>
-                    {!isAndroidReader() && product.requiredFileCount && !price?.ready && <span className="text-xs font-semibold text-orange-800 dark:text-orange-300">{tx("Checkout unavailable")}</span>}
+                    {!isAndroidReader() && !product.spiritToneSlug && product.requiredFileCount && !price?.ready && <span className="text-xs font-semibold text-orange-800 dark:text-orange-300">{tx("Checkout unavailable")}</span>}
                     <ProductViews total={views?.[product.id]} />
                   </div>
                 </Link>
