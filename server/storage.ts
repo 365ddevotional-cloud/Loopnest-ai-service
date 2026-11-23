@@ -1396,11 +1396,15 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(songs.featuredWeekStart))
       .limit(1);
     if (dated) return dated;
-    // Fall back to the most recently created active song
+    // Only unscheduled songs can fill a gap in the calendar.
     const [fallback] = await db
       .select()
       .from(songs)
-      .where(eq(songs.isActive, true))
+      .where(and(
+        eq(songs.isActive, true),
+        isNull(songs.featuredWeekStart),
+        isNull(songs.featuredWeekEnd),
+      ))
       .orderBy(desc(songs.createdAt))
       .limit(1);
     return fallback;
