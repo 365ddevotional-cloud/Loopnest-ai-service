@@ -1,3 +1,4 @@
+import multilingual from "../shared/multilingual-releases.json";
 import { verifiedReleaseById } from "../shared/christmas-2026-releases";
 import type { Express, RequestHandler } from "express";
 import { Transform } from "node:stream";
@@ -193,6 +194,19 @@ export function registerShopUploads(app: Express, requireAdmin: RequestHandler) 
         : upload.content_type === "image/png" ? signature.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))
         : signature.subarray(0,4).toString() === "RIFF" && signature.subarray(8,12).toString() === "WEBP";
       if (!validSignature || bytes !== Number(upload.size_bytes) || hash.digest("hex") !== upload.sha256) throw new Error("File verification failed.");
+      const release = multilingual.find(item => item.id === upload.product_id);
+      if (release && upload.slot === "download") {
+        if (release.zipHash !== upload.sha256) throw new Error("Release package mismatch");
+        for (const part of [release.master, release.preview]) {
+          const source = await client.send(new GetObjectCommand({ Bucket: bucket, Key: upload.object_key,
+            Range: `bytes=${part.offset}-${part.offset + part.size - 1}` }));
+          const body = Buffer.from(await source.Body!.transformToByteArray());
+          if (body.length !== part.size || createHash("sha256").update(body).digest("hex") !== part.sha256)
+            throw new Error("Audio did not match the release");
+          await client.send(new PutObjectCommand({ Bucket: bucket, Key: `music-releases/${part.sha256}.mp3`,
+            Body: body, ContentType: "audio/mpeg", Metadata: {sha256: part.sha256} }));
+        }
+      }
       await db.transaction(async tx => {
         await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${upload.product_id}))`);
         const state = await tx.execute<{ completed: boolean }>(sql`SELECT completed FROM ministry_shop_uploads WHERE id=${upload.id} FOR UPDATE`);
@@ -232,11 +246,35 @@ export function registerShopUploads(app: Express, requireAdmin: RequestHandler) 
           assets.rows[0].content_type !== downloadType(item)) {
         res.status(409).json({ message: "Upload and verify a cover and a download before publishing." }); return;
       }
+      const release = multilingual.find(recording => recording.id === req.params.id);
+      if (release) {
+        const audioPath = `/objects/uploads/${release.uuid}`;
+        const titleMatch = await tx.execute(sql`SELECT id FROM songs WHERE lower(title)=lower(${release.title}) AND slug<>${release.slug} LIMIT 1`);
+        if (titleMatch.rows.length) throw new Error("Another recording already uses this title");
+        await tx.execute(sql`INSERT INTO songs (title,slug,release_year,scripture_reference,language,lyrics,
+          short_description,label_name,producer,composer,lyricist,sampler,is_active,audio_url,cover_image_url,download_status,song_type)
+          VALUES (${release.title},${release.slug},2025,${release.scripture},${release.language},${release.lyrics},
+          ${release.description},'SpiritTone Records','Moses Afolabi','Moses Afolabi','365 Daily Devotional','Avia Afolabi',
+          true,${audioPath},${"/api/ministry-shop/art/"+release.id},'disabled','Praise & worship') ON CONFLICT (slug) DO NOTHING`);
+        const song = await tx.execute<{ id:number }>(sql`SELECT id FROM songs WHERE slug=${release.slug} AND audio_url=${audioPath} AND is_active`);
+        if (song.rows.length !== 1) throw new Error("Recording conflict");
+        await tx.execute(sql`UPDATE ministry_shop_managed_products SET payload=jsonb_set(payload,'{spiritToneSongId}',to_jsonb(${song.rows[0].id}::integer)) WHERE id=${release.id}`);
+      }
       await tx.execute(sql`UPDATE ministry_shop_managed_products SET published=true,updated_at=now() WHERE id=${req.params.id}`);
       await tx.execute(sql`INSERT INTO ministry_shop_sales_controls (product_id,paused) VALUES (${req.params.id},false)
         ON CONFLICT (product_id) DO UPDATE SET paused=false`);
       res.json({ published: true, url: `/shop/${req.params.id}` });
     });
+  }));
+  app.get("/api/ministry-shop/preview/:id", route(async (req, res) => {
+    const release = multilingual.find(item => item.id === req.params.id);
+    if (!release || !await getShopProduct(release.id)) { res.sendStatus(404); return; }
+    const {client,bucket}=storage();
+    try {
+      const url=await getSignedUrl(client,new GetObjectCommand({Bucket:bucket,Key:`music-releases/${release.preview.sha256}.mp3`}),{expiresIn:900});
+      res.setHeader("Cache-Control","private, no-store");
+      res.redirect(302,url);
+    } finally {client.destroy();}
   }));
   app.get("/api/ministry-shop/art/:id", route(async (req, res) => {
     const item = await getShopProduct(req.params.id);
@@ -251,3 +289,4 @@ export function registerShopUploads(app: Express, requireAdmin: RequestHandler) 
     } finally { client.destroy(); }
   }));
 }
+

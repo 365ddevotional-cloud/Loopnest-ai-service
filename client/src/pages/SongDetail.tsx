@@ -1,3 +1,4 @@
+import { EnglishLyrics } from "@/components/EnglishLyrics";
 import { songLanguageCategories } from "@shared/song-languages";
 import MusicPurchasePanel from "@/components/MusicPurchasePanel";
 import SpiritToneTimedPreview from "@/components/SpiritToneTimedPreview";
@@ -688,6 +689,7 @@ export default function SongDetail() {
       </div>
 
       {/* Lyrics */}
+      <EnglishLyrics slug={song.slug} />
       {song.lyrics && (
         <div className="rounded-xl border border-border/40 bg-card p-4 space-y-3" data-testid="section-lyrics">
           <div className="flex items-center justify-between">
@@ -721,3 +723,4 @@ export default function SongDetail() {
     </div>
   );
 }
+

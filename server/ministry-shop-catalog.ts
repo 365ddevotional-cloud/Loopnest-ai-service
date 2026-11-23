@@ -1,3 +1,4 @@
+import multilingual from "../shared/multilingual-releases.json";
 import original from "../client/src/data/ministry-shop-catalog.json";
 import descriptions from "../client/src/data/ministry-shop-content.json";
 import { sql } from "drizzle-orm";
@@ -16,6 +17,11 @@ export async function getShopCatalog(includeDrafts = false): Promise<ShopCatalog
   const products = new Map<string, ShopCatalogProduct>(original.map(item => [item.id, {
     ...item, description: (descriptions as Record<string, string[]>)[item.id]?.join("\n\n"), published: true,
   }]));
+  if (includeDrafts) for (const release of multilingual) {
+    products.set(release.id, { id: release.id, title: release.title, kind: "Music", author: "SpiritTone Records",
+      sourcePrice: "$1.49", useBasePrice: false, packageFormat: "zip", requiredFileCount: 1,
+      spiritToneSlug: release.slug, lyrics: release.lyrics, description: release.description, published: false });
+  }
   for (const row of rows) {
     products.delete(row.id);
     if (row.published || includeDrafts) products.set(row.id, {
@@ -29,3 +35,4 @@ export async function getShopCatalog(includeDrafts = false): Promise<ShopCatalog
 export async function getShopProduct(id: string, includeDrafts = false) {
   return (await getShopCatalog(includeDrafts)).find(item => item.id === id);
 }
+

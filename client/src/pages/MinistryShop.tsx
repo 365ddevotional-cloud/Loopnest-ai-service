@@ -1,3 +1,4 @@
+import { EnglishLyrics } from "@/components/EnglishLyrics";
 import { christmasPreview } from "@shared/christmas-2026-releases";
 import { translateAppText as tx } from "@/utils/i18n";
 import { useI18n } from "@/hooks/useI18n";
@@ -249,6 +250,7 @@ function SpiritToneReleaseDetails({ slug }: { slug: string }) {
         {credits.map(([label, value]) => <div key={label}><dt className="font-semibold text-foreground">{label}</dt><dd className="break-words text-muted-foreground">{value}</dd></div>)}
       </dl>
       {song.scriptureText && <p className="mt-3 text-sm italic">{song.scriptureText}</p>}
+      <EnglishLyrics slug={slug} />
       {song.lyrics && (
         <details className="mt-4 rounded-lg bg-muted/30 p-3">
           <summary className="cursor-pointer font-semibold">{tx("Read complete lyrics")}</summary>
@@ -595,3 +597,4 @@ export default function MinistryShop() {
   const [purchases] = useRoute("/shop/purchases");
   return <CatalogContext.Provider value={catalog.data ?? staticCatalog}>{purchases ? <MinistryShopPurchases /> : <ShopCatalog />}</CatalogContext.Provider>;
 }
+
