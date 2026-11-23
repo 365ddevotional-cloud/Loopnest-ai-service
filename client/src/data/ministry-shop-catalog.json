@@ -1,5 +1,75 @@
 [
   {
+    "id": "learningtopraywithscripture",
+    "title": "Learning to Pray with Scripture",
+    "kind": "Book",
+    "sourcePrice": "$3.99",
+    "requiredFileCount": 1
+  },
+  {
+    "id": "whoweareinchrist",
+    "title": "Who We Are in Christ",
+    "kind": "Book",
+    "sourcePrice": "$3.99",
+    "requiredFileCount": 1
+  },
+  {
+    "id": "lifeinchrist",
+    "title": "Life in Christ: The Gift of Eternal Life",
+    "kind": "Book",
+    "sourcePrice": "$3.99",
+    "requiredFileCount": 1
+  },
+  {
+    "id": "raisingchildreningraceandwisdom",
+    "title": "Raising Children in Grace and Wisdom",
+    "kind": "Book",
+    "sourcePrice": "$3.99",
+    "requiredFileCount": 1
+  },
+  {
+    "id": "ahomeestablishedingrace",
+    "title": "A Home Established in Grace",
+    "kind": "Book",
+    "sourcePrice": "$3.99",
+    "requiredFileCount": 1
+  },
+  {
+    "id": "reneweddaily",
+    "title": "Renewed Daily: Grace-Filled Habits That Last",
+    "kind": "Book",
+    "sourcePrice": "$3.99",
+    "requiredFileCount": 1
+  },
+  {
+    "id": "wordsthatbuild",
+    "title": "Words That Build: Speaking Truth in Love",
+    "kind": "Book",
+    "sourcePrice": "$3.99",
+    "requiredFileCount": 1
+  },
+  {
+    "id": "stewardshipwithwisdom",
+    "title": "Stewardship With Wisdom: A Christian Household Money Guide",
+    "kind": "Book",
+    "sourcePrice": "$3.99",
+    "requiredFileCount": 1
+  },
+  {
+    "id": "listenfirst",
+    "title": "Listen First",
+    "kind": "Book",
+    "sourcePrice": "$1.99",
+    "requiredFileCount": 1
+  },
+  {
+    "id": "practicalwaystoearnwithchatgpt",
+    "title": "Practical Ways to Earn with ChatGPT",
+    "kind": "Book",
+    "sourcePrice": "$4.99",
+    "requiredFileCount": 1
+  },
+  {
     "id": "homeschoolingwithpurpose",
     "title": "Homeschooling With Purpose",
     "kind": "Book",
