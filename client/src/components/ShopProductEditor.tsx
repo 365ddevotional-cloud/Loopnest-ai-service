@@ -1,4 +1,4 @@
-import { christmasReleaseById } from "@shared/christmas-2026-releases";
+import { verifiedReleaseById } from "@shared/christmas-2026-releases";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -117,7 +117,7 @@ export default function ShopProductEditor() {
       <label className="block text-sm font-medium">Product
         <select className="mt-1 min-h-11 w-full rounded-md border bg-background p-2" value={id} disabled={busy} onChange={event => choose(event.target.value)}>
           <option value="">Create a new product</option>
-          {inventory.data?.filter(p => p.kind !== "Membership" && p.id !== "x29Tw" && !p.replacedBy && (p.requiredFileCount ?? 1) === 1 && (p.packageFormat !== "zip" || christmasReleaseById(p.id)))
+          {inventory.data?.filter(p => p.kind !== "Membership" && p.id !== "x29Tw" && !p.replacedBy && (p.requiredFileCount ?? 1) === 1 && (p.packageFormat !== "zip" || verifiedReleaseById(p.id)))
             .map(p => <option key={p.id} value={p.id}>{p.title}{p.published === false ? " — Draft" : ""}</option>)}
         </select>
       </label>
@@ -148,7 +148,7 @@ export default function ShopProductEditor() {
           <h4 className="border-t pt-5 text-lg font-bold">3. Files and release</h4>
           <div key={resetKey} className="grid gap-3 sm:grid-cols-2">
             <label className="block text-sm font-medium">Cover image (JPEG, PNG or WebP, up to 10 MB)<Input type="file" accept="image/jpeg,image/png,image/webp" onChange={e => {setCover(e.target.files?.[0]);setSaved(false);}} /></label>
-            <label className="block text-sm font-medium">{form.kind === "Book" ? "Book PDF" : christmasReleaseById(id) ? "Release ZIP" : "Music MP3"} (up to 250 MB)<Input type="file" accept={form.kind === "Book" ? ".pdf,application/pdf" : christmasReleaseById(id) ? ".zip,application/zip" : ".mp3,audio/mpeg"} onChange={e => {setDownload(e.target.files?.[0]);setSaved(false);}} /></label>
+            <label className="block text-sm font-medium">{form.kind === "Book" ? "Book PDF" : verifiedReleaseById(id) ? "Release ZIP" : "Music MP3"} (up to 250 MB)<Input type="file" accept={form.kind === "Book" ? ".pdf,application/pdf" : verifiedReleaseById(id) ? ".zip,application/zip" : ".mp3,audio/mpeg"} onChange={e => {setDownload(e.target.files?.[0]);setSaved(false);}} /></label>
           </div>
           <Button type="submit">{busy ? "Working…" : "Save product and upload files"}</Button>
         </fieldset>
