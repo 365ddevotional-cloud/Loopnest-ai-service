@@ -437,6 +437,7 @@ function ShopCatalog() {
           <h1 className="flex items-center gap-2 font-sans text-lg font-bold tracking-tight text-white sm:text-2xl">
             <ShoppingBag size={17} className="shrink-0 text-orange-300" aria-hidden="true" /> 365 Ministry Shop
           </h1>
+          <Link href="/shop/sOkZu" className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-amber-300 px-3 text-sm font-bold text-slate-950 hover:bg-amber-200"><Sparkles size={16} aria-hidden="true" />{tx("SpiritTone Gold membership")}</Link>
           <Link href="/shop/purchases" className="inline-flex min-h-9 items-center rounded-md px-1.5 text-xs font-semibold text-white underline decoration-white/40 underline-offset-4 hover:bg-white/10 sm:text-sm">{tx("Shop purchases")}</Link>
         </div>
         {prices && !Object.values(prices.products).some(price => price.ready) && (
