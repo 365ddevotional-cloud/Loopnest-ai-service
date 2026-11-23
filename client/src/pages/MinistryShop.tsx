@@ -366,6 +366,37 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
   );
 }
 
+const bookTopics: Record<string, string> = {
+  littleheartsoldtestament: "Children’s Bible",
+  littleheartsnewtestament: "Children’s Bible",
+  praywithconfidence: "Prayer & devotion",
+  OzmMJ: "Prayer & devotion",
+  dfe85b71e2614bd99676e28960a1a6a0: "Prayer & devotion",
+  practicingthanksgiving: "Prayer & devotion",
+  tKgAC: "Family & relationships",
+  "4f28ec864bd94f42a9e6730ed62cece5": "Family & relationships",
+  "97b5261326284e88bb3bb0f27bc991bf": "Family & relationships",
+  homeschoolingwithpurpose: "Family & relationships",
+  ca1b6edd72b64b469d81956f03c4b288: "Family & relationships",
+  "0183da3c54574347b827bf367643613d": "Family & relationships",
+  forgivingwithwisdom: "Family & relationships",
+  "58793ac4d8674b75a8133e2155be5369": "Work & stewardship",
+  "350fd530b3184b79a60cf6d87aea9e22": "Work & stewardship",
+  unx3y: "Personal growth",
+  servantleadershipforministryteams: "Ministry leadership",
+};
+
+const seasonalRecordings = new Set(["str8b10f8f5", "stra124aabe", "strfb6b9417", "str02fec75c"]);
+function shopTopic(item: CatalogProduct) {
+  if (item.kind === "Book") return bookTopics[item.id] ?? "Christian living";
+  if (seasonalRecordings.has(item.id) || /christmas|navidad|nativity/i.test(item.title)) return "Christmas";
+  if (/instrumental/i.test(item.title)) return "Instrumentals";
+  if (/reloaded|reloded|reloa?ded|remix|remaster/i.test(item.title)) return "Remixes & new versions";
+  if (/shepherd|pastures|commandments|lazarus|moses|burning bush|abraham|joseph|walked on water|cloud by day|not by might|no weapon|the way, the truth/i.test(item.title)) return "Scripture songs";
+  if (/praise|dance|celebration|victory|joy|bounce|groove|hosanna/i.test(item.title)) return "Praise & celebration";
+  return "Worship & faith";
+}
+
 function ShopCatalog() {
   useI18n();
   const catalog = useContext(CatalogContext);
@@ -402,6 +433,7 @@ function ShopCatalog() {
   });
   const views = canViewVisits ? visitCounts : undefined;
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
+  const [topic, setTopic] = useState("");
   const [query, setQuery] = useState("");
   const [musicLanguage, setMusicLanguage] = useState("all");
   const [musicGenre, setMusicGenre] = useState("all");
@@ -422,8 +454,17 @@ function ShopCatalog() {
       (musicLanguage === "all" || songLanguageCategories(musicLanguageFor(item)).includes(musicLanguage)) &&
       (musicGenre === "all" || musicGenreFor(item) === musicGenre)
     )));
-  const nonMusic = eligibleProducts.filter(item => item.kind !== "Music");
-  const matchingMusic = eligibleProducts.filter(item => item.kind === "Music");
+  const showTopics = filter === "Book" || filter === "Music";
+  const topicCounts = new Map<string, number>();
+  if (showTopics) for (const item of eligibleProducts) {
+    const name = shopTopic(item);
+    topicCounts.set(name, (topicCounts.get(name) ?? 0) + 1);
+  }
+  const topicNames = [...new Set([...topicCounts.keys(), ...(topic ? [topic] : [])])].sort((a, b) =>
+    a === b ? 0 : a === "Christmas" ? -1 : b === "Christmas" ? 1 : a.localeCompare(b));
+  const visibleProducts = showTopics && topic ? eligibleProducts.filter(item => shopTopic(item) === topic) : eligibleProducts;
+  const nonMusic = visibleProducts.filter(item => item.kind !== "Music");
+  const matchingMusic = visibleProducts.filter(item => item.kind === "Music");
   const products = [...nonMusic, ...(musicOrder === "az"
     ? [...matchingMusic].sort((a, b) => a.title.localeCompare(b.title))
     : mixMusicSources(matchingMusic))];
@@ -461,11 +502,27 @@ function ShopCatalog() {
         </div>
         <div className="my-2 flex flex-wrap items-center gap-1.5" aria-label={tx("Product categories")}>
           {filters.map(value => (
-            <Button type="button" key={value} size="sm" className="px-2.5 text-xs sm:text-sm" variant={filter === value ? "default" : "outline"} aria-pressed={filter === value} onClick={() => setFilter(value)}>
+            <Button type="button" key={value} size="sm" className="px-2.5 text-xs sm:text-sm" variant={filter === value ? "default" : "outline"} aria-pressed={filter === value} onClick={() => { setFilter(value); setTopic(""); }}>
               {value === "Book" ? tx("Books") : tx(value)}
             </Button>
           ))}
         </div>
+        {showTopics && (
+          <fieldset className="mb-3 rounded-xl border border-teal-800/20 bg-teal-50/60 px-3 pb-3 dark:bg-teal-950/25">
+            <legend className="px-1 text-xs font-semibold tracking-wide text-teal-900 dark:text-teal-200">{tx(filter === "Music" ? "Music collections" : "Book topics")}</legend>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {["", ...topicNames].map(name => (
+                <button key={name} type="button" aria-pressed={topic === name} onClick={() => setTopic(name)}
+                  className={`inline-flex min-h-9 items-center gap-2 rounded-full border px-3 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 ${topic === name
+                    ? "border-teal-900 bg-teal-900 text-white dark:border-teal-300 dark:bg-teal-300 dark:text-teal-950"
+                    : "border-border bg-background text-foreground hover:border-teal-500"}`}>
+                  {tx(name || (filter === "Music" ? "All music" : "All books"))}
+                  <span className="tabular-nums opacity-75">{name ? topicCounts.get(name) ?? 0 : eligibleProducts.length}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        )}
         {(filter === "All" || filter === "Music") && (
           <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-muted/20 p-2" aria-label={tx("Music discovery filters")}>
             <label className="min-w-28 flex-1 text-xs font-semibold text-muted-foreground sm:max-w-52"> {tx("Song language")} <select value={musicLanguage} onChange={event => setMusicLanguage(event.target.value)}
