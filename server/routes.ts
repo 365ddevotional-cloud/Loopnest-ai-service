@@ -40,7 +40,7 @@ import { seedAllDevotionals } from "./seed-devotionals";
 import { getOrCreateTranslation, isAllowedLanguage, getCachedTranslationsForLanguage } from "./translationService";
 import { getCurrentPromise, getNextPromise, advancePromise, resetRotation, toggleEnabled, getTotalPromises, startPromiseScheduler } from "./promiseEngine";
 import { generateAIEncouragement } from "./inbox-ai";
-import { promiseAmens, INBOX_CATEGORIES, churchTransactions } from "@shared/schema";
+import { songs, promiseAmens, INBOX_CATEGORIES, churchTransactions } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, desc, gte } from "drizzle-orm";
 
@@ -6299,8 +6299,8 @@ async function seedDatabase() {
 }
 
 async function seedSampleSong() {
-  const existing = await storage.getFeaturedSong();
-  if (existing) return; // Already have a song
+  const [existing] = await db.select({ id: songs.id }).from(songs).limit(1);
+  if (existing) return;
   try {
     await storage.createSong({
       title: "The Lord Is My Shepherd",
