@@ -151,7 +151,8 @@
       "offset": 13167567,
       "size": 1441659,
       "sha256": "6fac5500051de36a61d570e8fb548bd3f87bdc568b596a91365e84c90528fc83"
-    }
+    },
+    "releaseYear": 2026
   },
   {
     "uuid": "58b5dfaf-6275-5c58-8e62-261e9ef674fe",
@@ -173,7 +174,8 @@
       "offset": 8634468,
       "size": 1441680,
       "sha256": "620ef0d6177ed4cecb1d41dca81f796aff9ea36a5b6b9bd6b4626542559aefc0"
-    }
+    },
+    "releaseYear": 2026
   },
   {
     "uuid": "cb12fc34-20a4-459d-8ba0-22ee168377c9",
@@ -195,7 +197,8 @@
       "offset": 6057602,
       "size": 1714615,
       "sha256": "a2d3d86f6c46fce4010e51972ad284b93d30239f0aacf2ef27cfd40bbc15b2c3"
-    }
+    },
+    "releaseYear": 2026
   },
   {
     "uuid": "1e9d2b61-1e2a-4fc3-a907-86466f58ca46",
@@ -217,6 +220,7 @@
       "offset": 5201896,
       "size": 1795483,
       "sha256": "6b166f6e117696fdd2cf615296d8cd3eebb74b6bd1193ba0f45dcbca2717739b"
-    }
+    },
+    "releaseYear": 2026
   }
 ]
