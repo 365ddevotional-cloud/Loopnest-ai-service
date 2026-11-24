@@ -1,3 +1,4 @@
+import { goldPeriod } from "./spirittone-gold-invoice";
 import { registerShopAudiobooks, assetHash, type ShopOrder } from "./ministry-shop-audio";
 import { audioTotal } from "../shared/shop-audiobook";
 import { isAndroidReaderRequest } from "./android-reader";
@@ -287,6 +288,17 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
       event = stripe.webhooks.constructEvent(req.rawBody, signature, secret);
     } catch { return res.sendStatus(400); }
     try {
+      if (event.type === "invoice.paid" && env.SPIRITTONE_GOLD_PRICE_ID &&
+          event.livemode === /^(sk|rk)_live_/.test(key ?? "")) {
+        const period = goldPeriod(event.data.object, env.SPIRITTONE_GOLD_PRICE_ID);
+        if (period) {
+          await db.execute(sql`INSERT INTO spirittone_gold_periods
+            (invoice_id, subscription_id, firebase_uid, starts_at, ends_at)
+            VALUES (${period.invoice}, ${period.subscription}, ${period.uid},
+              to_timestamp(${period.start}), to_timestamp(${period.end}))
+            ON CONFLICT DO NOTHING`);
+        }
+      }
       if (["checkout.session.completed", "checkout.session.async_payment_succeeded", "checkout.session.async_payment_failed", "checkout.session.expired"].includes(event.type)) {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.metadata?.app === appTag) {
