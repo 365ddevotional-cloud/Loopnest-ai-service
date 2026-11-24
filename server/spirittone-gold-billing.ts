@@ -6,21 +6,24 @@ import { isAndroidReaderRequest } from "./android-reader";
 import { musicCountryFromRequest } from "./music-location";
 
 type GoldOptions = {
+  verifyPackages: () => Promise<void>;
   stripe: Stripe | null;
   viewer: (request: Request) => Promise<{ uid: string; email?: string; email_verified?: boolean }>;
   sendError: (response: Response, error: unknown) => unknown;
 };
 
-export function registerGoldBilling(app: Express, { stripe, viewer, sendError }: GoldOptions) {
+export function registerGoldBilling(app: Express, { stripe, viewer, sendError, verifyPackages }: GoldOptions) {
   const price = process.env.SPIRITTONE_GOLD_PRICE_ID;
   const sandbox = /^([sr]k)_test_/.test(process.env.STRIPE_SECRET_KEY ?? "");
-  const origin = process.env.SPIRITTONE_GOLD_SANDBOX_ORIGIN;
-  const enabled = !!(stripe && price && sandbox && origin && /^https:\/\/[a-z0-9.-]+$/i.test(origin)
-    && process.env.STRIPE_SHOP_WEBHOOK_SECRET && process.env.SPIRITTONE_GOLD_SANDBOX_ENABLED === "true");
+  const live = /^(sk|rk)_live_/.test(process.env.STRIPE_SECRET_KEY ?? "");
+  const origin = live ? "https://365dailydevotional.com" : process.env.SPIRITTONE_GOLD_SANDBOX_ORIGIN;
+  const enrollment = live ? process.env.SPIRITTONE_GOLD_LIVE_ENABLED : process.env.SPIRITTONE_GOLD_SANDBOX_ENABLED;
+  const enabled = !!(stripe && price && (live || sandbox) && origin && /^https:\/\/[a-z0-9.-]+$/i.test(origin)
+    && process.env.STRIPE_SHOP_WEBHOOK_SECRET && enrollment === "true");
   function fail(status: number, message: string): never { throw Object.assign(new Error(message), { status }); }
 
   app.get("/api/spirittone-gold/availability", (req, res) => {
-    res.set("Cache-Control", "no-store").json({ enabled: enabled && !isAndroidReaderRequest(req) && musicCountryFromRequest(req) === "US" });
+    res.set("Cache-Control", "no-store").json({ sandbox, enabled: enabled && !isAndroidReaderRequest(req) && musicCountryFromRequest(req) === "US" });
   });
 
   app.post("/api/spirittone-gold/checkout", async (req, res) => {
@@ -30,8 +33,9 @@ export function registerGoldBilling(app: Express, { stripe, viewer, sendError }:
       const user = await viewer(req);
       if (!user.email_verified || !user.email) fail(403, "Verify your email before enrolling.");
       const offer = await stripe.prices.retrieve(price);
-      if (offer.livemode || !offer.active || offer.unit_amount !== 499 || offer.currency !== "usd" ||
+      if (offer.livemode !== live || !offer.active || offer.unit_amount !== 499 || offer.currency !== "usd" ||
           offer.recurring?.interval !== "month" || offer.recurring.interval_count !== 1) fail(409, "The membership price is unavailable.");
+      await verifyPackages();
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
@@ -64,7 +68,7 @@ export function registerGoldBilling(app: Express, { stripe, viewer, sendError }:
 
   app.post("/api/spirittone-gold/cancel", async (req,res) => {
     try {
-      if (!stripe || !sandbox) fail(403,"Sandbox membership management is unavailable.");
+      if (!stripe || !(live || sandbox)) fail(403,"Membership management is unavailable.");
       const user = await viewer(req);
       const {rows} = await pool.query("SELECT session_id FROM spirittone_gold_checkout WHERE firebase_uid=$1",[user.uid]);
       if (!rows[0]) fail(404,"No membership was found.");
