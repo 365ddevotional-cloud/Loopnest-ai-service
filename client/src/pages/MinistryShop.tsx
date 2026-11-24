@@ -263,7 +263,7 @@ function SpiritToneReleaseDetails({ slug }: { slug: string }) {
   );
 }
 
-function ProductDetail({ id, views, price }: { id: string; views?: Record<string, number>; price?: { amount: number; currency: string; country: string; ready: boolean } }) {
+function ProductDetail({ id, views, sales, price }: { sales?: Record<string,number>; id: string; views?: Record<string, number>; price?: { amount: number; currency: string; country: string; ready: boolean } }) {
   useI18n();
   const catalog = useContext(CatalogContext);
   const product = catalog.find(item => item.id === id);
@@ -332,6 +332,7 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{tx(product.kind)}</p>
                 <h1 className="mb-2 mt-1 break-words text-2xl font-bold tracking-tight text-teal-900 dark:text-teal-200 sm:text-3xl">{product.title}</h1>
                 <ProductViews total={views?.[product.id]} />
+                {sales && <span className="ml-2 text-xs text-muted-foreground">{sales[product.id] ?? 0} paid sales</span>}
                 {price && <p className="mt-2 text-xl font-bold text-orange-800 dark:text-orange-300">{formatShopPrice(price)}</p>}
                 {!price && product.sourcePrice && /^\$\d+\.\d{2}$/.test(product.sourcePrice) && (
                   <p className="mt-2 text-sm font-semibold text-orange-800 dark:text-orange-300"> {tx("US catalog reference:")} {product.sourcePrice}
@@ -436,6 +437,16 @@ function ShopCatalog() {
       return response.json();
     },
   });
+  const salesQuery = useQuery<Record<string,number>>({
+    queryKey:["shop-paid-sales",user?.uid], enabled:canViewVisits, gcTime:0,retry:false,
+    queryFn:async({signal})=>{
+      const token=await getIdToken();
+      const response=await fetch("/api/ministry-shop/sales-counts",{signal,cache:"no-store",headers:{Authorization:`Bearer ${token}`}});
+      if(!response.ok) throw new Error("Sales counts unavailable.");
+      return response.json();
+    },
+  });
+  const sales = canViewVisits ? salesQuery.data : undefined;
   const views = canViewVisits ? visitCounts : undefined;
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
   const [topic, setTopic] = useState("");
@@ -474,7 +485,7 @@ function ShopCatalog() {
     ? [...matchingMusic].sort((a, b) => a.title.localeCompare(b.title))
     : mixMusicSources(matchingMusic))];
 
-  if (params) return <ProductDetail id={params.productId} views={views} price={prices?.products[params.productId]} />;
+  if (params) return <ProductDetail id={params.productId} views={views} sales={sales} price={prices?.products[params.productId]} />;
 
   return (
     <main className="mx-auto max-w-6xl space-y-4 py-3 sm:space-y-5 sm:px-5 sm:py-6">
@@ -575,6 +586,7 @@ function ShopCatalog() {
                     </div>
                     {!isAndroidReader() && !product.spiritToneSlug && product.requiredFileCount && !price?.ready && <span className="text-xs font-semibold text-orange-800 dark:text-orange-300">{tx("Checkout unavailable")}</span>}
                     <ProductViews total={views?.[product.id]} />
+                {sales && <span className="ml-2 text-xs text-muted-foreground">{sales[product.id] ?? 0} paid sales</span>}
                   </div>
                 </Link>
               </li>

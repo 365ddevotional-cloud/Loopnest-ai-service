@@ -1,3 +1,4 @@
+import { getShopSalesCounts } from "./ministry-shop-sales-counts";
 import type { Express, RequestHandler } from "express";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -24,7 +25,7 @@ export function registerMinistryShopAdmin(
     res.set("Cache-Control", "private, no-store");
     try {
       const catalog = await getShopCatalog(true);
-      const [products, assets, orders, spiritTone] = await Promise.all([
+      const [products, assets, orders, spiritTone, salesCounts] = await Promise.all([
         db.execute<{ product_id: string; total: string | null; paused: boolean | null }>(sql`
           SELECT COALESCE(v.product_id,c.product_id) AS product_id, v.total, c.paused
           FROM ministry_shop_product_views v FULL JOIN ministry_shop_sales_controls c USING (product_id)
@@ -48,6 +49,7 @@ export function registerMinistryShopAdmin(
             featured_week_start, featured_week_end
           FROM songs ORDER BY id ASC
         `),
+        getShopSalesCounts(catalog),
       ]);
 
       const statistics = new Map(products.rows.map(row => [row.product_id, row]));
@@ -97,7 +99,7 @@ export function registerMinistryShopAdmin(
           const row = statistics.get(item.id);
           return {
             id: item.id, title: item.title, kind: item.kind,
-            visits: Number(row?.total ?? 0), paused: row?.paused === true,
+            sales: salesCounts[item.id], visits: Number(row?.total ?? 0), paused: row?.paused === true,
             fileCount: files.length, filesReady: await canSell(item.id, files, item),
           };
         })),

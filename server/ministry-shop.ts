@@ -1,3 +1,4 @@
+import { getShopSalesCounts } from "./ministry-shop-sales-counts";
 import { createHmac } from "node:crypto";
 import type { Express } from "express";
 import { sql } from "drizzle-orm";
@@ -48,6 +49,18 @@ export function registerMinistryShopRoutes(app: Express, verifyToken: VerifyToke
     } catch {
       res.status(503).json({ message: "SpiritTone catalog metadata is temporarily unavailable." });
     }
+  });
+
+  app.get("/api/ministry-shop/sales-counts", async (req,res) => {
+    res.set("Cache-Control","private, no-store");
+    if (!req.session?.isAdmin) {
+      const token=req.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+      const account=token ? await verifyToken(token).catch(()=>null) : null;
+      if (!account) return res.sendStatus(401);
+      if (account.email_verified !== true || !isMinistryShopAdminEmail(account.email)) return res.sendStatus(403);
+    }
+    try { res.json(await getShopSalesCounts(await getShopCatalog())); }
+    catch { res.status(503).json({message:"Sales counts are temporarily unavailable."}); }
   });
 
   app.get("/api/ministry-shop/views", async (req, res) => {
