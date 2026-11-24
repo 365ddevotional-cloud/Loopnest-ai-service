@@ -43,6 +43,7 @@ async function buildAll() {
     .filter(file => /^20261108_ministry_shop(?:_orders|_sales_controls)?\.sql$/.test(file));
   if (shopMigrations.length !== 3) throw new Error("Shop migration files are incomplete");
   shopMigrations.push("20261118_ministry_shop_products.sql", "20261118_ministry_shop_audio.sql");
+  shopMigrations.push("20261124_spirittone_gold.sql");
   shopMigrations.push("20261113_spirit_tone_producer_credit_fix.sql", "20261113_spirittone_confirmed_song_credits.sql");
   await mkdir("dist/shop-migrations", { recursive: true });
   await Promise.all(shopMigrations.map(file => copyFile(`migrations/${file}`, `dist/shop-migrations/${file}`)));
