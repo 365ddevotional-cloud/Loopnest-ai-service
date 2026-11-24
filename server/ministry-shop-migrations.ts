@@ -7,6 +7,7 @@ export const ministryShopMigrationFiles = [
   "20261108_ministry_shop.sql",
   "20261108_ministry_shop_orders.sql",
   "20261118_ministry_shop_audio.sql",
+  "20261124_spirittone_gold.sql",
   "20261108_ministry_shop_sales_controls.sql",
   "20261113_spirit_tone_producer_credit_fix.sql",
   "20261113_spirittone_confirmed_song_credits.sql",
