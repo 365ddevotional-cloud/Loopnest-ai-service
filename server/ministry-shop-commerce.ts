@@ -126,6 +126,77 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
     return latest;
   }
 
+  async function eligibleGoldSongs() {
+    const products = await getShopCatalog();
+    const {rows} = await db.execute<Asset & {product_id: string}>(sql`
+      SELECT a.product_id,a.object_key,a.file_name,a.content_type,a.size_bytes
+      FROM ministry_shop_assets a LEFT JOIN ministry_shop_sales_controls c ON c.product_id=a.product_id
+      WHERE coalesce(c.paused,false)=false`);
+    const assets = new Map<string, Asset[]>();
+    for (const row of rows) {
+      const list = assets.get(row.product_id) ?? [];
+      list.push(row);
+      assets.set(row.product_id,list);
+    }
+    return products.flatMap(product => {
+      const files = assets.get(product.id) ?? [];
+      return product.kind === "Music" && product.spiritToneSlug && product.packageFormat === "zip"
+        && shopAssetsMatchProduct(product, files, shopBundleId)
+        ? [{id:product.id,title:product.title,file:files[0]}] : [];
+    });
+  }
+
+  app.get("/api/spirittone-gold/library", async (req,res) => {
+    res.set("Cache-Control","private, no-store");
+    try {
+      const {uid} = await viewer(req);
+      const {rows} = await db.execute<{invoice_id:string; ends_at:string; used:number}>(sql`
+        SELECT p.invoice_id,p.ends_at,count(s.slot)::int AS used FROM spirittone_gold_periods p
+        LEFT JOIN spirittone_gold_selections s USING(invoice_id) WHERE p.firebase_uid=${uid}
+        AND p.revoked_at IS NULL AND now() >= p.starts_at AND now() < p.ends_at
+        GROUP BY p.invoice_id ORDER BY p.ends_at DESC LIMIT 1`);
+      if (!rows[0]) return res.json({period:null,songs:[]});
+      const owned = await db.execute<{id:string}>(sql`
+        SELECT unnest(s.product_ids) AS id FROM spirittone_gold_selections s
+        JOIN spirittone_gold_periods p USING(invoice_id) WHERE p.firebase_uid=${uid} AND p.revoked_at IS NULL
+        UNION SELECT product_id FROM ministry_shop_orders WHERE firebase_uid=${uid} AND status='paid'`);
+      const ids = new Set(owned.rows.map(row=>row.id));
+      const songs = (await eligibleGoldSongs()).map(({id,title})=>({id,title,owned:ids.has(id)}));
+      res.json({period:rows[0],songs});
+    } catch(error) {sendError(res,error);}
+  });
+
+  app.post("/api/spirittone-gold/select", async (req,res) => {
+    res.set("Cache-Control","private, no-store");
+    try {
+      const {uid} = await viewer(req);
+      const parsed = z.object({invoice:z.string().min(1).max(255),request:z.string().uuid(),
+        songs:z.array(z.string().min(1).max(128)).length(5)}).strict().safeParse(req.body);
+      if (!parsed.success || new Set(parsed.data.songs).size !== 5) issue(400,"Choose five different songs.");
+      const {invoice,request,songs} = parsed.data;
+      const allowed = new Map((await eligibleGoldSongs()).map(song=>[song.id,song]));
+      if (!r2 || !bucket) issue(503,"Music downloads are unavailable.");
+      const files = await Promise.all(songs.map(async id=>{
+        const item = allowed.get(id);
+        if (!item) issue(409,"A selected song is no longer available.");
+        await verifyStoredAssets([item.file]);
+        const url = await getSignedUrl(r2,new GetObjectCommand({Bucket:bucket,Key:item.file.object_key,
+          ResponseContentDisposition:"attachment; filename*=UTF-8''"+encodeURIComponent(item.file.file_name)
+            .replace(/['()*]/g,char=>"%"+char.charCodeAt(0).toString(16))}),{expiresIn:900});
+        return {id,title:item.title,url};
+      }));
+      try {
+        await db.execute(sql`SELECT spirittone_gold_choose(${uid},${invoice},${request}::uuid,
+          ARRAY[${sql.join(songs.map(id=>sql`${id}`),sql`,`)}]::text[])`);
+      } catch(error) {
+        const cause = (error as {cause?:{code?:string}}).cause;
+        if (cause?.code === "P0001") issue(409,"This selection could not be claimed. Refresh your membership to see the remaining sets.");
+        throw error;
+      }
+      res.json({files});
+    } catch(error) {sendError(res,error);}
+  });
+
   registerGoldBilling(app, { stripe, viewer, sendError });
   const audiobooks = registerShopAudiobooks(app, {viewer,confirm,r2,bucket,requireAdmin});
 
