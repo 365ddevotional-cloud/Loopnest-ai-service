@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { formatMusicPrice } from "@shared/music-regions";
 
 type ShopProduct = {
-  id: string; title: string; kind: string; visits: number;
+  id: string; title: string; kind: string; visits: number; sales: number;
   fileCount: number; filesReady: boolean; paused: boolean;
 };
 type ShopOrder = {
@@ -196,7 +196,7 @@ export default function MinistryShopAdmin() {
           <div className="max-h-[32rem] overflow-auto rounded-lg border">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-muted text-left">
-                <tr>{["Product", "Visits", "Files", "Sales"].map(label => <th key={label} scope="col" className="px-3 py-2">{label}</th>)}</tr>
+                <tr>{["Product", "Visits", "Paid sales", "Files", "Sales control"].map(label => <th key={label} scope="col" className="px-3 py-2">{label}</th>)}</tr>
               </thead>
               <tbody>
                 {data.products.filter(item => `${item.title} ${item.kind}`.toLowerCase().includes(search.trim().toLowerCase())).map(item => (
@@ -206,6 +206,7 @@ export default function MinistryShopAdmin() {
                       <span className="block text-xs font-normal text-muted-foreground">{item.kind}</span>
                     </th>
                     <td className="px-3 py-2">{item.visits.toLocaleString()}</td>
+                    <td className="px-3 py-2">{item.sales.toLocaleString()}</td>
                     <td className="min-w-32 px-3 py-2">
                       {item.filesReady ? `${item.fileCount} registered` : item.fileCount ? "Review file type" : "Pending"}
                     </td>
