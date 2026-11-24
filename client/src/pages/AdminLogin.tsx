@@ -7,12 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Lock, Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
+import { useUser } from "@/contexts/UserContext";
+
 export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login, isAdmin, isLoading } = useAuth();
+  const { user, getIdToken, loading } = useUser();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
@@ -33,6 +36,26 @@ export default function AdminLogin() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Sign-in failed. Please try again.";
       setError(message.startsWith("401:") ? "Invalid password. Please try again." : message.startsWith("503:") ? "Admin sign-in is temporarily unavailable. Please try again shortly." : message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const enterWithAccount = async () => {
+    if (!user) return setLocation("/signin?return=%2Fadmin-login");
+    setError("");
+    setIsSubmitting(true);
+    try {
+      const token = await getIdToken();
+      const response = await fetch("/api/auth/backup-admin", {
+        method: "POST", credentials: "include", headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("Sign in with your verified backup administrator account.");
+      const check = await fetch("/api/auth/check", { credentials: "include", cache: "no-store" });
+      if (!check.ok || !(await check.json()).isAdmin) throw new Error("Please allow cookies and try again.");
+      window.location.assign("/admin");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Please try signing in again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -105,6 +128,9 @@ export default function AdminLogin() {
             data-testid="button-admin-login"
           >
             {isSubmitting ? "Logging in..." : "Login"}
+          </Button>
+          <Button type="button" variant="outline" className="w-full" disabled={loading || isSubmitting} onClick={enterWithAccount}>
+            Use backup admin account
           </Button>
         </form>
       </Card>
