@@ -208,3 +208,46 @@ export function GoldSandboxCheckout() {
     {action.data?.cancelAtPeriodEnd && <p role="status">Renewal canceled. Your current paid period continues.</p>}
   </section>;
 }
+
+type GoldLibrary = {
+  period: { invoice_id:string; ends_at:string; used:number } | null;
+  songs: { id:string; title:string; owned:boolean }[];
+};
+
+export function GoldMemberDownloads() {
+  const {user,getIdToken} = useUser();
+  const [songs,setSongs] = useState<string[]>([]);
+  const [request,setRequest] = useState(()=>crypto.randomUUID());
+  const library = useQuery({
+    queryKey:["gold-download-library",user?.uid], enabled:!!user,
+    queryFn:async()=>{
+      const token = await getIdToken();
+      if (!token) throw new Error("Sign in to view your songs.");
+      return shopRequest<GoldLibrary>("/api/spirittone-gold/library",token);
+    },
+  });
+  const claim = useMutation({
+    mutationFn:async()=>{
+      const token = await getIdToken();
+      if (!token || !library.data?.period) throw new Error("Sign in to your membership.");
+      return shopRequest<{files:{id:string;title:string;url:string}[]}>("/api/spirittone-gold/select",token,
+        {invoice:library.data.period.invoice_id,request,songs});
+    },
+    onSuccess:()=>{void library.refetch();},
+  });
+  const period = library.data?.period;
+  if (!period) return null;
+  return <section className="mt-5 space-y-3">
+    <h2 className="text-lg font-bold">Your Gold downloads</h2>
+    <p>{2-period.used} of 2 sets remaining through {new Date(period.ends_at).toLocaleDateString()}.</p>
+    {claim.data ? <><ul>{claim.data.files.map(f=><li key={f.id}><a className="underline" href={f.url}>Download {f.title}</a></li>)}</ul>
+      {period.used < 2 && <Button onClick={()=>{claim.reset();setSongs([]);setRequest(crypto.randomUUID());}}>Choose another set</Button>}</>
+      : period.used < 2 && <fieldset disabled={claim.isPending}><legend>Choose five songs</legend>
+        {library.data?.songs.map(song=><label className="flex items-center gap-2 py-1" key={song.id}>
+          <input type="checkbox" checked={songs.includes(song.id)} disabled={songs.length===5 && !songs.includes(song.id)}
+            onChange={e=>{setSongs(e.target.checked?[...songs,song.id]:songs.filter(id=>id!==song.id));setRequest(crypto.randomUUID());}}/>
+          {song.title}{song.owned && " (already owned)"}</label>)}
+        <Button disabled={songs.length!==5 || claim.isPending} onClick={()=>claim.mutate()}>Confirm five songs</Button></fieldset>}
+    {claim.error && <p role="alert">{claim.error.message}</p>}
+  </section>;
+}
