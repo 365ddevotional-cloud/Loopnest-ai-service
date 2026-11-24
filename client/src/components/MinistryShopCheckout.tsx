@@ -251,3 +251,22 @@ export function GoldMemberDownloads() {
     {claim.error && <p role="alert">{claim.error.message}</p>}
   </section>;
 }
+
+
+export function OwnerLibraryFiles({productId}:{productId:string}) {
+  const {user,getIdToken} = useUser();
+  const access = useQuery({queryKey:["owner-library",user?.uid ?? "session"],
+    queryFn:async()=>shopRequest<{allowed:boolean}>("/api/ministry-shop/owner-access",(await getIdToken()) ?? undefined)});
+  const open = useMutation({mutationFn:async()=>shopRequest<{files:{name:string;type:string;url:string}[]}>(
+    "/api/ministry-shop/owner-files",(await getIdToken()) ?? undefined,{productId})});
+  if (!access.data?.allowed) return null;
+  return <section className="mt-4 space-y-2">
+    <Button onClick={()=>open.mutate()} disabled={open.isPending}>Open owner files</Button>
+    {open.error && <p role="alert">{open.error.message}</p>}
+    {open.data?.files.map(file=><div key={file.url}>
+      {file.type==="audio/mpeg" && <audio controls preload="none" src={file.url} />}
+      <a className="underline" href={file.url} target="_blank" rel="noopener noreferrer">
+        {file.type==="application/pdf"?"Read or save PDF":file.type==="audio/mpeg"?"Open full recording":"Download"} · {file.name}
+      </a></div>)}
+  </section>;
+}
