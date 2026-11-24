@@ -1,3 +1,6 @@
+import { getDownloadAccess } from "./download-access";
+import { storage } from "./storage";
+import { getMusicDownloadUrl } from "./replit_integrations/object_storage/routes";
 import { registerGoldBilling } from "./spirittone-gold-billing";
 import { goldPeriod } from "./spirittone-gold-invoice";
 import { registerShopAudiobooks, assetHash, type ShopOrder } from "./ministry-shop-audio";
@@ -125,6 +128,50 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
     if (latest?.status !== "paid" || !latest.download_expires_at) issue(403, "Download access is unavailable.");
     return latest;
   }
+
+  async function canOpenLibrary(req: Request) {
+    if (req.session?.isAdmin === true) return true;
+    if (!req.get("authorization")) return false;
+    const claims = await viewer(req);
+    const backup = env.OWNER_LIBRARY_BACKUP_EMAIL?.trim().toLowerCase();
+    return getDownloadAccess(claims).lifetimeFreeDownloads ||
+      (!!backup && claims.email_verified === true && claims.email?.toLowerCase() === backup);
+  }
+
+  app.get("/api/ministry-shop/owner-access", async (req,res) => {
+    res.set("Cache-Control","private, no-store");
+    try { res.json({allowed: await canOpenLibrary(req)}); } catch(error) {sendError(res,error);}
+  });
+
+  app.post("/api/ministry-shop/owner-files", async (req,res) => {
+    res.set("Cache-Control","private, no-store");
+    try {
+      if (!await canOpenLibrary(req)) issue(403,"Owner library access is required.");
+      const id = z.string().min(1).max(160).safeParse(req.body?.productId);
+      if (!id.success) issue(400,"Choose a book or song.");
+      const item = await getShopProduct(id.data);
+      if (!item || !["Book","Music"].includes(item.kind)) issue(404,"Item unavailable.");
+      const files: {name:string; url:string; type:string}[] = [];
+      const {rows} = await db.execute<Asset>(sql`SELECT object_key,file_name,content_type,size_bytes FROM ministry_shop_assets WHERE product_id=${item.id} ORDER BY object_key`);
+      if (r2 && bucket && rows.length && await canSell(item.id,rows,item)) {
+        await verifyStoredAssets(rows);
+        for (const asset of rows) {
+          const url = await getSignedUrl(r2,new GetObjectCommand({Bucket:bucket,Key:asset.object_key,
+            ResponseContentType:asset.content_type,ResponseContentDisposition:"inline; filename*=UTF-8''"+encodeURIComponent(asset.file_name).replace(/['()*]/g,c=>"%"+c.charCodeAt(0).toString(16))}),{expiresIn:900});
+          files.push({name:asset.file_name,url,type:asset.content_type});
+        }
+      }
+      if (item.kind === "Music" && item.spiritToneSlug) {
+        const song = await storage.getSongBySlug(item.spiritToneSlug);
+        if (song?.isActive && song.audioUrl && /^\/objects\/uploads\/[a-f0-9-]{36}$/.test(song.audioUrl)) {
+          files.push({name:song.title,url:await getMusicDownloadUrl(song.audioUrl,song.title,"mp3",900,true),type:"audio/mpeg"});
+          files.push({name:song.title+".mp3",url:await getMusicDownloadUrl(song.audioUrl,song.title,"mp3"),type:"application/octet-stream"});
+        }
+      }
+      if (!files.length) issue(404,"The publisher has not uploaded a file for this item yet.");
+      res.json({files});
+    } catch(error) {sendError(res,error);}
+  });
 
   async function eligibleGoldSongs() {
     const products = await getShopCatalog();

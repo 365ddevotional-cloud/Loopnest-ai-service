@@ -12,7 +12,7 @@ import { BookOpen, Eye, Headphones, Music2, Search, ShoppingBag, Sparkles } from
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { GoldMemberDownloads, GoldSandboxCheckout, formatShopPrice, MinistryShopPurchases, ShopCheckout, useShopPrices } from "@/components/MinistryShopCheckout";
+import { OwnerLibraryFiles, GoldMemberDownloads, GoldSandboxCheckout, formatShopPrice, MinistryShopPurchases, ShopCheckout, useShopPrices } from "@/components/MinistryShopCheckout";
 import { useUser } from "@/contexts/UserContext";
 import { isMinistryShopAdminEmail } from "@shared/ministry-shop-access";
 import staticCatalog from "@/data/ministry-shop-catalog.json";
@@ -339,6 +339,7 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
                 )}
                 {isSpiritTonePreview && !completePackageReady && <p className="mt-2 text-sm font-semibold text-orange-700 dark:text-orange-300">{tx("Catalog preview · Complete purchase package being prepared")}</p>}
                 <ProductPreview key={`preview-${product.id}`} product={product} />
+                {product.kind !== "Membership" && <OwnerLibraryFiles key={product.id} productId={product.id} />}
                 {isSpiritTonePreview && !completePackageReady && product.spiritToneSlug && !isAndroidReader() && (
                   <Link href={`/music/${encodeURIComponent(product.spiritToneSlug)}`} className="mt-3 inline-flex min-h-11 items-center rounded-lg bg-teal-800 px-4 text-sm font-semibold text-white hover:bg-teal-900">
                     {tx("View MP3 purchase options")}
