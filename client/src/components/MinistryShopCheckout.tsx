@@ -185,7 +185,7 @@ export function GoldSandboxCheckout() {
   const [accepted, setAccepted] = useState(false);
   const availability = useQuery({
     queryKey: ["gold-sandbox-availability"],
-    queryFn: () => shopRequest<{enabled:boolean}>("/api/spirittone-gold/availability"),
+    queryFn: () => shopRequest<{enabled:boolean;sandbox:boolean}>("/api/spirittone-gold/availability"),
     enabled: !isAndroidReader(),
   });
   const action = useMutation({
@@ -198,12 +198,12 @@ export function GoldSandboxCheckout() {
     onSuccess: result => { if (result.url) window.location.assign(result.url); },
   });
   if (!availability.data?.enabled) return null;
-  if (!user) return <Link href="/signin?return=%2Fshop%2FsOkZu">Sign in for sandbox enrollment</Link>;
+  if (!user) return <Link href="/signin?return=%2Fshop%2FsOkZu">Sign in to join SpiritTone Gold</Link>;
   return <section className="mt-4 space-y-3">
     <label className="flex items-center gap-2"><input type="checkbox" checked={accepted}
-      onChange={e=>setAccepted(e.target.checked)} />Test a $4.99 monthly membership in the sandbox</label>
-    <Button disabled={!accepted || action.isPending} onClick={()=>action.mutate("checkout")}>Open sandbox checkout</Button>
-    <Button variant="outline" disabled={action.isPending} onClick={()=>action.mutate("cancel")}>Cancel sandbox renewal</Button>
+      onChange={e=>setAccepted(e.target.checked)} />{availability.data.sandbox ? "Test a $4.99 monthly membership in the sandbox" : "I agree to pay $4.99 each month until I cancel."}</label>
+    <Button disabled={!accepted || action.isPending} onClick={()=>action.mutate("checkout")}>{availability.data.sandbox ? "Open sandbox checkout" : "Join SpiritTone Gold"}</Button>
+    <Button variant="outline" disabled={action.isPending} onClick={()=>action.mutate("cancel")}>Cancel renewal</Button>
     {action.error && <p role="alert">{action.error.message}</p>}
     {action.data?.cancelAtPeriodEnd && <p role="status">Renewal canceled. Your current paid period continues.</p>}
   </section>;
