@@ -1,3 +1,4 @@
+import { registerGoldBilling } from "./spirittone-gold-billing";
 import { goldPeriod } from "./spirittone-gold-invoice";
 import { registerShopAudiobooks, assetHash, type ShopOrder } from "./ministry-shop-audio";
 import { audioTotal } from "../shared/shop-audiobook";
@@ -125,6 +126,7 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
     return latest;
   }
 
+  registerGoldBilling(app, { stripe, viewer, sendError });
   const audiobooks = registerShopAudiobooks(app, {viewer,confirm,r2,bucket,requireAdmin});
 
   app.get("/api/ministry-shop/prices", async (req, res) => {

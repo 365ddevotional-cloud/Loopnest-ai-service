@@ -50,3 +50,8 @@ BEGIN
   RETURN chosen_slot;
 END;
 $$;
+
+CREATE TABLE IF NOT EXISTS spirittone_gold_checkout (
+  firebase_uid text PRIMARY KEY,
+  session_id text NOT NULL UNIQUE
+);

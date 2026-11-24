@@ -179,3 +179,32 @@ function ShopPurchaseList({ uid, returnedSession }: { uid: string; returnedSessi
     </>
   );
 }
+
+export function GoldSandboxCheckout() {
+  const { user, getIdToken } = useUser();
+  const [accepted, setAccepted] = useState(false);
+  const availability = useQuery({
+    queryKey: ["gold-sandbox-availability"],
+    queryFn: () => shopRequest<{enabled:boolean}>("/api/spirittone-gold/availability"),
+    enabled: !isAndroidReader(),
+  });
+  const action = useMutation({
+    mutationFn: async (mode: "checkout" | "cancel") => {
+      const token = await getIdToken();
+      if (!token) throw new Error("Sign in to manage membership.");
+      return shopRequest<{url?:string; cancelAtPeriodEnd?:boolean}>(`/api/spirittone-gold/${mode}`,token,
+        mode === "checkout" ? {acceptedMonthlyPrice:accepted} : {});
+    },
+    onSuccess: result => { if (result.url) window.location.assign(result.url); },
+  });
+  if (!availability.data?.enabled) return null;
+  if (!user) return <Link href="/signin?return=%2Fshop%2FsOkZu">Sign in for sandbox enrollment</Link>;
+  return <section className="mt-4 space-y-3">
+    <label className="flex items-center gap-2"><input type="checkbox" checked={accepted}
+      onChange={e=>setAccepted(e.target.checked)} />Test a $4.99 monthly membership in the sandbox</label>
+    <Button disabled={!accepted || action.isPending} onClick={()=>action.mutate("checkout")}>Open sandbox checkout</Button>
+    <Button variant="outline" disabled={action.isPending} onClick={()=>action.mutate("cancel")}>Cancel sandbox renewal</Button>
+    {action.error && <p role="alert">{action.error.message}</p>}
+    {action.data?.cancelAtPeriodEnd && <p role="status">Renewal canceled. Your current paid period continues.</p>}
+  </section>;
+}

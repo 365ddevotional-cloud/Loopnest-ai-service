@@ -12,7 +12,7 @@ import { BookOpen, Eye, Headphones, Music2, Search, ShoppingBag, Sparkles } from
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatShopPrice, MinistryShopPurchases, ShopCheckout, useShopPrices } from "@/components/MinistryShopCheckout";
+import { GoldSandboxCheckout, formatShopPrice, MinistryShopPurchases, ShopCheckout, useShopPrices } from "@/components/MinistryShopCheckout";
 import { useUser } from "@/contexts/UserContext";
 import { isMinistryShopAdminEmail } from "@shared/ministry-shop-access";
 import staticCatalog from "@/data/ministry-shop-catalog.json";
@@ -344,6 +344,7 @@ function ProductDetail({ id, views, price }: { id: string; views?: Record<string
                     {tx("View MP3 purchase options")}
                   </Link>
                 )}
+                {product.id === "sOkZu" && <GoldSandboxCheckout />}
                 {product.kind !== "Membership" && (!isSpiritTonePreview || completePackageReady) && (
                   isAndroidReader() || product.sourcePrice
                     ? <ShopCheckout key={product.id} productId={product.id} price={price} />
