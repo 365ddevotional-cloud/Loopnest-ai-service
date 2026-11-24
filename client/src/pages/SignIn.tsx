@@ -531,6 +531,11 @@ export default function SignIn() {
 
         {/* ── Forgot Password ── */}
         <TabsContent value="reset">
+          <details className="mb-4 rounded-lg border p-3 text-sm">
+            <summary className="cursor-pointer font-semibold">Recover owner library access with a backup email</summary>
+            <p className="my-2">Sign in using your registered backup email and its own app password. If this is your first time using that address here, create an account with it and confirm the verification email. Then open a book or song in the shop and select Open owner files.</p>
+            <Button type="button" variant="outline" onClick={()=>{setTab("signin");setEmail("");setPassword("");setError("");}}>Sign in with backup email</Button>
+          </details>
           <Card>
             <CardContent className="pt-6">
               {resetSent ? (
