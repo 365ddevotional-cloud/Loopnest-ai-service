@@ -150,6 +150,23 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
     res.set("Cache-Control","private, no-store");
     try {
       const {uid} = await viewer(req);
+      // A returning buyer may arrive before the Stripe webhook or after a missed renewal event.
+      if (stripe && process.env.SPIRITTONE_GOLD_PRICE_ID) {
+        const checkout = await db.execute<{session_id:string}>(sql`SELECT session_id FROM spirittone_gold_checkout WHERE firebase_uid=${uid}`);
+        if (checkout.rows[0]) {
+          const session = await stripe.checkout.sessions.retrieve(checkout.rows[0].session_id, {expand:["subscription.latest_invoice"]});
+          const sub = session.subscription;
+          if (session.status === "complete" && session.client_reference_id === uid && sub && typeof sub !== "string" &&
+              sub.latest_invoice && typeof sub.latest_invoice !== "string") {
+            const period = goldPeriod(sub.latest_invoice, process.env.SPIRITTONE_GOLD_PRICE_ID);
+            if (period && period.uid === uid && period.subscription === sub.id) {
+              await db.execute(sql`INSERT INTO spirittone_gold_periods(invoice_id,subscription_id,firebase_uid,starts_at,ends_at)
+                VALUES (${period.invoice},${sub.id},${uid},to_timestamp(${period.start}),to_timestamp(${period.end}))
+                ON CONFLICT DO NOTHING`);
+            }
+          }
+        }
+      }
       const {rows} = await db.execute<{invoice_id:string; ends_at:string; used:number}>(sql`
         SELECT p.invoice_id,p.ends_at,count(s.slot)::int AS used FROM spirittone_gold_periods p
         LEFT JOIN spirittone_gold_selections s USING(invoice_id) WHERE p.firebase_uid=${uid}
@@ -197,7 +214,11 @@ export function registerMinistryShopCommerce(app: Express, verifyToken: VerifyTo
     } catch(error) {sendError(res,error);}
   });
 
-  registerGoldBilling(app, { stripe, viewer, sendError });
+  registerGoldBilling(app, { stripe, viewer, sendError, verifyPackages: async () => {
+    const songs = await eligibleGoldSongs();
+    if (songs.length < 10) issue(409,"Ten eligible song packages are required to open enrollment.");
+    await verifyStoredAssets(songs.slice(0,10).map(song=>song.file));
+  } });
   const audiobooks = registerShopAudiobooks(app, {viewer,confirm,r2,bucket,requireAdmin});
 
   app.get("/api/ministry-shop/prices", async (req, res) => {
